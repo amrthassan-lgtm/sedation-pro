@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Apex Dental · IV Sedation v2.0</title>
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#0b1220" />
+    <!--
+  APEX DENTAL IV SEDATION
+  Samsung Tablet Production Version
+
+  This is a reference copy from a chat paste. See README.md in this directory.
+  Replace with a clean export from the legacy sedation-app repo before the
+  Phase 1 verbatim clinical-logic port begins.
+-->
+    <!--
+  The full legacy single-file application (CSS + HTML + JavaScript) lives in
+  the chat history that produced this commit. Because the paste contained
+  markdown-rendering artifacts (stray triple-backtick fences inside HTML
+  blocks, and smart quotes in part of the nav-drawer JavaScript), saving it
+  verbatim here would not yield a runnable file. Rather than commit a broken
+  artifact, this placeholder records the file's intended location and the
+  audit findings produced from the paste.
+
+  Phase 1 readiness checklist:
+
+  1. Replace this file with the real index.html from the legacy
+     amrthassan-lgtm/sedation-app repository.
+  2. Confirm "port verbatim" means behavior-preserving (same inputs → same
+     outputs), not literal JS-to-TS transliteration.
+  3. Confirm tests-as-spec is acceptable: each clinical rule becomes one or
+     more Vitest cases in @sedation-pro/clinical.
+  4. Decide whether emergency protocols (~30 ACLS-style entries) are modeled
+     as structured TS data in @sedation-pro/clinical or as content in
+     apps/mobile.
+
+  Audit summary (full version in chat history):
+
+  - Drug formulary: Versed, Fentanyl, Zofran, Flumazenil, Naloxone (IV);
+    Triazolam, Lorazepam, Hydroxyzine (oral pre-op); Diazepam (bedtime);
+    Lidocaine 2% 1:100k, Septocaine 4% 1:100k, Septocaine 4% 1:200k,
+    Marcaine 0.25% 1:200k, Mepivacaine 3% (local).
+  - IV ceilings: Versed 15 mg, Fentanyl 100 mcg. When Fentanyl is on board,
+    Versed ceiling reduces by 30% (IV_COMBO_REDUCTION = 0.30).
+  - Malamed combined-percent rule: per-drug active% = activeMg /
+    (maxDose × weightKg), where activeMg decays as originalMg × 0.5^(elapsedMin
+    / halfLife). Sum across all local anesthetics must stay ≤ 100%. Warning
+    thresholds at 70% (caution), 90% (approaching), 97% (one carpule could
+    push over).
+  - Drug timer gates: Versed 3-min minimum (orange 3-5 min, green ≥5 min),
+    Fentanyl 5-min minimum (green ≥5 min).
+  - Release eligibility: 20 minutes after last IV medication normally;
+    120 minutes after Flumazenil reversal. Separate 30-min pre-med wait
+    before IV start if oral pre-op was given.
+  - OSA-diazepam interlock: empty OSA field blocks Diazepam tap; OSA = "OSA
+    diagnosed" or "CPAP prescribed" requires explicit override modal.
+  - Phase 1 required-fields gating: 17 fields across 6 cards drive
+    Phase 2/3/4 unlock and the sticky-bar clearance percentage. Re-locks
+    if a field is cleared.
+  - Last-exam validation: age <50 → within 24 months; 50-59 → within
+    12 months; ≥60 → within 6 months.
+  - Nicotine protocol: <10 cigs/day → no smoking 12 hr before; 10-19 → 8 hr;
+    20-29 → 4 hr; ≥30 → smoke right before.
+
+  See docs/ROADMAP.md (forthcoming) for phase plan.
+-->
+    <title>Sedation Pro — Legacy Source Placeholder</title>
+  </head>
+  <body>
+    <main
+      style="
+        font-family: -apple-system, system-ui, sans-serif;
+        max-width: 720px;
+        margin: 4rem auto;
+        padding: 0 1.5rem;
+        color: #1f2937;
+        line-height: 1.5;
+      "
+    >
+      <h1>Legacy source placeholder</h1>
+      <p>
+        The real <code>index.html</code> from the legacy <code>sedation-app</code> repo belongs at
+        this path.
+      </p>
+      <p>See <a href="./README.md">README.md</a> for context.</p>
+    </main>
+  </body>
+</html>
