@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { RouterView } from 'vue-router';
+import { RouterView, useRoute } from 'vue-router';
 
 import AppFooter from '@/components/AppFooter.vue';
+import SedationDock from '@/components/SedationDock.vue';
 import StickyBar from '@/components/StickyBar.vue';
 import NavDrawer from '@/components/NavDrawer.vue';
 import UndoToast from '@/components/UndoToast.vue';
 import { useIVStore } from '@/stores/iv';
 import { useRecoveryStore } from '@/stores/recovery';
 import { useWakeLock } from '@/composables/useWakeLock';
+
+/** Sedation Dock is only mounted in Phase 3 — every other screen hides it. */
+const route = useRoute();
+const showSedationDock = computed(() => route.path === '/phase/3');
 
 /**
  * Screen wake-lock for sedation cases. The browser would otherwise dim and
@@ -46,12 +51,15 @@ watch(
   <StickyBar />
   <NavDrawer />
   <UndoToast />
-  <RouterView v-slot="{ Component }">
-    <transition name="page" mode="out-in">
-      <component :is="Component" />
-    </transition>
-  </RouterView>
-  <AppFooter />
+  <div class="app-shell" :class="{ 'has-dock': showSedationDock }">
+    <RouterView v-slot="{ Component }">
+      <transition name="page" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </RouterView>
+    <AppFooter />
+  </div>
+  <SedationDock v-if="showSedationDock" />
 </template>
 
 <style scoped>
@@ -84,5 +92,13 @@ watch(
   .page-leave-to {
     transform: none;
   }
+}
+
+/* Reserve room at the bottom for the fixed Sedation Dock so the footer and
+   the last Phase 3 card both scroll past it instead of being obscured.
+   ~250 px covers the compact dock at its largest comfortable height; the
+   expanded sheet floats over content so no extra padding needed for that. */
+.app-shell.has-dock {
+  padding-bottom: calc(250px + env(safe-area-inset-bottom));
 }
 </style>

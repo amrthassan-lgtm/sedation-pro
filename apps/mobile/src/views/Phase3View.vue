@@ -6,6 +6,7 @@ import { useIVStore } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
+import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
 import {
   UiBanner,
@@ -190,57 +191,13 @@ const premedChip = computed(() => {
 });
 
 // -------- Drug dose handlers ----------------------------------------------
+//
+// Logging helpers live in `useIvDosing` so the in-card buttons and the
+// bottom Sedation Dock both call the same code path. Anything the card
+// does *on top of* logging (opening the reversal process panel) stays
+// here as local UI state.
 
-function logIvVersed(mg: number, sub: string) {
-  iv.logDose({ drug: 'versed', mg });
-  undo.stamp({
-    event: 'IV Dose',
-    details: { Drug: 'Midazolam (Versed)', Dose: `${mg} mg`, Route: 'IV' },
-    toast: {
-      label: `✓ Versed ${mg} mg IV (${sub})`,
-      sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      tone: 'caution',
-    },
-    revert: () => {
-      const last = iv.doses[iv.doses.length - 1];
-      if (last && last.drug === 'versed' && last.mg === mg) iv.removeDoseById(last.id);
-    },
-  });
-}
-
-function logIvFentanyl(mcg: number, sub: string) {
-  iv.logDose({ drug: 'fentanyl', mcg });
-  undo.stamp({
-    event: 'IV Dose',
-    details: { Drug: 'Fentanyl', Dose: `${mcg} mcg`, Route: 'IV' },
-    toast: {
-      label: `✓ Fentanyl ${mcg} mcg IV (${sub})`,
-      sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      tone: 'caution',
-    },
-    revert: () => {
-      const last = iv.doses[iv.doses.length - 1];
-      if (last && last.drug === 'fentanyl' && last.mcg === mcg) iv.removeDoseById(last.id);
-    },
-  });
-}
-
-function logIvZofran(mg: number) {
-  iv.logDose({ drug: 'zofran', mg });
-  undo.stamp({
-    event: 'IV Dose',
-    details: { Drug: 'Ondansetron (Zofran)', Dose: `${mg} mg`, Route: 'IV' },
-    toast: {
-      label: `✓ Zofran ${mg} mg IV`,
-      sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      tone: 'safe',
-    },
-    revert: () => {
-      const last = iv.doses[iv.doses.length - 1];
-      if (last && last.drug === 'zofran' && last.mg === mg) iv.removeDoseById(last.id);
-    },
-  });
-}
+const { logIvVersed, logIvFentanyl, logIvZofran } = useIvDosing();
 
 // -------- Live drug timer pills (use the engine + now ticker) ---------------
 
