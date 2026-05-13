@@ -57,6 +57,7 @@ export const usePatientStore = defineStore('patient', () => {
   const mallampati = ref<MallampatiClass | ''>('');
   const asaClass = ref<AsaClass | ''>('');
   const npoConfirmed = ref(false);
+  const consentObtained = ref(false);
   const diabetic = ref(false);
   const baselineGlucose = ref<number | null>(null);
 
@@ -126,6 +127,7 @@ export const usePatientStore = defineStore('patient', () => {
         mallampati: mallampati.value || '',
         asa_class: asaClass.value || '',
         npo_confirmed: npoConfirmed.value,
+        consent_obtained: consentObtained.value,
         baseline_glucose: baselineGlucose.value ?? '',
       },
       diabetic: diabetic.value ? 'yes' : 'no',
@@ -137,7 +139,7 @@ export const usePatientStore = defineStore('patient', () => {
   // Persist the form so reloading the page (or relaunching from the iPhone
   // home screen) doesn't wipe progress. Schema migrations land in Phase 5
   // proper — for now we trust the snapshot.
-  persistRefs('sedation-pro:patient:v2', {
+  persistRefs('sedation-pro:patient:v3', {
     name,
     mrn,
     provider,
@@ -156,6 +158,7 @@ export const usePatientStore = defineStore('patient', () => {
     mallampati,
     asaClass,
     npoConfirmed,
+    consentObtained,
     diabetic,
     baselineGlucose,
   });
@@ -179,6 +182,7 @@ export const usePatientStore = defineStore('patient', () => {
     mallampati.value = '';
     asaClass.value = '';
     npoConfirmed.value = false;
+    consentObtained.value = false;
     diabetic.value = false;
     baselineGlucose.value = null;
   }
@@ -202,6 +206,7 @@ export const usePatientStore = defineStore('patient', () => {
     mallampati,
     asaClass,
     npoConfirmed,
+    consentObtained,
     diabetic,
     baselineGlucose,
     bmi,

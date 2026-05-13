@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
+import { haptic } from '@/composables/useHaptics';
 import { UiBanner, UiCard, UiDrugButton, UiRow, UiStatCard } from '@sedation-pro/ui';
 import { lorazepamMax, triazolamMax } from '@sedation-pro/clinical';
 
@@ -16,6 +17,7 @@ const triazolam = computed(() => (weightLb.value ? triazolamMax(weightLb.value) 
 const lorazepam = computed(() => (weightLb.value ? lorazepamMax(weightLb.value) : null));
 
 function logOral(drug: string, doseMg: number, unit: string = 'mg') {
+  haptic('medium');
   undo.stamp({
     event: 'Preoperative Oral Dose',
     details: {

@@ -44,6 +44,7 @@ export const PHASE1_REQUIRED_FIELDS: ReadonlyArray<Phase1FieldSpec> = [
   { id: 'mallampati', label: 'Mallampati score', step: 6 },
   { id: 'asa_class', label: 'ASA classification', step: 6 },
   { id: 'npo_confirmed', label: 'NPO confirmation', step: 6 },
+  { id: 'consent_obtained', label: 'Informed consent obtained', step: 6 },
 ];
 
 export const PHASE1_CONDITIONAL_GLUCOSE: Phase1FieldSpec = {

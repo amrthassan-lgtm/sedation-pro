@@ -198,6 +198,10 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
           ? `${recovery.companionName} (${recovery.companionRelation})`
           : '—',
       ],
+      [
+        'Prescriptions given',
+        recovery.prescriptions.trim() === '' ? 'None' : recovery.prescriptions.trim(),
+      ],
       ['IV catheter removed', fmtClock(recovery.ivOutAt)],
     ];
 
@@ -346,6 +350,10 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
         sentences.push(
           `Patient was discharged accompanied by ${recovery.companionName} (${recovery.companionRelation}). Verbal and written post-op instructions were given; companion co-signed the printed post-op-instructions form.`,
         );
+      }
+      const rx = recovery.prescriptions.trim();
+      if (rx !== '') {
+        sentences.push(`Prescriptions provided: ${rx}.`);
       }
       narrative.push(sentences.join(' '));
     }

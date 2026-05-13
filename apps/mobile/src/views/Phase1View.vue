@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
+import { haptic } from '@/composables/useHaptics';
 import {
   UiBanner,
   UiBpInput,
@@ -52,6 +53,7 @@ const {
   mallampati,
   asaClass,
   npoConfirmed,
+  consentObtained,
   diabetic,
   baselineGlucose,
   bmi,
@@ -184,6 +186,7 @@ function startDiazepam(doseMg: number) {
 }
 
 function logDiazepam(doseMg: number) {
+  haptic('medium');
   undo.stamp({
     event: 'Bedtime Premedication',
     details: {
@@ -427,6 +430,12 @@ function stampAssessment() {
           required
           label="NPO confirmed"
           hint="Solids ≥6h · clear liquids ≥2h"
+        />
+        <UiCheckbox
+          v-model="consentObtained"
+          required
+          label="Informed consent obtained"
+          hint="Risks / benefits / alternatives discussed and consent signed"
         />
       </UiStack>
     </UiCard>

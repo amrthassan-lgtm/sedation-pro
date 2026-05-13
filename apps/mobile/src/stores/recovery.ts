@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
+import { haptic } from '@/composables/useHaptics';
 import { persistRefs } from './persistence';
 
 /**
@@ -43,6 +44,15 @@ export const useRecoveryStore = defineStore('recovery', () => {
     pulseOxPrinted: false,
   });
 
+  // ------- Prescriptions given on discharge ---------------------------------
+
+  /**
+   * Free-text list of prescriptions handed to the patient (e.g.
+   * "Ibuprofen 600 mg #20 q6h prn pain; Amoxicillin 500 mg #21 tid x7d").
+   * Renders into the clinical note's Recovery & Discharge section.
+   */
+  const prescriptions = ref('');
+
   // ------- IV-out stamp -----------------------------------------------------
 
   const ivOutAt = ref<number | null>(null);
@@ -51,12 +61,18 @@ export const useRecoveryStore = defineStore('recovery', () => {
 
   function stampRecoveryVitals() {
     endStampedAt.value = Date.now();
+    haptic('medium');
   }
   function clearRecoveryStamp() {
     endStampedAt.value = null;
   }
   function stampIvOut() {
-    if (ivOutAt.value === null) ivOutAt.value = Date.now();
+    if (ivOutAt.value === null) {
+      ivOutAt.value = Date.now();
+      // IV-out closes the case — give it the "success" rhythm rather than the
+      // single buzz a normal stamp gets, so the user feels the transition.
+      haptic('success');
+    }
   }
   function clearIvOut() {
     ivOutAt.value = null;
@@ -88,6 +104,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
       propertyReturned: false,
       pulseOxPrinted: false,
     };
+    prescriptions.value = '';
     ivOutAt.value = null;
   }
 
@@ -95,7 +112,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     () => companionName.value.trim() !== '' && companionRelation.value.trim() !== '',
   );
 
-  persistRefs('sedation-pro:recovery:v3', {
+  persistRefs('sedation-pro:recovery:v4', {
     endHr,
     endBpSys,
     endBpDia,
@@ -111,6 +128,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     companionRelation,
     providerSignatureDataUrl,
     discharge,
+    prescriptions,
     ivOutAt,
   });
 
@@ -131,6 +149,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     companionRelation,
     providerSignatureDataUrl,
     discharge,
+    prescriptions,
     ivOutAt,
 
     // derived

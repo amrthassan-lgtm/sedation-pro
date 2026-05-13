@@ -6,6 +6,7 @@ import {
   type LocalDose as EngineLocalDose,
 } from '@sedation-pro/clinical';
 
+import { haptic } from '@/composables/useHaptics';
 import { persistRefs } from './persistence';
 
 /**
@@ -43,6 +44,7 @@ export const useLocalAnestheticStore = defineStore('local', () => {
       givenAt: Date.now(),
     };
     doses.value.push(entry);
+    haptic('medium');
     return entry;
   }
 

@@ -97,6 +97,7 @@ describe('shell stores — single sources of truth', () => {
     patient.mallampati = 'II';
     patient.asaClass = 'II';
     patient.npoConfirmed = true;
+    patient.consentObtained = true;
 
     expect(patient.isPhase1Complete).toBe(true);
     expect(patient.completeness.percent).toBe(100);
@@ -119,12 +120,13 @@ describe('shell stores — single sources of truth', () => {
     patient.mallampati = 'I';
     patient.asaClass = 'I';
     patient.npoConfirmed = true;
+    patient.consentObtained = true;
 
     expect(patient.isPhase1Complete).toBe(true);
-    expect(patient.completeness.total).toBe(15);
+    expect(patient.completeness.total).toBe(16);
 
     patient.diabetic = true;
-    expect(patient.completeness.total).toBe(16);
+    expect(patient.completeness.total).toBe(17);
     expect(patient.isPhase1Complete).toBe(false);
 
     patient.baselineGlucose = 110;

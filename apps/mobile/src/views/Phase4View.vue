@@ -9,6 +9,7 @@ import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 import { useNow } from '@/composables/useNow';
+import { haptic } from '@/composables/useHaptics';
 import {
   UiBanner,
   UiBpInput,
@@ -53,6 +54,7 @@ const {
   companionRelation,
   providerSignatureDataUrl,
   discharge,
+  prescriptions,
   ivOutAt,
   companionDocumented,
 } = storeToRefs(recovery);
@@ -169,7 +171,11 @@ const dismissal = computed(() =>
 const dischargeState = computed<ActionState>(() => 'idle');
 
 function releasePatient() {
-  if (dismissal.value.blocked || !releaseStatus.value.eligible) return;
+  if (dismissal.value.blocked || !releaseStatus.value.eligible) {
+    haptic('error');
+    return;
+  }
+  haptic('success');
   undo.stamp({
     event: 'Patient Released',
     details: {
@@ -347,6 +353,15 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             @update:model-value="(v) => recovery.setDischarge('pulseOxPrinted', v)"
           />
         </UiStack>
+
+        <p class="caption mt-1">Prescriptions given</p>
+        <UiField label="Rx handed to patient" hint="e.g. Ibuprofen 600 mg #20 q6h prn pain">
+          <UiTextInput
+            v-model="prescriptions"
+            placeholder="None — or list drug, strength, count, sig"
+            block
+          />
+        </UiField>
 
         <p class="caption mt-1">Provider signature</p>
         <UiField label="Sign to complete the record" required>

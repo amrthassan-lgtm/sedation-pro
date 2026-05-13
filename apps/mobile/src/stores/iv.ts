@@ -10,6 +10,7 @@ import {
 
 import type { BpValue } from '@sedation-pro/ui';
 
+import { haptic } from '@/composables/useHaptics';
 import { persistRefs } from './persistence';
 
 /**
@@ -152,6 +153,10 @@ export const useIVStore = defineStore('iv', () => {
   function logDose(record: Omit<IVDoseRecord, 'id' | 'at'>): IVDoseRecord {
     const entry: IVDoseRecord = { ...record, id: nextDoseId(), at: Date.now() };
     doses.value.push(entry);
+    // Reversal agents are the highest-tension actions in the workflow —
+    // give them the "heavy" haptic so the user knows the tap registered
+    // without having to look at the screen.
+    haptic(record.drug === 'flumazenil' || record.drug === 'naloxone' ? 'heavy' : 'medium');
     return entry;
   }
 
@@ -172,19 +177,27 @@ export const useIVStore = defineStore('iv', () => {
   }
   function startIV() {
     ivStarted.value = true;
-    if (ivStartedAt.value === null) ivStartedAt.value = Date.now();
+    if (ivStartedAt.value === null) {
+      ivStartedAt.value = Date.now();
+      haptic('medium');
+    }
   }
 
   function setPreOpVitals(v: VitalsStamp) {
     preOpVitals.value = v;
     preOpStampedAt.value = v.at;
+    haptic('medium');
   }
   function setSedationVitals(v: VitalsStamp) {
     sedationVitals.value = v;
     sedStampedAt.value = v.at;
+    haptic('medium');
   }
   function startProcedure() {
-    if (procedureStartedAt.value === null) procedureStartedAt.value = Date.now();
+    if (procedureStartedAt.value === null) {
+      procedureStartedAt.value = Date.now();
+      haptic('medium');
+    }
   }
 
   function clearPreOpStamp() {
