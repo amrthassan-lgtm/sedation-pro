@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, type CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
+import { snapDecision } from './navDrawerSwipe';
 
 interface NavPhaseEntry {
   id: Phase;
@@ -94,17 +95,162 @@ async function goQuickRef() {
   await router.push('/quick-reference');
   session.closeDrawer();
 }
+
+// -------- iOS-style swipe gestures ----------------------------------------
+//
+// Two motions:
+//   * Edge-swipe right from the left edge of the screen (drawer closed) →
+//     drawer follows the finger and snaps open on release if past 40% width
+//     or on a fast flick.
+//   * Drag left anywhere on the drawer itself (drawer open) → drawer follows
+//     finger and snaps closed on release using the same thresholds.
+//
+// Vertical drags are detected first (axis lock) and given back to the
+// browser so the drawer's own scroll still works.
+
+const DRAWER_WIDTH = 288;
+const AXIS_LOCK_PX = 6;
+
+const dragMode = ref<'open' | 'close'>('open');
+const dragAxis = ref<'undecided' | 'horizontal' | 'vertical'>('undecided');
+const dragging = ref(false);
+const dragOffsetPx = ref(0); // 0 = closed, DRAWER_WIDTH = open
+let dragStartX = 0;
+let dragStartY = 0;
+let lastSampleX = 0;
+let lastSampleT = 0;
+let dragVelocity = 0; // px / ms, positive = rightward
+
+const drawerStyle = computed<CSSProperties | undefined>(() => {
+  if (!dragging.value || dragAxis.value !== 'horizontal') return undefined;
+  return {
+    left: `${dragOffsetPx.value - DRAWER_WIDTH}px`,
+    transition: 'none',
+  };
+});
+
+const overlayStyle = computed<CSSProperties | undefined>(() => {
+  if (!dragging.value || dragAxis.value !== 'horizontal') return undefined;
+  return {
+    opacity: String(dragOffsetPx.value / DRAWER_WIDTH),
+    transition: 'none',
+  };
+});
+
+const overlayVisible = computed(() => drawerOpen.value || dragging.value);
+
+function beginDrag(mode: 'open' | 'close', x: number, y: number, t: number) {
+  dragMode.value = mode;
+  dragAxis.value = 'undecided';
+  dragging.value = true;
+  dragStartX = x;
+  dragStartY = y;
+  lastSampleX = x;
+  lastSampleT = t;
+  dragVelocity = 0;
+  dragOffsetPx.value = mode === 'open' ? 0 : DRAWER_WIDTH;
+}
+
+function onEdgeTouchStart(e: TouchEvent) {
+  if (drawerOpen.value) return;
+  const t = e.touches[0];
+  if (!t) return;
+  beginDrag('open', t.clientX, t.clientY, e.timeStamp);
+}
+
+function onDrawerTouchStart(e: TouchEvent) {
+  if (!drawerOpen.value) return;
+  const t = e.touches[0];
+  if (!t) return;
+  beginDrag('close', t.clientX, t.clientY, e.timeStamp);
+}
+
+function onTouchMove(e: TouchEvent) {
+  if (!dragging.value) return;
+  const t = e.touches[0];
+  if (!t) return;
+  const dx = t.clientX - dragStartX;
+  const dy = t.clientY - dragStartY;
+
+  if (dragAxis.value === 'undecided') {
+    if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dragAxis.value = 'horizontal';
+    } else {
+      // User is scrolling the drawer's content; bail out.
+      dragAxis.value = 'vertical';
+      dragging.value = false;
+      return;
+    }
+  }
+  if (dragAxis.value !== 'horizontal') return;
+
+  // Stop the WebView from also scrolling sideways while we own the gesture.
+  if (e.cancelable) e.preventDefault();
+
+  const now = e.timeStamp;
+  const dt = Math.max(1, now - lastSampleT);
+  dragVelocity = (t.clientX - lastSampleX) / dt;
+  lastSampleX = t.clientX;
+  lastSampleT = now;
+
+  const offset = dragMode.value === 'open' ? dx : DRAWER_WIDTH + dx;
+  dragOffsetPx.value = Math.max(0, Math.min(DRAWER_WIDTH, offset));
+}
+
+function onTouchEnd() {
+  if (!dragging.value) return;
+  const wasHorizontal = dragAxis.value === 'horizontal';
+  dragging.value = false;
+  if (!wasHorizontal) {
+    dragAxis.value = 'undecided';
+    return;
+  }
+  const decision = snapDecision({
+    mode: dragMode.value,
+    offsetPx: dragOffsetPx.value,
+    velocityPxPerMs: dragVelocity,
+    widthPx: DRAWER_WIDTH,
+  });
+  dragOffsetPx.value = 0;
+  dragAxis.value = 'undecided';
+  if (decision === 'open') session.openDrawer();
+  else session.closeDrawer();
+}
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="drawerOpen" class="nav-overlay" role="presentation" @click="session.closeDrawer()" />
+    <!-- Thin invisible strip on the left edge. Listens for an opening drag
+         only while the drawer is closed; sits below the sticky bar so the
+         hamburger button still owns the top region. -->
+    <div
+      v-if="!drawerOpen"
+      class="nav-edge-sensor"
+      aria-hidden="true"
+      @touchstart.passive="onEdgeTouchStart"
+      @touchmove="onTouchMove"
+      @touchend="onTouchEnd"
+      @touchcancel="onTouchEnd"
+    />
+    <div
+      v-if="overlayVisible"
+      class="nav-overlay"
+      role="presentation"
+      :style="overlayStyle"
+      @click="session.closeDrawer()"
+    />
     <aside
       class="nav-drawer"
       :class="{ 'is-open': drawerOpen }"
+      :style="drawerStyle"
       :aria-hidden="!drawerOpen"
       role="navigation"
       aria-label="Sedation workflow"
+      @touchstart.passive="onDrawerTouchStart"
+      @touchmove="onTouchMove"
+      @touchend="onTouchEnd"
+      @touchcancel="onTouchEnd"
     >
       <header class="nav-summary">
         <div class="nav-summary-top">
@@ -196,6 +342,20 @@ async function goQuickRef() {
 </template>
 
 <style scoped>
+/* Thin invisible strip that catches an iOS-style edge swipe to open the
+   drawer. z-index sits below the sticky bar (100) so the hamburger button
+   still receives taps when the user is targeting the top region. */
+.nav-edge-sensor {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 24px;
+  z-index: 50;
+  /* No background so it stays invisible to the user. */
+  touch-action: pan-y;
+}
+
 .nav-overlay {
   position: fixed;
   inset: 0;
