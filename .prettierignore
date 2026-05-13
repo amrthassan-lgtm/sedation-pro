@@ -4,3 +4,6 @@ coverage
 pnpm-lock.yaml
 apps/mobile/ios
 apps/mobile/android
+
+# Legacy reference — never reformat the verbatim source
+tools/legacy-source/index.html
