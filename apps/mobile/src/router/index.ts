@@ -14,7 +14,10 @@ const PHASE_ROUTES: Record<string, Phase> = {
 const GATED_PHASES: ReadonlySet<Phase> = new Set(['phase2', 'phase3', 'phase4']);
 
 export const router = createRouter({
-  history: createWebHistory(),
+  // `import.meta.env.BASE_URL` is set by Vite's `base` config — '/' in dev,
+  // '/sedation-pro/' on GitHub Pages. Letting the router know keeps deep
+  // links and redirects honest under both hosts.
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', redirect: '/phase/1' },
     {
