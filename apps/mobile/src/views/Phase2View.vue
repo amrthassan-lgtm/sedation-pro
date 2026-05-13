@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { haptic } from '@/composables/useHaptics';
+import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import { UiBanner, UiCard, UiDrugButton, UiRow, UiStatCard } from '@sedation-pro/ui';
 import { lorazepamMax, triazolamMax } from '@sedation-pro/clinical';
 
@@ -154,6 +155,11 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
         />
       </UiRow>
     </UiCard>
+
+    <PhaseFooterNav
+      :back="{ label: 'Phase 1 · Assessment', route: '/phase/1' }"
+      :forward="{ label: 'Phase 3 · IV Sedation', route: '/phase/3' }"
+    />
   </main>
 </template>
 

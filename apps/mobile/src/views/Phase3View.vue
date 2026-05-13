@@ -8,6 +8,7 @@ import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
+import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import {
   UiBanner,
   UiBpInput,
@@ -870,6 +871,11 @@ function onNaloxone() {
         </ol>
       </div>
     </UiCard>
+
+    <PhaseFooterNav
+      :back="{ label: 'Phase 2 · Oral Sedation', route: '/phase/2' }"
+      :forward="{ label: 'Phase 4 · Recovery', route: '/phase/4' }"
+    />
   </main>
 </template>
 

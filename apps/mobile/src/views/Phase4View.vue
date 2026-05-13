@@ -10,6 +10,7 @@ import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 import { useNow } from '@/composables/useNow';
 import { haptic } from '@/composables/useHaptics';
+import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import {
   UiBanner,
   UiBpInput,
@@ -543,6 +544,8 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         />
       </div>
     </UiCard>
+
+    <PhaseFooterNav :back="{ label: 'Phase 3 · IV Sedation', route: '/phase/3' }" />
   </main>
 </template>
 

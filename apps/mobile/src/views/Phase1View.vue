@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useRouter } from 'vue-router';
 
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
@@ -32,6 +33,7 @@ import {
   type Severity,
 } from '@sedation-pro/clinical';
 
+const router = useRouter();
 const patient = usePatientStore();
 const undo = useUndoStore();
 const eventLog = useEventLogStore();
@@ -108,6 +110,34 @@ watch(phase1ValidationAttempted, async (attempted) => {
   const el = document.getElementById(`field-${first.id}`);
   el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
+
+/**
+ * Click handler for each missing-field chip in the in-page banner. Scrolls
+ * straight to that field — handy when the user wants to fix the list out of
+ * order rather than top-to-bottom.
+ */
+function scrollToField(id: string): void {
+  const el = document.getElementById(`field-${id}`);
+  el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+const missingCount = computed(() => completeness.value.total - completeness.value.done);
+
+/**
+ * Bottom-of-page advance button. When Phase 1 is complete, it routes to
+ * Phase 2 directly so the user never has to open the nav drawer. When fields
+ * are still missing, it flips the validation flag — which paints the red
+ * rings, scrolls to the first missing entry, and lights up the banner chips.
+ */
+function advanceOrShowMissing(): void {
+  if (isPhase1Complete.value) {
+    haptic('light');
+    void router.push('/phase/2');
+    return;
+  }
+  patient.markValidationAttempted();
+  haptic('warning');
+}
 
 function fmtClock(ms: number | null): string {
   if (ms === null) return '—';
@@ -330,11 +360,30 @@ const diazepamModalCopy = computed(() => {
       All required fields filled. Phases 2 / 3 / 4 unlocked. Amendments to vitals, ASA, Mallampati,
       OSA, meds, allergies, and other clinical fields are recorded automatically to the chronology.
     </UiBanner>
-    <UiBanner v-else tone="info" title="Clearance progress" icon="ℹ">
+    <UiBanner
+      v-else
+      :tone="phase1ValidationAttempted ? 'caution' : 'info'"
+      :title="
+        phase1ValidationAttempted
+          ? `${missingCount} required field${missingCount === 1 ? '' : 's'} still missing — Phase 2 locked`
+          : 'Clearance progress'
+      "
+      :icon="phase1ValidationAttempted ? '⚠' : 'ℹ'"
+    >
       <strong>{{ completeness.done }}</strong> of {{ completeness.total }} required fields filled.
       <template v-if="completeness.missing.length">
-        Missing:
-        {{ completeness.missing.map((m) => m.label).join(' · ') }}.
+        <p class="missing-chips-label">Tap a field to jump to it:</p>
+        <div class="missing-chips">
+          <button
+            v-for="m in completeness.missing"
+            :key="m.id"
+            type="button"
+            class="missing-chip"
+            @click="scrollToField(m.id)"
+          >
+            {{ m.label }}
+          </button>
+        </div>
       </template>
     </UiBanner>
 
@@ -730,6 +779,29 @@ const diazepamModalCopy = computed(() => {
     >
       {{ diazepamModalCopy.body }}
     </UiModal>
+
+    <div class="phase-nav">
+      <button
+        type="button"
+        class="phase-advance"
+        :class="{
+          'phase-advance--ready': isPhase1Complete,
+          'phase-advance--locked': !isPhase1Complete,
+        }"
+        @click="advanceOrShowMissing"
+      >
+        <template v-if="isPhase1Complete">
+          <span class="phase-advance-icon" aria-hidden="true">→</span>
+          <span class="phase-advance-text">Continue to Phase 2 — Oral Sedation</span>
+        </template>
+        <template v-else>
+          <span class="phase-advance-icon" aria-hidden="true">🔒</span>
+          <span class="phase-advance-text">
+            {{ missingCount }} required field{{ missingCount === 1 ? '' : 's' }} missing — show me
+          </span>
+        </template>
+      </button>
+    </div>
   </main>
 </template>
 
@@ -770,5 +842,98 @@ const diazepamModalCopy = computed(() => {
   .drug-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Missing-field chips inside the Clearance progress banner. Each chip scrolls
+   straight to its field — so the user can fix the list out of order rather
+   than top-to-bottom. */
+.missing-chips-label {
+  margin: var(--sp-2) 0 var(--sp-1);
+  font-size: var(--type-caption);
+  letter-spacing: 0.3px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  font-weight: var(--weight-bold);
+}
+.missing-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.missing-chip {
+  font-size: var(--type-caption);
+  font-weight: var(--weight-semibold);
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-150) var(--ease-standard),
+    border-color var(--dur-150) var(--ease-standard),
+    color var(--dur-150) var(--ease-standard),
+    transform var(--dur-150) var(--ease-standard);
+}
+.missing-chip:hover,
+.missing-chip:focus-visible {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+.missing-chip:active {
+  transform: scale(0.97);
+}
+
+/* Bottom-of-page advance button. Two tones — ready (Phase 1 complete; routes
+   straight to Phase 2) and locked (count of remaining required fields; clicks
+   trigger the validation feedback). */
+.phase-nav {
+  margin-top: var(--sp-4);
+  display: flex;
+  justify-content: flex-end;
+}
+.phase-advance {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: var(--r-md);
+  font-size: var(--type-body);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-150) var(--ease-standard),
+    border-color var(--dur-150) var(--ease-standard),
+    transform var(--dur-150) var(--ease-standard);
+  min-height: 52px;
+}
+.phase-advance:active {
+  transform: scale(0.98);
+}
+.phase-advance--ready {
+  background: var(--color-good-soft);
+  border-color: rgba(74, 222, 128, 0.45);
+  color: var(--color-good);
+}
+.phase-advance--ready:hover {
+  background: rgba(74, 222, 128, 0.18);
+}
+.phase-advance--locked {
+  background: var(--color-warn-soft);
+  border-color: rgba(250, 204, 21, 0.45);
+  color: var(--color-warn);
+}
+.phase-advance--locked:hover {
+  background: rgba(250, 204, 21, 0.18);
+}
+.phase-advance-icon {
+  font-size: 18px;
+  line-height: 1;
 }
 </style>
