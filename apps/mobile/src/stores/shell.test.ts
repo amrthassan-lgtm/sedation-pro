@@ -108,6 +108,24 @@ describe('shell stores — single sources of truth', () => {
     expect(patient.completeness.percent).toBe(100);
   });
 
+  it('patient.safetyAlerts flags geriatric tiers at 65 and 75', () => {
+    const patient = usePatientStore();
+    expect(patient.safetyAlerts.find((a) => a.code === 'age')).toBeUndefined();
+
+    patient.age = 64;
+    expect(patient.safetyAlerts.find((a) => a.code === 'age')).toBeUndefined();
+
+    patient.age = 65;
+    const caution = patient.safetyAlerts.find((a) => a.code === 'age');
+    expect(caution).toBeDefined();
+    expect(caution!.tone).toBe('caution');
+    expect(caution!.label).toBe('Age 65');
+
+    patient.age = 75;
+    const danger = patient.safetyAlerts.find((a) => a.code === 'age');
+    expect(danger!.tone).toBe('danger');
+  });
+
   it('patient.completeness adds baseline_glucose when diabetic is yes', () => {
     const patient = usePatientStore();
     patient.name = 'Jane';

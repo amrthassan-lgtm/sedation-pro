@@ -197,6 +197,16 @@ const diazepamModalOpen = ref(false);
 const pendingDiazepamDose = ref<string | null>(null);
 const diazepamOptions = DEFAULT_FORMULARY.bedtime[0];
 
+/**
+ * Larger ASA-I patients often clear benzodiazepines fast enough that the
+ * default 5 mg bedtime dose underwhelms; the legacy app surfaced a yellow
+ * hint suggesting 10 mg. Only fires for healthy patients — anything ASA II+
+ * is too heterogeneous to nudge from weight alone.
+ */
+const heavyAsa1DiazepamHint = computed(
+  () => weightLb.value !== null && weightLb.value > 200 && asaClass.value === 'I',
+);
+
 function startDiazepam(doseMg: number) {
   const decision = diazepamGate(osaStatus.value === '' ? null : osaStatus.value);
   pendingDiazepamDose.value = `${doseMg} mg`;
@@ -571,6 +581,15 @@ function stampAssessment() {
         Diazepam at bedtime the night before. Locked until OSA status is selected; a documented OSA
         / CPAP patient requires explicit override.
       </p>
+      <UiBanner
+        v-if="heavyAsa1DiazepamHint"
+        tone="caution"
+        title="Heavier ASA I patient"
+        icon="⚖"
+        class="mt-2"
+      >
+        Over 200 lb and ASA I — consider <strong>10 mg</strong> at bedtime; 5 mg often underdoses.
+      </UiBanner>
       <div class="drug-grid mt-2">
         <UiDrugButton
           tone="bedtime"

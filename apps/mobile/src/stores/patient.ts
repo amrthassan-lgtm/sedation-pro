@@ -22,7 +22,7 @@ import { persistRefs } from './persistence';
  * store so the alert pills can't drift from the rest of the UI.
  */
 export interface SafetyAlert {
-  readonly code: 'asa' | 'osa' | 'mallampati' | 'bmi';
+  readonly code: 'asa' | 'osa' | 'mallampati' | 'bmi' | 'age';
   readonly label: string;
   readonly tone: 'caution' | 'danger';
 }
@@ -125,6 +125,13 @@ export const usePatientStore = defineStore('patient', () => {
         code: 'bmi',
         label: `BMI ${bmi.value.value.toFixed(1)}`,
         tone: bmi.value.value >= 40 ? 'danger' : 'caution',
+      });
+    }
+    if (age.value !== null && age.value >= 65) {
+      alerts.push({
+        code: 'age',
+        label: `Age ${age.value}`,
+        tone: age.value >= 75 ? 'danger' : 'caution',
       });
     }
     return alerts;
