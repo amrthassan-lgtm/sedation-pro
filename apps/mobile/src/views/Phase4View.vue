@@ -10,7 +10,9 @@ import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 import { useNow } from '@/composables/useNow';
 import { haptic } from '@/composables/useHaptics';
+import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
+import PhaseLayout from '@/components/PhaseLayout.vue';
 import {
   UiBanner,
   UiBpInput,
@@ -222,7 +224,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 </script>
 
 <template>
-  <main class="phase-view">
+  <PhaseLayout>
     <header class="phase-hero">
       <p class="caption">Phase 4 · Recovery & Discharge</p>
       <h1 class="title-display">Recovery & Release</h1>
@@ -516,48 +518,42 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       </UiButton>
     </UiCard>
 
-    <!-- Case summary teaser -->
-
-    <UiCard>
-      <p class="heading">Case summary</p>
-      <p class="body muted">
-        Quick read-out — full printable clinical note lands with the signature pad in the next push.
-      </p>
-      <div class="stat-grid mt-2">
-        <UiStatCard
-          label="Patient"
-          :value="patientName?.trim() || '—'"
-          severity="safe"
-          :detail="weightLb !== null && weightLb !== undefined ? `${weightLb} lb` : undefined"
-        />
-        <UiStatCard
-          label="Versed total"
-          :value="versedTotalMg > 0 ? versedTotalMg.toFixed(1) : '—'"
-          :unit="versedTotalMg > 0 ? 'mg' : undefined"
-          severity="safe"
-        />
-        <UiStatCard
-          label="Fentanyl total"
-          :value="fentanylTotalMcg > 0 ? fentanylTotalMcg.toFixed(0) : '—'"
-          :unit="fentanylTotalMcg > 0 ? 'mcg' : undefined"
-          severity="safe"
-        />
-      </div>
-    </UiCard>
-
     <PhaseFooterNav :back="{ label: 'Phase 3 · IV Sedation', route: '/phase/3' }" />
-  </main>
+
+    <template #rail>
+      <PatientSummaryCard />
+      <UiCard>
+        <p class="heading">Case summary</p>
+        <p class="body muted">
+          Quick read-out — full printable clinical note lands with the signature pad in the next
+          push.
+        </p>
+        <div class="stat-grid mt-2">
+          <UiStatCard
+            label="Patient"
+            :value="patientName?.trim() || '—'"
+            severity="safe"
+            :detail="weightLb !== null && weightLb !== undefined ? `${weightLb} lb` : undefined"
+          />
+          <UiStatCard
+            label="Versed total"
+            :value="versedTotalMg > 0 ? versedTotalMg.toFixed(1) : '—'"
+            :unit="versedTotalMg > 0 ? 'mg' : undefined"
+            severity="safe"
+          />
+          <UiStatCard
+            label="Fentanyl total"
+            :value="fentanylTotalMcg > 0 ? fentanylTotalMcg.toFixed(0) : '—'"
+            :unit="fentanylTotalMcg > 0 ? 'mcg' : undefined"
+            severity="safe"
+          />
+        </div>
+      </UiCard>
+    </template>
+  </PhaseLayout>
 </template>
 
 <style scoped>
-.phase-view {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  padding: var(--sp-5) var(--sp-4) var(--sp-7);
-  max-width: 760px;
-  margin-inline: auto;
-}
 .phase-hero {
   display: flex;
   flex-direction: column;

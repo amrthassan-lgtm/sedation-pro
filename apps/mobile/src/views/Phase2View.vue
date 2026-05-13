@@ -5,7 +5,10 @@ import { storeToRefs } from 'pinia';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { haptic } from '@/composables/useHaptics';
+import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
+import PhaseLayout from '@/components/PhaseLayout.vue';
+import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
 import { UiBanner, UiCard, UiDrugButton, UiRow, UiStatCard } from '@sedation-pro/ui';
 import { lorazepamMax, triazolamMax } from '@sedation-pro/clinical';
 
@@ -36,7 +39,7 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
 </script>
 
 <template>
-  <main class="phase-view">
+  <PhaseLayout>
     <header class="phase-hero">
       <p class="caption">Phase 2 · Oral Sedation</p>
       <h1 class="title-display">Pre-Op Anxiolytic</h1>
@@ -160,18 +163,15 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
       :back="{ label: 'Phase 1 · Assessment', route: '/phase/1' }"
       :forward="{ label: 'Phase 3 · IV Sedation', route: '/phase/3' }"
     />
-  </main>
+
+    <template #rail>
+      <PatientSummaryCard />
+      <VitalsStatGrid />
+    </template>
+  </PhaseLayout>
 </template>
 
 <style scoped>
-.phase-view {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  padding: var(--sp-5) var(--sp-4) var(--sp-7);
-  max-width: 760px;
-  margin-inline: auto;
-}
 .phase-hero {
   display: flex;
   flex-direction: column;
