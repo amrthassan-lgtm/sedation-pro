@@ -8,6 +8,7 @@ import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { haptic } from '@/composables/useHaptics';
+import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
 import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
 import {
@@ -77,6 +78,7 @@ const {
   teamReady,
   emergencyDrugsAvailable,
   monitoringEquipmentChecked,
+  safetyAlerts,
   completeness,
   isPhase1Complete,
   phase1ValidationAttempted,
@@ -413,9 +415,10 @@ const diazepamModalCopy = computed(() => {
         </UiField>
       </UiStack>
 
-      <!-- Live readouts — Apple Health-style stat cards. Wrapper keeps the
-           top-margin spacing the inline grid used to provide. -->
-      <VitalsStatGrid class="mt-2" />
+      <!-- Live readouts — Apple Health-style stat cards. On iPad landscape
+           these move to the right rail (see <template #rail> below) so the
+           inline copy is hidden via .narrow-only. -->
+      <VitalsStatGrid class="mt-2 narrow-only" />
 
       <UiBanner
         v-if="lastExam && !lastExam.valid"
@@ -707,6 +710,18 @@ const diazepamModalCopy = computed(() => {
         </template>
       </button>
     </div>
+
+    <template #rail>
+      <PatientSummaryCard />
+      <VitalsStatGrid />
+      <UiBanner
+        v-for="alert in safetyAlerts"
+        :key="alert.code"
+        :tone="alert.tone === 'danger' ? 'limit' : 'caution'"
+        :title="alert.label"
+        icon="⚠"
+      />
+    </template>
   </PhaseLayout>
 </template>
 
@@ -721,6 +736,14 @@ const diazepamModalCopy = computed(() => {
 }
 .mt-2 {
   margin-top: var(--sp-3);
+}
+/* Inline copy of VitalsStatGrid inside Vitals & Metrics. The right rail
+   takes ownership at iPad-landscape widths, so we hide the inline copy
+   there to avoid a duplicate. */
+@media (min-width: 1024px) {
+  .narrow-only {
+    display: none;
+  }
 }
 
 .drug-grid {

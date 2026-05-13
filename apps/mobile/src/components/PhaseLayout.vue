@@ -39,12 +39,17 @@
   margin-inline: auto;
   width: 100%;
 }
-.phase-layout-main,
-.phase-layout-rail {
+.phase-layout-main {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
   min-width: 0;
+}
+/* Rail is hidden by default — only the iPad-landscape breakpoint reveals
+   it. Phase views render rail content unconditionally; consumers don't
+   need to know about the breakpoint. */
+.phase-layout-rail {
+  display: none;
 }
 
 @media (min-width: 1024px) {
@@ -57,6 +62,10 @@
      visible while the form scrolls past them. Independent overflow so a
      long rail can scroll without dragging the form along. */
   .phase-layout-rail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    min-width: 0;
     position: sticky;
     top: calc(72px + env(safe-area-inset-top));
     align-self: start;
