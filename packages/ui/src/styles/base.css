@@ -15,8 +15,7 @@ body,
 html {
   background: var(--color-bg);
   color: var(--color-text-primary);
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
+  font-family: var(--font-system);
   font-size: var(--type-body);
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
@@ -91,4 +90,9 @@ a {
   text-transform: uppercase;
   color: var(--color-text-tertiary);
   margin: 0;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }

@@ -60,17 +60,54 @@
   --color-text-tertiary: rgba(255, 255, 255, 0.5);
   --color-text-disabled: rgba(255, 255, 255, 0.3);
 
+  /* Status colors (match clinical-engine Severity buckets). */
   --color-accent: #3b82f6;
   --color-accent-soft: rgba(59, 130, 246, 0.18);
   --color-good: #4ade80;
+  --color-good-soft: rgba(74, 222, 128, 0.12);
   --color-warn: #facc15;
+  --color-warn-soft: rgba(250, 204, 21, 0.12);
   --color-danger: #fb7185;
+  --color-danger-soft: rgba(251, 113, 133, 0.12);
+  --color-crisis: #ef4444;
+  --color-crisis-soft: rgba(239, 68, 68, 0.14);
+
+  /* Drug-tone palette — fixed identities used by buttons, pills, swatches. */
+  --color-orange: #f97316;
+  --color-orange-soft: rgba(249, 115, 22, 0.12);
+  --color-blue: #3b82f6;
+  --color-blue-soft: rgba(59, 130, 246, 0.12);
+  --color-slate: #94a3b8;
+  --color-slate-soft: rgba(148, 163, 184, 0.12);
+  --color-purple: #8b5cf6;
+  --color-purple-soft: rgba(139, 92, 246, 0.12);
+  --color-red: #ef4444;
+  --color-red-soft: rgba(239, 68, 68, 0.12);
+  --color-gold: #facc15;
+  --color-gold-soft: rgba(250, 204, 21, 0.12);
+  --color-tan: #d4a574;
+  --color-tan-soft: rgba(212, 165, 116, 0.14);
+
+  /* Phase tints — drive sticky bar, nav drawer, card border-lefts. */
+  --ph1-color: var(--color-accent); /* Phase 1 — pre-sedation assessment */
+  --ph1-soft: rgba(59, 130, 246, 0.1);
+  --ph2-color: var(--color-purple); /* Phase 2 — oral premed */
+  --ph2-soft: rgba(139, 92, 246, 0.1);
+  --ph3-color: var(--color-orange); /* Phase 3 — IV sedation */
+  --ph3-soft: rgba(249, 115, 22, 0.1);
+  --ph4-color: var(--color-good); /* Phase 4 — recovery */
+  --ph4-soft: rgba(74, 222, 128, 0.1);
 
   /* -------- Layout -------- */
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
   --safe-left: env(safe-area-inset-left);
   --safe-right: env(safe-area-inset-right);
+
+  /* -------- Typography stack -------- */
+  --font-system:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 @media (prefers-reduced-motion: reduce) {
