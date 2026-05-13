@@ -1,4 +1,4 @@
-import { watch, type Ref } from 'vue';
+import { ref, watch, type Ref } from 'vue';
 
 /**
  * Minimal localStorage persistence for ref-shaped Pinia state. Pulled into a
@@ -8,6 +8,13 @@ import { watch, type Ref } from 'vue';
  * for web fallback). The contract — `read` / `write` keyed by string — stays
  * the same so swapping the impl out won't touch caller code.
  */
+
+/**
+ * Last successful autosave timestamp across every `persistRefs` caller in the
+ * app. Imported by the sticky bar so the user gets a live "Saved · HH:MM"
+ * pill confirming progress isn't being lost.
+ */
+export const lastSavedAt: Ref<number | null> = ref(null);
 
 const STORAGE_AVAILABLE = typeof window !== 'undefined' && 'localStorage' in window;
 
@@ -26,6 +33,7 @@ function safeWrite(key: string, value: unknown) {
   if (!STORAGE_AVAILABLE) return;
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
+    lastSavedAt.value = Date.now();
   } catch {
     // Quota exceeded or storage disabled — ignore silently. Persistence is a
     // convenience, not a clinical-safety boundary.

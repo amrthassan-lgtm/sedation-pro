@@ -6,15 +6,32 @@ import { storeToRefs } from 'pinia';
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
+import { lastSavedAt } from '@/stores/persistence';
+import { useNow } from '@/composables/useNow';
 
 const router = useRouter();
 const session = useSessionStore();
 const patient = usePatientStore();
 const undo = useUndoStore();
+const now = useNow(15_000);
 
 const { currentPhase, currentStep } = storeToRefs(session);
 const { canUndo, count: undoCount } = storeToRefs(undo);
 const { completeness, isPhase1Complete, safetyAlerts } = storeToRefs(patient);
+
+/**
+ * "Saved · HH:MM" pill text. Hides itself until the first autosave fires so
+ * a brand-new session doesn't surface a stale timestamp from another tab.
+ * Becomes "Saving…" momentarily after each write (within 800 ms) — pure
+ * cosmetic but reassures the user that the form isn't lost.
+ */
+const savedLabel = computed<string | null>(() => {
+  const ts = lastSavedAt.value;
+  if (ts === null) return null;
+  const ageMs = now.value - ts;
+  if (ageMs < 800) return 'Saving…';
+  return `Saved · ${new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+});
 
 const phaseMeta: Record<Phase, { label: string; sub: string; tint: string }> = {
   quickref: { label: 'Quick Reference', sub: 'Emergency protocols + drug doses', tint: 'qr' },
@@ -85,6 +102,15 @@ function emergency() {
     </div>
 
     <div class="sticky-bar-actions">
+      <span
+        v-if="savedLabel"
+        class="sticky-bar-saved"
+        :class="{ 'is-saving': savedLabel === 'Saving…' }"
+      >
+        <span v-if="savedLabel === 'Saving…'" class="sticky-bar-saved-dot" aria-hidden="true" />
+        <span v-else class="sticky-bar-saved-check" aria-hidden="true">✓</span>
+        {{ savedLabel }}
+      </span>
       <button
         type="button"
         class="sticky-bar-undo"
@@ -290,5 +316,60 @@ function emergency() {
   background: var(--color-danger-soft);
   color: var(--color-danger);
   font-weight: var(--weight-bold);
+}
+
+/* Save indicator — a subtle "Saved · HH:MM" pill that briefly flips to
+   "Saving…" with a pulsing dot whenever localStorage commits. */
+.sticky-bar-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+.sticky-bar-saved-check {
+  color: var(--color-good);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+}
+.sticky-bar-saved.is-saving {
+  color: var(--color-warn);
+  border-color: rgba(250, 204, 21, 0.35);
+  background: var(--color-warn-soft);
+}
+.sticky-bar-saved-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-warn);
+  animation: sticky-bar-saved-pulse 800ms ease-out;
+}
+@keyframes sticky-bar-saved-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  60% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+}
+@media (max-width: 420px) {
+  .sticky-bar-saved {
+    /* Free up room for the Undo + Emergency buttons on narrow phones. */
+    display: none;
+  }
 }
 </style>

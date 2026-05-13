@@ -61,6 +61,27 @@ export const usePatientStore = defineStore('patient', () => {
   const diabetic = ref(false);
   const baselineGlucose = ref<number | null>(null);
 
+  // -------- Expanded medical / social history -------------------------------
+  // Free-text fields the legacy app captured as textareas. Optional inputs —
+  // not part of the unlock gate, but they flow into the clinical note's
+  // pre-sedation summary and narrative so the chart is real.
+  const medicationsList = ref('');
+  const allergiesList = ref('');
+  const hospitalisations = ref('');
+  const surgeries = ref('');
+  const familyHistory = ref('');
+  const anesthesiaHistory = ref('');
+  const alcoholPerWeek = ref<number | null>(null);
+  const recreationalDrugs = ref('');
+  const cigarettesPerDay = ref<number | null>(null);
+
+  // -------- Expanded safety checklist (required to unlock) ------------------
+  const ekgPlaced = ref(false);
+  const timeOutPerformed = ref(false);
+  const teamReady = ref(false);
+  const emergencyDrugsAvailable = ref(false);
+  const monitoringEquipmentChecked = ref(false);
+
   // -------- Live derived state ---------------------------------------------
 
   const bmi = computed<BmiResult | null>(() =>
@@ -128,6 +149,11 @@ export const usePatientStore = defineStore('patient', () => {
         asa_class: asaClass.value || '',
         npo_confirmed: npoConfirmed.value,
         consent_obtained: consentObtained.value,
+        ekg_placed: ekgPlaced.value,
+        time_out: timeOutPerformed.value,
+        team_ready: teamReady.value,
+        emergency_drugs_available: emergencyDrugsAvailable.value,
+        monitoring_equipment_checked: monitoringEquipmentChecked.value,
         baseline_glucose: baselineGlucose.value ?? '',
       },
       diabetic: diabetic.value ? 'yes' : 'no',
@@ -139,7 +165,7 @@ export const usePatientStore = defineStore('patient', () => {
   // Persist the form so reloading the page (or relaunching from the iPhone
   // home screen) doesn't wipe progress. Schema migrations land in Phase 5
   // proper — for now we trust the snapshot.
-  persistRefs('sedation-pro:patient:v3', {
+  persistRefs('sedation-pro:patient:v4', {
     name,
     mrn,
     provider,
@@ -161,6 +187,20 @@ export const usePatientStore = defineStore('patient', () => {
     consentObtained,
     diabetic,
     baselineGlucose,
+    medicationsList,
+    allergiesList,
+    hospitalisations,
+    surgeries,
+    familyHistory,
+    anesthesiaHistory,
+    alcoholPerWeek,
+    recreationalDrugs,
+    cigarettesPerDay,
+    ekgPlaced,
+    timeOutPerformed,
+    teamReady,
+    emergencyDrugsAvailable,
+    monitoringEquipmentChecked,
   });
 
   function reset() {
@@ -185,6 +225,20 @@ export const usePatientStore = defineStore('patient', () => {
     consentObtained.value = false;
     diabetic.value = false;
     baselineGlucose.value = null;
+    medicationsList.value = '';
+    allergiesList.value = '';
+    hospitalisations.value = '';
+    surgeries.value = '';
+    familyHistory.value = '';
+    anesthesiaHistory.value = '';
+    alcoholPerWeek.value = null;
+    recreationalDrugs.value = '';
+    cigarettesPerDay.value = null;
+    ekgPlaced.value = false;
+    timeOutPerformed.value = false;
+    teamReady.value = false;
+    emergencyDrugsAvailable.value = false;
+    monitoringEquipmentChecked.value = false;
   }
 
   return {
@@ -209,6 +263,20 @@ export const usePatientStore = defineStore('patient', () => {
     consentObtained,
     diabetic,
     baselineGlucose,
+    medicationsList,
+    allergiesList,
+    hospitalisations,
+    surgeries,
+    familyHistory,
+    anesthesiaHistory,
+    alcoholPerWeek,
+    recreationalDrugs,
+    cigarettesPerDay,
+    ekgPlaced,
+    timeOutPerformed,
+    teamReady,
+    emergencyDrugsAvailable,
+    monitoringEquipmentChecked,
     bmi,
     bp,
     spo2,

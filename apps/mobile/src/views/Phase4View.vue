@@ -24,6 +24,7 @@ import {
   UiSignaturePad,
   UiStack,
   UiStatCard,
+  UiTextarea,
   UiTextInput,
 } from '@sedation-pro/ui';
 import { dismissalSafety, releaseEligibility } from '@sedation-pro/clinical';
@@ -55,9 +56,27 @@ const {
   providerSignatureDataUrl,
   discharge,
   prescriptions,
+  sedationRating,
+  sedationComplications,
+  venipunctureComplications,
+  procedureNotes,
+  returnVisitPlan,
+  returnVisitDate,
   ivOutAt,
   companionDocumented,
 } = storeToRefs(recovery);
+
+const sedationRatingOptions = [
+  { value: 'excellent', label: 'Excellent — pt cooperative, no movement' },
+  { value: 'good', label: 'Good — minor adjustments needed' },
+  { value: 'fair', label: 'Fair — required extra titration' },
+  { value: 'poor', label: 'Poor — significant intervention required' },
+];
+
+const returnVisitOptions = [
+  { value: 'prn', label: 'PRN — return as needed' },
+  { value: 'scheduled', label: 'Scheduled — date below' },
+];
 
 // Provider signature lives here in-app. The companion's signature is captured
 // on a separate paper form per practice protocol — so we pass
@@ -370,6 +389,73 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         <p class="body muted footnote-note">
           Companion signs the printed post-op-instruction form by hand — not captured in-app.
         </p>
+      </UiStack>
+    </UiCard>
+
+    <!-- Card 13b — Provider Sign-off / Procedure Notes -->
+
+    <UiCard tint="ph4">
+      <p class="heading">13b · Provider Sign-off</p>
+      <p class="body muted">
+        Rate the sedation course, capture complications, and document any procedure-relevant
+        observations. All fields flow into the printed clinical note.
+      </p>
+
+      <UiStack :gap="3" class="mt-2">
+        <UiField label="Sedation quality rating" hint="provider impression">
+          <UiSelect
+            v-model="sedationRating"
+            :options="sedationRatingOptions"
+            placeholder="Rate the case…"
+            block
+          />
+        </UiField>
+
+        <UiField
+          label="Sedation complications"
+          hint="apnea episodes · paradoxical reaction · oversedation · etc."
+        >
+          <UiTextarea
+            v-model="sedationComplications"
+            placeholder="None — or describe and link to corrective action"
+            :rows="2"
+            block
+          />
+        </UiField>
+
+        <UiField
+          label="Venipuncture complications"
+          hint="missed stick · infiltration · hematoma · vasospasm"
+        >
+          <UiTextarea
+            v-model="venipunctureComplications"
+            placeholder="None — or describe site / corrective action"
+            :rows="2"
+            block
+          />
+        </UiField>
+
+        <UiField label="Procedure notes" hint="anything else worth charting">
+          <UiTextarea
+            v-model="procedureNotes"
+            placeholder="e.g. Local infiltration uneventful; pt tolerated extraction well."
+            :rows="3"
+            block
+          />
+        </UiField>
+
+        <UiRow :gap="3" wrap>
+          <UiField label="Return visit" hint="plan for follow-up">
+            <UiSelect
+              v-model="returnVisitPlan"
+              :options="returnVisitOptions"
+              placeholder="Select…"
+            />
+          </UiField>
+          <UiField v-if="returnVisitPlan === 'scheduled'" label="Scheduled date">
+            <UiTextInput v-model="returnVisitDate" type="date" />
+          </UiField>
+        </UiRow>
       </UiStack>
     </UiCard>
 

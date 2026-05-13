@@ -17,6 +17,7 @@ export { default as UiField } from './primitives/UiField.vue';
 export { default as UiNumberInput } from './primitives/UiNumberInput.vue';
 export { default as UiSelect } from './primitives/UiSelect.vue';
 export { default as UiSignaturePad } from './primitives/UiSignaturePad.vue';
+export { default as UiTextarea } from './primitives/UiTextarea.vue';
 export { default as UiTextInput } from './primitives/UiTextInput.vue';
 
 // Display
@@ -25,6 +26,7 @@ export { default as UiDrugSwatch } from './primitives/UiDrugSwatch.vue';
 export { default as UiPercentBar } from './primitives/UiPercentBar.vue';
 export { default as UiStatCard } from './primitives/UiStatCard.vue';
 export { default as UiStatusPill } from './primitives/UiStatusPill.vue';
+export { default as UiSyringe } from './primitives/UiSyringe.vue';
 export { default as UiTimerPill } from './primitives/UiTimerPill.vue';
 
 // Overlay

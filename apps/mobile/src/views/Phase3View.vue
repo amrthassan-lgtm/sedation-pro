@@ -20,6 +20,7 @@ import {
   UiSelect,
   UiStack,
   UiStatCard,
+  UiSyringe,
   UiTextInput,
   UiTimerPill,
 } from '@sedation-pro/ui';
@@ -832,6 +833,14 @@ function onNaloxone() {
 
       <div v-if="flumazenilProcessOpen" class="reversal-info mt-2">
         <p class="caption">Flumazenil · process</p>
+        <UiSyringe
+          label="Flumazenil"
+          :capacity-ml="3"
+          :drawn-ml="2"
+          color="#ef4444"
+          concentration="0.1 mg/mL"
+          caption="0.2 mg · 2.0 mL"
+        />
         <ol class="reversal-steps">
           <li>Draw 2 ml (0.2 mg) into a 3 cc syringe; label BLACK.</li>
           <li>Open IV all the way; administer slowly over 15-20 seconds.</li>
@@ -847,6 +856,14 @@ function onNaloxone() {
 
       <div v-if="naloxoneProcessOpen" class="reversal-info mt-2">
         <p class="caption">Naloxone · process</p>
+        <UiSyringe
+          label="Naloxone"
+          :capacity-ml="3"
+          :drawn-ml="1"
+          color="#ef4444"
+          concentration="0.4 mg/mL"
+          caption="0.4 mg · 1.0 mL"
+        />
         <ol class="reversal-steps">
           <li>Draw the single-dose vial (0.4 mg in 1 ml) into a 3 cc syringe; label BLACK.</li>
           <li>Administer slowly over 2-3 minutes via the existing IV line.</li>

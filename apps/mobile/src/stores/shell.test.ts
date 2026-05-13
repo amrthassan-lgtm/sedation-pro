@@ -98,6 +98,11 @@ describe('shell stores — single sources of truth', () => {
     patient.asaClass = 'II';
     patient.npoConfirmed = true;
     patient.consentObtained = true;
+    patient.ekgPlaced = true;
+    patient.timeOutPerformed = true;
+    patient.teamReady = true;
+    patient.emergencyDrugsAvailable = true;
+    patient.monitoringEquipmentChecked = true;
 
     expect(patient.isPhase1Complete).toBe(true);
     expect(patient.completeness.percent).toBe(100);
@@ -121,12 +126,17 @@ describe('shell stores — single sources of truth', () => {
     patient.asaClass = 'I';
     patient.npoConfirmed = true;
     patient.consentObtained = true;
+    patient.ekgPlaced = true;
+    patient.timeOutPerformed = true;
+    patient.teamReady = true;
+    patient.emergencyDrugsAvailable = true;
+    patient.monitoringEquipmentChecked = true;
 
     expect(patient.isPhase1Complete).toBe(true);
-    expect(patient.completeness.total).toBe(16);
+    expect(patient.completeness.total).toBe(21);
 
     patient.diabetic = true;
-    expect(patient.completeness.total).toBe(17);
+    expect(patient.completeness.total).toBe(22);
     expect(patient.isPhase1Complete).toBe(false);
 
     patient.baselineGlucose = 110;

@@ -131,6 +131,28 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       ['Drug-interaction check (Epocrates)', patient.medsVerified ? 'Verified' : '—'],
       ['NPO confirmed', patient.npoConfirmed ? 'Yes (≥6h solids / ≥2h liquids)' : '—'],
       ['Date of last physical exam', fmtDate(patient.lastExamDate)],
+      ['Current medications', patient.medicationsList.trim() || '—'],
+      ['Known allergies', patient.allergiesList.trim() || 'NKDA'],
+      ['Past hospitalisations', patient.hospitalisations.trim() || '—'],
+      ['Past surgeries', patient.surgeries.trim() || '—'],
+      ['Anesthesia history', patient.anesthesiaHistory.trim() || '—'],
+      ['Family history', patient.familyHistory.trim() || '—'],
+      [
+        'Cigarettes / day',
+        patient.smokingStatus === 'current' && patient.cigarettesPerDay !== null
+          ? `${patient.cigarettesPerDay}`
+          : '—',
+      ],
+      [
+        'Alcohol (drinks/week)',
+        patient.alcoholPerWeek !== null ? `${patient.alcoholPerWeek}` : '—',
+      ],
+      ['Recreational drugs', patient.recreationalDrugs.trim() || 'Denies'],
+      ['EKG placed', patient.ekgPlaced ? 'Yes' : '—'],
+      ['Pre-procedure time-out', patient.timeOutPerformed ? 'Performed' : '—'],
+      ['Team readiness', patient.teamReady ? 'Confirmed' : '—'],
+      ['Emergency drugs accessible', patient.emergencyDrugsAvailable ? 'Yes' : '—'],
+      ['Monitors functional', patient.monitoringEquipmentChecked ? 'Yes' : '—'],
     ];
 
     // -------- IV sedation totals -------------------------------------------
@@ -201,6 +223,31 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       [
         'Prescriptions given',
         recovery.prescriptions.trim() === '' ? 'None' : recovery.prescriptions.trim(),
+      ],
+      ['Sedation quality rating', recovery.sedationRating || '—'],
+      [
+        'Sedation complications',
+        recovery.sedationComplications.trim() === ''
+          ? 'None'
+          : recovery.sedationComplications.trim(),
+      ],
+      [
+        'Venipuncture complications',
+        recovery.venipunctureComplications.trim() === ''
+          ? 'None'
+          : recovery.venipunctureComplications.trim(),
+      ],
+      [
+        'Procedure notes',
+        recovery.procedureNotes.trim() === '' ? '—' : recovery.procedureNotes.trim(),
+      ],
+      [
+        'Return visit',
+        recovery.returnVisitPlan === 'prn'
+          ? 'PRN — return as needed'
+          : recovery.returnVisitPlan === 'scheduled'
+            ? `Scheduled — ${fmtDate(recovery.returnVisitDate)}`
+            : '—',
       ],
       ['IV catheter removed', fmtClock(recovery.ivOutAt)],
     ];

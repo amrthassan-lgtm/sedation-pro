@@ -45,6 +45,11 @@ export const PHASE1_REQUIRED_FIELDS: ReadonlyArray<Phase1FieldSpec> = [
   { id: 'asa_class', label: 'ASA classification', step: 6 },
   { id: 'npo_confirmed', label: 'NPO confirmation', step: 6 },
   { id: 'consent_obtained', label: 'Informed consent obtained', step: 6 },
+  { id: 'ekg_placed', label: 'EKG leads placed', step: 6 },
+  { id: 'time_out', label: 'Pre-procedure time-out', step: 6 },
+  { id: 'team_ready', label: 'Team readiness confirmed', step: 6 },
+  { id: 'emergency_drugs_available', label: 'Emergency drugs available', step: 6 },
+  { id: 'monitoring_equipment_checked', label: 'Monitors functional', step: 6 },
 ];
 
 export const PHASE1_CONDITIONAL_GLUCOSE: Phase1FieldSpec = {

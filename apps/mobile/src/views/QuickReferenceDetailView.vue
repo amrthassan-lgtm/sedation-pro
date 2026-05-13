@@ -10,7 +10,9 @@ import {
   type EmergencyProtocol,
   type ProtocolStep,
 } from '@sedation-pro/clinical';
-import { UiBanner, UiButton, UiCard } from '@sedation-pro/ui';
+import { UiBanner, UiButton, UiCard, UiSyringe } from '@sedation-pro/ui';
+
+import { parseVolumeMl, syringeConfig } from '@/composables/useSyringeConfig';
 
 interface Props {
   id: string;
@@ -72,6 +74,25 @@ function routeLine(drug: EmergencyDrugCallout): string {
   if (drug.concentration) parts.push(drug.concentration);
   return parts.join(' · ');
 }
+
+/**
+ * Returns the syringe rendering tuple for a drug callout when the drug is one
+ * of the five recognised IV-push drugs *and* the callout includes a volume.
+ * Otherwise returns `null` so the template can `v-if` past it.
+ */
+function syringeFor(drug: EmergencyDrugCallout) {
+  const cfg = syringeConfig(drug.name);
+  if (cfg === null) return null;
+  const drawnMl = parseVolumeMl(drug.volume);
+  if (drawnMl === null) return null;
+  return {
+    capacityMl: cfg.capacityMl,
+    drawnMl,
+    color: cfg.color,
+    concentration: drug.concentration ?? cfg.concentration,
+    caption: drug.volume ?? '',
+  };
+}
 </script>
 
 <template>
@@ -122,6 +143,16 @@ function routeLine(drug: EmergencyDrugCallout): string {
                 </div>
                 <p class="drug-route">{{ routeLine(step.drug) }}</p>
                 <p v-if="step.drug.notes" class="drug-notes">{{ step.drug.notes }}</p>
+                <UiSyringe
+                  v-if="syringeFor(step.drug)"
+                  compact
+                  :label="step.drug.name"
+                  :capacity-ml="syringeFor(step.drug)!.capacityMl"
+                  :drawn-ml="syringeFor(step.drug)!.drawnMl"
+                  :color="syringeFor(step.drug)!.color"
+                  :concentration="syringeFor(step.drug)!.concentration"
+                  :caption="`Draw ${syringeFor(step.drug)!.caption}`"
+                />
               </div>
             </div>
           </li>

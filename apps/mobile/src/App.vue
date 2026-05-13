@@ -3,6 +3,7 @@ import { watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { RouterView } from 'vue-router';
 
+import AppFooter from '@/components/AppFooter.vue';
 import StickyBar from '@/components/StickyBar.vue';
 import NavDrawer from '@/components/NavDrawer.vue';
 import UndoToast from '@/components/UndoToast.vue';
@@ -50,6 +51,7 @@ watch(
       <component :is="Component" />
     </transition>
   </RouterView>
+  <AppFooter />
 </template>
 
 <style scoped>

@@ -20,6 +20,7 @@ import {
   UiSelect,
   UiStack,
   UiStatCard,
+  UiTextarea,
   UiTextInput,
 } from '@sedation-pro/ui';
 import {
@@ -56,6 +57,20 @@ const {
   consentObtained,
   diabetic,
   baselineGlucose,
+  medicationsList,
+  allergiesList,
+  hospitalisations,
+  surgeries,
+  familyHistory,
+  anesthesiaHistory,
+  alcoholPerWeek,
+  recreationalDrugs,
+  cigarettesPerDay,
+  ekgPlaced,
+  timeOutPerformed,
+  teamReady,
+  emergencyDrugsAvailable,
+  monitoringEquipmentChecked,
   bmi,
   bp,
   spo2,
@@ -162,7 +177,10 @@ const lastExam = computed(() => {
 
 const nicotineRec = computed(() => {
   if (smokingStatus.value !== 'current') return null;
-  return nicotineProtocol(20); // legacy default; will hook to cigs/day input in later phase
+  // Fall back to 20 cigs/day (legacy default) when the user hasn't filled the
+  // field yet — keeps the banner from disappearing while the form is partial.
+  const cigs = cigarettesPerDay.value ?? 20;
+  return nicotineProtocol(cigs);
 });
 
 // -------- Diazepam interlock modal -----------------------------------------
@@ -398,6 +416,55 @@ function stampAssessment() {
         <UiField v-if="diabetic" label="Baseline glucose" hint="mg/dL" required>
           <UiNumberInput v-model="baselineGlucose" placeholder="mg/dL" />
         </UiField>
+
+        <UiField label="Current medications" hint="comma-separated; include dose + frequency">
+          <UiTextarea
+            v-model="medicationsList"
+            placeholder="e.g. Lisinopril 10 mg qd, Metformin 500 mg bid"
+            :rows="3"
+            block
+          />
+        </UiField>
+        <UiField label="Allergies" hint="drug + reaction">
+          <UiTextarea
+            v-model="allergiesList"
+            placeholder="e.g. Penicillin → hives; Codeine → nausea"
+            :rows="2"
+            block
+          />
+        </UiField>
+        <UiField label="Past hospitalisations" hint="year + reason">
+          <UiTextarea
+            v-model="hospitalisations"
+            placeholder="e.g. 2022 — pneumonia; 2018 — MVA"
+            :rows="2"
+            block
+          />
+        </UiField>
+        <UiField label="Past surgeries" hint="year + procedure">
+          <UiTextarea
+            v-model="surgeries"
+            placeholder="e.g. 2021 — appendectomy; 2015 — wisdom teeth"
+            :rows="2"
+            block
+          />
+        </UiField>
+        <UiField label="Anesthesia history" hint="prior reactions to anesthesia / sedation">
+          <UiTextarea
+            v-model="anesthesiaHistory"
+            placeholder="e.g. PONV with general; uneventful with IV sedation 2023"
+            :rows="2"
+            block
+          />
+        </UiField>
+        <UiField label="Family history" hint="relevant cardiac / anesthesia / bleeding">
+          <UiTextarea
+            v-model="familyHistory"
+            placeholder="e.g. Father — MI age 58; no known MH"
+            :rows="2"
+            block
+          />
+        </UiField>
       </UiStack>
     </UiCard>
 
@@ -407,10 +474,30 @@ function stampAssessment() {
         <UiField label="Smoking status" required>
           <UiSelect v-model="smokingStatus" :options="smokingOptions" placeholder="Select…" block />
         </UiField>
+        <UiField
+          v-if="smokingStatus === 'current'"
+          label="Cigarettes per day"
+          hint="drives nicotine protocol timing"
+        >
+          <UiNumberInput v-model="cigarettesPerDay" placeholder="cigs/day" :min="0" :max="100" />
+        </UiField>
         <UiBanner v-if="nicotineRec" tone="caution" title="Pre-op nicotine protocol" icon="🚬">
-          {{ nicotineRec.instruction }} ({{ nicotineRec.hoursBefore }} hr before appointment).
-          Adjust if reported cigs/day differs.
+          {{ nicotineRec.instruction }} ({{ nicotineRec.hoursBefore }} hr before appointment). Based
+          on <strong>{{ cigarettesPerDay ?? 20 }}</strong> cigs/day.
         </UiBanner>
+        <UiRow :gap="3" wrap>
+          <UiField label="Alcohol" hint="drinks per week">
+            <UiNumberInput v-model="alcoholPerWeek" placeholder="drinks/wk" :min="0" />
+          </UiField>
+        </UiRow>
+        <UiField label="Recreational drugs" hint="substance + frequency; leave blank if none">
+          <UiTextarea
+            v-model="recreationalDrugs"
+            placeholder="e.g. Cannabis — weekends; cocaine — denies"
+            :rows="2"
+            block
+          />
+        </UiField>
       </UiStack>
     </UiCard>
 
@@ -436,6 +523,36 @@ function stampAssessment() {
           required
           label="Informed consent obtained"
           hint="Risks / benefits / alternatives discussed and consent signed"
+        />
+        <UiCheckbox
+          v-model="ekgPlaced"
+          required
+          label="EKG leads placed"
+          hint="3-lead — verify rhythm and waveform"
+        />
+        <UiCheckbox
+          v-model="timeOutPerformed"
+          required
+          label="Pre-procedure time-out performed"
+          hint="Patient · procedure · site · allergies confirmed aloud with team"
+        />
+        <UiCheckbox
+          v-model="teamReady"
+          required
+          label="Team readiness confirmed"
+          hint="Assistant + provider + monitor watcher present"
+        />
+        <UiCheckbox
+          v-model="emergencyDrugsAvailable"
+          required
+          label="Emergency drugs accessible"
+          hint="Flumazenil · Naloxone · Epinephrine · Atropine all in reach"
+        />
+        <UiCheckbox
+          v-model="monitoringEquipmentChecked"
+          required
+          label="Monitors functional"
+          hint="SpO₂ · BP · EtCO₂ · pulse-ox tested and reading"
         />
       </UiStack>
     </UiCard>

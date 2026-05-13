@@ -53,6 +53,28 @@ export const useRecoveryStore = defineStore('recovery', () => {
    */
   const prescriptions = ref('');
 
+  // ------- Provider-rated sedation quality + complications ------------------
+  //
+  // The legacy app's discharge form lets the provider grade the case and
+  // capture complications in two distinct text fields (one for sedation
+  // course, one for venipuncture). These flow into the clinical note so
+  // billing / QA can audit case-by-case outcomes.
+
+  /** Provider rating of sedation quality — 'excellent' | 'good' | 'fair' | 'poor' | ''. */
+  const sedationRating = ref<string>('');
+  const sedationComplications = ref('');
+  const venipunctureComplications = ref('');
+  /** Free-text procedure note — anything the provider wants in the chart. */
+  const procedureNotes = ref('');
+
+  // ------- Return-visit plan ------------------------------------------------
+  //
+  // Legacy presents two mutually-exclusive options: PRN (return as needed) or
+  // a scheduled date. We persist both — the UI shows a select, the date only
+  // when 'scheduled' is picked.
+  const returnVisitPlan = ref<'' | 'prn' | 'scheduled'>('');
+  const returnVisitDate = ref<string>('');
+
   // ------- IV-out stamp -----------------------------------------------------
 
   const ivOutAt = ref<number | null>(null);
@@ -105,6 +127,12 @@ export const useRecoveryStore = defineStore('recovery', () => {
       pulseOxPrinted: false,
     };
     prescriptions.value = '';
+    sedationRating.value = '';
+    sedationComplications.value = '';
+    venipunctureComplications.value = '';
+    procedureNotes.value = '';
+    returnVisitPlan.value = '';
+    returnVisitDate.value = '';
     ivOutAt.value = null;
   }
 
@@ -112,7 +140,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     () => companionName.value.trim() !== '' && companionRelation.value.trim() !== '',
   );
 
-  persistRefs('sedation-pro:recovery:v4', {
+  persistRefs('sedation-pro:recovery:v5', {
     endHr,
     endBpSys,
     endBpDia,
@@ -129,6 +157,12 @@ export const useRecoveryStore = defineStore('recovery', () => {
     providerSignatureDataUrl,
     discharge,
     prescriptions,
+    sedationRating,
+    sedationComplications,
+    venipunctureComplications,
+    procedureNotes,
+    returnVisitPlan,
+    returnVisitDate,
     ivOutAt,
   });
 
@@ -150,6 +184,12 @@ export const useRecoveryStore = defineStore('recovery', () => {
     providerSignatureDataUrl,
     discharge,
     prescriptions,
+    sedationRating,
+    sedationComplications,
+    venipunctureComplications,
+    procedureNotes,
+    returnVisitPlan,
+    returnVisitDate,
     ivOutAt,
 
     // derived
