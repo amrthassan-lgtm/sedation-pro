@@ -1,0 +1,25 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+.vite/
+.turbo/
+.cache/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Native shells (added on developer machines)
+apps/mobile/ios/
+apps/mobile/android/
+
+# OS
+Thumbs.db

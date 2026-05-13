@@ -1,0 +1,23 @@
+{
+  "name": "sedation-pro",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r --parallel typecheck",
+    "test": "pnpm -r --parallel test",
+    "build": "pnpm --filter @sedation-pro/mobile build",
+    "dev": "pnpm --filter @sedation-pro/mobile dev",
+    "format": "prettier --write \"**/*.{ts,vue,json,md,yml,yaml,css,html}\"",
+    "format:check": "prettier --check \"**/*.{ts,vue,json,md,yml,yaml,css,html}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}

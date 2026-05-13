@@ -1,0 +1,85 @@
+:root {
+  /* -------- Typography scale (iOS-inspired) -------- */
+  --type-display: 1.75rem; /* 28 */
+  --type-title: 1.25rem; /* 20 */
+  --type-heading: 1.0625rem; /* 17 */
+  --type-body: 0.9375rem; /* 15 */
+  --type-footnote: 0.8125rem; /* 13 */
+  --type-caption: 0.6875rem; /* 11 */
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.4;
+  --leading-loose: 1.6;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.06em;
+
+  /* -------- Spacing (4px base) -------- */
+  --sp-1: 0.25rem; /* 4  */
+  --sp-2: 0.5rem; /* 8  */
+  --sp-3: 0.75rem; /* 12 */
+  --sp-4: 1rem; /* 16 */
+  --sp-5: 1.5rem; /* 24 */
+  --sp-6: 2rem; /* 32 */
+  --sp-7: 3rem; /* 48 */
+  --sp-8: 4rem; /* 64 */
+
+  /* -------- Radius -------- */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+
+  /* -------- Motion -------- */
+  --ease-spring: cubic-bezier(0.32, 1.02, 0.56, 1);
+  --ease-decel: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-accel: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --dur-150: 150ms;
+  --dur-250: 250ms;
+  --dur-400: 400ms;
+
+  /* -------- Color palette (dark) -------- */
+  --color-bg: #0b1220;
+  --color-surface: rgba(255, 255, 255, 0.04);
+  --color-surface-elevated: rgba(255, 255, 255, 0.08);
+  --color-surface-overlay: rgba(255, 255, 255, 0.12);
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-strong: rgba(255, 255, 255, 0.24);
+
+  --color-text-primary: rgba(255, 255, 255, 0.95);
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+  --color-text-tertiary: rgba(255, 255, 255, 0.5);
+  --color-text-disabled: rgba(255, 255, 255, 0.3);
+
+  --color-accent: #3b82f6;
+  --color-accent-soft: rgba(59, 130, 246, 0.18);
+  --color-good: #4ade80;
+  --color-warn: #facc15;
+  --color-danger: #fb7185;
+
+  /* -------- Layout -------- */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
+  --safe-right: env(safe-area-inset-right);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
