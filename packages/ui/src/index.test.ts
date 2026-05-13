@@ -244,6 +244,27 @@ describe('@sedation-pro/ui', () => {
     wrapper.unmount();
   });
 
+  it('UiSyringe renders a narrower barrel for 1cc tuberculin syringes', () => {
+    // Versed ships in a 1cc tuberculin (capacity 1 mL); every other IV drug
+    // uses a 3cc syringe. The barrel must visually reflect this — otherwise
+    // every drug on the IV Drug Reference card looks like the same syringe.
+    const versed = mount(UiSyringe, {
+      props: { label: 'Versed', capacityMl: 1, drawnMl: 0.2, color: '#f97316' },
+    });
+    const fentanyl = mount(UiSyringe, {
+      props: { label: 'Fentanyl', capacityMl: 3, drawnMl: 0.5, color: '#3b82f6' },
+    });
+    const barrelHeight = (w: ReturnType<typeof mount>) => {
+      const svg = w.find('svg').element as SVGElement;
+      const rects = Array.from(svg.querySelectorAll('rect'));
+      const barrel = rects.find((r) => r.getAttribute('fill') === 'rgba(13, 21, 39, 0.6)');
+      return Number(barrel!.getAttribute('height'));
+    };
+    expect(barrelHeight(versed)).toBeLessThan(barrelHeight(fentanyl));
+    versed.unmount();
+    fentanyl.unmount();
+  });
+
   it('UiSyringe plunger rod bridges the seal to the thumb ring', () => {
     // Regression guard: a small draw (0.5 mL of 3 mL) used to leave a visible
     // empty span between the plunger seal (near the fluid) and the static
