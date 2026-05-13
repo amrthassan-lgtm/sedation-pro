@@ -14,8 +14,8 @@ its scope is small enough to land in one focused session.
 | 0 · Foundation scaffold              | ✅ Done    | repo · `apps/mobile` · `packages/*`     |
 | 1 · Clinical engine                  | ✅ Done    | `@sedation-pro/clinical` v0.1.0         |
 | 2 · UI primitives                    | ✅ Done    | `@sedation-pro/ui` v0.1.0               |
-| 3 · App shell + navigation           | ⏳ Next    | `apps/mobile`                           |
-| 4 · Assessment + premed screens      | ⏳ Pending | `apps/mobile`                           |
+| 3 · App shell + navigation           | ✅ Done    | `apps/mobile`                           |
+| 4 · Assessment + premed screens      | ⏳ Next    | `apps/mobile`                           |
 | 5 · Persistence + custom formularies | ⏳ Pending | `@sedation-pro/persistence`             |
 | 6 · IV sedation + recovery + note    | ⏳ Pending | `apps/mobile`                           |
 | 7 · Native integration               | ⏳ Pending | Capacitor (iOS + Android)               |
@@ -100,29 +100,38 @@ projections of a shared store.
 focus management) and ship as part of the shell. The 5 syringe SVGs
 ship in Phase 6 alongside the drug-tile sub-content they belong to.
 
-## Phase 3 — App shell + navigation ⏳
+## Phase 3 — App shell + navigation ✅
 
-**Deliverable.** The four-phase workflow scaffolding: phase headers,
-sticky progress bar, navigation drawer, undo toast queue, modal stack.
-No clinical screens yet — just the shell that hosts them.
+**Deliverable.** The four-phase workflow scaffolding mounted in
+`apps/mobile`: sticky progress bar, slide-in nav drawer, undo toast,
+router with phase gating. No clinical content yet — just the shell that
+hosts it. Every surface reads from the same Pinia stores so the nav and
+sticky bar can never drift.
 
-**Scope.**
+**Shipped.**
 
-- Vue Router routes per phase + a "Quick Reference" route.
-- Pinia stores for: current phase/step, event log (chronological),
-  undo stack, modal/toast queues.
-- Sticky progress bar with phase-tinted theme (blue / purple / orange /
-  green) driven by the active phase store.
-- Nav drawer with phase ring progress + per-step completion ticks.
-- Phase-gating: Phase 2/3/4 disabled until `@sedation-pro/clinical`'s
-  `phase1Completeness` returns `complete: true`.
-- Undo toast: slides in after each logged event, 8-second auto-dismiss,
-  one-tap reverse.
-- Global emergency button → jumps to Quick Reference → Emergency
-  Protocols. No matter which phase is active.
+- Pinia stores: `useSessionStore` (current phase/step + per-phase
+  step memory + drawer state), `useEventLogStore` (chronological log,
+  remove-by-id), `useUndoStore` (`stamp()` + `undo()` with 25-entry
+  cap), `useToastStore` (single-active toast with auto-dismiss),
+  `usePatientStore` (Phase 1 inputs feeding `phase1Completeness`).
+- Shell components: `StickyBar` (drawer toggle, live clearance bar in
+  Phase 1, undo button, emergency button), `NavDrawer` (avatar,
+  patient summary pills, phase entries with lock state), `UndoToast`
+  (slide-in with tone-tinted accent).
+- Routes: `/phase/1..4`, `/quick-reference`, `/ui-demo`, plus root and
+  catch-all redirects.
+- Phase gating: a `router.beforeEach` guard rewrites attempts to enter
+  Phase 2/3/4 back to `/phase/1` while `isPhase1Complete` is false; the
+  nav drawer disables those rows from the same source.
+- `apps/mobile`'s `App.vue` now mounts the shell once; the active route
+  fills the body.
+- Tests: `src/stores/shell.test.ts` covers session step memory, undo
+  round-trip, undo stack cap, and `phase1Completeness` integration
+  including the diabetic-conditional glucose field. 6 tests, all green.
 
-**Exit gate.** Empty phase screens reachable via header taps and via nav
-drawer, gating respected, undo round-trips for a synthetic event.
+**Exit gate.** Met. All four `pnpm` scripts green; bundle 46.45 KB
+gzipped main + per-route code-split chunks.
 
 ## Phase 4 — Assessment + premed screens ⏳
 

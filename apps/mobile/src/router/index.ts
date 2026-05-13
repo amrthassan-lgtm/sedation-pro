@@ -1,12 +1,82 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router';
+
+import { useSessionStore, type Phase } from '@/stores/session';
+import { usePatientStore } from '@/stores/patient';
+
+const PHASE_ROUTES: Record<string, Phase> = {
+  '/phase/1': 'phase1',
+  '/phase/2': 'phase2',
+  '/phase/3': 'phase3',
+  '/phase/4': 'phase4',
+  '/quick-reference': 'quickref',
+};
+
+const GATED_PHASES: ReadonlySet<Phase> = new Set(['phase2', 'phase3', 'phase4']);
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
+    { path: '/', redirect: '/phase/1' },
     {
-      path: '/',
-      name: 'home',
-      component: () => import('@/views/HomeView.vue'),
+      path: '/phase/1',
+      name: 'phase1',
+      component: () => import('@/views/Phase1View.vue'),
     },
+    {
+      path: '/phase/2',
+      name: 'phase2',
+      component: () => import('@/views/Phase2View.vue'),
+    },
+    {
+      path: '/phase/3',
+      name: 'phase3',
+      component: () => import('@/views/Phase3View.vue'),
+    },
+    {
+      path: '/phase/4',
+      name: 'phase4',
+      component: () => import('@/views/Phase4View.vue'),
+    },
+    {
+      path: '/quick-reference',
+      name: 'quickref',
+      component: () => import('@/views/QuickReferenceView.vue'),
+    },
+    {
+      path: '/ui-demo',
+      name: 'ui-demo',
+      component: () => import('@/views/UiDemoView.vue'),
+    },
+    { path: '/:pathMatch(.*)*', redirect: '/phase/1' },
   ],
+});
+
+/**
+ * Phase 2/3/4 are locked until Phase 1 completes. The router guard rewrites
+ * blocked navigations back to `/phase/1` so a deep-link or a stale nav-drawer
+ * tap can never bypass the gate. The nav drawer disables those rows in
+ * parallel — both surfaces read the same `usePatientStore.isPhase1Complete`,
+ * so they can't disagree.
+ */
+router.beforeEach((to: RouteLocationNormalized) => {
+  const patient = usePatientStore();
+  const targetPhase = PHASE_ROUTES[to.path];
+  if (targetPhase && GATED_PHASES.has(targetPhase) && !patient.isPhase1Complete) {
+    return { path: '/phase/1' };
+  }
+  return true;
+});
+
+/**
+ * Whenever the router lands on a known phase, mirror it into the session
+ * store so the sticky bar and nav drawer pick it up. We don't push from the
+ * store side here — components that need to navigate call `router.push()`
+ * and the watcher below catches it.
+ */
+router.afterEach((to: RouteLocationNormalized) => {
+  const session = useSessionStore();
+  const phase = PHASE_ROUTES[to.path];
+  if (phase) {
+    session.setPhase(phase);
+  }
 });

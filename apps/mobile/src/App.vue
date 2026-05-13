@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router';
+
+import StickyBar from '@/components/StickyBar.vue';
+import NavDrawer from '@/components/NavDrawer.vue';
+import UndoToast from '@/components/UndoToast.vue';
 </script>
 
 <template>
+  <StickyBar />
+  <NavDrawer />
+  <UndoToast />
   <RouterView v-slot="{ Component }">
     <transition name="page" mode="out-in">
       <component :is="Component" />
