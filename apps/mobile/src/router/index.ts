@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vu
 
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
+import { useToastStore } from '@/stores/toast';
 
 const PHASE_ROUTES: Record<string, Phase> = {
   '/phase/1': 'phase1',
@@ -65,6 +66,27 @@ router.beforeEach((to: RouteLocationNormalized) => {
   const patient = usePatientStore();
   const targetPhase = PHASE_ROUTES[to.path];
   if (targetPhase && GATED_PHASES.has(targetPhase) && !patient.isPhase1Complete) {
+    // Surface a toast so the redirect isn't silent. The user sees a clear
+    // "Phase 1 not complete yet" explanation rather than wondering why the
+    // tap appeared to do nothing.
+    const toast = useToastStore();
+    const missing = patient.completeness.missing;
+    const missingLabels =
+      missing.length === 0
+        ? ''
+        : missing
+            .slice(0, 3)
+            .map((m) => m.label)
+            .join(', ') + (missing.length > 3 ? `, +${missing.length - 3} more` : '');
+    toast.show(
+      {
+        id: `gate-${Date.now()}`,
+        label: 'Complete Phase 1 first',
+        sub: missingLabels || 'Fill required fields to unlock',
+        tone: 'caution',
+      },
+      6000,
+    );
     return { path: '/phase/1' };
   }
   return true;

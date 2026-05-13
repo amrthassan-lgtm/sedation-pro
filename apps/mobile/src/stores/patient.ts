@@ -15,6 +15,8 @@ import {
   type Spo2Result,
 } from '@sedation-pro/clinical';
 
+import { persistRefs } from './persistence';
+
 /**
  * A live safety alert surfaced in the sticky bar. Computed from the patient
  * store so the alert pills can't drift from the rest of the UI.
@@ -129,6 +131,31 @@ export const usePatientStore = defineStore('patient', () => {
   });
 
   const isPhase1Complete = computed(() => completeness.value.complete);
+
+  // Persist the form so reloading the page (or relaunching from the iPhone
+  // home screen) doesn't wipe progress. Schema migrations land in Phase 5
+  // proper — for now we trust the snapshot.
+  persistRefs('sedation-pro:patient:v1', {
+    name,
+    mrn,
+    provider,
+    careName,
+    carePhone,
+    weightLb,
+    heightIn,
+    age,
+    lastExamDate,
+    baselineBp,
+    baselineSpo2,
+    medsVerified,
+    osaStatus,
+    smokingStatus,
+    mallampati,
+    asaClass,
+    npoConfirmed,
+    diabetic,
+    baselineGlucose,
+  });
 
   function reset() {
     name.value = '';
