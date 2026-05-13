@@ -8,7 +8,7 @@ import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { haptic } from '@/composables/useHaptics';
-import { useVitalCards } from '@/composables/useVitalCards';
+import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
 import {
   UiBanner,
   UiBpInput,
@@ -22,7 +22,6 @@ import {
   UiRow,
   UiSelect,
   UiStack,
-  UiStatCard,
   UiTextarea,
   UiTextInput,
 } from '@sedation-pro/ui';
@@ -77,9 +76,6 @@ const {
   teamReady,
   emergencyDrugsAvailable,
   monitoringEquipmentChecked,
-  bmi,
-  bp,
-  spo2,
   completeness,
   isPhase1Complete,
   phase1ValidationAttempted,
@@ -168,8 +164,6 @@ const smokingOptions = [
 ];
 
 // -------- Live derived UI bits ---------------------------------------------
-
-const { bmiCard, bpCard, spo2Card } = useVitalCards();
 
 const lastExam = computed(() => {
   if (!lastExamDate.value || age.value === null) return null;
@@ -418,31 +412,9 @@ const diazepamModalCopy = computed(() => {
         </UiField>
       </UiStack>
 
-      <!-- Live readouts — Apple Health-style stat cards. -->
-      <div class="stat-grid">
-        <UiStatCard
-          label="BMI"
-          :value="bmiCard.value"
-          :unit="bmi ? 'kg/m²' : undefined"
-          :category="bmiCard.category"
-          :severity="bmiCard.severity"
-          :detail="bmiCard.detail"
-        />
-        <UiStatCard
-          label="Baseline BP"
-          :value="bpCard.value"
-          :unit="bp ? 'mmHg' : undefined"
-          :category="bpCard.category"
-          :severity="bpCard.severity"
-        />
-        <UiStatCard
-          label="SpO₂"
-          :value="spo2Card.value"
-          :unit="spo2 ? '%' : undefined"
-          :category="spo2Card.category"
-          :severity="spo2Card.severity"
-        />
-      </div>
+      <!-- Live readouts — Apple Health-style stat cards. Wrapper keeps the
+           top-margin spacing the inline grid used to provide. -->
+      <VitalsStatGrid class="mt-2" />
 
       <UiBanner
         v-if="lastExam && !lastExam.valid"
@@ -755,13 +727,6 @@ const diazepamModalCopy = computed(() => {
   color: var(--color-text-secondary);
 }
 .mt-2 {
-  margin-top: var(--sp-3);
-}
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: var(--sp-2);
   margin-top: var(--sp-3);
 }
 
