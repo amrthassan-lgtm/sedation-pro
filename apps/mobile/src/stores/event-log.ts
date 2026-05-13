@@ -1,6 +1,8 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
+import { persistRefs } from './persistence';
+
 /**
  * One row in the chronological medicolegal record. Every clinical action —
  * dose, vitals stamp, phase transition — appends one of these. The clinical
@@ -53,6 +55,9 @@ export const useEventLogStore = defineStore('eventLog', () => {
   function clear() {
     events.value = [];
   }
+
+  // The chrono log IS the medicolegal record — must survive page reloads.
+  persistRefs('sedation-pro:event-log:v1', { events });
 
   return { events, count, last, append, removeById, clear };
 });

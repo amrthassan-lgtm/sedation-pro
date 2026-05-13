@@ -1,6 +1,8 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
+import { persistRefs } from './persistence';
+
 /**
  * Phase identity used throughout the shell. `quickref` is a sibling — not a
  * sedation phase — but it lives in the same enum so the sticky bar and nav
@@ -62,6 +64,15 @@ export const useSessionStore = defineStore('session', () => {
   function toggleDrawer() {
     drawerOpen.value = !drawerOpen.value;
   }
+
+  // Persist phase + step memory so a reload mid-procedure lands the user
+  // back where they were. Drawer state is deliberately *not* persisted —
+  // it should always start closed on a fresh load.
+  persistRefs('sedation-pro:session:v1', {
+    currentPhase,
+    currentStep,
+    lastStepPerPhase,
+  });
 
   return {
     currentPhase,
