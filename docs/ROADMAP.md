@@ -13,8 +13,8 @@ its scope is small enough to land in one focused session.
 | ------------------------------------ | ---------- | --------------------------------------- |
 | 0 · Foundation scaffold              | ✅ Done    | repo · `apps/mobile` · `packages/*`     |
 | 1 · Clinical engine                  | ✅ Done    | `@sedation-pro/clinical` v0.1.0         |
-| 2 · UI primitives                    | ⏳ Next    | `@sedation-pro/ui`                      |
-| 3 · App shell + navigation           | ⏳ Pending | `apps/mobile`                           |
+| 2 · UI primitives                    | ✅ Done    | `@sedation-pro/ui` v0.1.0               |
+| 3 · App shell + navigation           | ⏳ Next    | `apps/mobile`                           |
 | 4 · Assessment + premed screens      | ⏳ Pending | `apps/mobile`                           |
 | 5 · Persistence + custom formularies | ⏳ Pending | `@sedation-pro/persistence`             |
 | 6 · IV sedation + recovery + note    | ⏳ Pending | `apps/mobile`                           |
@@ -65,28 +65,40 @@ their own drugs and ceilings without touching code.
 **Exit gate.** Coverage ≥ 80 %, all engine functions accept a `Formulary`
 override, no I/O or non-deterministic calls inside the engine.
 
-## Phase 2 — UI primitives (`@sedation-pro/ui`) ⏳
+## Phase 2 — UI primitives (`@sedation-pro/ui`) ✅
 
-**Deliverable.** Headless and styled Vue components consumed by
-`apps/mobile`. Every component reads its design tokens from
-`tokens.css` so theming and dark mode are centralised.
+**Deliverable.** Headless Vue 3 primitives consumed by `apps/mobile`.
+Components take props in, emit events out, and hold no clinical state —
+the contract that keeps the Phase 3 nav drawer and sticky bar honest as
+projections of a shared store.
 
-**Scope.**
+**Shipped.**
 
-- Layout: `<Card>`, `<Stack>`, `<Row>`, `<Sheet>`, `<Section>`.
-- Form: `<TextInput>`, `<NumberInput>`, `<Select>`, `<Checkbox>`,
-  `<RadioGroup>`, `<DateInput>`, `<BpInput>` (paired sys/dia).
-- Action: `<Button>`, `<DrugButton>` (with cooldown + check overlay),
-  `<IconButton>`.
-- Feedback: `<Toast>`, `<UndoToast>`, `<Modal>`, `<BottomSheet>`,
-  `<Banner>`.
-- Display: `<DrugSwatch>`, `<TimerPill>`, `<PercentBar>`, `<StatusPill>`,
-  `<SyringeIllustration>` (5 SVG variants).
-- Story-style examples in `packages/ui/src/__demos__/` so apps/mobile can
-  iframe them during development.
+- Design tokens moved into the package: `@sedation-pro/ui/styles`
+  (typography, 4px spacing, motion easings, dark palette, drug-tone
+  swatches, `--ph1..ph4` phase tints).
+- Layout: `<UiCard>` (phase tint + active/completed), `<UiRow>`,
+  `<UiStack>`.
+- Action: `<UiButton>` (neutral/primary/success/danger), `<UiDrugButton>`
+  (12 drug tones, 3-state idle/locked/logged model).
+- Form: `<UiField>`, `<UiTextInput>`, `<UiNumberInput>`, `<UiSelect>`,
+  `<UiCheckbox>` (iOS dot + danger variant), `<UiBpInput>`.
+- Display: `<UiBanner>`, `<UiDrugSwatch>`, `<UiPercentBar>` (auto-derives
+  severity), `<UiStatusPill>`, `<UiTimerPill>` (cooling / ramping /
+  ready).
+- Vitest + happy-dom + @vue/test-utils smoke suite: every primitive
+  mounts, click suppression respected on locked / logged / disabled
+  states, percent-bar severity thresholds verified at boundaries.
+- `apps/mobile`'s `HomeView` rebuilt as a live demo wiring every
+  primitive against the clinical engine.
 
-**Exit gate.** Components type-check, render in `apps/mobile`'s
-`HomeView`, and have a `@sedation-pro/ui` smoke test asserting key exports.
+**Exit gate.** Met. `pnpm typecheck`, `pnpm test`, `pnpm build`, and
+`pnpm format:check` all green; production bundle ~46.5 KB gzipped.
+
+**Deferred to Phase 3 / later.** `<UiToast>`, `<UiUndoToast>`,
+`<UiModal>`, `<UiBottomSheet>` — these need a store backbone (queue,
+focus management) and ship as part of the shell. The 5 syringe SVGs
+ship in Phase 6 alongside the drug-tile sub-content they belong to.
 
 ## Phase 3 — App shell + navigation ⏳
 
