@@ -20,6 +20,7 @@ import {
   UiStack,
   UiStatCard,
   UiStatusPill,
+  UiSyringe,
   UiTextInput,
   UiTimerPill,
 } from './index';
@@ -86,6 +87,12 @@ describe('@sedation-pro/ui', () => {
     w(UiBanner, { tone: 'info' });
     w(UiDrugSwatch, { tone: 'versed' });
     w(UiDrugSwatch, { tone: 'lidocaine', size: 'lg' });
+    w(UiSyringe, {
+      label: 'Flumazenil',
+      capacityMl: 3,
+      drawnMl: 2,
+      color: '#facc15',
+    });
 
     // Health-style stat card variants.
     w(UiStatCard, {
@@ -199,6 +206,41 @@ describe('@sedation-pro/ui', () => {
     const wrapper = mount(UiHeightInput, { props: { modelValue: null } });
     await wrapper.findAll('input')[0]!.setValue('');
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([null]);
+    wrapper.unmount();
+  });
+
+  it('UiSyringe plunger head sits at the back (left) edge of the fluid column', () => {
+    // Geometry constants mirror the component: barrel x=18..218 (W=200).
+    // Fluid is right-aligned (against the needle hub); plunger sits at the LEFT
+    // edge of the fluid as more is drawn. Regression guard for the
+    // wrong-direction plunger bug fixed in this commit.
+    const wrapper = mount(UiSyringe, {
+      props: { label: 'Flumazenil', capacityMl: 3, drawnMl: 2, color: '#facc15' },
+    });
+    const svg = wrapper.find('svg').element as SVGElement;
+    const rects = Array.from(svg.querySelectorAll('rect'));
+    const fluid = rects.find((r) => r.getAttribute('fill') === '#facc15');
+    const plungerHead = rects.find((r) => r.getAttribute('fill') === '#cbd5e1');
+    expect(fluid).toBeTruthy();
+    expect(plungerHead).toBeTruthy();
+    const fluidLeft = Number(fluid!.getAttribute('x'));
+    const plungerRight =
+      Number(plungerHead!.getAttribute('x')) + Number(plungerHead!.getAttribute('width'));
+    // Plunger head's right edge should meet the fluid's left edge (no gap, no overlap).
+    expect(Math.abs(plungerRight - fluidLeft)).toBeLessThan(0.5);
+    wrapper.unmount();
+  });
+
+  it('UiSyringe clamps the plunger head at the barrel back when fully drawn', () => {
+    const wrapper = mount(UiSyringe, {
+      props: { label: 'Naloxone', capacityMl: 1, drawnMl: 1, color: '#fb7185' },
+    });
+    const svg = wrapper.find('svg').element as SVGElement;
+    const rects = Array.from(svg.querySelectorAll('rect'));
+    const plungerHead = rects.find((r) => r.getAttribute('fill') === '#cbd5e1');
+    const plungerLeft = Number(plungerHead!.getAttribute('x'));
+    // Barrel back is at x=18; plunger head should not drift left of it.
+    expect(plungerLeft).toBeGreaterThanOrEqual(18);
     wrapper.unmount();
   });
 

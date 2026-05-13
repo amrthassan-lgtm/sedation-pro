@@ -51,9 +51,22 @@ const BARREL_X = 18;
 const BARREL_W = 200;
 const BARREL_Y = 26;
 const BARREL_H = 22;
+const PLUNGER_HEAD_W = 6;
 
-const plungerX = computed(() => BARREL_X + BARREL_W * fillFraction.value);
 const fluidW = computed(() => BARREL_W * fillFraction.value);
+
+/**
+ * Left edge of the plunger head — sits immediately behind the fluid column.
+ * As more fluid is drawn the plunger retreats LEFT, away from the needle.
+ * Clamped at the barrel's back so a full draw doesn't overlap the flange.
+ */
+const plungerHeadLeftX = computed(() => {
+  const x = BARREL_X + BARREL_W - fluidW.value - PLUNGER_HEAD_W;
+  return Math.max(BARREL_X, x);
+});
+
+/** Visible rod length — fills the empty barrel space between flange and plunger. */
+const rodW = computed(() => Math.max(0, plungerHeadLeftX.value - (BARREL_X - 4)));
 
 const ticks = computed(() => {
   const out: Array<{ x: number; label: string | null }> = [];
@@ -115,25 +128,27 @@ const ticks = computed(() => {
           opacity="0.85"
         />
 
-        <!-- Plunger rod sticks out to the left as fluid is drawn. -->
+        <!-- Plunger rod fills the empty barrel space behind the plunger head. -->
         <rect
           :x="BARREL_X - 4"
           y="32"
-          :width="Math.max(6, plungerX - BARREL_X)"
+          :width="rodW"
           height="10"
           fill="#5d6b85"
           stroke="#a8b6cf"
           stroke-width="1"
         />
 
-        <!-- Plunger head pressed against the fluid edge. -->
+        <!-- Plunger head pressed against the back (left edge) of the fluid column. -->
         <rect
-          :x="plungerX - 4"
+          :x="plungerHeadLeftX"
           :y="BARREL_Y + 2"
-          width="6"
+          :width="PLUNGER_HEAD_W"
           :height="BARREL_H - 4"
           rx="1"
           fill="#cbd5e1"
+          stroke="#5d6b85"
+          stroke-width="0.6"
         />
 
         <!-- ml tick marks across the barrel -->
