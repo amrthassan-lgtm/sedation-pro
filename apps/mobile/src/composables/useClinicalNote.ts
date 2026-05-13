@@ -26,6 +26,7 @@ export interface ClinicalNote {
     readonly mrn: string;
     readonly date: string;
     readonly provider: string;
+    readonly assistants: string;
     readonly procedure: string;
   };
   /** Prose paragraphs, in order — main body of the clinical note. */
@@ -267,8 +268,10 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       const intro = bits.join(' ');
       const proc = patient.procedure?.trim() || 'a planned dental procedure';
       const prov = patient.provider?.trim() || 'the attending provider';
+      const asst = patient.assistants?.trim();
+      const asstSentence = asst ? ` Dental assistant: ${asst}.` : '';
       narrative.push(
-        `${intro} presented to ${PRACTICE_NAME} on ${today} for ${proc} under moderate IV sedation. Attending provider: ${prov}.`,
+        `${intro} presented to ${PRACTICE_NAME} on ${today} for ${proc} under moderate IV sedation. Attending provider: ${prov}.${asstSentence}`,
       );
     }
 
@@ -421,6 +424,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
         mrn: patient.mrn || '—',
         date: today,
         provider: patient.provider || '—',
+        assistants: patient.assistants?.trim() || '—',
         procedure: patient.procedure?.trim() || 'Moderate IV sedation',
       },
       narrative,

@@ -40,6 +40,7 @@ const {
   name,
   mrn,
   provider,
+  assistants,
   procedure,
   careName,
   carePhone,
@@ -335,6 +336,13 @@ function stampAssessment() {
             <UiTextInput v-model="provider" placeholder="Dr. Hassan" />
           </UiField>
         </UiRow>
+        <UiField label="Dental assistant(s)" hint="comma-separated">
+          <UiTextInput
+            v-model="assistants"
+            placeholder="e.g. Raycha Dobbins EFDA, Yvette Vega EFDA"
+            block
+          />
+        </UiField>
         <UiField label="Procedure" hint="optional">
           <UiTextInput v-model="procedure" placeholder="e.g. EXT #19, root canal #14" />
         </UiField>

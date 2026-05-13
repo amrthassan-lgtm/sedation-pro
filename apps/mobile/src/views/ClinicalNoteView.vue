@@ -64,6 +64,8 @@ async function shareNote() {
           <dd>{{ note.header.date }}</dd>
           <dt>Provider</dt>
           <dd>{{ note.header.provider }}</dd>
+          <dt>Dental assistant</dt>
+          <dd>{{ note.header.assistants }}</dd>
           <dt>Procedure</dt>
           <dd>{{ note.header.procedure }}</dd>
         </dl>

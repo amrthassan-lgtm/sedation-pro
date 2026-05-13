@@ -41,6 +41,9 @@ export const usePatientStore = defineStore('patient', () => {
   const name = ref('');
   const mrn = ref('');
   const provider = ref('');
+  /** Comma-separated dental assistant name(s) on the case. Surfaces in the
+   * clinical note's header block and the procedure narrative. */
+  const assistants = ref('');
   /** Procedure description — e.g. "EXT #19". Optional; surfaces in the note narrative. */
   const procedure = ref('');
   const careName = ref('');
@@ -176,6 +179,7 @@ export const usePatientStore = defineStore('patient', () => {
     name,
     mrn,
     provider,
+    assistants,
     procedure,
     careName,
     carePhone,
@@ -214,6 +218,7 @@ export const usePatientStore = defineStore('patient', () => {
     name.value = '';
     mrn.value = '';
     provider.value = '';
+    assistants.value = '';
     procedure.value = '';
     careName.value = '';
     carePhone.value = '';
@@ -252,6 +257,7 @@ export const usePatientStore = defineStore('patient', () => {
     name,
     mrn,
     provider,
+    assistants,
     procedure,
     careName,
     carePhone,
