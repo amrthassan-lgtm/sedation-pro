@@ -16,6 +16,7 @@ export { default as UiCheckbox } from './primitives/UiCheckbox.vue';
 export { default as UiField } from './primitives/UiField.vue';
 export { default as UiNumberInput } from './primitives/UiNumberInput.vue';
 export { default as UiSelect } from './primitives/UiSelect.vue';
+export { default as UiSignaturePad } from './primitives/UiSignaturePad.vue';
 export { default as UiTextInput } from './primitives/UiTextInput.vue';
 
 // Display

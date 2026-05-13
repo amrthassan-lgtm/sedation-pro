@@ -2,6 +2,8 @@
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
 
+import { useRouter } from 'vue-router';
+
 import { useIVStore } from '@/stores/iv';
 import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
@@ -18,12 +20,15 @@ import {
   UiPercentBar,
   UiRow,
   UiSelect,
+  UiSignaturePad,
   UiStack,
   UiStatCard,
   UiTextInput,
 } from '@sedation-pro/ui';
 import { dismissalSafety, releaseEligibility } from '@sedation-pro/clinical';
 import type { ActionState, BpValue } from '@sedation-pro/ui';
+
+const router = useRouter();
 
 const iv = useIVStore();
 const patient = usePatientStore();
@@ -46,12 +51,18 @@ const {
   excessiveBleeding,
   companionName,
   companionRelation,
-  providerSigned,
-  companionSigned,
+  providerSignatureDataUrl,
+  companionSignatureDataUrl,
   discharge,
   ivOutAt,
   companionDocumented,
 } = storeToRefs(recovery);
+
+// Signatures derive their "signed" state from the presence of a data URL —
+// the canvas writes the URL on pointer-up, the dismissalSafety gate reads
+// the boolean. Single source of truth: the URL.
+const providerSigned = computed(() => providerSignatureDataUrl.value !== null);
+const companionSigned = computed(() => companionSignatureDataUrl.value !== null);
 
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },
@@ -168,6 +179,10 @@ function releasePatient() {
     },
     toast: { label: '✓ Patient released', tone: 'safe' },
   });
+}
+
+function goToClinicalNote() {
+  void router.push('/clinical-note');
 }
 
 // -------- Drug summary stats (for clinical-note teaser) --------------------
@@ -335,19 +350,14 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           />
         </UiStack>
 
-        <p class="caption mt-1">Signatures · placeholder until pad ships next push</p>
-        <UiStack :gap="1">
-          <UiCheckbox
-            v-model="providerSigned"
-            required
-            label="Provider signature captured"
-            hint="Signature pad lands in the next push"
-          />
-          <UiCheckbox
-            v-model="companionSigned"
-            required
-            label="Companion co-signed post-op instructions"
-          />
+        <p class="caption mt-1">Signatures</p>
+        <UiStack :gap="3">
+          <UiField label="Provider signature" required>
+            <UiSignaturePad v-model="providerSignatureDataUrl" />
+          </UiField>
+          <UiField label="Responsible companion signature" required>
+            <UiSignaturePad v-model="companionSignatureDataUrl" />
+          </UiField>
         </UiStack>
       </UiStack>
     </UiCard>
@@ -392,6 +402,9 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         @click="releasePatient"
       >
         🏠 Release Patient
+      </UiButton>
+      <UiButton tone="primary" block class="mt-2" @click="goToClinicalNote">
+        📄 Generate Clinical Note
       </UiButton>
     </UiCard>
 

@@ -47,6 +47,11 @@ export const router = createRouter({
       component: () => import('@/views/QuickReferenceView.vue'),
     },
     {
+      path: '/clinical-note',
+      name: 'clinical-note',
+      component: () => import('@/views/ClinicalNoteView.vue'),
+    },
+    {
       path: '/ui-demo',
       name: 'ui-demo',
       component: () => import('@/views/UiDemoView.vue'),
