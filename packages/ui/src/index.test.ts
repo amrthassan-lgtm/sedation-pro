@@ -11,6 +11,7 @@ import {
   UiDrugButton,
   UiDrugSwatch,
   UiField,
+  UiHeightInput,
   UiModal,
   UiNumberInput,
   UiPercentBar,
@@ -70,6 +71,8 @@ describe('@sedation-pro/ui', () => {
     w(UiCheckbox, { modelValue: true, label: 'NPO confirmed' });
     w(UiCheckbox, { modelValue: false, label: 'Airway risk', tone: 'danger' });
     w(UiBpInput, { modelValue: { sbp: 120, dbp: 80 } });
+    w(UiHeightInput, { modelValue: 70 });
+    w(UiHeightInput, { modelValue: null });
 
     // Display
     w(UiPercentBar, { percent: 42 });
@@ -172,6 +175,30 @@ describe('@sedation-pro/ui', () => {
     await wrapper.trigger('click');
     // Only the first emit should be present
     expect(wrapper.emitted('update:modelValue')).toHaveLength(1);
+    wrapper.unmount();
+  });
+
+  it('UiHeightInput splits inches into ft/in and recombines on input', async () => {
+    const wrapper = mount(UiHeightInput, { props: { modelValue: 70 } });
+    const inputs = wrapper.findAll('input');
+    expect(inputs).toHaveLength(2);
+    expect((inputs[0]!.element as HTMLInputElement).value).toBe('5');
+    expect((inputs[1]!.element as HTMLInputElement).value).toBe('10');
+
+    await inputs[0]!.setValue('6');
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([6 * 12 + 10]);
+
+    await wrapper.setProps({ modelValue: 6 * 12 + 10 });
+    await wrapper.findAll('input')[1]!.setValue('3');
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([6 * 12 + 3]);
+
+    wrapper.unmount();
+  });
+
+  it('UiHeightInput emits null when both fields are empty', async () => {
+    const wrapper = mount(UiHeightInput, { props: { modelValue: null } });
+    await wrapper.findAll('input')[0]!.setValue('');
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([null]);
     wrapper.unmount();
   });
 

@@ -129,7 +129,8 @@ function emergency() {
         aria-label="Open emergency protocols"
         @click="emergency"
       >
-        🚨 Emergency
+        <span aria-hidden="true">🚨</span>
+        <span class="sticky-bar-emerg-text">Emergency</span>
       </button>
     </div>
   </header>
@@ -240,9 +241,18 @@ function emergency() {
 
 .sticky-bar-alerts {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
   margin-top: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sticky-bar-alerts::-webkit-scrollbar {
+  display: none;
+}
+.sticky-bar-alert {
+  flex-shrink: 0;
 }
 .sticky-bar-alert {
   font-size: 9px;
@@ -366,10 +376,37 @@ function emergency() {
     opacity: 0.85;
   }
 }
+@media (max-width: 480px) {
+  .sticky-bar-info {
+    padding: 8px 12px 7px;
+    gap: 2px;
+  }
+  .sticky-bar-clearance-bar {
+    max-width: 80px;
+  }
+  .sticky-bar-phase-sub {
+    display: none;
+  }
+  .sticky-bar-actions {
+    gap: 4px;
+    padding-right: 8px;
+  }
+}
 @media (max-width: 420px) {
   .sticky-bar-saved {
     /* Free up room for the Undo + Emergency buttons on narrow phones. */
     display: none;
+  }
+}
+@media (max-width: 380px) {
+  .sticky-bar-undo-text,
+  .sticky-bar-undo-count,
+  .sticky-bar-emerg-text {
+    display: none;
+  }
+  .sticky-bar-undo,
+  .sticky-bar-emerg {
+    padding: 8px 10px;
   }
 }
 </style>

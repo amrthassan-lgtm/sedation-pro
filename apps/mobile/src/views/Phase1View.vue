@@ -14,6 +14,7 @@ import {
   UiCheckbox,
   UiDrugButton,
   UiField,
+  UiHeightInput,
   UiModal,
   UiNumberInput,
   UiRow,
@@ -80,6 +81,13 @@ const {
 
 const { events } = storeToRefs(eventLog);
 
+function formatHeight(inches: number | null): string {
+  if (inches === null) return '—';
+  const ft = Math.floor(inches / 12);
+  const rem = inches - ft * 12;
+  return `${ft}′${rem}″`;
+}
+
 const asaOptions = [
   { value: 'I', label: 'ASA I — Healthy' },
   { value: 'II', label: 'ASA II — Mild systemic disease' },
@@ -130,7 +138,7 @@ const bmiCard = computed(() => {
     value: bmi.value.value.toFixed(1),
     category: labels[bmi.value.category],
     severity,
-    detail: `${weightLb.value ?? '—'} lb · ${heightIn.value ?? '—'} in`,
+    detail: `${weightLb.value ?? '—'} lb · ${formatHeight(heightIn.value)}`,
   };
 });
 
@@ -342,8 +350,8 @@ function stampAssessment() {
           <UiField label="Weight" hint="lbs" required>
             <UiNumberInput v-model="weightLb" placeholder="lbs" />
           </UiField>
-          <UiField label="Height" hint="in" required>
-            <UiNumberInput v-model="heightIn" placeholder="in" />
+          <UiField label="Height" hint="ft &prime; in" required>
+            <UiHeightInput v-model="heightIn" />
           </UiField>
           <UiField label="Age" hint="yrs" required>
             <UiNumberInput v-model="age" placeholder="yrs" />
