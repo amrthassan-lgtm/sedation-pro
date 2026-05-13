@@ -69,6 +69,13 @@ async function shareNote() {
         </dl>
       </header>
 
+      <section v-if="note.narrative.length > 0" class="note-section narrative">
+        <h2>Clinical Narrative</h2>
+        <p v-for="(paragraph, idx) in note.narrative" :key="idx" class="narrative-p">
+          {{ paragraph }}
+        </p>
+      </section>
+
       <section v-for="section in note.sections" :key="section.heading" class="note-section">
         <h2>{{ section.heading }}</h2>
         <dl class="note-grid">
@@ -100,7 +107,7 @@ async function shareNote() {
       </section>
 
       <section class="note-section signatures">
-        <h2>Signatures</h2>
+        <h2>Signature</h2>
         <div class="sig-grid">
           <div class="sig-block">
             <p class="sig-label">Provider</p>
@@ -115,13 +122,7 @@ async function shareNote() {
           </div>
           <div class="sig-block">
             <p class="sig-label">Responsible companion</p>
-            <img
-              v-if="note.signatures.companionDataUrl"
-              :src="note.signatures.companionDataUrl"
-              alt="Companion signature"
-              class="sig-img"
-            />
-            <div v-else class="sig-empty">— unsigned —</div>
+            <div class="sig-empty">Signed on printed post-op form</div>
             <p class="sig-name">{{ note.signatures.companion }}</p>
           </div>
         </div>
@@ -228,6 +229,17 @@ async function shareNote() {
   padding-bottom: 4px;
   margin: 0 0 var(--sp-2);
 }
+.narrative-p {
+  margin: 0 0 var(--sp-3);
+  text-align: justify;
+  text-justify: inter-word;
+  color: #1f2937;
+  font-size: 11pt;
+  line-height: 1.65;
+}
+.narrative-p:last-child {
+  margin-bottom: 0;
+}
 .note-grid {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -306,10 +318,15 @@ async function shareNote() {
   display: block;
   height: 64px;
   max-width: 100%;
-  background: #ffffff;
   border-bottom: 1px solid #111827;
-  /* The signature pad draws in white ink — invert to render on the paper. */
+  /*
+   * The signature pad draws in white ink on a transparent canvas. Inverting
+   * the image flips white → black so the ink reads on the light paper while
+   * the transparent background stays transparent. No explicit `background`
+   * here — it would invert to black and swallow the ink.
+   */
   filter: invert(1);
+  -webkit-filter: invert(1);
 }
 .sig-empty {
   height: 64px;

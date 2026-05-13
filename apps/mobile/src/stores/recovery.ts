@@ -32,7 +32,6 @@ export const useRecoveryStore = defineStore('recovery', () => {
   const companionRelation = ref('');
   /** Provider signature data URL — written by the signature pad on pointer-up. */
   const providerSignatureDataUrl = ref<string | null>(null);
-  const companionSignatureDataUrl = ref<string | null>(null);
 
   // ------- Discharge checklist (manual confirmations) -----------------------
 
@@ -82,7 +81,6 @@ export const useRecoveryStore = defineStore('recovery', () => {
     companionName.value = '';
     companionRelation.value = '';
     providerSignatureDataUrl.value = null;
-    companionSignatureDataUrl.value = null;
     discharge.value = {
       escortedToVehicle: false,
       verbalInstructionsGiven: false,
@@ -97,7 +95,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     () => companionName.value.trim() !== '' && companionRelation.value.trim() !== '',
   );
 
-  persistRefs('sedation-pro:recovery:v2', {
+  persistRefs('sedation-pro:recovery:v3', {
     endHr,
     endBpSys,
     endBpDia,
@@ -112,7 +110,6 @@ export const useRecoveryStore = defineStore('recovery', () => {
     companionName,
     companionRelation,
     providerSignatureDataUrl,
-    companionSignatureDataUrl,
     discharge,
     ivOutAt,
   });
@@ -133,7 +130,6 @@ export const useRecoveryStore = defineStore('recovery', () => {
     companionName,
     companionRelation,
     providerSignatureDataUrl,
-    companionSignatureDataUrl,
     discharge,
     ivOutAt,
 

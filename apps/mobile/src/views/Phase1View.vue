@@ -37,6 +37,7 @@ const {
   name,
   mrn,
   provider,
+  procedure,
   careName,
   carePhone,
   weightLb,
@@ -295,6 +296,9 @@ function stampAssessment() {
             <UiTextInput v-model="provider" placeholder="Dr. Hassan" />
           </UiField>
         </UiRow>
+        <UiField label="Procedure" hint="optional">
+          <UiTextInput v-model="procedure" placeholder="e.g. EXT #19, root canal #14" />
+        </UiField>
       </UiStack>
     </UiCard>
 

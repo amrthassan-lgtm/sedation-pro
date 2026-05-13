@@ -41,6 +41,8 @@ export const usePatientStore = defineStore('patient', () => {
   const name = ref('');
   const mrn = ref('');
   const provider = ref('');
+  /** Procedure description — e.g. "EXT #19". Optional; surfaces in the note narrative. */
+  const procedure = ref('');
   const careName = ref('');
   const carePhone = ref('');
   const weightLb = ref<number | null>(null);
@@ -135,10 +137,11 @@ export const usePatientStore = defineStore('patient', () => {
   // Persist the form so reloading the page (or relaunching from the iPhone
   // home screen) doesn't wipe progress. Schema migrations land in Phase 5
   // proper — for now we trust the snapshot.
-  persistRefs('sedation-pro:patient:v1', {
+  persistRefs('sedation-pro:patient:v2', {
     name,
     mrn,
     provider,
+    procedure,
     careName,
     carePhone,
     weightLb,
@@ -161,6 +164,7 @@ export const usePatientStore = defineStore('patient', () => {
     name.value = '';
     mrn.value = '';
     provider.value = '';
+    procedure.value = '';
     careName.value = '';
     carePhone.value = '';
     weightLb.value = null;
@@ -183,6 +187,7 @@ export const usePatientStore = defineStore('patient', () => {
     name,
     mrn,
     provider,
+    procedure,
     careName,
     carePhone,
     weightLb,

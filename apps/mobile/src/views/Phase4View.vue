@@ -52,17 +52,15 @@ const {
   companionName,
   companionRelation,
   providerSignatureDataUrl,
-  companionSignatureDataUrl,
   discharge,
   ivOutAt,
   companionDocumented,
 } = storeToRefs(recovery);
 
-// Signatures derive their "signed" state from the presence of a data URL —
-// the canvas writes the URL on pointer-up, the dismissalSafety gate reads
-// the boolean. Single source of truth: the URL.
+// Provider signature lives here in-app. The companion's signature is captured
+// on a separate paper form per practice protocol — so we pass
+// `companionSigned: true` to dismissalSafety to skip that gate.
 const providerSigned = computed(() => providerSignatureDataUrl.value !== null);
-const companionSigned = computed(() => companionSignatureDataUrl.value !== null);
 
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },
@@ -164,7 +162,7 @@ const dismissal = computed(() =>
     bp: { sbp: endBpSys.value, dbp: endBpDia.value },
     companionDocumented: companionDocumented.value,
     providerSigned: providerSigned.value,
-    companionSigned: companionSigned.value,
+    companionSigned: true,
   }),
 );
 
@@ -350,15 +348,13 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           />
         </UiStack>
 
-        <p class="caption mt-1">Signatures</p>
-        <UiStack :gap="3">
-          <UiField label="Provider signature" required>
-            <UiSignaturePad v-model="providerSignatureDataUrl" />
-          </UiField>
-          <UiField label="Responsible companion signature" required>
-            <UiSignaturePad v-model="companionSignatureDataUrl" />
-          </UiField>
-        </UiStack>
+        <p class="caption mt-1">Provider signature</p>
+        <UiField label="Sign to complete the record" required>
+          <UiSignaturePad v-model="providerSignatureDataUrl" />
+        </UiField>
+        <p class="body muted footnote-note">
+          Companion signs the printed post-op-instruction form by hand — not captured in-app.
+        </p>
       </UiStack>
     </UiCard>
 
@@ -470,6 +466,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
   gap: 2px;
   font-size: var(--type-footnote);
   line-height: 1.5;
+}
+.footnote-note {
+  font-size: var(--type-footnote);
+  font-style: italic;
 }
 .stat-grid {
   display: grid;
