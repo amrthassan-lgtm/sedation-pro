@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue';
+
 import type { ActionState, DrugTone } from '../types';
 
 interface Props {
@@ -15,6 +17,13 @@ interface Props {
   loggedAt?: string | undefined;
   /** Disable interactions (e.g. diazepam locked because OSA not selected yet). */
   disabled?: boolean;
+  /**
+   * Internal anti-double-tap cooldown. Flashes the check overlay and blocks
+   * repeat clicks for this duration after every successful tap. Independent
+   * of `state` — the parent's state machine still drives logged vs idle.
+   * Set to 0 to disable.
+   */
+  cooldownMs?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -22,16 +31,31 @@ const props = withDefaults(defineProps<Props>(), {
   sub: undefined,
   loggedAt: undefined,
   disabled: false,
+  cooldownMs: 1200,
 });
 
 const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void;
 }>();
 
+const inCooldown = ref(false);
+
 function onClick(e: MouseEvent) {
-  if (props.disabled || props.state !== 'idle') return;
+  if (props.disabled || props.state !== 'idle' || inCooldown.value) return;
+  if (props.cooldownMs > 0) {
+    inCooldown.value = true;
+    setTimeout(() => {
+      inCooldown.value = false;
+    }, props.cooldownMs);
+  }
   emit('click', e);
 }
+
+const renderState = computed<ActionState>(() => {
+  if (props.state !== 'idle') return props.state;
+  if (inCooldown.value) return 'locked';
+  return 'idle';
+});
 </script>
 
 <template>
@@ -40,19 +64,19 @@ function onClick(e: MouseEvent) {
     class="ui-drug-btn"
     :class="[
       `ui-drug-btn--${props.tone}`,
-      `ui-drug-btn--${props.state}`,
+      `ui-drug-btn--${renderState}`,
       { 'is-disabled': props.disabled },
     ]"
-    :disabled="props.disabled || props.state === 'locked'"
+    :disabled="props.disabled || renderState === 'locked'"
     @click="onClick"
   >
     <span class="ui-drug-btn-name">{{ props.name }}</span>
     <span class="ui-drug-btn-dose">{{ props.dose }}</span>
     <span v-if="props.sub" class="ui-drug-btn-sub">{{ props.sub }}</span>
-    <span v-if="props.state === 'logged' && props.loggedAt" class="ui-drug-btn-last">
+    <span v-if="renderState === 'logged' && props.loggedAt" class="ui-drug-btn-last">
       {{ props.loggedAt }}
     </span>
-    <span v-if="props.state === 'locked'" class="ui-drug-btn-overlay" aria-hidden="true">
+    <span v-if="renderState === 'locked'" class="ui-drug-btn-overlay" aria-hidden="true">
       <span class="ui-drug-btn-check">✓</span>
     </span>
   </button>

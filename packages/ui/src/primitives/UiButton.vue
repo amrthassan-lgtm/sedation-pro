@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue';
+
 import type { ActionState, ButtonTone } from '../types';
 
 interface Props {
@@ -18,6 +20,13 @@ interface Props {
   loggedAt?: string | undefined;
   /** Make the button render at full width (the common Phase 3 layout). */
   block?: boolean;
+  /**
+   * Internal anti-double-tap cooldown. Flashes the check overlay and blocks
+   * repeat clicks for this duration after every successful tap. Independent
+   * of `state` — the parent's state machine still drives logged vs idle.
+   * Set to 0 to disable.
+   */
+  cooldownMs?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -26,16 +35,32 @@ const props = withDefaults(defineProps<Props>(), {
   state: 'idle',
   loggedAt: undefined,
   block: false,
+  cooldownMs: 1200,
 });
 
 const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void;
 }>();
 
+const inCooldown = ref(false);
+
 function onClick(e: MouseEvent) {
-  if (props.disabled || props.state !== 'idle') return;
+  if (props.disabled || props.state !== 'idle' || inCooldown.value) return;
+  if (props.cooldownMs > 0) {
+    inCooldown.value = true;
+    setTimeout(() => {
+      inCooldown.value = false;
+    }, props.cooldownMs);
+  }
   emit('click', e);
 }
+
+/** What the button looks like right now — parent's state takes priority. */
+const renderState = computed<ActionState>(() => {
+  if (props.state !== 'idle') return props.state;
+  if (inCooldown.value) return 'locked';
+  return 'idle';
+});
 </script>
 
 <template>
@@ -44,17 +69,17 @@ function onClick(e: MouseEvent) {
     class="ui-btn"
     :class="[
       `ui-btn--${props.tone}`,
-      `ui-btn--${props.state}`,
+      `ui-btn--${renderState}`,
       { 'is-block': props.block, 'is-disabled': props.disabled },
     ]"
-    :disabled="props.disabled || props.state === 'locked'"
+    :disabled="props.disabled || renderState === 'locked'"
     @click="onClick"
   >
     <span class="ui-btn-label"><slot /></span>
-    <span v-if="props.state === 'locked'" class="ui-btn-overlay" aria-hidden="true">
+    <span v-if="renderState === 'locked'" class="ui-btn-overlay" aria-hidden="true">
       <span class="ui-btn-check">✓</span>
     </span>
-    <span v-if="props.state === 'logged' && props.loggedAt" class="ui-btn-logged">
+    <span v-if="renderState === 'logged' && props.loggedAt" class="ui-btn-logged">
       {{ props.loggedAt }}
     </span>
   </button>

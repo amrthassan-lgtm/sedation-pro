@@ -38,6 +38,7 @@ const {
   n2oOn,
   o2OnlyOn,
   ivStarted,
+  ivStartedAt,
   ivCatheterGauge,
   ivCatheterAttempts,
   ivSite,
@@ -47,15 +48,22 @@ const {
   lastVersedAt,
   lastFentanylAt,
   sedationStatus,
+  preOpHr,
+  preOpBpSys,
+  preOpBpDia,
+  preOpSpo2,
+  preOpEtco2,
+  preOpResponse,
+  preOpStampedAt,
+  sedHr,
+  sedBpSys,
+  sedBpDia,
+  sedSpo2,
+  sedEtco2,
+  sedResponse,
+  sedStampedAt,
+  procedureStartedAt,
 } = storeToRefs(iv);
-
-// -------- Pre-op vitals form (local — only stamped on tap) ------------------
-
-const preOpHr = ref<number | null>(null);
-const preOpBp = ref<BpValue>({ sbp: null, dbp: null });
-const preOpSpo2 = ref<number | null>(null);
-const preOpEtco2 = ref<number | null>(null);
-const preOpResponse = ref<string>('Alert');
 
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },
@@ -65,23 +73,57 @@ const responseOptions = [
   { value: 'Concern', label: '⚠️ Concern' },
 ];
 
-const preOpVitalsState = ref<ActionState>('idle');
+// Pre-op + sedation BP adapters — `UiBpInput` v-models a {sbp, dbp} pair, but
+// each leg is persisted independently in the IV store.
+const preOpBp = computed<BpValue>({
+  get: () => ({ sbp: preOpBpSys.value, dbp: preOpBpDia.value }),
+  set: (v) => {
+    preOpBpSys.value = v.sbp;
+    preOpBpDia.value = v.dbp;
+  },
+});
+const sedBp = computed<BpValue>({
+  get: () => ({ sbp: sedBpSys.value, dbp: sedBpDia.value }),
+  set: (v) => {
+    sedBpSys.value = v.sbp;
+    sedBpDia.value = v.dbp;
+  },
+});
+
+function fmtClock(ms: number | null): string | undefined {
+  if (ms === null) return undefined;
+  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// Derived states — each stamp button is "logged" iff its store flag is set.
+const preOpVitalsState = computed<ActionState>(() =>
+  preOpStampedAt.value !== null ? 'logged' : 'idle',
+);
+const sedVitalsState = computed<ActionState>(() =>
+  sedStampedAt.value !== null ? 'logged' : 'idle',
+);
+const procStartState = computed<ActionState>(() =>
+  procedureStartedAt.value !== null ? 'logged' : 'idle',
+);
+const ivStartState = computed<ActionState>(() => (ivStarted.value ? 'logged' : 'idle'));
+
 function stampPreOpVitals() {
-  const bp = preOpBp.value;
   iv.setPreOpVitals({
     hr: preOpHr.value,
-    bp,
+    bp: { sbp: preOpBpSys.value, dbp: preOpBpDia.value },
     spo2: preOpSpo2.value,
     etco2: preOpEtco2.value,
     response: preOpResponse.value,
     at: Date.now(),
   });
-  preOpVitalsState.value = 'locked';
   undo.stamp({
     event: 'Pre-Op Vitals',
     details: {
       HR: preOpHr.value !== null ? `${preOpHr.value} bpm` : '—',
-      BP: bp.sbp !== null && bp.dbp !== null ? `${bp.sbp}/${bp.dbp}` : '—',
+      BP:
+        preOpBpSys.value !== null && preOpBpDia.value !== null
+          ? `${preOpBpSys.value}/${preOpBpDia.value}`
+          : '—',
       SpO2: preOpSpo2.value !== null ? `${preOpSpo2.value}%` : '—',
       EtCO2: preOpEtco2.value !== null ? `${preOpEtco2.value} mmHg` : '—',
       Response: preOpResponse.value,
@@ -91,10 +133,8 @@ function stampPreOpVitals() {
       sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       tone: 'safe',
     },
+    revert: () => iv.clearPreOpStamp(),
   });
-  setTimeout(() => {
-    preOpVitalsState.value = 'logged';
-  }, 800);
 }
 
 // -------- Gas flow ----------------------------------------------------------
@@ -119,10 +159,8 @@ function onN2oOff() {
 
 // -------- IV start ----------------------------------------------------------
 
-const ivStartState = ref<ActionState>('idle');
 function onIvStart() {
   iv.startIV();
-  ivStartState.value = 'locked';
   undo.stamp({
     event: 'IV Start',
     details: {
@@ -132,10 +170,8 @@ function onIvStart() {
       Fluids: ivFluid.value,
     },
     toast: { label: '✓ IV Started', tone: 'safe' },
+    revert: () => iv.clearIvStart(),
   });
-  setTimeout(() => {
-    ivStartState.value = 'logged';
-  }, 800);
 }
 
 // -------- Pre-med wait chip (cosmetic — IV start isn't hard-blocked) -------
@@ -270,55 +306,42 @@ const versedCeilingFromFormulary = DEFAULT_FORMULARY.ceilings.versedMaxMg;
 
 // -------- Sedation level vitals (card 7) -----------------------------------
 
-const sedHr = ref<number | null>(null);
-const sedBp = ref<BpValue>({ sbp: null, dbp: null });
-const sedSpo2 = ref<number | null>(null);
-const sedEtco2 = ref<number | null>(null);
-const sedResponse = ref<string>('Relaxed');
-const sedVitalsState = ref<ActionState>('idle');
-
 function stampSedationVitals() {
   iv.setSedationVitals({
     hr: sedHr.value,
-    bp: sedBp.value,
+    bp: { sbp: sedBpSys.value, dbp: sedBpDia.value },
     spo2: sedSpo2.value,
     etco2: sedEtco2.value,
     response: sedResponse.value,
     at: Date.now(),
   });
-  sedVitalsState.value = 'locked';
   undo.stamp({
     event: 'Sedation Level Achieved',
     details: {
       HR: sedHr.value !== null ? `${sedHr.value} bpm` : '—',
       BP:
-        sedBp.value.sbp !== null && sedBp.value.dbp !== null
-          ? `${sedBp.value.sbp}/${sedBp.value.dbp}`
+        sedBpSys.value !== null && sedBpDia.value !== null
+          ? `${sedBpSys.value}/${sedBpDia.value}`
           : '—',
       SpO2: sedSpo2.value !== null ? `${sedSpo2.value}%` : '—',
       EtCO2: sedEtco2.value !== null ? `${sedEtco2.value} mmHg` : '—',
       Response: sedResponse.value,
     },
     toast: { label: '✓ Sedation level stamped', tone: 'safe' },
+    revert: () => iv.clearSedationStamp(),
   });
-  setTimeout(() => {
-    sedVitalsState.value = 'logged';
-  }, 800);
 }
 
 // -------- Procedure start (card 8) -----------------------------------------
 
-const procStartState = ref<ActionState>('idle');
 function onProcedureStart() {
-  procStartState.value = 'locked';
+  iv.startProcedure();
   undo.stamp({
     event: 'Procedure Start',
     details: {},
     toast: { label: '✓ Procedure started', tone: 'safe' },
+    revert: () => iv.clearProcedureStart(),
   });
-  setTimeout(() => {
-    procStartState.value = 'logged';
-  }, 800);
 }
 
 // -------- Local anesthesia (card 9) ----------------------------------------
@@ -425,11 +448,7 @@ function onNaloxone() {
           tone="primary"
           block
           :state="preOpVitalsState"
-          :logged-at="
-            preOpVitalsState === 'logged'
-              ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : undefined
-          "
+          :logged-at="fmtClock(preOpStampedAt)"
           @click="stampPreOpVitals"
         >
           Stamp Pre-Op Vitals
@@ -486,11 +505,7 @@ function onNaloxone() {
           tone="primary"
           block
           :state="ivStartState"
-          :logged-at="
-            ivStartState === 'logged'
-              ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : undefined
-          "
+          :logged-at="fmtClock(ivStartedAt)"
           @click="onIvStart"
         >
           {{ ivStarted ? 'IV Started' : 'Start IV' }}
@@ -678,11 +693,7 @@ function onNaloxone() {
           tone="primary"
           block
           :state="sedVitalsState"
-          :logged-at="
-            sedVitalsState === 'logged'
-              ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : undefined
-          "
+          :logged-at="fmtClock(sedStampedAt)"
           @click="stampSedationVitals"
         >
           Stamp Sedation Level
@@ -701,11 +712,7 @@ function onNaloxone() {
         tone="primary"
         block
         :state="procStartState"
-        :logged-at="
-          procStartState === 'logged'
-            ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            : undefined
-        "
+        :logged-at="fmtClock(procedureStartedAt)"
         class="mt-2"
         @click="onProcedureStart"
       >

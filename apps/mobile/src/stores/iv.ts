@@ -71,6 +71,33 @@ export const useIVStore = defineStore('iv', () => {
   const preOpVitals = ref<VitalsStamp | null>(null);
   const sedationVitals = ref<VitalsStamp | null>(null);
 
+  // ------- Vitals form inputs (persisted so reload preserves typed values) --
+  // The inputs live in the store; views v-model directly. Snapshot vitals
+  // above hold the *stamped* row appended to the chrono log; these refs are
+  // the *live* form state.
+
+  const preOpHr = ref<number | null>(null);
+  const preOpBpSys = ref<number | null>(null);
+  const preOpBpDia = ref<number | null>(null);
+  const preOpSpo2 = ref<number | null>(null);
+  const preOpEtco2 = ref<number | null>(null);
+  const preOpResponse = ref<string>('Alert');
+  /** Wall-clock ms at which pre-op vitals were stamped. null until stamped. */
+  const preOpStampedAt = ref<number | null>(null);
+
+  const sedHr = ref<number | null>(null);
+  const sedBpSys = ref<number | null>(null);
+  const sedBpDia = ref<number | null>(null);
+  const sedSpo2 = ref<number | null>(null);
+  const sedEtco2 = ref<number | null>(null);
+  const sedResponse = ref<string>('Relaxed');
+  const sedStampedAt = ref<number | null>(null);
+
+  /** Wall-clock ms the procedure was started. null until tapped. */
+  const procedureStartedAt = ref<number | null>(null);
+  /** Wall-clock ms IV started — derived for badges; ivStarted bool kept for compat. */
+  const ivStartedAt = ref<number | null>(null);
+
   // ------- Derived totals + timers ------------------------------------------
 
   const versedTotalMg = computed(() =>
@@ -145,13 +172,35 @@ export const useIVStore = defineStore('iv', () => {
   }
   function startIV() {
     ivStarted.value = true;
+    if (ivStartedAt.value === null) ivStartedAt.value = Date.now();
   }
 
   function setPreOpVitals(v: VitalsStamp) {
     preOpVitals.value = v;
+    preOpStampedAt.value = v.at;
   }
   function setSedationVitals(v: VitalsStamp) {
     sedationVitals.value = v;
+    sedStampedAt.value = v.at;
+  }
+  function startProcedure() {
+    if (procedureStartedAt.value === null) procedureStartedAt.value = Date.now();
+  }
+
+  function clearPreOpStamp() {
+    preOpStampedAt.value = null;
+    preOpVitals.value = null;
+  }
+  function clearSedationStamp() {
+    sedStampedAt.value = null;
+    sedationVitals.value = null;
+  }
+  function clearProcedureStart() {
+    procedureStartedAt.value = null;
+  }
+  function clearIvStart() {
+    ivStarted.value = false;
+    ivStartedAt.value = null;
   }
 
   function clear() {
@@ -159,23 +208,55 @@ export const useIVStore = defineStore('iv', () => {
     n2oOn.value = false;
     o2OnlyOn.value = false;
     ivStarted.value = false;
+    ivStartedAt.value = null;
     preOpVitals.value = null;
     sedationVitals.value = null;
+    preOpHr.value = null;
+    preOpBpSys.value = null;
+    preOpBpDia.value = null;
+    preOpSpo2.value = null;
+    preOpEtco2.value = null;
+    preOpResponse.value = 'Alert';
+    preOpStampedAt.value = null;
+    sedHr.value = null;
+    sedBpSys.value = null;
+    sedBpDia.value = null;
+    sedSpo2.value = null;
+    sedEtco2.value = null;
+    sedResponse.value = 'Relaxed';
+    sedStampedAt.value = null;
+    procedureStartedAt.value = null;
   }
 
-  // Persistence — every dose, every timer anchor, every gas-flow flag must
-  // survive a reload mid-procedure.
-  persistRefs('sedation-pro:iv:v1', {
+  // Persistence — every dose, every timer anchor, every gas-flow flag, every
+  // input keystroke must survive a reload mid-procedure.
+  persistRefs('sedation-pro:iv:v2', {
     doses,
     n2oOn,
     o2OnlyOn,
     ivStarted,
+    ivStartedAt,
     ivCatheterGauge,
     ivCatheterAttempts,
     ivSite,
     ivFluid,
     preOpVitals,
     sedationVitals,
+    preOpHr,
+    preOpBpSys,
+    preOpBpDia,
+    preOpSpo2,
+    preOpEtco2,
+    preOpResponse,
+    preOpStampedAt,
+    sedHr,
+    sedBpSys,
+    sedBpDia,
+    sedSpo2,
+    sedEtco2,
+    sedResponse,
+    sedStampedAt,
+    procedureStartedAt,
   });
 
   return {
@@ -184,12 +265,28 @@ export const useIVStore = defineStore('iv', () => {
     n2oOn,
     o2OnlyOn,
     ivStarted,
+    ivStartedAt,
     ivCatheterGauge,
     ivCatheterAttempts,
     ivSite,
     ivFluid,
     preOpVitals,
     sedationVitals,
+    preOpHr,
+    preOpBpSys,
+    preOpBpDia,
+    preOpSpo2,
+    preOpEtco2,
+    preOpResponse,
+    preOpStampedAt,
+    sedHr,
+    sedBpSys,
+    sedBpDia,
+    sedSpo2,
+    sedEtco2,
+    sedResponse,
+    sedStampedAt,
+    procedureStartedAt,
 
     // derived
     versedTotalMg,
@@ -212,6 +309,11 @@ export const useIVStore = defineStore('iv', () => {
     startIV,
     setPreOpVitals,
     setSedationVitals,
+    startProcedure,
+    clearPreOpStamp,
+    clearSedationStamp,
+    clearProcedureStart,
+    clearIvStart,
     clear,
   };
 });
