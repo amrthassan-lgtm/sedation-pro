@@ -32,6 +32,8 @@ export interface VitalsStamp {
   readonly bp: BpValue;
   readonly spo2: number | null;
   readonly etco2: number | null;
+  /** Fingerstick glucose in mg/dL — captured for diabetic patients only. */
+  readonly glucose: number | null;
   readonly response: string;
   readonly at: number;
 }
@@ -82,6 +84,8 @@ export const useIVStore = defineStore('iv', () => {
   const preOpBpDia = ref<number | null>(null);
   const preOpSpo2 = ref<number | null>(null);
   const preOpEtco2 = ref<number | null>(null);
+  /** Fingerstick glucose mg/dL — only collected when patient.diabetic is true. */
+  const preOpGlucose = ref<number | null>(null);
   const preOpResponse = ref<string>('Alert');
   /** Wall-clock ms at which pre-op vitals were stamped. null until stamped. */
   const preOpStampedAt = ref<number | null>(null);
@@ -91,6 +95,7 @@ export const useIVStore = defineStore('iv', () => {
   const sedBpDia = ref<number | null>(null);
   const sedSpo2 = ref<number | null>(null);
   const sedEtco2 = ref<number | null>(null);
+  const sedGlucose = ref<number | null>(null);
   const sedResponse = ref<string>('Relaxed');
   const sedStampedAt = ref<number | null>(null);
 
@@ -229,6 +234,7 @@ export const useIVStore = defineStore('iv', () => {
     preOpBpDia.value = null;
     preOpSpo2.value = null;
     preOpEtco2.value = null;
+    preOpGlucose.value = null;
     preOpResponse.value = 'Alert';
     preOpStampedAt.value = null;
     sedHr.value = null;
@@ -236,6 +242,7 @@ export const useIVStore = defineStore('iv', () => {
     sedBpDia.value = null;
     sedSpo2.value = null;
     sedEtco2.value = null;
+    sedGlucose.value = null;
     sedResponse.value = 'Relaxed';
     sedStampedAt.value = null;
     procedureStartedAt.value = null;
@@ -260,6 +267,7 @@ export const useIVStore = defineStore('iv', () => {
     preOpBpDia,
     preOpSpo2,
     preOpEtco2,
+    preOpGlucose,
     preOpResponse,
     preOpStampedAt,
     sedHr,
@@ -267,6 +275,7 @@ export const useIVStore = defineStore('iv', () => {
     sedBpDia,
     sedSpo2,
     sedEtco2,
+    sedGlucose,
     sedResponse,
     sedStampedAt,
     procedureStartedAt,
@@ -290,6 +299,7 @@ export const useIVStore = defineStore('iv', () => {
     preOpBpDia,
     preOpSpo2,
     preOpEtco2,
+    preOpGlucose,
     preOpResponse,
     preOpStampedAt,
     sedHr,
@@ -297,6 +307,7 @@ export const useIVStore = defineStore('iv', () => {
     sedBpDia,
     sedSpo2,
     sedEtco2,
+    sedGlucose,
     sedResponse,
     sedStampedAt,
     procedureStartedAt,

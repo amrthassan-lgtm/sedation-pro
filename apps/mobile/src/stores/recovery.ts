@@ -17,6 +17,8 @@ export const useRecoveryStore = defineStore('recovery', () => {
   const endBpDia = ref<number | null>(null);
   const endSpo2 = ref<number | null>(null);
   const endEtco2 = ref<number | null>(null);
+  /** Fingerstick glucose mg/dL — only collected when patient.diabetic is true. */
+  const endGlucose = ref<number | null>(null);
   const endResponse = ref<string>('Alert');
   const endStampedAt = ref<number | null>(null);
 
@@ -110,6 +112,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     endBpDia.value = null;
     endSpo2.value = null;
     endEtco2.value = null;
+    endGlucose.value = null;
     endResponse.value = 'Alert';
     endStampedAt.value = null;
     ambulatory.value = false;
@@ -146,6 +149,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     endBpDia,
     endSpo2,
     endEtco2,
+    endGlucose,
     endResponse,
     endStampedAt,
     ambulatory,
@@ -173,6 +177,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     endBpDia,
     endSpo2,
     endEtco2,
+    endGlucose,
     endResponse,
     endStampedAt,
     ambulatory,

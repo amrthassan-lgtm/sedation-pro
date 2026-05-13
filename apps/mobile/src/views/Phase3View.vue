@@ -34,7 +34,7 @@ const patient = usePatientStore();
 const undo = useUndoStore();
 const now = useNow(1000);
 
-const { weightLb } = storeToRefs(patient);
+const { weightLb, diabetic } = storeToRefs(patient);
 
 const {
   n2oOn,
@@ -50,6 +50,7 @@ const {
   lastVersedAt,
   lastFentanylAt,
   sedationStatus,
+  preOpGlucose,
   preOpHr,
   preOpBpSys,
   preOpBpDia,
@@ -57,6 +58,7 @@ const {
   preOpEtco2,
   preOpResponse,
   preOpStampedAt,
+  sedGlucose,
   sedHr,
   sedBpSys,
   sedBpDia,
@@ -124,6 +126,7 @@ function stampPreOpVitals() {
     bp: { sbp: preOpBpSys.value, dbp: preOpBpDia.value },
     spo2: preOpSpo2.value,
     etco2: preOpEtco2.value,
+    glucose: diabetic.value ? preOpGlucose.value : null,
     response: preOpResponse.value,
     at: Date.now(),
   });
@@ -137,6 +140,9 @@ function stampPreOpVitals() {
           : '—',
       SpO2: preOpSpo2.value !== null ? `${preOpSpo2.value}%` : '—',
       EtCO2: preOpEtco2.value !== null ? `${preOpEtco2.value} mmHg` : '—',
+      ...(diabetic.value && preOpGlucose.value !== null
+        ? { Glucose: `${preOpGlucose.value} mg/dL` }
+        : {}),
       Response: preOpResponse.value,
     },
     toast: {
@@ -279,6 +285,7 @@ function stampSedationVitals() {
     bp: { sbp: sedBpSys.value, dbp: sedBpDia.value },
     spo2: sedSpo2.value,
     etco2: sedEtco2.value,
+    glucose: diabetic.value ? sedGlucose.value : null,
     response: sedResponse.value,
     at: Date.now(),
   });
@@ -292,6 +299,9 @@ function stampSedationVitals() {
           : '—',
       SpO2: sedSpo2.value !== null ? `${sedSpo2.value}%` : '—',
       EtCO2: sedEtco2.value !== null ? `${sedEtco2.value} mmHg` : '—',
+      ...(diabetic.value && sedGlucose.value !== null
+        ? { Glucose: `${sedGlucose.value} mg/dL` }
+        : {}),
       Response: sedResponse.value,
     },
     toast: { label: '✓ Sedation level stamped', tone: 'safe' },
@@ -406,6 +416,9 @@ function onNaloxone() {
           </UiField>
           <UiField label="EtCO₂" hint="mmHg">
             <UiNumberInput v-model="preOpEtco2" placeholder="EtCO₂" />
+          </UiField>
+          <UiField v-if="diabetic" label="Glucose" hint="mg/dL · diabetic">
+            <UiNumberInput v-model="preOpGlucose" placeholder="Glucose" :min="0" />
           </UiField>
         </UiRow>
         <UiField label="Patient response">
@@ -657,6 +670,9 @@ function onNaloxone() {
           </UiField>
           <UiField label="EtCO₂" hint="mmHg">
             <UiNumberInput v-model="sedEtco2" placeholder="EtCO₂" />
+          </UiField>
+          <UiField v-if="diabetic" label="Glucose" hint="mg/dL · diabetic">
+            <UiNumberInput v-model="sedGlucose" placeholder="Glucose" :min="0" />
           </UiField>
         </UiRow>
         <UiField label="Patient response">

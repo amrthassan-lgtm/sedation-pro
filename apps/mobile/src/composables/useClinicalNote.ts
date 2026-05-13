@@ -210,6 +210,21 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
           ? `HR ${recovery.endHr ?? '—'} · BP ${recovery.endBpSys ?? '—'}/${recovery.endBpDia ?? '—'} · SpO₂ ${recovery.endSpo2 ?? '—'}%`
           : '—',
       ],
+    ];
+    if (patient.diabetic) {
+      // Diabetic patients carry a glucose trend through the encounter — baseline
+      // (Phase 1) → pre-op (Phase 3) → sedation level (Phase 3) → recovery
+      // (Phase 4). Surface them in one row so the chart shows the trajectory
+      // at a glance for QA / billing review.
+      const points = [
+        patient.baselineGlucose !== null ? `baseline ${patient.baselineGlucose}` : null,
+        iv.preOpGlucose !== null ? `pre-op ${iv.preOpGlucose}` : null,
+        iv.sedGlucose !== null ? `sedation ${iv.sedGlucose}` : null,
+        recovery.endGlucose !== null ? `recovery ${recovery.endGlucose}` : null,
+      ].filter((p): p is string => p !== null);
+      recoveryRows.push(['Glucose trend (mg/dL)', points.length > 0 ? points.join(' → ') : '—']);
+    }
+    recoveryRows.push(
       ['Patient response', recovery.endResponse || '—'],
       ['Ambulatory', recovery.ambulatory ? 'Yes' : 'No'],
       ['Oriented ×3', recovery.orientedX3 ? 'Yes' : 'No'],
@@ -251,7 +266,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
             : '—',
       ],
       ['IV catheter removed', fmtClock(recovery.ivOutAt)],
-    ];
+    );
 
     // -------- Narrative paragraphs -----------------------------------------
     // Conditional prose so the note reads like a real chart entry, not a

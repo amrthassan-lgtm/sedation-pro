@@ -40,6 +40,7 @@ const now = useNow(1000);
 
 const { lastIvMedAt, lastFlumazenilAt } = storeToRefs(iv);
 const {
+  endGlucose,
   endHr,
   endBpSys,
   endBpDia,
@@ -122,6 +123,9 @@ function stampRecoveryVitals() {
           : '—',
       SpO2: endSpo2.value !== null ? `${endSpo2.value}%` : '—',
       EtCO2: endEtco2.value !== null ? `${endEtco2.value} mmHg` : '—',
+      ...(diabetic.value && endGlucose.value !== null
+        ? { Glucose: `${endGlucose.value} mg/dL` }
+        : {}),
       Response: endResponse.value,
     },
     toast: { label: '✓ Recovery vitals stamped', tone: 'safe' },
@@ -210,7 +214,7 @@ function goToClinicalNote() {
 
 // -------- Drug summary stats (for clinical-note teaser) --------------------
 
-const { name: patientName, weightLb } = storeToRefs(patient);
+const { name: patientName, weightLb, diabetic } = storeToRefs(patient);
 const { versedTotalMg, fentanylTotalMcg } = storeToRefs(iv);
 
 const blockerCount = computed(() => dismissal.value.blockers.length);
@@ -246,6 +250,9 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           </UiField>
           <UiField label="EtCO₂" hint="mmHg">
             <UiNumberInput v-model="endEtco2" placeholder="EtCO₂" />
+          </UiField>
+          <UiField v-if="diabetic" label="Glucose" hint="mg/dL · diabetic">
+            <UiNumberInput v-model="endGlucose" placeholder="Glucose" :min="0" />
           </UiField>
         </UiRow>
         <UiField label="Patient response">
