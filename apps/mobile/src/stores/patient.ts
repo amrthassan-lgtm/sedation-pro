@@ -2,12 +2,28 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import type { BpValue } from '@sedation-pro/ui';
 import {
+  bmiFromImperial,
+  classifyBp,
+  classifySpo2,
   phase1Completeness,
   type AsaClass,
+  type BmiResult,
+  type BpResult,
   type MallampatiClass,
   type OsaStatus,
   type SmokingStatus,
+  type Spo2Result,
 } from '@sedation-pro/clinical';
+
+/**
+ * A live safety alert surfaced in the sticky bar. Computed from the patient
+ * store so the alert pills can't drift from the rest of the UI.
+ */
+export interface SafetyAlert {
+  readonly code: 'asa' | 'osa' | 'mallampati' | 'bmi';
+  readonly label: string;
+  readonly tone: 'caution' | 'danger';
+}
 
 /**
  * The Phase 1 input bag. Holds *only* what the patient's pre-sedation
@@ -39,6 +55,54 @@ export const usePatientStore = defineStore('patient', () => {
   const npoConfirmed = ref(false);
   const diabetic = ref(false);
   const baselineGlucose = ref<number | null>(null);
+
+  // -------- Live derived state ---------------------------------------------
+
+  const bmi = computed<BmiResult | null>(() =>
+    weightLb.value !== null && heightIn.value !== null
+      ? bmiFromImperial(weightLb.value, heightIn.value)
+      : null,
+  );
+
+  const bp = computed<BpResult | null>(() =>
+    baselineBp.value.sbp !== null && baselineBp.value.dbp !== null
+      ? classifyBp(baselineBp.value.sbp, baselineBp.value.dbp)
+      : null,
+  );
+
+  const spo2 = computed<Spo2Result | null>(() =>
+    baselineSpo2.value !== null ? classifySpo2(baselineSpo2.value) : null,
+  );
+
+  /**
+   * Safety alerts shown in the sticky bar across every phase. ASA III/IV,
+   * documented OSA, Mallampati III/IV, BMI ≥30. The legacy app rendered
+   * these as red pills — same idea here, with caution for amber-level flags.
+   */
+  const safetyAlerts = computed<ReadonlyArray<SafetyAlert>>(() => {
+    const alerts: SafetyAlert[] = [];
+    if (asaClass.value === 'III' || asaClass.value === 'IV') {
+      alerts.push({ code: 'asa', label: `ASA ${asaClass.value}`, tone: 'danger' });
+    }
+    if (osaStatus.value === 'osa-diagnosed' || osaStatus.value === 'cpap-prescribed') {
+      alerts.push({ code: 'osa', label: 'OSA', tone: 'danger' });
+    }
+    if (mallampati.value === 'III' || mallampati.value === 'IV') {
+      alerts.push({
+        code: 'mallampati',
+        label: `Mallampati ${mallampati.value}`,
+        tone: 'danger',
+      });
+    }
+    if (bmi.value && bmi.value.value >= 30) {
+      alerts.push({
+        code: 'bmi',
+        label: `BMI ${bmi.value.value.toFixed(1)}`,
+        tone: bmi.value.value >= 40 ? 'danger' : 'caution',
+      });
+    }
+    return alerts;
+  });
 
   const completeness = computed(() => {
     return phase1Completeness({
@@ -108,6 +172,10 @@ export const usePatientStore = defineStore('patient', () => {
     npoConfirmed,
     diabetic,
     baselineGlucose,
+    bmi,
+    bp,
+    spo2,
+    safetyAlerts,
     completeness,
     isPhase1Complete,
     reset,

@@ -12,7 +12,7 @@ const undo = useUndoStore();
 
 const { currentPhase, currentStep } = storeToRefs(session);
 const { canUndo, count: undoCount } = storeToRefs(undo);
-const { completeness, isPhase1Complete } = storeToRefs(patient);
+const { completeness, isPhase1Complete, safetyAlerts } = storeToRefs(patient);
 
 const phaseMeta: Record<Phase, { label: string; sub: string; tint: string }> = {
   quickref: { label: 'Quick Reference', sub: 'Emergency protocols + drug doses', tint: 'qr' },
@@ -69,6 +69,16 @@ function emergency() {
         <template v-else>
           <span class="sticky-bar-phase-sub">{{ meta.sub }}</span>
         </template>
+      </div>
+      <div v-if="safetyAlerts.length" class="sticky-bar-alerts">
+        <span
+          v-for="alert in safetyAlerts"
+          :key="alert.code"
+          class="sticky-bar-alert"
+          :class="`sticky-bar-alert--${alert.tone}`"
+        >
+          {{ alert.label }}
+        </span>
       </div>
     </div>
 
@@ -198,6 +208,32 @@ function emergency() {
   background: var(--color-good-soft);
   border: 1px solid rgba(74, 222, 128, 0.3);
   color: var(--color-good);
+}
+
+.sticky-bar-alerts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.sticky-bar-alert {
+  font-size: 9px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+}
+.sticky-bar-alert--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: rgba(251, 113, 133, 0.3);
+}
+.sticky-bar-alert--caution {
+  color: var(--color-warn);
+  background: var(--color-warn-soft);
+  border-color: rgba(250, 204, 21, 0.3);
 }
 
 .sticky-bar-actions {

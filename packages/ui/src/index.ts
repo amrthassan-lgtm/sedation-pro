@@ -22,8 +22,12 @@ export { default as UiTextInput } from './primitives/UiTextInput.vue';
 export { default as UiBanner } from './primitives/UiBanner.vue';
 export { default as UiDrugSwatch } from './primitives/UiDrugSwatch.vue';
 export { default as UiPercentBar } from './primitives/UiPercentBar.vue';
+export { default as UiStatCard } from './primitives/UiStatCard.vue';
 export { default as UiStatusPill } from './primitives/UiStatusPill.vue';
 export { default as UiTimerPill } from './primitives/UiTimerPill.vue';
+
+// Overlay
+export { default as UiModal } from './primitives/UiModal.vue';
 
 /** Pinned semver for the UI primitives library. */
 export const UI_LIB_VERSION = '0.1.0';

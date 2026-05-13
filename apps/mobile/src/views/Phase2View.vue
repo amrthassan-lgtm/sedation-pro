@@ -1,5 +1,35 @@
 <script setup lang="ts">
-import { UiBanner, UiCard } from '@sedation-pro/ui';
+import { computed } from 'vue';
+import { storeToRefs } from 'pinia';
+
+import { usePatientStore } from '@/stores/patient';
+import { useUndoStore } from '@/stores/undo';
+import { UiBanner, UiCard, UiDrugButton, UiRow, UiStatCard } from '@sedation-pro/ui';
+import { lorazepamMax, triazolamMax } from '@sedation-pro/clinical';
+
+const patient = usePatientStore();
+const undo = useUndoStore();
+
+const { weightLb } = storeToRefs(patient);
+
+const triazolam = computed(() => (weightLb.value ? triazolamMax(weightLb.value) : null));
+const lorazepam = computed(() => (weightLb.value ? lorazepamMax(weightLb.value) : null));
+
+function logOral(drug: string, doseMg: number, unit: string = 'mg') {
+  undo.stamp({
+    event: 'Preoperative Oral Dose',
+    details: {
+      Drug: drug,
+      Dose: `${doseMg} ${unit}`,
+      Route: 'PO swallowed',
+    },
+    toast: {
+      label: `✓ ${drug} ${doseMg} ${unit} PO`,
+      sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      tone: 'safe',
+    },
+  });
+}
 </script>
 
 <template>
@@ -8,23 +38,119 @@ import { UiBanner, UiCard } from '@sedation-pro/ui';
       <p class="caption">Phase 2 · Oral Sedation</p>
       <h1 class="title-display">Pre-Op Anxiolytic</h1>
       <p class="body muted">
-        This phase fills in Phase 4 of the roadmap. The shell mounts the route, sticky bar, and nav
-        drawer wire correctly here — content lands when assessment + premed screens are built.
+        Optional pre-op anxiolytic 30 minutes before IV start. Max-dose hints update live from the
+        entered weight.
       </p>
     </header>
 
-    <UiBanner tone="info" title="Coming in Phase 4" icon="🚧">
-      Triazolam / Lorazepam / Hydroxyzine dose tiles, max-dose hint from
-      <code class="mono">triazolamMax</code> / <code class="mono">lorazepamMax</code>, event log
-      append.
+    <UiBanner v-if="!weightLb" tone="caution" title="Weight required" icon="⚖️">
+      Enter patient weight in Phase 1 so max-dose hints can compute against the entered patient.
     </UiBanner>
 
+    <div v-if="weightLb" class="stat-grid">
+      <UiStatCard
+        label="Triazolam max"
+        :value="triazolam ? triazolam.mg.toFixed(2) : '—'"
+        unit="mg PO"
+        category="weight/100"
+        severity="safe"
+        :detail="`Up to ${triazolam?.tablets ?? '—'} × 0.25 mg tabs`"
+      />
+      <UiStatCard
+        label="Lorazepam max"
+        :value="lorazepam ? lorazepam.mg.toFixed(1) : '—'"
+        unit="mg PO"
+        category="weight/25"
+        severity="safe"
+        :detail="`Up to ${lorazepam?.tablets ?? '—'} × 2 mg tabs`"
+      />
+    </div>
+
     <UiCard tint="ph2" active>
-      <p class="heading">Roadmap reference</p>
+      <p class="heading">Triazolam · Halcion</p>
       <p class="body muted">
-        Roadmap Phase 4: "Filling in mock patient data unlocks Phase 2; a premed tap logs a stamped
-        event and updates the sticky bar."
+        Most common pre-op anxiolytic. 30-90 min before appointment. Counts as a CNS depressant —
+        use conservative IV titration if also using Versed.
       </p>
+      <UiRow :gap="2" wrap class="mt-2">
+        <UiDrugButton
+          tone="oral"
+          name="Triazolam"
+          dose="0.125"
+          sub="mg PO"
+          @click="logOral('Triazolam', 0.125)"
+        />
+        <UiDrugButton
+          tone="oral"
+          name="Triazolam"
+          dose="0.25"
+          sub="mg PO"
+          @click="logOral('Triazolam', 0.25)"
+        />
+        <UiDrugButton
+          tone="oral"
+          name="Triazolam"
+          dose="0.5"
+          sub="mg PO"
+          @click="logOral('Triazolam', 0.5)"
+        />
+      </UiRow>
+    </UiCard>
+
+    <UiCard tint="ph2">
+      <p class="heading">Lorazepam · Ativan</p>
+      <p class="body muted">
+        Alternative when patient takes a CYP3A4 inhibitor (erythromycin, clarithromycin,
+        antifungals, HIV antivirals) that would interact with triazolam.
+      </p>
+      <UiRow :gap="2" wrap class="mt-2">
+        <UiDrugButton
+          tone="oral"
+          name="Lorazepam"
+          dose="0.5"
+          sub="mg PO"
+          @click="logOral('Lorazepam', 0.5)"
+        />
+        <UiDrugButton
+          tone="oral"
+          name="Lorazepam"
+          dose="1"
+          sub="mg PO"
+          @click="logOral('Lorazepam', 1)"
+        />
+        <UiDrugButton
+          tone="oral"
+          name="Lorazepam"
+          dose="2"
+          sub="mg PO"
+          @click="logOral('Lorazepam', 2)"
+        />
+      </UiRow>
+    </UiCard>
+
+    <UiCard tint="ph2">
+      <p class="heading">Hydroxyzine · Vistaril</p>
+      <p class="body muted">
+        Non-benzodiazepine alternative — antihistamine with sedative properties. Use for benzo-abuse
+        history, severe respiratory compromise, or chronic nausea.
+        <strong>No reversal agent</strong> — effects must wear off naturally over 4-6 hours.
+      </p>
+      <UiRow :gap="2" wrap class="mt-2">
+        <UiDrugButton
+          tone="oral"
+          name="Hydroxyzine"
+          dose="25"
+          sub="mg PO"
+          @click="logOral('Hydroxyzine', 25)"
+        />
+        <UiDrugButton
+          tone="oral"
+          name="Hydroxyzine"
+          dose="50"
+          sub="mg PO"
+          @click="logOral('Hydroxyzine', 50)"
+        />
+      </UiRow>
     </UiCard>
   </main>
 </template>
@@ -45,5 +171,13 @@ import { UiBanner, UiCard } from '@sedation-pro/ui';
 }
 .muted {
   color: var(--color-text-secondary);
+}
+.mt-2 {
+  margin-top: var(--sp-3);
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--sp-2);
 }
 </style>

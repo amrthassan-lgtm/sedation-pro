@@ -11,11 +11,13 @@ import {
   UiDrugButton,
   UiDrugSwatch,
   UiField,
+  UiModal,
   UiNumberInput,
   UiPercentBar,
   UiRow,
   UiSelect,
   UiStack,
+  UiStatCard,
   UiStatusPill,
   UiTextInput,
   UiTimerPill,
@@ -81,6 +83,50 @@ describe('@sedation-pro/ui', () => {
     w(UiBanner, { tone: 'info' });
     w(UiDrugSwatch, { tone: 'versed' });
     w(UiDrugSwatch, { tone: 'lidocaine', size: 'lg' });
+
+    // Health-style stat card variants.
+    w(UiStatCard, {
+      label: 'BMI',
+      value: '27.3',
+      unit: 'kg/m²',
+      category: 'Overweight',
+      severity: 'caution',
+      detail: '180 lb · 70 in',
+    });
+    w(UiStatCard, {
+      label: 'Baseline BP',
+      value: '134/82',
+      unit: 'mmHg',
+      category: 'Stage 1',
+      severity: 'caution',
+    });
+    w(UiStatCard, { label: 'SpO₂', value: '—', severity: 'empty' });
+
+    // Modal — closed and open variants.
+    w(UiModal, { open: false, title: 'Test' });
+    w(UiModal, { open: true, title: 'Confirm release', tone: 'danger' });
+  });
+
+  it('UiModal emits cancel on backdrop click when dismissOnBackdrop is true', async () => {
+    const wrapper = mount(UiModal, {
+      props: { open: true, title: 'Test', dismissOnBackdrop: true },
+      attachTo: document.body,
+    });
+    const overlay = document.querySelector('.ui-modal-overlay') as HTMLElement | null;
+    overlay?.click();
+    expect(wrapper.emitted('cancel')).toBeTruthy();
+    wrapper.unmount();
+  });
+
+  it('UiModal does not emit cancel on backdrop click when dismissOnBackdrop is false', async () => {
+    const wrapper = mount(UiModal, {
+      props: { open: true, title: 'Test', dismissOnBackdrop: false },
+      attachTo: document.body,
+    });
+    const overlay = document.querySelector('.ui-modal-overlay') as HTMLElement | null;
+    overlay?.click();
+    expect(wrapper.emitted('cancel')).toBeFalsy();
+    wrapper.unmount();
   });
 
   it('UiButton emits click only when state is idle and not disabled', async () => {
