@@ -3,11 +3,17 @@
 Clinical IV sedation companion app for iOS and Android, built as a
 Capacitor + Vue 3 hybrid app.
 
-> **Status: Phase 0 — foundation scaffold.** No clinical logic is in this
-> repository yet. The drug formulary, OSA-diazepam interlock,
-> Malamed-combined-percent rule, half-life metabolism, phase gating, release
-> eligibility, and ACLS reference will be ported in Phase 1 into the
-> `@sedation-pro/clinical` package.
+**Live preview:** <https://amrthassan-lgtm.github.io/sedation-pro/> —
+auto-deployed by `.github/workflows/deploy-pages.yml` on every push to the
+active development branch. Open on iPhone Safari to test (Add to Home
+Screen for an app-like icon).
+
+> **Status: Phase 0 + 1 + 2 + 3 done; Phase 4 next.** Engine is the source
+> of truth for the drug formulary, OSA-diazepam interlock, Malamed
+> combined-percent rule, half-life metabolism, phase gating, release
+> eligibility, dismissal safety, and dose ceilings. Shell mounts the sticky
+> bar, nav drawer, undo toast, and four phase routes — Phase 1 form is
+> wired; Phase 2/3/4 are placeholders waiting on the next sprint.
 
 ## Quick start
 
