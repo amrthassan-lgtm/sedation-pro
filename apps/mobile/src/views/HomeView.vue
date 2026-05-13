@@ -1,23 +1,54 @@
 <script setup lang="ts">
-import { CLINICAL_LIB_VERSION } from '@sedation-pro/clinical';
+import { computed } from 'vue';
+
+import {
+  CLINICAL_LIB_VERSION,
+  DEFAULT_FORMULARY,
+  bmiFromImperial,
+  ivSedationStatus,
+  versedCeilingMg,
+} from '@sedation-pro/clinical';
+
+const bmi = computed(() => bmiFromImperial(180, 70));
+const ceilingWithOpioid = computed(() => versedCeilingMg(true));
+const sedation = computed(() => ivSedationStatus(7.5, 50));
+const ivCount = DEFAULT_FORMULARY.iv.length;
+const localCount = DEFAULT_FORMULARY.locals.length;
 </script>
 
 <template>
   <main class="home">
     <header class="hero">
-      <p class="caption">Phase 0 · Foundation</p>
+      <p class="caption">Phase 1 · Clinical Engine</p>
       <h1 class="title-display">Sedation Pro</h1>
       <p class="body muted">
-        Clinical IV sedation companion. Drug formulary, dosing rules, and phase gating land in Phase
-        1.
+        Pure-TS clinical engine: formulary, dosing math, gates, vitals. UI lands in Phase 2+.
       </p>
     </header>
 
     <section class="card">
-      <p class="heading">Build info</p>
+      <p class="heading">Live engine sample</p>
       <dl class="kv">
         <dt class="caption">clinical lib</dt>
         <dd class="body mono">v{{ CLINICAL_LIB_VERSION }}</dd>
+
+        <dt class="caption">formulary</dt>
+        <dd class="body">{{ ivCount }} IV · {{ localCount }} local</dd>
+
+        <dt class="caption">BMI 180 lb / 70 in</dt>
+        <dd class="body">
+          <span class="mono">{{ bmi?.value.toFixed(1) ?? '—' }}</span>
+          <span class="muted"> · {{ bmi?.category ?? '—' }}</span>
+        </dd>
+
+        <dt class="caption">Versed ceiling w/ opioid</dt>
+        <dd class="body mono">{{ ceilingWithOpioid.toFixed(1) }} mg</dd>
+
+        <dt class="caption">7.5 mg V + 50 mcg F</dt>
+        <dd class="body">
+          <span class="mono">{{ sedation.combined.percent.toFixed(0) }}%</span>
+          <span class="muted"> · {{ sedation.combined.severity }}</span>
+        </dd>
       </dl>
     </section>
   </main>
