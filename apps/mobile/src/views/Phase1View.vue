@@ -5,11 +5,11 @@ import { storeToRefs } from 'pinia';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
+import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { haptic } from '@/composables/useHaptics';
 import {
   UiBanner,
   UiBpInput,
-  UiButton,
   UiCard,
   UiCheckbox,
   UiDrugButton,
@@ -35,6 +35,8 @@ import {
 const patient = usePatientStore();
 const undo = useUndoStore();
 const eventLog = useEventLogStore();
+
+useAssessmentAudit();
 
 const {
   name,
@@ -80,7 +82,12 @@ const {
   isPhase1Complete,
 } = storeToRefs(patient);
 
-const { events } = storeToRefs(eventLog);
+const { phase1LockedAt } = storeToRefs(eventLog);
+
+function fmtClock(ms: number | null): string {
+  if (ms === null) return '—';
+  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
 function formatHeight(inches: number | null): string {
   if (inches === null) return '—';
@@ -276,28 +283,6 @@ const diazepamModalCopy = computed(() => {
     hideCancel: false,
   };
 });
-
-// -------- Stamp full Phase 1 assessment ------------------------------------
-
-function stampAssessment() {
-  undo.stamp({
-    event: 'Phase 1 — Pre-Sedation Assessment',
-    details: {
-      Patient: name.value || '—',
-      Provider: provider.value || '—',
-      ASA: asaClass.value || '—',
-      Mallampati: mallampati.value || '—',
-      BMI: bmi.value ? bmi.value.value.toFixed(1) : '—',
-      BP: bp.value ? `${bp.value.sbp}/${bp.value.dbp}` : '—',
-      'SpO₂': spo2.value ? `${spo2.value.value}%` : '—',
-    },
-    toast: {
-      label: '✓ Pre-Sedation Assessment recorded',
-      sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      tone: 'safe',
-    },
-  });
-}
 </script>
 
 <template>
@@ -311,8 +296,14 @@ function stampAssessment() {
       </p>
     </header>
 
-    <UiBanner v-if="isPhase1Complete" tone="safe" title="Phase 1 complete" icon="✓">
-      All required fields filled. Phases 2 / 3 / 4 unlocked. The sticky bar shows the ready badge.
+    <UiBanner
+      v-if="isPhase1Complete"
+      tone="safe"
+      :title="phase1LockedAt ? `Phase 1 locked at ${fmtClock(phase1LockedAt)}` : 'Phase 1 complete'"
+      icon="✓"
+    >
+      All required fields filled. Phases 2 / 3 / 4 unlocked. Amendments to vitals, ASA, Mallampati,
+      OSA, meds, allergies, and other clinical fields are recorded automatically to the chronology.
     </UiBanner>
     <UiBanner v-else tone="info" title="Clearance progress" icon="ℹ">
       <strong>{{ completeness.done }}</strong> of {{ completeness.total }} required fields filled.
@@ -624,26 +615,6 @@ function stampAssessment() {
           @click="startDiazepam(10)"
         />
       </div>
-    </UiCard>
-
-    <UiCard tint="ph1">
-      <p class="heading">Confirm Assessment</p>
-      <p class="body muted">
-        Stamps the full pre-sedation assessment into the chronological event log with an undo toast
-        for 8 seconds.
-      </p>
-      <UiButton
-        tone="success"
-        :disabled="!isPhase1Complete"
-        block
-        class="mt-2"
-        @click="stampAssessment"
-      >
-        Stamp Pre-Sedation Assessment
-      </UiButton>
-      <p class="caption mt-2">
-        Event log size: <strong>{{ events.length }}</strong>
-      </p>
     </UiCard>
 
     <UiModal

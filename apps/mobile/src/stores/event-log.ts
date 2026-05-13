@@ -23,11 +23,21 @@ function nextId(): string {
   return `evt-${eventCounter}-${Date.now().toString(36)}`;
 }
 
+export const PHASE1_LOCK_EVENT = 'Phase 1 — Pre-Sedation Assessment';
+export const PHASE1_AMENDMENT_EVENT = 'Phase 1 — Assessment amended';
+
 export const useEventLogStore = defineStore('eventLog', () => {
   const events = ref<LogEvent[]>([]);
 
   const count = computed(() => events.value.length);
   const last = computed<LogEvent | undefined>(() => events.value[events.value.length - 1]);
+
+  // First lock wins — re-mounts can't accidentally produce two lock events
+  // even if a hydration race somehow slipped one through.
+  const phase1LockEvent = computed<LogEvent | undefined>(() =>
+    events.value.find((e) => e.event === PHASE1_LOCK_EVENT),
+  );
+  const phase1LockedAt = computed<number | null>(() => phase1LockEvent.value?.timestamp ?? null);
 
   function append(event: string, details: Record<string, string> = {}): LogEvent {
     const entry: LogEvent = {
@@ -59,5 +69,13 @@ export const useEventLogStore = defineStore('eventLog', () => {
   // The chrono log IS the medicolegal record — must survive page reloads.
   persistRefs('sedation-pro:event-log:v1', { events });
 
-  return { events, count, last, append, removeById, clear };
+  return {
+    events,
+    count,
+    last,
+    phase1LockedAt,
+    append,
+    removeById,
+    clear,
+  };
 });
