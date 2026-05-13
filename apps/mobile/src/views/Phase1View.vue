@@ -8,6 +8,7 @@ import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { haptic } from '@/composables/useHaptics';
+import { useVitalCards } from '@/composables/useVitalCards';
 import {
   UiBanner,
   UiBpInput,
@@ -30,7 +31,6 @@ import {
   diazepamGate,
   lastExamCheck,
   nicotineProtocol,
-  type Severity,
 } from '@sedation-pro/clinical';
 
 const router = useRouter();
@@ -144,13 +144,6 @@ function fmtClock(ms: number | null): string {
   return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatHeight(inches: number | null): string {
-  if (inches === null) return '—';
-  const ft = Math.floor(inches / 12);
-  const rem = inches - ft * 12;
-  return `${ft}′${rem}″`;
-}
-
 const asaOptions = [
   { value: 'I', label: 'ASA I — Healthy' },
   { value: 'II', label: 'ASA II — Mild systemic disease' },
@@ -176,68 +169,7 @@ const smokingOptions = [
 
 // -------- Live derived UI bits ---------------------------------------------
 
-const bmiCard = computed(() => {
-  if (!bmi.value) {
-    return { value: '—', category: undefined, severity: 'empty' as const, detail: undefined };
-  }
-  const severity: Severity =
-    bmi.value.category === 'severe'
-      ? 'limit'
-      : bmi.value.category === 'obese'
-        ? 'caution'
-        : bmi.value.category === 'overweight'
-          ? 'caution'
-          : bmi.value.category === 'underweight'
-            ? 'caution'
-            : 'safe';
-  const labels: Record<typeof bmi.value.category, string> = {
-    underweight: 'Underweight',
-    normal: 'Normal',
-    overweight: 'Overweight',
-    obese: 'Obese',
-    severe: 'Class III',
-  };
-  return {
-    value: bmi.value.value.toFixed(1),
-    category: labels[bmi.value.category],
-    severity,
-    detail: `${weightLb.value ?? '—'} lb · ${formatHeight(heightIn.value)}`,
-  };
-});
-
-const bpCard = computed(() => {
-  if (!bp.value) {
-    return { value: '—', category: undefined, severity: 'empty' as const };
-  }
-  const labels: Record<typeof bp.value.category, string> = {
-    normal: 'Normal',
-    elevated: 'Elevated',
-    'stage-1': 'Stage 1',
-    'stage-2': 'Stage 2',
-    crisis: 'Crisis',
-  };
-  return {
-    value: `${bp.value.sbp}/${bp.value.dbp}`,
-    category: labels[bp.value.category],
-    severity: bp.value.severity,
-  };
-});
-
-const spo2Card = computed(() => {
-  if (!spo2.value) {
-    return { value: '—', category: undefined, severity: 'empty' as const };
-  }
-  const labels: Record<typeof spo2.value.category, string> = {
-    normal: 'Normal',
-    mild: 'Mild hypoxemia',
-    severe: 'Severe hypoxemia',
-  };
-  return {
-    value: spo2.value.value.toString(),
-    category: labels[spo2.value.category],
-    severity: spo2.value.severity,
-  };
-});
+const { bmiCard, bpCard, spo2Card } = useVitalCards();
 
 const lastExam = computed(() => {
   if (!lastExamDate.value || age.value === null) return null;
