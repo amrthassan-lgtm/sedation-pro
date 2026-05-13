@@ -8,6 +8,7 @@ import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { haptic } from '@/composables/useHaptics';
+import PhaseLayout from '@/components/PhaseLayout.vue';
 import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
 import {
   UiBanner,
@@ -267,7 +268,7 @@ const diazepamModalCopy = computed(() => {
 </script>
 
 <template>
-  <main class="phase-view">
+  <PhaseLayout>
     <header class="phase-hero">
       <p class="caption">Phase 1 · Pre-Sedation Assessment</p>
       <h1 class="title-display">Patient Clearance</h1>
@@ -706,18 +707,10 @@ const diazepamModalCopy = computed(() => {
         </template>
       </button>
     </div>
-  </main>
+  </PhaseLayout>
 </template>
 
 <style scoped>
-.phase-view {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  padding: var(--sp-5) var(--sp-4) var(--sp-7);
-  max-width: 760px;
-  margin-inline: auto;
-}
 .phase-hero {
   display: flex;
   flex-direction: column;
