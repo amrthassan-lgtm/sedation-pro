@@ -81,7 +81,11 @@ const phaseEntries = computed<NavPhaseEntry[]>(() => {
 const quickRefActive = computed(() => currentPhase.value === 'quickref');
 
 async function go(target: NavPhaseEntry) {
-  if (target.locked) return;
+  // Even on locked rows we let `router.push` run — the router's guard rewrites
+  // the navigation back to `/phase/1`, fires the "Complete Phase 1 first"
+  // toast, and flips `phase1ValidationAttempted` so the offending fields paint
+  // red. A silent early-return here was a UX miss: tapping a 🔒 row produced
+  // zero feedback.
   await router.push(target.route);
   session.closeDrawer();
 }

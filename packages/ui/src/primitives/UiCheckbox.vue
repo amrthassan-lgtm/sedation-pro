@@ -9,6 +9,17 @@ interface Props {
   /** Danger variant — used for airway-risk acknowledgement. */
   tone?: 'neutral' | 'danger';
   disabled?: boolean;
+  /**
+   * When true, paint the row red — red dot border, red label, red ring. Used
+   * by Phase 1 to surface unfilled required checkboxes once the user has tried
+   * to navigate to a gated phase.
+   */
+  invalid?: boolean;
+  /**
+   * HTML id applied to the wrapper. Lets callers `scrollIntoView` straight to
+   * the checkbox — same affordance as UiField.
+   */
+  id?: string | undefined;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -17,6 +28,8 @@ const props = withDefaults(defineProps<Props>(), {
   required: false,
   tone: 'neutral',
   disabled: false,
+  invalid: false,
+  id: undefined,
 });
 
 const emit = defineEmits<{
@@ -31,6 +44,7 @@ function toggle() {
 
 <template>
   <label
+    :id="props.id"
     class="ui-check"
     :class="[
       `ui-check--${props.tone}`,
@@ -38,6 +52,7 @@ function toggle() {
         'is-checked': props.modelValue,
         'is-disabled': props.disabled,
         'is-required': props.required,
+        'is-invalid': props.invalid,
       },
     ]"
     @click.prevent="toggle"
@@ -49,6 +64,7 @@ function toggle() {
     <span v-if="props.label || $slots.default" class="ui-check-body">
       <span class="ui-check-label">
         <slot>{{ props.label }}</slot>
+        <span v-if="props.invalid" class="ui-check-required-text">required</span>
       </span>
       <span v-if="props.hint" class="ui-check-hint">{{ props.hint }}</span>
     </span>
@@ -145,5 +161,26 @@ function toggle() {
   font-size: var(--type-footnote);
   color: var(--color-text-tertiary);
   line-height: 1.4;
+}
+
+.ui-check.is-invalid {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--color-danger);
+  background: var(--color-danger-soft);
+}
+.ui-check.is-invalid .ui-check-dot {
+  border-color: var(--color-danger);
+  background: transparent;
+}
+.ui-check.is-invalid .ui-check-label {
+  color: var(--color-danger);
+}
+.ui-check-required-text {
+  margin-left: 6px;
+  color: var(--color-danger);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.5px;
+  font-size: 9px;
+  text-transform: uppercase;
 }
 </style>

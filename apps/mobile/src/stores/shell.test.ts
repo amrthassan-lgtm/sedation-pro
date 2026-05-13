@@ -1,5 +1,6 @@
 import { describe, beforeEach, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
+import { nextTick } from 'vue';
 
 import { useSessionStore } from './session';
 import { useEventLogStore } from './event-log';
@@ -124,6 +125,43 @@ describe('shell stores — single sources of truth', () => {
     patient.age = 75;
     const danger = patient.safetyAlerts.find((a) => a.code === 'age');
     expect(danger!.tone).toBe('danger');
+  });
+
+  it('patient.markValidationAttempted flips the flag and resets once complete', async () => {
+    const patient = usePatientStore();
+    expect(patient.phase1ValidationAttempted).toBe(false);
+
+    patient.markValidationAttempted();
+    expect(patient.phase1ValidationAttempted).toBe(true);
+
+    // Fill the full required set so isPhase1Complete flips to true; the
+    // watcher inside the store should clear the validation flag on the same
+    // tick so the red rings auto-dismiss.
+    patient.name = 'Jane Doe';
+    patient.mrn = '12345';
+    patient.provider = 'Dr. Hassan';
+    patient.careName = 'John Doe';
+    patient.carePhone = '5551234567';
+    patient.weightLb = 180;
+    patient.heightIn = 70;
+    patient.age = 45;
+    patient.lastExamDate = '2025-12-01';
+    patient.medsVerified = true;
+    patient.osaStatus = 'none';
+    patient.smokingStatus = 'never';
+    patient.mallampati = 'II';
+    patient.asaClass = 'II';
+    patient.npoConfirmed = true;
+    patient.consentObtained = true;
+    patient.ekgPlaced = true;
+    patient.timeOutPerformed = true;
+    patient.teamReady = true;
+    patient.emergencyDrugsAvailable = true;
+    patient.monitoringEquipmentChecked = true;
+
+    expect(patient.isPhase1Complete).toBe(true);
+    await nextTick();
+    expect(patient.phase1ValidationAttempted).toBe(false);
   });
 
   it('patient.completeness adds baseline_glucose when diabetic is yes', () => {

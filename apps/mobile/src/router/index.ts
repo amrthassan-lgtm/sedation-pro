@@ -77,6 +77,10 @@ router.beforeEach((to: RouteLocationNormalized) => {
   const patient = usePatientStore();
   const targetPhase = PHASE_ROUTES[to.path];
   if (targetPhase && GATED_PHASES.has(targetPhase) && !patient.isPhase1Complete) {
+    // Flip the validation flag so Phase 1 paints red rings on every missing
+    // required field — the user gets a concrete visual answer to "which ones?"
+    // in addition to the toast below.
+    patient.markValidationAttempted();
     // Surface a toast so the redirect isn't silent. The user sees a clear
     // "Phase 1 not complete yet" explanation rather than wondering why the
     // tap appeared to do nothing.

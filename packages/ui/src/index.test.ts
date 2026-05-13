@@ -185,6 +185,33 @@ describe('@sedation-pro/ui', () => {
     wrapper.unmount();
   });
 
+  it('UiField marks itself invalid and exposes its id for scroll-to', () => {
+    const wrapper = mount(UiField, {
+      props: { label: 'Patient name', required: true, invalid: true, id: 'field-pt' },
+    });
+    expect(wrapper.classes()).toContain('is-invalid');
+    expect((wrapper.element as HTMLElement).id).toBe('field-pt');
+    // The "required" inline hint should appear once invalid.
+    expect(wrapper.text()).toContain('required');
+    wrapper.unmount();
+  });
+
+  it('UiCheckbox marks itself invalid and exposes its id for scroll-to', () => {
+    const wrapper = mount(UiCheckbox, {
+      props: {
+        modelValue: false,
+        label: 'NPO confirmed',
+        required: true,
+        invalid: true,
+        id: 'field-npo_confirmed',
+      },
+    });
+    expect(wrapper.classes()).toContain('is-invalid');
+    expect((wrapper.element as HTMLElement).id).toBe('field-npo_confirmed');
+    expect(wrapper.text()).toContain('required');
+    wrapper.unmount();
+  });
+
   it('UiHeightInput splits inches into ft/in and recombines on input', async () => {
     const wrapper = mount(UiHeightInput, { props: { modelValue: 70 } });
     const inputs = wrapper.findAll('input');

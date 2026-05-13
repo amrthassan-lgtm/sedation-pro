@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { usePatientStore } from '@/stores/patient';
@@ -80,9 +80,34 @@ const {
   spo2,
   completeness,
   isPhase1Complete,
+  phase1ValidationAttempted,
 } = storeToRefs(patient);
 
 const { phase1LockedAt } = storeToRefs(eventLog);
+
+/**
+ * Set of clinical-engine ids for every still-missing required field. The keys
+ * (`pt`, `mrn`, `npo_confirmed`, …) come from `PHASE1_REQUIRED_FIELDS` in
+ * `@sedation-pro/clinical`. Pairing this with `phase1ValidationAttempted`
+ * lets each UiField paint its red ring on demand, not on first render.
+ */
+const missingIds = computed(() => new Set(completeness.value.missing.map((m) => m.id)));
+
+function isMissing(id: string): boolean {
+  return phase1ValidationAttempted.value && missingIds.value.has(id);
+}
+
+// Scroll the first missing field into view when a failed navigation flips the
+// validation flag. `nextTick` so the freshly-applied `is-invalid` class has
+// painted before we measure offsets.
+watch(phase1ValidationAttempted, async (attempted) => {
+  if (!attempted) return;
+  await nextTick();
+  const first = completeness.value.missing[0];
+  if (!first) return;
+  const el = document.getElementById(`field-${first.id}`);
+  el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
 
 function fmtClock(ms: number | null): string {
   if (ms === null) return '—';
@@ -316,14 +341,14 @@ const diazepamModalCopy = computed(() => {
     <UiCard tint="ph1" active>
       <p class="heading">Patient Identification</p>
       <UiStack :gap="3" class="mt-2">
-        <UiField label="Patient name" required>
+        <UiField id="field-pt" label="Patient name" required :invalid="isMissing('pt')">
           <UiTextInput v-model="name" placeholder="Patient name" block />
         </UiField>
         <UiRow :gap="3" wrap>
-          <UiField label="MRN" required>
+          <UiField id="field-mrn" label="MRN" required :invalid="isMissing('mrn')">
             <UiTextInput v-model="mrn" placeholder="MRN" inputmode="numeric" />
           </UiField>
-          <UiField label="Provider" required>
+          <UiField id="field-prov" label="Provider" required :invalid="isMissing('prov')">
             <UiTextInput v-model="provider" placeholder="Dr. Hassan" />
           </UiField>
         </UiRow>
@@ -343,10 +368,20 @@ const diazepamModalCopy = computed(() => {
     <UiCard tint="ph1">
       <p class="heading">Caregiver</p>
       <UiRow :gap="3" wrap class="mt-2">
-        <UiField label="Caregiver name" required>
+        <UiField
+          id="field-care_name"
+          label="Caregiver name"
+          required
+          :invalid="isMissing('care_name')"
+        >
           <UiTextInput v-model="careName" placeholder="Caregiver" />
         </UiField>
-        <UiField label="Caregiver phone" required>
+        <UiField
+          id="field-care_phone"
+          label="Caregiver phone"
+          required
+          :invalid="isMissing('care_phone')"
+        >
           <UiTextInput v-model="carePhone" placeholder="(###) ###-####" inputmode="tel" />
         </UiField>
       </UiRow>
@@ -356,13 +391,31 @@ const diazepamModalCopy = computed(() => {
       <p class="heading">Vitals & Metrics</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
-          <UiField label="Weight" hint="lbs" required>
+          <UiField
+            id="field-weight"
+            label="Weight"
+            hint="lbs"
+            required
+            :invalid="isMissing('weight')"
+          >
             <UiNumberInput v-model="weightLb" placeholder="lbs" />
           </UiField>
-          <UiField label="Height" hint="ft &prime; in" required>
+          <UiField
+            id="field-height"
+            label="Height"
+            hint="ft &prime; in"
+            required
+            :invalid="isMissing('height')"
+          >
             <UiHeightInput v-model="heightIn" />
           </UiField>
-          <UiField label="Age" hint="yrs" required>
+          <UiField
+            id="field-patient_age"
+            label="Age"
+            hint="yrs"
+            required
+            :invalid="isMissing('patient_age')"
+          >
             <UiNumberInput v-model="age" placeholder="yrs" />
           </UiField>
         </UiRow>
@@ -374,7 +427,12 @@ const diazepamModalCopy = computed(() => {
             <UiNumberInput v-model="baselineSpo2" placeholder="%" :min="0" :max="100" />
           </UiField>
         </UiRow>
-        <UiField label="Date of last exam" required>
+        <UiField
+          id="field-last_exam"
+          label="Date of last exam"
+          required
+          :invalid="isMissing('last_exam')"
+        >
           <UiTextInput v-model="lastExamDate" type="date" />
         </UiField>
       </UiStack>
@@ -410,6 +468,7 @@ const diazepamModalCopy = computed(() => {
         tone="caution"
         title="Out-of-date physical exam"
         icon="⚠"
+        class="mt-2"
       >
         Patient is {{ age }} y/o — requires an exam within the last
         <strong>{{ lastExam.cutoffMonths }}</strong> months. Last exam recorded:
@@ -421,16 +480,30 @@ const diazepamModalCopy = computed(() => {
       <p class="heading">Medical History</p>
       <UiStack :gap="3" class="mt-2">
         <UiCheckbox
+          id="field-meds_verified"
           v-model="medsVerified"
           required
+          :invalid="isMissing('meds_verified')"
           label="Drug interactions checked in Epocrates"
           hint="Print + scan to chart before sedation"
         />
-        <UiField label="OSA / CPAP history" required>
+        <UiField
+          id="field-osa_history"
+          label="OSA / CPAP history"
+          required
+          :invalid="isMissing('osa_history')"
+        >
           <UiSelect v-model="osaStatus" :options="osaOptions" placeholder="Select…" block />
         </UiField>
         <UiCheckbox v-model="diabetic" label="Diabetic" hint="Reveals baseline glucose field" />
-        <UiField v-if="diabetic" label="Baseline glucose" hint="mg/dL" required>
+        <UiField
+          v-if="diabetic"
+          id="field-baseline_glucose"
+          label="Baseline glucose"
+          hint="mg/dL"
+          required
+          :invalid="isMissing('baseline_glucose')"
+        >
           <UiNumberInput v-model="baselineGlucose" placeholder="mg/dL" />
         </UiField>
 
@@ -488,7 +561,12 @@ const diazepamModalCopy = computed(() => {
     <UiCard tint="ph1">
       <p class="heading">Social Screening</p>
       <UiStack :gap="3" class="mt-2">
-        <UiField label="Smoking status" required>
+        <UiField
+          id="field-smoking_status"
+          label="Smoking status"
+          required
+          :invalid="isMissing('smoking_status')"
+        >
           <UiSelect v-model="smokingStatus" :options="smokingOptions" placeholder="Select…" block />
         </UiField>
         <UiField
@@ -522,52 +600,76 @@ const diazepamModalCopy = computed(() => {
       <p class="heading">Safety Checklist</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
-          <UiField label="Mallampati" required>
+          <UiField
+            id="field-mallampati"
+            label="Mallampati"
+            required
+            :invalid="isMissing('mallampati')"
+          >
             <UiSelect v-model="mallampati" :options="mallampatiOptions" placeholder="Select…" />
           </UiField>
-          <UiField label="ASA class" required>
+          <UiField
+            id="field-asa_class"
+            label="ASA class"
+            required
+            :invalid="isMissing('asa_class')"
+          >
             <UiSelect v-model="asaClass" :options="asaOptions" placeholder="Select…" />
           </UiField>
         </UiRow>
         <UiCheckbox
+          id="field-npo_confirmed"
           v-model="npoConfirmed"
           required
+          :invalid="isMissing('npo_confirmed')"
           label="NPO confirmed"
           hint="Solids ≥6h · clear liquids ≥2h"
         />
         <UiCheckbox
+          id="field-consent_obtained"
           v-model="consentObtained"
           required
+          :invalid="isMissing('consent_obtained')"
           label="Informed consent obtained"
           hint="Risks / benefits / alternatives discussed and consent signed"
         />
         <UiCheckbox
+          id="field-ekg_placed"
           v-model="ekgPlaced"
           required
+          :invalid="isMissing('ekg_placed')"
           label="EKG leads placed"
           hint="3-lead — verify rhythm and waveform"
         />
         <UiCheckbox
+          id="field-time_out"
           v-model="timeOutPerformed"
           required
+          :invalid="isMissing('time_out')"
           label="Pre-procedure time-out performed"
           hint="Patient · procedure · site · allergies confirmed aloud with team"
         />
         <UiCheckbox
+          id="field-team_ready"
           v-model="teamReady"
           required
+          :invalid="isMissing('team_ready')"
           label="Team readiness confirmed"
           hint="Assistant + provider + monitor watcher present"
         />
         <UiCheckbox
+          id="field-emergency_drugs_available"
           v-model="emergencyDrugsAvailable"
           required
+          :invalid="isMissing('emergency_drugs_available')"
           label="Emergency drugs accessible"
           hint="Flumazenil · Naloxone · Epinephrine · Atropine all in reach"
         />
         <UiCheckbox
+          id="field-monitoring_equipment_checked"
           v-model="monitoringEquipmentChecked"
           required
+          :invalid="isMissing('monitoring_equipment_checked')"
           label="Monitors functional"
           hint="SpO₂ · BP · EtCO₂ · pulse-ox tested and reading"
         />

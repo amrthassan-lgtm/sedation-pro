@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 import type { BpValue } from '@sedation-pro/ui';
 import {
@@ -172,6 +172,24 @@ export const usePatientStore = defineStore('patient', () => {
 
   const isPhase1Complete = computed(() => completeness.value.complete);
 
+  /**
+   * Flips true the first time the user tries to leave Phase 1 with required
+   * fields still empty (router guard + nav-drawer tap). Components read it to
+   * surface red-ring "required" highlights on the offending fields. We reset
+   * once the form is clean so the rings clear themselves — and stay off the
+   * next time the user reopens a partially-filled chart, since this flag is
+   * ephemeral UI state and intentionally not persisted.
+   */
+  const phase1ValidationAttempted = ref(false);
+
+  function markValidationAttempted() {
+    phase1ValidationAttempted.value = true;
+  }
+
+  watch(isPhase1Complete, (complete) => {
+    if (complete) phase1ValidationAttempted.value = false;
+  });
+
   // Persist the form so reloading the page (or relaunching from the iPhone
   // home screen) doesn't wipe progress. Schema migrations land in Phase 5
   // proper — for now we trust the snapshot.
@@ -296,6 +314,8 @@ export const usePatientStore = defineStore('patient', () => {
     safetyAlerts,
     completeness,
     isPhase1Complete,
+    phase1ValidationAttempted,
+    markValidationAttempted,
     reset,
   };
 });
