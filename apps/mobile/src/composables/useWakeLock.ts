@@ -3,9 +3,15 @@ import { onScopeDispose, ref, type Ref } from 'vue';
 /**
  * Screen wake-lock. Calls the web Wake Lock API
  * (https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API)
- * to keep the device's screen from sleeping while sedation is in progress —
- * a clinical-safety requirement, since the sticky bar's timers and the
- * post-flumazenil monitoring chip have to stay visible for the entire case.
+ * to keep the device's screen from sleeping for the entire time the app is
+ * in use — operators read the sticky bar, drug timers, and vitals readouts
+ * passively for long stretches, and an auto-locked screen during a case is
+ * a clinical-safety hazard.
+ *
+ * `App.vue` calls `request()` once at mount; the lock is held until the app
+ * unmounts (handled by `onScopeDispose`). Per-phase gating is intentionally
+ * gone — the universal "on while open" model matches every other clinical
+ * tablet workflow operators are used to.
  *
  * Supported in iOS Safari 16.4+ and Chrome / Edge / Android Chrome. On
  * unsupported browsers this is a no-op — components stay functional, just
