@@ -244,6 +244,32 @@ describe('@sedation-pro/ui', () => {
     wrapper.unmount();
   });
 
+  it('UiSyringe plunger rod bridges the seal to the thumb ring', () => {
+    // Regression guard: a small draw (0.5 mL of 3 mL) used to leave a visible
+    // empty span between the plunger seal (near the fluid) and the static
+    // rod/thumb assembly at the back of the barrel. The rod must be dynamic
+    // — wide enough to physically connect the seal's right edge to the
+    // thumb ring's left edge.
+    const wrapper = mount(UiSyringe, {
+      props: { label: 'Fentanyl', capacityMl: 3, drawnMl: 0.5, color: '#3b82f6' },
+    });
+    const svg = wrapper.find('svg').element as SVGElement;
+    const rects = Array.from(svg.querySelectorAll('rect'));
+    const greyRects = rects.filter((r) => r.getAttribute('fill') === '#5d6b85');
+    expect(greyRects.length).toBeGreaterThanOrEqual(2); // seal + rod
+    const seal = greyRects[0]!; // rendered first in template
+    const rod = greyRects[1]!;
+    const sealRight = Number(seal.getAttribute('x')) + Number(seal.getAttribute('width'));
+    const rodLeft = Number(rod.getAttribute('x'));
+    const rodRight = rodLeft + Number(rod.getAttribute('width'));
+    // Thumb ring is at x=256 (the only black rect with that x).
+    const thumb = rects.find((r) => r.getAttribute('fill') === '#0d1527');
+    const thumbLeft = Number(thumb!.getAttribute('x'));
+    expect(Math.abs(rodLeft - sealRight)).toBeLessThan(0.5);
+    expect(Math.abs(rodRight - thumbLeft)).toBeLessThan(0.5);
+    wrapper.unmount();
+  });
+
   it('UiPercentBar derives severity from percent when not provided', () => {
     const cases: Array<[number, string]> = [
       [0, 'safe'],

@@ -62,7 +62,7 @@ const BARREL_Y = 26;
 const BARREL_H = 22;
 const BARREL_RIGHT = BARREL_X + BARREL_W; // 206
 const PLUNGER_HEAD_W = 8;
-const ROD_LEN = 52;
+const THUMB_X = 256;
 const THUMB_W = 12;
 const THUMB_Y = 18;
 const THUMB_H = 38;
@@ -78,6 +78,16 @@ const plungerHeadX = computed(() => {
   const x = BARREL_X + fluidW.value;
   return Math.min(BARREL_RIGHT - PLUNGER_HEAD_W, Math.max(BARREL_X, x));
 });
+
+/**
+ * Plunger rod stretches from the right edge of the seal out to the thumb
+ * ring, passing through the empty back portion of the barrel. Width is
+ * dynamic so the rod visually CONNECTS the seal to the thumb ring at every
+ * fluid level — without this the seal looks orphaned next to a long stretch
+ * of empty barrel.
+ */
+const rodX = computed(() => plungerHeadX.value + PLUNGER_HEAD_W);
+const rodW = computed(() => Math.max(0, THUMB_X - rodX.value));
 
 const ticks = computed(() => {
   const out: Array<{ x: number; label: string | null }> = [];
@@ -153,11 +163,12 @@ const ticks = computed(() => {
           stroke-width="0.8"
         />
 
-        <!-- Plunger rod sticks out the right of the barrel toward the thumb ring. -->
+        <!-- Plunger rod — bridges the seal to the thumb ring, passing through
+             the empty back portion of the barrel and out the back. -->
         <rect
-          :x="BARREL_RIGHT"
+          :x="rodX"
           :y="BARREL_Y + BARREL_H / 2 - 3"
-          :width="ROD_LEN"
+          :width="rodW"
           height="6"
           fill="#5d6b85"
           stroke="#a8b6cf"
@@ -166,7 +177,7 @@ const ticks = computed(() => {
 
         <!-- Thumb ring at the back of the rod. -->
         <rect
-          :x="BARREL_RIGHT + ROD_LEN"
+          :x="THUMB_X"
           :y="THUMB_Y"
           :width="THUMB_W"
           :height="THUMB_H"
