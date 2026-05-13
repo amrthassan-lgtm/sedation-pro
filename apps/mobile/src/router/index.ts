@@ -47,6 +47,12 @@ export const router = createRouter({
       component: () => import('@/views/QuickReferenceView.vue'),
     },
     {
+      path: '/quick-reference/:id',
+      name: 'quickref-detail',
+      component: () => import('@/views/QuickReferenceDetailView.vue'),
+      props: true,
+    },
+    {
       path: '/clinical-note',
       name: 'clinical-note',
       component: () => import('@/views/ClinicalNoteView.vue'),
@@ -103,9 +109,16 @@ router.beforeEach((to: RouteLocationNormalized) => {
  * store side here — components that need to navigate call `router.push()`
  * and the watcher below catches it.
  */
+function resolvePhase(path: string): Phase | undefined {
+  if (PHASE_ROUTES[path]) return PHASE_ROUTES[path];
+  // Detail routes under /quick-reference/:id still belong to the quickref tint.
+  if (path.startsWith('/quick-reference')) return 'quickref';
+  return undefined;
+}
+
 router.afterEach((to: RouteLocationNormalized) => {
   const session = useSessionStore();
-  const phase = PHASE_ROUTES[to.path];
+  const phase = resolvePhase(to.path);
   if (phase) {
     session.setPhase(phase);
   }

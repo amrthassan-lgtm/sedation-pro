@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 
+const router = useRouter();
 const session = useSessionStore();
 const patient = usePatientStore();
 const undo = useUndoStore();
@@ -26,7 +28,7 @@ const meta = computed(() => phaseMeta[currentPhase.value]);
 const showClearance = computed(() => currentPhase.value === 'phase1');
 
 function emergency() {
-  session.setPhase('quickref');
+  void router.push('/quick-reference');
 }
 </script>
 
