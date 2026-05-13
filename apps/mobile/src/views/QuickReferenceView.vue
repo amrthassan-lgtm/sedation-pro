@@ -4,15 +4,107 @@ import { useRouter } from 'vue-router';
 
 import {
   CRITICAL_PROTOCOL_IDS,
+  DEFAULT_FORMULARY,
   EMERGENCY_PROTOCOLS,
   type EmergencyCategory,
   type EmergencyProtocol,
 } from '@sedation-pro/clinical';
-import { UiBanner, UiCard, UiStack, UiTextInput } from '@sedation-pro/ui';
+import { UiBanner, UiCard, UiStack, UiSyringe, UiTextInput } from '@sedation-pro/ui';
 
 const router = useRouter();
 
 const query = ref('');
+
+/**
+ * IV drug reference table — restores the legacy app's drawing-up chart so a
+ * clinician can grab the Emergency button and see "Versed 1 mg → 0.2 mL"
+ * without leaving the screen. Doses + notes are presentation data; the
+ * concentration / colour / formal name come from the formulary so practices
+ * that override the formulary get this card free.
+ */
+interface DrugRefSeed {
+  readonly id: string;
+  readonly syringeMl: number;
+  readonly tapeLabel: string;
+  readonly tapeColor?: string;
+  readonly doses: ReadonlyArray<number>;
+  readonly doseUnit: 'mg' | 'mcg';
+  readonly note: string;
+  readonly warning?: string;
+}
+
+const DRUG_REF_SEEDS: ReadonlyArray<DrugRefSeed> = [
+  {
+    id: 'versed',
+    syringeMl: 1,
+    tapeLabel: 'ORANGE',
+    tapeColor: '#f97316',
+    doses: [1, 2],
+    doseUnit: 'mg',
+    note: 'Test dose 1 mg always. Titrate 1-2 mg q3-5 min to effect. Max typically 5-8 mg.',
+  },
+  {
+    id: 'fentanyl',
+    syringeMl: 3,
+    tapeLabel: 'BLUE',
+    tapeColor: '#3b82f6',
+    doses: [25, 50],
+    doseUnit: 'mcg',
+    note: 'Titrate 25-50 mcg q5 min. Lowers BP slightly — use judiciously.',
+    warning: 'Allergy to codeine → no fentanyl.',
+  },
+  {
+    id: 'zofran',
+    syringeMl: 3,
+    tapeLabel: 'WHITE',
+    tapeColor: '#94a3b8',
+    doses: [4],
+    doseUnit: 'mg',
+    note: 'At onset of nausea, prior history, or end of appointment. Give over 2-5 min.',
+  },
+  {
+    id: 'flumazenil',
+    syringeMl: 3,
+    tapeLabel: 'BLACK sharpie',
+    doses: [0.2],
+    doseUnit: 'mg',
+    note: 'Draw 2 mL per dose. Repeat q3 min. Max 1.0 mg total (5 doses).',
+    warning: 'Wait 3 min between doses · monitor 120 min post-reversal.',
+  },
+  {
+    id: 'naloxone',
+    syringeMl: 3,
+    tapeLabel: 'BLACK sharpie',
+    doses: [0.4],
+    doseUnit: 'mg',
+    note: 'Single-dose vial = 1 mL. Repeat q2-3 min PRN. Give over 2-3 min.',
+  },
+];
+
+const drugRefs = computed(() => {
+  return DRUG_REF_SEEDS.map((seed) => {
+    const drug = DEFAULT_FORMULARY.iv.find((d) => d.id === seed.id);
+    if (!drug) return null;
+    const conc = drug.concentration;
+    const rows = seed.doses.map((dose) => ({
+      doseLabel: `${dose} ${seed.doseUnit}`,
+      ml: dose / conc.value,
+    }));
+    // Visualise the most common dose (first row) inside the syringe.
+    const drawnMl = rows[0]?.ml ?? 0;
+    return {
+      seed,
+      drug,
+      rows,
+      drawnMl: Math.min(seed.syringeMl, drawnMl),
+    };
+  }).filter((x): x is NonNullable<typeof x> => x !== null);
+});
+
+const expandedDrugId = ref<string | null>(null);
+function toggleDrug(id: string) {
+  expandedDrugId.value = expandedDrugId.value === id ? null : id;
+}
 
 interface CategoryGroup {
   id: string;
@@ -105,6 +197,73 @@ function clearSearch() {
         sticky bar's <strong>Emergency</strong> button.
       </p>
     </header>
+
+    <!-- IV Drug Reference — collapsible pills showing draw-up chart per drug. -->
+
+    <UiCard class="drug-ref-card">
+      <header class="drug-ref-head">
+        <p class="heading">💉 IV Drug Reference</p>
+        <span class="drug-ref-count">{{ drugRefs.length }}</span>
+      </header>
+      <UiStack :gap="1">
+        <div
+          v-for="ref in drugRefs"
+          :key="ref.seed.id"
+          class="drug-pill-wrap"
+          :class="{ 'is-open': expandedDrugId === ref.seed.id }"
+        >
+          <button
+            type="button"
+            class="drug-pill"
+            :class="`drug-pill--${ref.seed.id}`"
+            :aria-expanded="expandedDrugId === ref.seed.id"
+            @click="toggleDrug(ref.seed.id)"
+          >
+            <span
+              class="drug-swatch"
+              :style="{ background: ref.drug.color ?? '#94a3b8' }"
+              aria-hidden="true"
+            />
+            <span class="drug-pill-info">
+              <span class="drug-pill-name">{{ ref.drug.name }}</span>
+              <span class="drug-pill-meta">
+                {{ ref.drug.concentration.value }} {{ ref.drug.concentration.unit }} ·
+                {{ ref.seed.syringeMl }} cc syringe ·
+                <span :style="{ color: ref.seed.tapeColor ?? '#cbd5e1' }">{{
+                  ref.seed.tapeLabel
+                }}</span>
+                tape
+              </span>
+            </span>
+            <span class="drug-pill-chevron" aria-hidden="true">
+              {{ expandedDrugId === ref.seed.id ? '▾' : '▸' }}
+            </span>
+          </button>
+
+          <div v-if="expandedDrugId === ref.seed.id" class="drug-pill-detail">
+            <UiSyringe
+              :label="ref.drug.shortName"
+              :capacity-ml="ref.seed.syringeMl"
+              :drawn-ml="ref.drawnMl"
+              :color="ref.drug.color ?? '#94a3b8'"
+              :concentration="`${ref.drug.concentration.value} ${ref.drug.concentration.unit}`"
+              :caption="`${ref.rows[0]?.doseLabel ?? ''} · ${ref.rows[0]?.ml.toFixed(1) ?? ''} mL`"
+              compact
+            />
+            <div class="drug-dose-list">
+              <div v-for="(row, i) in ref.rows" :key="i" class="drug-dose-row">
+                <span class="drug-dose-amt" :style="{ color: ref.drug.color }">
+                  {{ row.doseLabel }}
+                </span>
+                <span class="drug-dose-vol">{{ row.ml.toFixed(1) }} mL</span>
+              </div>
+            </div>
+            <p class="drug-dose-note">{{ ref.seed.note }}</p>
+            <p v-if="ref.seed.warning" class="drug-dose-warn">⚠ {{ ref.seed.warning }}</p>
+          </div>
+        </div>
+      </UiStack>
+    </UiCard>
 
     <!-- Critical shortcuts: 6 chips in one wrap row, big tap targets. -->
 
@@ -216,6 +375,126 @@ function clearSearch() {
 }
 .muted {
   color: var(--color-text-secondary);
+}
+
+/* ----------------- IV drug reference -------------------------------- */
+.drug-ref-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.drug-ref-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.drug-ref-count {
+  font-size: var(--type-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.4px;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  margin-left: auto;
+}
+.drug-pill-wrap {
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.drug-pill-wrap.is-open {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-border);
+}
+.drug-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px 12px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-150) var(--ease-standard);
+}
+.drug-pill:active {
+  background: rgba(255, 255, 255, 0.04);
+}
+.drug-pill-wrap.is-open .drug-pill {
+  border: none;
+}
+.drug-swatch {
+  flex-shrink: 0;
+  width: 10px;
+  height: 28px;
+  border-radius: 2px;
+}
+.drug-pill-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.drug-pill-name {
+  font-size: var(--type-body);
+  font-weight: var(--weight-semibold);
+}
+.drug-pill-meta {
+  font-size: var(--type-caption);
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.2px;
+}
+.drug-pill-chevron {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--color-text-disabled);
+  font-family: var(--font-mono);
+}
+.drug-pill-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: 0 12px 12px;
+}
+.drug-dose-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.drug-dose-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+}
+.drug-dose-amt {
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.3px;
+}
+.drug-dose-vol {
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+}
+.drug-dose-note {
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+.drug-dose-warn {
+  font-size: var(--type-footnote);
+  color: var(--color-warn);
+  background: var(--color-warn-soft);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+  margin: 0;
 }
 
 /* ----------------- Critical shortcut row ---------------------------- */

@@ -5,7 +5,13 @@ import { computed } from 'vue';
  * Stylised syringe illustration. Renders an SVG of a generic IV syringe with:
  *  - a transparent barrel with millilitre tick marks
  *  - a coloured fluid fill matching the drug's brand tint
- *  - a plunger positioned so the *empty* portion equals the dose drawn
+ *  - a plunger seal whose position tracks the volume drawn
+ *
+ * Orientation matches the legacy single-file app: needle on the left (the
+ * "patient" end), thumb ring on the right (the operator end). The plunger
+ * seal sits at the RIGHT edge of the fluid column, with a static rod and
+ * thumb ring drawn just outside the back of the barrel. As more fluid is
+ * drawn the seal advances rightward toward the back.
  *
  * The component is intentionally a single primitive instead of five drug-
  * specific assets — colour band + concentration text is the per-drug variance,
@@ -47,26 +53,31 @@ const fillFraction = computed(() => {
 });
 
 // Geometry — single canvas coordinates so the math is readable in the template.
-const BARREL_X = 18;
-const BARREL_W = 200;
+// viewBox is 280×70. Needle on the left, barrel in the middle, rod+thumb on the right.
+const NEEDLE_W = 30;
+const HUB_W = 8;
+const BARREL_X = NEEDLE_W + HUB_W; // 38
+const BARREL_W = 168;
 const BARREL_Y = 26;
 const BARREL_H = 22;
-const PLUNGER_HEAD_W = 6;
+const BARREL_RIGHT = BARREL_X + BARREL_W; // 206
+const PLUNGER_HEAD_W = 8;
+const ROD_LEN = 52;
+const THUMB_W = 12;
+const THUMB_Y = 18;
+const THUMB_H = 38;
 
 const fluidW = computed(() => BARREL_W * fillFraction.value);
 
 /**
- * Left edge of the plunger head — sits immediately behind the fluid column.
- * As more fluid is drawn the plunger retreats LEFT, away from the needle.
- * Clamped at the barrel's back so a full draw doesn't overlap the flange.
+ * Left edge of the plunger seal — sits at the RIGHT edge of the fluid column.
+ * As more fluid is drawn the seal advances rightward toward the back of the
+ * barrel. Clamped so a full draw doesn't visually exit the barrel.
  */
-const plungerHeadLeftX = computed(() => {
-  const x = BARREL_X + BARREL_W - fluidW.value - PLUNGER_HEAD_W;
-  return Math.max(BARREL_X, x);
+const plungerHeadX = computed(() => {
+  const x = BARREL_X + fluidW.value;
+  return Math.min(BARREL_RIGHT - PLUNGER_HEAD_W, Math.max(BARREL_X, x));
 });
-
-/** Visible rod length — fills the empty barrel space between flange and plunger. */
-const rodW = computed(() => Math.max(0, plungerHeadLeftX.value - (BARREL_X - 4)));
 
 const ticks = computed(() => {
   const out: Array<{ x: number; label: string | null }> = [];
@@ -93,19 +104,21 @@ const ticks = computed(() => {
         role="img"
         :aria-label="`${props.label} syringe, ${props.drawnMl} of ${props.capacityMl} millilitres drawn`"
       >
-        <!-- Flange (back of the syringe) -->
-        <rect
-          x="2"
-          y="22"
-          width="14"
-          height="30"
-          rx="2"
-          fill="#0d1527"
-          stroke="#8a9bb8"
-          stroke-width="1.2"
+        <!-- Needle shaft -->
+        <rect x="0" :y="BARREL_Y + BARREL_H / 2 - 1" :width="NEEDLE_W" height="2" fill="#cbd5e1" />
+        <!-- Needle bevel tip -->
+        <polygon
+          :points="`0,${BARREL_Y + BARREL_H / 2 - 1} -6,${BARREL_Y + BARREL_H / 2} 0,${BARREL_Y + BARREL_H / 2 + 1}`"
+          fill="#cbd5e1"
         />
 
-        <!-- Barrel outline -->
+        <!-- Luer hub: tapered cone from needle to barrel -->
+        <polygon
+          :points="`${NEEDLE_W},${BARREL_Y + 4} ${BARREL_X},${BARREL_Y} ${BARREL_X},${BARREL_Y + BARREL_H} ${NEEDLE_W},${BARREL_Y + BARREL_H - 4}`"
+          :fill="props.color"
+        />
+
+        <!-- Barrel outline (drawn before fluid so fluid renders inside it) -->
         <rect
           :x="BARREL_X"
           :y="BARREL_Y"
@@ -117,9 +130,9 @@ const ticks = computed(() => {
           stroke-width="1.4"
         />
 
-        <!-- Drug fill — sits inside the barrel from the cap end. -->
+        <!-- Drug fill — sits inside the barrel from the needle end (left). -->
         <rect
-          :x="BARREL_X + BARREL_W - fluidW"
+          :x="BARREL_X"
           :y="BARREL_Y + 2"
           :width="fluidW"
           :height="BARREL_H - 4"
@@ -128,27 +141,39 @@ const ticks = computed(() => {
           opacity="0.85"
         />
 
-        <!-- Plunger rod fills the empty barrel space behind the plunger head. -->
+        <!-- Plunger seal — pressed against the right edge of the fluid. -->
         <rect
-          :x="BARREL_X - 4"
-          y="32"
-          :width="rodW"
-          height="10"
+          :x="plungerHeadX"
+          :y="BARREL_Y - 1"
+          :width="PLUNGER_HEAD_W"
+          :height="BARREL_H + 2"
+          rx="1.5"
           fill="#5d6b85"
           stroke="#a8b6cf"
-          stroke-width="1"
+          stroke-width="0.8"
         />
 
-        <!-- Plunger head pressed against the back (left edge) of the fluid column. -->
+        <!-- Plunger rod sticks out the right of the barrel toward the thumb ring. -->
         <rect
-          :x="plungerHeadLeftX"
-          :y="BARREL_Y + 2"
-          :width="PLUNGER_HEAD_W"
-          :height="BARREL_H - 4"
-          rx="1"
-          fill="#cbd5e1"
-          stroke="#5d6b85"
+          :x="BARREL_RIGHT"
+          :y="BARREL_Y + BARREL_H / 2 - 3"
+          :width="ROD_LEN"
+          height="6"
+          fill="#5d6b85"
+          stroke="#a8b6cf"
           stroke-width="0.6"
+        />
+
+        <!-- Thumb ring at the back of the rod. -->
+        <rect
+          :x="BARREL_RIGHT + ROD_LEN"
+          :y="THUMB_Y"
+          :width="THUMB_W"
+          :height="THUMB_H"
+          rx="2"
+          fill="#0d1527"
+          stroke="#a8b6cf"
+          stroke-width="1.2"
         />
 
         <!-- ml tick marks across the barrel -->
@@ -174,24 +199,6 @@ const ticks = computed(() => {
             {{ t.label }}
           </text>
         </g>
-
-        <!-- Hub + needle -->
-        <path
-          :d="`M ${BARREL_X + BARREL_W} ${BARREL_Y + 4} L ${BARREL_X + BARREL_W + 8} ${BARREL_Y + 8} L ${BARREL_X + BARREL_W + 8} ${BARREL_Y + BARREL_H - 8} L ${BARREL_X + BARREL_W} ${BARREL_Y + BARREL_H - 4} Z`"
-          :fill="props.color"
-        />
-        <rect
-          :x="BARREL_X + BARREL_W + 8"
-          :y="BARREL_Y + 10"
-          width="44"
-          height="2"
-          fill="#cbd5e1"
-        />
-        <!-- needle bevel -->
-        <polygon
-          :points="`${BARREL_X + BARREL_W + 52},${BARREL_Y + 10} ${BARREL_X + BARREL_W + 60},${BARREL_Y + 11} ${BARREL_X + BARREL_W + 52},${BARREL_Y + 12}`"
-          fill="#cbd5e1"
-        />
       </svg>
     </div>
 
