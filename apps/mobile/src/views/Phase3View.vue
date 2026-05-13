@@ -3,6 +3,8 @@ import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useIVStore } from '@/stores/iv';
+import { useLocalAnestheticStore } from '@/stores/local';
+import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useNow } from '@/composables/useNow';
 import {
@@ -25,8 +27,12 @@ import { DEFAULT_FORMULARY, premedWait } from '@sedation-pro/clinical';
 import type { ActionState, BpValue, TimerPillStatus } from '@sedation-pro/ui';
 
 const iv = useIVStore();
+const local = useLocalAnestheticStore();
+const patient = usePatientStore();
 const undo = useUndoStore();
 const now = useNow(1000);
+
+const { weightLb } = storeToRefs(patient);
 
 const {
   n2oOn,
@@ -261,6 +267,124 @@ const fentanylCard = computed(() => {
 const combinedCard = computed(() => sedationStatus.value.combined);
 
 const versedCeilingFromFormulary = DEFAULT_FORMULARY.ceilings.versedMaxMg;
+
+// -------- Sedation level vitals (card 7) -----------------------------------
+
+const sedHr = ref<number | null>(null);
+const sedBp = ref<BpValue>({ sbp: null, dbp: null });
+const sedSpo2 = ref<number | null>(null);
+const sedEtco2 = ref<number | null>(null);
+const sedResponse = ref<string>('Relaxed');
+const sedVitalsState = ref<ActionState>('idle');
+
+function stampSedationVitals() {
+  iv.setSedationVitals({
+    hr: sedHr.value,
+    bp: sedBp.value,
+    spo2: sedSpo2.value,
+    etco2: sedEtco2.value,
+    response: sedResponse.value,
+    at: Date.now(),
+  });
+  sedVitalsState.value = 'locked';
+  undo.stamp({
+    event: 'Sedation Level Achieved',
+    details: {
+      HR: sedHr.value !== null ? `${sedHr.value} bpm` : '—',
+      BP:
+        sedBp.value.sbp !== null && sedBp.value.dbp !== null
+          ? `${sedBp.value.sbp}/${sedBp.value.dbp}`
+          : '—',
+      SpO2: sedSpo2.value !== null ? `${sedSpo2.value}%` : '—',
+      EtCO2: sedEtco2.value !== null ? `${sedEtco2.value} mmHg` : '—',
+      Response: sedResponse.value,
+    },
+    toast: { label: '✓ Sedation level stamped', tone: 'safe' },
+  });
+  setTimeout(() => {
+    sedVitalsState.value = 'logged';
+  }, 800);
+}
+
+// -------- Procedure start (card 8) -----------------------------------------
+
+const procStartState = ref<ActionState>('idle');
+function onProcedureStart() {
+  procStartState.value = 'locked';
+  undo.stamp({
+    event: 'Procedure Start',
+    details: {},
+    toast: { label: '✓ Procedure started', tone: 'safe' },
+  });
+  setTimeout(() => {
+    procStartState.value = 'logged';
+  }, 800);
+}
+
+// -------- Local anesthesia (card 9) ----------------------------------------
+
+function logLocal(drugId: string, displayName: string) {
+  if (!weightLb.value) return;
+  const record = local.logCarpule(drugId, 1);
+  undo.stamp({
+    event: 'Local Anesthesia',
+    details: { Agent: displayName, Amount: '1 carpule' },
+    toast: {
+      label: `✓ ${displayName} · 1 carpule`,
+      sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      tone: 'caution',
+    },
+    revert: () => {
+      local.removeById(record.id);
+    },
+  });
+}
+
+const localResult = computed(() => {
+  if (!weightLb.value) return null;
+  return local.combinedAt(weightLb.value, now.value);
+});
+
+// -------- Reversal (card 10) -----------------------------------------------
+
+const flumazenilProcessOpen = ref(false);
+const naloxoneProcessOpen = ref(false);
+
+function onFlumazenil() {
+  iv.logDose({ drug: 'flumazenil', mg: 0.2 });
+  flumazenilProcessOpen.value = true;
+  undo.stamp({
+    event: 'Reversal Dose',
+    details: { Drug: 'Flumazenil', Dose: '0.2 mg', Route: 'IV' },
+    toast: {
+      label: '✓ Flumazenil 0.2 mg IV (reversal)',
+      sub: 'IV-out wait extended to 120 min',
+      tone: 'caution',
+    },
+    revert: () => {
+      const last = iv.doses[iv.doses.length - 1];
+      if (last && last.drug === 'flumazenil') iv.removeDoseById(last.id);
+    },
+  });
+}
+
+function onNaloxone() {
+  iv.logDose({ drug: 'naloxone', mg: 0.4 });
+  naloxoneProcessOpen.value = true;
+  undo.stamp({
+    event: 'Reversal Dose',
+    details: { Drug: 'Naloxone', Dose: '0.4 mg', Route: 'IV' },
+    toast: {
+      label: '✓ Naloxone 0.4 mg IV (reversal)',
+      sub: 'Monitor 1-2 hours for re-sedation',
+      tone: 'limit',
+    },
+    revert: () => {
+      const last = iv.doses[iv.doses.length - 1];
+      if (last && last.drug === 'naloxone') iv.removeDoseById(last.id);
+    },
+  });
+}
 </script>
 
 <template>
@@ -524,11 +648,214 @@ const versedCeilingFromFormulary = DEFAULT_FORMULARY.ceilings.versedMaxMg;
       </UiStack>
     </UiCard>
 
-    <UiBanner tone="info" title="Next up" icon="🚧">
-      Local anesthesia tiles, Malamed combined-% card, and the reversal panel (flumazenil + naloxone
-      with the process boxes) ship in the next push. Phase 4 — recovery vitals, IV-out countdown,
-      signature pad, clinical note — follows that.
-    </UiBanner>
+    <!-- Card 7 — Sedation Level Vitals ---------------------------------- -->
+
+    <UiCard tint="ph3">
+      <p class="heading">7 · Sedation Level Achieved</p>
+      <p class="body muted">
+        Stamp a vitals row once the patient reaches target sedation — relaxed, cooperative,
+        maintains verbal response, stable vitals.
+      </p>
+      <UiStack :gap="3" class="mt-2">
+        <UiRow :gap="3" wrap>
+          <UiField label="HR" hint="bpm">
+            <UiNumberInput v-model="sedHr" placeholder="HR" />
+          </UiField>
+          <UiField label="BP" hint="mmHg">
+            <UiBpInput v-model="sedBp" />
+          </UiField>
+          <UiField label="SpO₂" hint="%">
+            <UiNumberInput v-model="sedSpo2" :min="0" :max="100" placeholder="%" />
+          </UiField>
+          <UiField label="EtCO₂" hint="mmHg">
+            <UiNumberInput v-model="sedEtco2" placeholder="EtCO₂" />
+          </UiField>
+        </UiRow>
+        <UiField label="Patient response">
+          <UiSelect v-model="sedResponse" :options="responseOptions" block />
+        </UiField>
+        <UiButton
+          tone="primary"
+          block
+          :state="sedVitalsState"
+          :logged-at="
+            sedVitalsState === 'logged'
+              ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : undefined
+          "
+          @click="stampSedationVitals"
+        >
+          Stamp Sedation Level
+        </UiButton>
+      </UiStack>
+    </UiCard>
+
+    <!-- Card 8 — Procedure Start ----------------------------------------- -->
+
+    <UiCard tint="ph3">
+      <p class="heading">8 · Procedure Start</p>
+      <p class="body muted">
+        Timestamps the official start of the dental procedure in the medicolegal record.
+      </p>
+      <UiButton
+        tone="primary"
+        block
+        :state="procStartState"
+        :logged-at="
+          procStartState === 'logged'
+            ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : undefined
+        "
+        class="mt-2"
+        @click="onProcedureStart"
+      >
+        Start Procedure
+      </UiButton>
+    </UiCard>
+
+    <!-- Card 9 — Local Anesthesia + live Malamed combined-% -------------- -->
+
+    <UiCard tint="ph3">
+      <p class="heading">9 · Local Anesthesia</p>
+      <p class="body muted">
+        Each tap logs one carpule. The combined-percent card uses half-life decay (lidocaine 100
+        min, septocaine 30 min, marcaine 170 min, mepivacaine 100 min) — the bar drops live as each
+        agent metabolizes.
+      </p>
+
+      <UiBanner v-if="!weightLb" tone="caution" icon="⚖️" class="mt-2">
+        Patient weight is required for the per-drug max-dose math. Fill weight in Phase 1.
+      </UiBanner>
+
+      <div class="drug-grid mt-2">
+        <UiDrugButton
+          tone="lidocaine"
+          name="Lidocaine"
+          dose="2%"
+          sub="1:100k epi · 1 carp"
+          :disabled="!weightLb"
+          @click="logLocal('lidocaine-2-epi100k', '2% Lidocaine 1:100k')"
+        />
+        <UiDrugButton
+          tone="septocaine-gold"
+          name="Septocaine"
+          dose="4%"
+          sub="1:100k epi · 1 carp"
+          :disabled="!weightLb"
+          @click="logLocal('septocaine-4-epi100k', '4% Septocaine 1:100k')"
+        />
+        <UiDrugButton
+          tone="septocaine-silver"
+          name="Septocaine"
+          dose="4%"
+          sub="1:200k epi · 1 carp"
+          :disabled="!weightLb"
+          @click="logLocal('septocaine-4-epi200k', '4% Septocaine 1:200k')"
+        />
+        <UiDrugButton
+          tone="marcaine"
+          name="Marcaine"
+          dose="0.25%"
+          sub="1:200k epi · 1 carp"
+          :disabled="!weightLb"
+          @click="logLocal('marcaine-0_25-epi200k', '0.25% Marcaine 1:200k')"
+        />
+        <UiDrugButton
+          tone="mepivacaine"
+          name="Mepivacaine"
+          dose="3%"
+          sub="plain · 1 carp"
+          :disabled="!weightLb"
+          @click="logLocal('mepivacaine-3-plain', '3% Mepivacaine plain')"
+        />
+      </div>
+
+      <UiStack v-if="localResult && localResult.perDrug.length > 0" :gap="2" class="mt-2">
+        <UiStatCard
+          v-for="row in localResult.perDrug"
+          :key="row.drugId"
+          :label="row.name"
+          :value="row.percent.toFixed(0)"
+          unit="%"
+          :category="row.severity"
+          :severity="row.severity"
+          :detail="`${row.carpulesGiven} carp · active ${row.activeMg.toFixed(1)} mg / ${row.maxMg.toFixed(0)} mg max`"
+        />
+
+        <UiCard>
+          <UiRow :gap="3" align="center" justify="between">
+            <div>
+              <p class="caption">Malamed combined load</p>
+              <p class="body muted">Sum of per-drug active% — keep below 100.</p>
+            </div>
+            <p class="big-pct" :class="`big-pct--${localResult.severity}`">
+              {{ localResult.combinedPercent.toFixed(0) }}%
+            </p>
+          </UiRow>
+          <UiPercentBar :percent="localResult.combinedPercent" thickness="lg" class="mt-2" />
+        </UiCard>
+      </UiStack>
+    </UiCard>
+
+    <!-- Card 10 — Reversal Agents (emergency use only) ------------------ -->
+
+    <UiCard tint="ph3">
+      <p class="heading">10 · Reversal Agents</p>
+      <UiBanner tone="limit" icon="🚨" class="mt-2">
+        <strong>Emergency use only.</strong> Tapping either button reveals the full administration
+        process below. Flumazenil also extends the IV-out / sign-note wait to 120 min per the DOCS
+        reversal monitoring protocol.
+      </UiBanner>
+      <div class="drug-grid mt-2">
+        <UiDrugButton
+          tone="flumazenil"
+          name="Flumazenil"
+          dose="0.2 mg"
+          sub="benzo reversal"
+          @click="onFlumazenil"
+        />
+        <UiDrugButton
+          tone="naloxone"
+          name="Naloxone"
+          dose="0.4 mg"
+          sub="opioid reversal"
+          @click="onNaloxone"
+        />
+      </div>
+
+      <div v-if="flumazenilProcessOpen" class="reversal-info mt-2">
+        <p class="caption">Flumazenil · process</p>
+        <ol class="reversal-steps">
+          <li>Draw 2 ml (0.2 mg) into a 3 cc syringe; label BLACK.</li>
+          <li>Open IV all the way; administer slowly over 15-20 seconds.</li>
+          <li><strong>Wait 3 minutes</strong>, then re-assess respiration and arousal.</li>
+          <li>If improving → <strong>stop.</strong> Do not give more.</li>
+          <li>If no improvement → repeat 0.2 mg every 3 min, max 1.0 mg total (5 doses).</li>
+          <li>
+            Continue to monitor for <strong>120 minutes</strong> — flumazenil half-life is shorter
+            than the benzodiazepine it reverses; patient may re-sedate.
+          </li>
+        </ol>
+      </div>
+
+      <div v-if="naloxoneProcessOpen" class="reversal-info mt-2">
+        <p class="caption">Naloxone · process</p>
+        <ol class="reversal-steps">
+          <li>Draw the single-dose vial (0.4 mg in 1 ml) into a 3 cc syringe; label BLACK.</li>
+          <li>Administer slowly over 2-3 minutes via the existing IV line.</li>
+          <li><strong>Wait 3 minutes</strong>, then re-assess respiration.</li>
+          <li>If still inadequate → repeat 0.4 mg q3 min.</li>
+          <li>
+            If no response after cumulative 5-10 mg → consider alternative diagnosis (stroke,
+            encephalopathy).
+          </li>
+          <li>
+            Monitor continuously for 1-2 hours after the last dose — patient may re-sedate as
+            naloxone clears.
+          </li>
+        </ol>
+      </div>
+    </UiCard>
   </main>
 </template>
 
@@ -580,5 +907,24 @@ const versedCeilingFromFormulary = DEFAULT_FORMULARY.ceilings.versedMaxMg;
 }
 .big-pct--crisis {
   color: var(--color-crisis);
+}
+.reversal-info {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+}
+.reversal-steps {
+  margin: var(--sp-2) 0 0;
+  padding-left: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--type-footnote);
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+.reversal-steps strong {
+  color: var(--color-text-primary);
 }
 </style>
