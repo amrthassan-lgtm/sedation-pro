@@ -108,6 +108,15 @@ const procStartState = computed<ActionState>(() =>
   procedureStartedAt.value !== null ? 'logged' : 'idle',
 );
 const ivStartState = computed<ActionState>(() => (ivStarted.value ? 'logged' : 'idle'));
+/**
+ * Versed test dose is clinically a one-shot — once any Versed has been given,
+ * subsequent doses belong on the Additional Doses card. Locking the button
+ * stops a clinician from accidentally double-logging "test dose" instead of
+ * "additional".
+ */
+const versedTestState = computed<ActionState>(() =>
+  lastVersedAt.value !== null ? 'logged' : 'idle',
+);
 
 function stampPreOpVitals() {
   iv.setPreOpVitals({
@@ -407,6 +416,7 @@ function onNaloxone() {
           block
           :state="preOpVitalsState"
           :logged-at="fmtClock(preOpStampedAt)"
+          :cooldown-ms="0"
           @click="stampPreOpVitals"
         >
           Stamp Pre-Op Vitals
@@ -426,6 +436,7 @@ function onNaloxone() {
         block
         :state="n2oOn ? 'logged' : 'idle'"
         logged-at="On"
+        :cooldown-ms="0"
         class="mt-2"
         @click="onN2oOn"
       >
@@ -464,6 +475,7 @@ function onNaloxone() {
           block
           :state="ivStartState"
           :logged-at="fmtClock(ivStartedAt)"
+          :cooldown-ms="0"
           @click="onIvStart"
         >
           {{ ivStarted ? 'IV Started' : 'Start IV' }}
@@ -484,6 +496,7 @@ function onNaloxone() {
         block
         :state="o2OnlyOn ? 'logged' : 'idle'"
         logged-at="O₂ 100%"
+        :cooldown-ms="0"
         :disabled="!n2oOn && !o2OnlyOn"
         class="mt-2"
         @click="onN2oOff"
@@ -506,6 +519,8 @@ function onNaloxone() {
           name="Versed · Test"
           dose="1 mg"
           sub="0.2 ml"
+          :state="versedTestState"
+          :logged-at="fmtClock(lastVersedAt)"
           @click="logIvVersed(1, 'test dose')"
         />
       </div>
@@ -652,6 +667,7 @@ function onNaloxone() {
           block
           :state="sedVitalsState"
           :logged-at="fmtClock(sedStampedAt)"
+          :cooldown-ms="0"
           @click="stampSedationVitals"
         >
           Stamp Sedation Level
@@ -671,6 +687,7 @@ function onNaloxone() {
         block
         :state="procStartState"
         :logged-at="fmtClock(procedureStartedAt)"
+        :cooldown-ms="0"
         class="mt-2"
         @click="onProcedureStart"
       >

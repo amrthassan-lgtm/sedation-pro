@@ -256,6 +256,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           block
           :state="endVitalsState"
           :logged-at="fmtClock(endStampedAt)"
+          :cooldown-ms="0"
           @click="stampRecoveryVitals"
         >
           Stamp Recovery Vitals
@@ -295,6 +296,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         block
         :state="ivOutState"
         :logged-at="fmtClock(ivOutAt)"
+        :cooldown-ms="0"
         :disabled="!releaseStatus.eligible"
         class="mt-2"
         @click="stampIvOut"
@@ -494,6 +496,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         tone="success"
         block
         :state="dischargeState"
+        :cooldown-ms="0"
         :disabled="dismissal.blocked || !releaseStatus.eligible"
         class="mt-2"
         @click="releasePatient"
