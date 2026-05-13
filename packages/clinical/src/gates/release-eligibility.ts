@@ -31,6 +31,11 @@ export interface ReleaseEligibility {
  * extended to 120 minutes when flumazenil reversal was given (flumazenil's
  * half-life is shorter than the benzo it reverses, so the patient is watched
  * longer for re-sedation).
+ *
+ * When *both* a flumazenil dose and a subsequent IV medication are present,
+ * we honour whichever deadline is later — `lastFlumazenilAt + 120 min`
+ * vs `lastMedicationAt + 20 min` — so a fresh IV dose after a reversal can
+ * never short-circuit the post-reversal monitoring window.
  */
 export function releaseEligibility(
   inputs: ReleaseInputs,
@@ -46,16 +51,22 @@ export function releaseEligibility(
     };
   }
   const flumazenilGiven = lastFlumazenilAt !== null && lastFlumazenilAt !== undefined;
-  const waitMin = flumazenilGiven ? timings.flumazenilDischargeWaitMin : timings.releaseWaitMin;
-  const anchor = flumazenilGiven ? lastFlumazenilAt : lastMedicationAt;
-  const elapsedMin = (now - anchor) / 60_000;
-  const remaining = waitMin - elapsedMin;
-  const eligible = remaining <= 0;
+  const standardDeadline = lastMedicationAt + timings.releaseWaitMin * 60_000;
+  const flumazenilDeadline = flumazenilGiven
+    ? lastFlumazenilAt + timings.flumazenilDischargeWaitMin * 60_000
+    : standardDeadline;
+  const deadline = Math.max(standardDeadline, flumazenilDeadline);
+  const remainingMs = deadline - now;
+  const eligible = remainingMs <= 0;
+  const reason: ReleaseEligibility['reason'] =
+    flumazenilGiven && flumazenilDeadline >= standardDeadline ? 'flumazenil-reversal' : 'standard';
+  const waitMin =
+    reason === 'flumazenil-reversal' ? timings.flumazenilDischargeWaitMin : timings.releaseWaitMin;
   return {
     eligible,
-    remainingMin: eligible ? 0 : Math.ceil(remaining),
+    remainingMin: eligible ? 0 : Math.ceil(remainingMs / 60_000),
     waitMin,
-    reason: flumazenilGiven ? 'flumazenil-reversal' : 'standard',
+    reason,
   };
 }
 

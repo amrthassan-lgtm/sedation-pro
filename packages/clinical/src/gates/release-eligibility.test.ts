@@ -53,6 +53,42 @@ describe('releaseEligibility', () => {
     expect(after.eligible).toBe(true);
   });
 
+  it('honours whichever deadline is later when a fresh IV dose follows flumazenil', () => {
+    // Flumazenil at T0, then a routine IV dose at T0+115min. The standard
+    // 20-min wait ends at T0+135min — later than the flumazenil deadline
+    // at T0+120min — so we stay blocked until T0+135min.
+    const tBlocked = releaseEligibility({
+      lastMedicationAt: T0 + 115 * MIN,
+      lastFlumazenilAt: T0,
+      now: T0 + 130 * MIN,
+    });
+    expect(tBlocked.eligible).toBe(false);
+    expect(tBlocked.reason).toBe('standard');
+    expect(tBlocked.remainingMin).toBe(5);
+
+    const tClear = releaseEligibility({
+      lastMedicationAt: T0 + 115 * MIN,
+      lastFlumazenilAt: T0,
+      now: T0 + 135 * MIN,
+    });
+    expect(tClear.eligible).toBe(true);
+  });
+
+  it('keeps the flumazenil 120-min window even when a fresh IV dose was very recent', () => {
+    // Flumazenil at T0, brief IV dose at T0+90min, now T0+115min.
+    // Standard 20-min wait clears at T0+110min, flumazenil 120-min wait
+    // clears at T0+120min — so we stay blocked for 5 more min on the
+    // reversal anchor.
+    const r = releaseEligibility({
+      lastMedicationAt: T0 + 90 * MIN,
+      lastFlumazenilAt: T0,
+      now: T0 + 115 * MIN,
+    });
+    expect(r.eligible).toBe(false);
+    expect(r.reason).toBe('flumazenil-reversal');
+    expect(r.remainingMin).toBe(5);
+  });
+
   it('honours a custom flumazenil wait window', () => {
     const r = releaseEligibility(
       { lastMedicationAt: T0, lastFlumazenilAt: T0, now: T0 + 60 * MIN },

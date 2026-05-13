@@ -1,4 +1,11 @@
 export { diazepamGate, type DiazepamGateDecision } from './diazepam-osa';
+export {
+  dismissalSafety,
+  type DismissalBlocker,
+  type DismissalBlockerCode,
+  type DismissalInputs,
+  type DismissalSafety,
+} from './dismissal-safety';
 export { fentanylTimer, versedTimer, type DrugTimerState, type TimerStatus } from './drug-timer';
 export {
   lastExamCheck,
