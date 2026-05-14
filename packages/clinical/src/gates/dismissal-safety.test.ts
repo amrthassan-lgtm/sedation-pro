@@ -12,6 +12,7 @@ const READY: DismissalInputs = {
   companionDocumented: true,
   providerSigned: true,
   companionSigned: true,
+  pulseOxPrintoutFiled: true,
 };
 
 describe('dismissalSafety', () => {
@@ -80,6 +81,12 @@ describe('dismissalSafety', () => {
     );
   });
 
+  it('blocks when the pulse-oximetry printout has not been filed', () => {
+    const r = dismissalSafety({ ...READY, pulseOxPrintoutFiled: false });
+    expect(r.blocked).toBe(true);
+    expect(r.blockers.map((b) => b.code)).toEqual(['no-pulse-ox-printout']);
+  });
+
   it('returns every blocker that fires, in a stable order', () => {
     const r = dismissalSafety({
       ambulatory: false,
@@ -91,6 +98,7 @@ describe('dismissalSafety', () => {
       companionDocumented: false,
       providerSigned: false,
       companionSigned: false,
+      pulseOxPrintoutFiled: false,
     });
     expect(r.blockers.map((b) => b.code)).toEqual([
       'not-ambulatory',
@@ -102,6 +110,7 @@ describe('dismissalSafety', () => {
       'no-companion',
       'no-provider-signature',
       'no-companion-signature',
+      'no-pulse-ox-printout',
     ]);
   });
 });

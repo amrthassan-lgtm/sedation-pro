@@ -191,6 +191,7 @@ const dismissal = computed(() =>
     companionDocumented: companionDocumented.value,
     providerSigned: providerSigned.value,
     companionSigned: true,
+    pulseOxPrintoutFiled: !!discharge.value.pulseOxPrinted,
   }),
 );
 
