@@ -6,6 +6,8 @@ import { storeToRefs } from 'pinia';
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
+import { useCaseReset } from '@/composables/useCaseReset';
+import { UiModal } from '@sedation-pro/ui';
 import { snapDecision } from './navDrawerSwipe';
 
 interface NavPhaseEntry {
@@ -94,6 +96,25 @@ async function go(target: NavPhaseEntry) {
 async function goQuickRef() {
   await router.push('/quick-reference');
   session.closeDrawer();
+}
+
+// -------- Start new case --------------------------------------------------
+
+const { reset: resetCase } = useCaseReset();
+const newCaseModalOpen = ref(false);
+
+function openNewCaseModal(): void {
+  newCaseModalOpen.value = true;
+}
+function cancelNewCase(): void {
+  newCaseModalOpen.value = false;
+}
+function confirmNewCase(): void {
+  // Close the drawer first so it doesn't flash a half-rendered state during
+  // the reload navigation; then wipe storage + reload onto Phase 1.
+  session.closeDrawer();
+  newCaseModalOpen.value = false;
+  resetCase();
 }
 
 // -------- iOS-style swipe gestures ----------------------------------------
@@ -337,8 +358,30 @@ function onTouchEnd() {
           </span>
         </button>
       </nav>
+
+      <!-- Destructive action — start a fresh case. Sits below the nav and is
+           visually quieter than the phase rows so a thumb hunting for a
+           phase tap can't drift onto it accidentally. The UiModal handles
+           the "are you sure" gate. -->
+      <button type="button" class="nav-new-case" @click="openNewCaseModal">
+        <span class="nav-new-case-icon" aria-hidden="true">↻</span>
+        <span class="nav-new-case-label">Start new case</span>
+      </button>
     </aside>
   </Teleport>
+
+  <UiModal
+    :open="newCaseModalOpen"
+    title="Start new case?"
+    tone="danger"
+    confirm-label="Start new case"
+    cancel-label="Cancel"
+    @confirm="confirmNewCase"
+    @cancel="cancelNewCase"
+  >
+    Current patient data, event log, and IV totals will be cleared. This can't be undone — make sure
+    the clinical note has been generated or shared if you still need it.
+  </UiModal>
 </template>
 
 <style scoped>
@@ -566,5 +609,41 @@ function onTouchEnd() {
 }
 .nav-phase.is-current .nav-phase-chevron {
   color: var(--color-text-secondary);
+}
+
+/* Start-new-case button — visually demoted vs the phase rows so it doesn't
+   compete for attention. Sits in its own band below the nav with a thin
+   separator, picks up a subtle danger tint on press. */
+.nav-new-case {
+  margin: 16px 12px;
+  width: calc(100% - 24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.2px;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-150) var(--ease-standard),
+    color var(--dur-150) var(--ease-standard);
+}
+.nav-new-case:hover {
+  color: var(--color-text-primary);
+}
+.nav-new-case:active {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+.nav-new-case-icon {
+  font-size: 14px;
+  line-height: 1;
 }
 </style>
