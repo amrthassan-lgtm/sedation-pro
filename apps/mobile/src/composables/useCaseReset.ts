@@ -21,7 +21,10 @@ export function useCaseReset(): { reset: () => void } {
     }
     keysToClear.forEach((k) => window.localStorage.removeItem(k));
 
-    window.location.assign('/phase/1');
+    // Honor Vite's base path — '/' in dev, '/sedation-pro/' on GitHub Pages
+    // (vite.config.ts:8). An absolute '/phase/1' would 404 under any
+    // subpath deploy. BASE_URL always ends in '/'.
+    window.location.assign(`${import.meta.env.BASE_URL}phase/1`);
   }
 
   return { reset };
