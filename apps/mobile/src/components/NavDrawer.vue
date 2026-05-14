@@ -3,6 +3,7 @@ import { computed, ref, type CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
+import { useAudioStore } from '@/stores/audio';
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
@@ -96,6 +97,15 @@ async function go(target: NavPhaseEntry) {
 async function goQuickRef() {
   await router.push('/quick-reference');
   session.closeDrawer();
+}
+
+// -------- Audio mute toggle ----------------------------------------------
+
+const audio = useAudioStore();
+const { muted: audioMuted } = storeToRefs(audio);
+
+function toggleMute(): void {
+  audioMuted.value = !audioMuted.value;
 }
 
 // -------- Start new case --------------------------------------------------
@@ -359,6 +369,15 @@ function onTouchEnd() {
         </button>
       </nav>
 
+      <!-- Audio mute. Quieter visual weight than the phase rows; chimes
+           fire on Versed/Fentanyl timer ready transitions (see useAlarms). -->
+      <button type="button" class="nav-utility" :aria-pressed="!audioMuted" @click="toggleMute">
+        <span class="nav-utility-icon" aria-hidden="true">{{ audioMuted ? '🔇' : '🔔' }}</span>
+        <span class="nav-utility-label">
+          {{ audioMuted ? 'Timer chimes muted' : 'Timer chimes on' }}
+        </span>
+      </button>
+
       <!-- Destructive action — start a fresh case. Sits below the nav and is
            visually quieter than the phase rows so a thumb hunting for a
            phase tap can't drift onto it accidentally. The UiModal handles
@@ -611,11 +630,46 @@ function onTouchEnd() {
   color: var(--color-text-secondary);
 }
 
+/* Utility button — a quieter row for settings-style toggles (mute, etc.)
+   that don't belong with the phase nav above and aren't destructive
+   like Start-new-case below. */
+.nav-utility {
+  margin: 16px 12px 0;
+  width: calc(100% - 24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.2px;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-150) var(--ease-standard),
+    color var(--dur-150) var(--ease-standard);
+}
+.nav-utility:hover {
+  color: var(--color-text-primary);
+}
+.nav-utility:active {
+  background: rgba(255, 255, 255, 0.04);
+}
+.nav-utility-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
 /* Start-new-case button — visually demoted vs the phase rows so it doesn't
    compete for attention. Sits in its own band below the nav with a thin
    separator, picks up a subtle danger tint on press. */
 .nav-new-case {
-  margin: 16px 12px;
+  margin: 12px 12px 16px;
   width: calc(100% - 24px);
   display: flex;
   align-items: center;

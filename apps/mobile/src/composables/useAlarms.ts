@@ -1,0 +1,105 @@
+import { computed, watch } from 'vue';
+
+import { useAudioStore } from '@/stores/audio';
+import { useIVStore } from '@/stores/iv';
+import { useNow } from '@/composables/useNow';
+import { haptic } from '@/composables/useHaptics';
+
+/**
+ * Audio alerts — synthesized "tick" chimes that fire when the Versed or
+ * Fentanyl half-life timer transitions into the `ready` state (i.e. the
+ * cooling + ramping windows have elapsed and the clinician can safely
+ * redose if the case calls for it).
+ *
+ * Scope is deliberately narrow: only these two transitions. Phase 1 lock,
+ * IV-out countdown, and crisis-vital alerts use the existing visual
+ * channels (banner, sticky-bar pill, stat-card severity tint) — adding
+ * audio for everything dilutes attention.
+ *
+ * Design:
+ *  - Web Audio API, synthesized. No bundled audio files, no Capacitor
+ *    plugin. Works in WKWebView (iOS) and Android WebView.
+ *  - iOS AudioContext starts `suspended` until a user gesture; the app
+ *    shell installs a one-time pointerdown listener that calls
+ *    `unlockAudio()` (exported below).
+ *  - Audio + haptic pair on every alert — both fire together. Mute flag
+ *    silences audio only; haptics are a separate sensory channel.
+ *  - First-run guard: `watch` without `immediate: true` only fires on
+ *    value changes, so a hydrated store starting in the `ready` state
+ *    after page reload does not beep on mount.
+ */
+
+let audioCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  if (audioCtx) return audioCtx;
+  const Ctor =
+    window.AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctor) return null;
+  audioCtx = new Ctor();
+  return audioCtx;
+}
+
+/**
+ * Resume the AudioContext on first user gesture. Safe to call repeatedly —
+ * a no-op once the context is already running. Wired from App.vue's
+ * one-time pointerdown listener.
+ */
+export function unlockAudio(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') void ctx.resume();
+}
+
+/**
+ * Play a single soft "tick" chime — ~200 ms, 660 Hz sine with a quick
+ * attack-decay envelope. No-op if the AudioContext isn't available, is
+ * still suspended (no user gesture yet), or audio is muted.
+ */
+function tick(muted: boolean): void {
+  if (muted) return;
+  const ctx = getAudioContext();
+  if (!ctx || ctx.state !== 'running') return;
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = 660;
+
+  const t = ctx.currentTime;
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.18, t + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + 0.22);
+}
+
+/**
+ * Install watchers on Versed + Fentanyl timer state. Call once from the
+ * app shell (`App.vue`) so the watchers live for the app lifetime.
+ */
+export function useAlarms(): void {
+  const iv = useIVStore();
+  const audio = useAudioStore();
+  const now = useNow(1000);
+
+  const versedState = computed(() => iv.versedTimerAt(now.value)?.state ?? null);
+  const fentanylState = computed(() => iv.fentanylTimerAt(now.value)?.state ?? null);
+
+  function chime(): void {
+    tick(audio.muted);
+    haptic('light');
+  }
+
+  watch(versedState, (curr, prev) => {
+    if (curr === 'ready' && prev !== 'ready') chime();
+  });
+
+  watch(fentanylState, (curr, prev) => {
+    if (curr === 'ready' && prev !== 'ready') chime();
+  });
+}

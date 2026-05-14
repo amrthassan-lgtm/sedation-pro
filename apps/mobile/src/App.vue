@@ -7,6 +7,7 @@ import SedationDock from '@/components/SedationDock.vue';
 import StickyBar from '@/components/StickyBar.vue';
 import NavDrawer from '@/components/NavDrawer.vue';
 import UndoToast from '@/components/UndoToast.vue';
+import { useAlarms, unlockAudio } from '@/composables/useAlarms';
 import { useDockVisibility } from '@/composables/useDockVisibility';
 import { useWakeLock } from '@/composables/useWakeLock';
 
@@ -29,6 +30,16 @@ const dockReservesSpace = computed(() => showSedationDock.value && dockOnScreen.
  */
 const wakeLock = useWakeLock();
 void wakeLock.request();
+
+/**
+ * Audio alerts on Versed + Fentanyl timer "ready" transitions. The
+ * AudioContext starts `suspended` on iOS until a user gesture — a single
+ * pointerdown listener resumes it, after which beeps play freely.
+ */
+useAlarms();
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointerdown', () => unlockAudio(), { once: true, passive: true });
+}
 </script>
 
 <template>
