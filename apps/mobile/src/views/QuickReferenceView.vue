@@ -392,7 +392,7 @@ function clearSearch() {
   overflow: hidden;
 }
 .drug-pill-wrap.is-open {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-surface-subtle);
   border: 1px solid var(--color-border);
 }
 .drug-pill {
@@ -411,7 +411,7 @@ function clearSearch() {
   transition: background var(--dur-150) var(--ease-standard);
 }
 .drug-pill:active {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-surface);
 }
 .drug-pill-wrap.is-open .drug-pill {
   border: none;
@@ -460,7 +460,7 @@ function clearSearch() {
   align-items: baseline;
   justify-content: space-between;
   padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-surface-subtle);
   border-radius: var(--r-sm);
   font-family: var(--font-mono);
 }
@@ -643,7 +643,7 @@ function clearSearch() {
   transition: background var(--dur-150) var(--ease-standard);
 }
 .row:active {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-surface);
 }
 .row-name {
   font-size: var(--type-footnote);

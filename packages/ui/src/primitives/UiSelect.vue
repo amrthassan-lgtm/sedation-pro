@@ -49,7 +49,7 @@ function onChange(e: Event) {
 .ui-select {
   -webkit-appearance: none;
   appearance: none;
-  background-color: #0d1527;
+  background-color: var(--color-input-bg);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--r-md);

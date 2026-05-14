@@ -8,6 +8,7 @@ import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
 import { useCaseReset } from '@/composables/useCaseReset';
+import { useTheme, type ThemeChoice } from '@/composables/useTheme';
 import { UiModal } from '@sedation-pro/ui';
 import { snapDecision } from './navDrawerSwipe';
 
@@ -106,6 +107,24 @@ const { muted: audioMuted } = storeToRefs(audio);
 
 function toggleMute(): void {
   audioMuted.value = !audioMuted.value;
+}
+
+// -------- Theme toggle ----------------------------------------------------
+//
+// Cycle through auto → light → dark → auto so a single button can express
+// "follow system" + the two explicit overrides without taking up nav space.
+
+const { choice: themeChoice } = useTheme();
+
+const themeMeta: Record<ThemeChoice, { icon: string; label: string }> = {
+  auto: { icon: '🌗', label: 'Theme · Auto' },
+  light: { icon: '☀️', label: 'Theme · Light' },
+  dark: { icon: '🌙', label: 'Theme · Dark' },
+};
+
+function cycleTheme(): void {
+  themeChoice.value =
+    themeChoice.value === 'auto' ? 'light' : themeChoice.value === 'light' ? 'dark' : 'auto';
 }
 
 // -------- Start new case --------------------------------------------------
@@ -378,6 +397,18 @@ function onTouchEnd() {
         </span>
       </button>
 
+      <!-- Theme cycle: auto → light → dark → auto. Auto follows the OS via
+           prefers-color-scheme; the two locked modes override regardless. -->
+      <button
+        type="button"
+        class="nav-utility"
+        :aria-label="`Theme: ${themeChoice}. Tap to cycle.`"
+        @click="cycleTheme"
+      >
+        <span class="nav-utility-icon" aria-hidden="true">{{ themeMeta[themeChoice].icon }}</span>
+        <span class="nav-utility-label">{{ themeMeta[themeChoice].label }}</span>
+      </button>
+
       <!-- Destructive action — start a fresh case. Sits below the nav and is
            visually quieter than the phase rows so a thumb hunting for a
            phase tap can't drift onto it accidentally. The UiModal handles
@@ -432,7 +463,7 @@ function onTouchEnd() {
   top: 0;
   width: 288px;
   height: 100%;
-  background: #0b1422;
+  background: var(--color-card-bg);
   border-right: 1px solid var(--color-border);
   z-index: 9992;
   overflow-y: auto;
@@ -446,8 +477,8 @@ function onTouchEnd() {
 
 .nav-summary {
   padding: 16px 18px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: linear-gradient(180deg, rgba(59, 130, 246, 0.04), transparent);
+  border-bottom: 1px solid var(--color-surface-elevated);
+  background: linear-gradient(180deg, var(--color-accent-soft), transparent);
 }
 .nav-summary-top {
   display: flex;
@@ -537,7 +568,7 @@ function onTouchEnd() {
   font-weight: var(--weight-bold);
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--color-text-tertiary);
 }
 
 .nav-phase {
@@ -548,7 +579,7 @@ function onTouchEnd() {
   padding: 11px 16px;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--color-surface);
   cursor: pointer;
   text-align: left;
   color: var(--color-text-primary);
@@ -556,10 +587,10 @@ function onTouchEnd() {
   transition: background var(--dur-150) var(--ease-standard);
 }
 .nav-phase:active:not(:disabled) {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-surface);
 }
 .nav-phase.is-current {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-surface-subtle);
 }
 .nav-phase.is-locked {
   opacity: 0.4;
@@ -594,8 +625,8 @@ function onTouchEnd() {
   background: linear-gradient(135deg, #14b8a6, #0d9488);
 }
 .nav-phase.is-locked .nav-phase-icon {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.3);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-disabled);
 }
 
 .nav-phase-main {
@@ -642,7 +673,7 @@ function onTouchEnd() {
   gap: 8px;
   padding: 11px 16px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-surface-elevated);
   border-radius: var(--r-md);
   cursor: pointer;
   color: var(--color-text-secondary);
@@ -658,7 +689,7 @@ function onTouchEnd() {
   color: var(--color-text-primary);
 }
 .nav-utility:active {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-surface);
 }
 .nav-utility-icon {
   font-size: 15px;
@@ -676,8 +707,8 @@ function onTouchEnd() {
   justify-content: center;
   gap: 8px;
   padding: 11px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-surface-elevated);
   border-radius: var(--r-md);
   cursor: pointer;
   color: var(--color-text-secondary);

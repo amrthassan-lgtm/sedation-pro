@@ -73,7 +73,7 @@ withDefaults(defineProps<Props>(), {
   padding: 3px 8px;
   border-radius: var(--r-pill);
   border: 1px solid currentColor;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-surface);
 }
 .ui-stat-value {
   margin: 0;

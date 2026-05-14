@@ -59,7 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
   color: var(--color-text-tertiary);
 }
 .ui-field-hint {
-  color: rgba(255, 255, 255, 0.22);
+  color: var(--color-text-disabled);
   font-weight: var(--weight-regular);
   margin-left: 4px;
   text-transform: none;

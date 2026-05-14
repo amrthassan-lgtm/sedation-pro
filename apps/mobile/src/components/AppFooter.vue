@@ -62,7 +62,7 @@ const year = new Date().getFullYear();
   padding: var(--sp-5) var(--sp-4);
   margin-top: var(--sp-6);
   border-top: 1px solid var(--color-border);
-  background: rgba(11, 20, 34, 0.6);
+  background: var(--color-frosted-bg);
 }
 .app-footer-brand {
   display: flex;

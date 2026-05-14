@@ -44,9 +44,9 @@ defineEmits<{
   display: block;
   width: 100%;
   text-align: inherit;
-  background: rgba(18, 27, 46, 0.95);
+  background: var(--color-card-bg);
   border: 1px solid var(--color-border);
-  border-left: 4px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--color-surface-elevated);
   border-radius: var(--r-lg);
   padding: var(--sp-5);
   box-shadow:

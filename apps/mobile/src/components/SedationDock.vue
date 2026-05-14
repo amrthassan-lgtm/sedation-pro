@@ -360,11 +360,11 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   height: 4px;
   border-radius: 2px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--color-surface-overlay);
   transition: background var(--dur-150) var(--ease-standard);
 }
 .dock-handle:active .dock-grip {
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--color-border-strong);
 }
 
 /* Status rows — drug name, mg load, timer pill, then the progress bar. */
@@ -391,10 +391,10 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   border-radius: 50%;
 }
 .dock-swatch--versed {
-  background: #f59e0b;
+  background: var(--color-orange);
 }
 .dock-swatch--fentanyl {
-  background: #3b82f6;
+  background: var(--color-blue);
 }
 .dock-drug-name {
   font-weight: var(--weight-bold);

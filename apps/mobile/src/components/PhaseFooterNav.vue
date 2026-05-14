@@ -104,7 +104,7 @@ function goForward() {
   background: rgba(59, 130, 246, 0.18);
 }
 .phase-nav-btn--back:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-surface);
   color: var(--color-text-primary);
 }
 .phase-nav-icon {

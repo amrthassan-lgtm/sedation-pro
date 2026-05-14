@@ -44,6 +44,25 @@ const phaseMeta: Record<Phase, { label: string; sub: string; tint: string }> = {
 const meta = computed(() => phaseMeta[currentPhase.value]);
 const showClearance = computed(() => currentPhase.value === 'phase1');
 
+/**
+ * Four-segment phase rail. We light up segments through and including the
+ * current phase so a glance at the strip answers "how far through the case
+ * am I?" without reading text. Quick Reference doesn't advance the rail —
+ * it's a side trip, not a phase — so we leave the active phase highlighted
+ * when the user dips into it.
+ */
+const railPhases: ReadonlyArray<{ id: Phase; tint: 'ph1' | 'ph2' | 'ph3' | 'ph4' }> = [
+  { id: 'phase1', tint: 'ph1' },
+  { id: 'phase2', tint: 'ph2' },
+  { id: 'phase3', tint: 'ph3' },
+  { id: 'phase4', tint: 'ph4' },
+];
+
+const railActiveIndex = computed(() => {
+  const idx = railPhases.findIndex((p) => p.id === currentPhase.value);
+  return idx === -1 ? -1 : idx;
+});
+
 function emergency() {
   void router.push('/quick-reference');
 }
@@ -68,6 +87,11 @@ function emergency() {
 
     <div class="sticky-bar-info">
       <div class="sticky-bar-phase">
+        <span
+          class="sticky-bar-phase-dot"
+          :class="`sticky-bar-phase-dot--${meta.tint}`"
+          aria-hidden="true"
+        />
         <span class="sticky-bar-phase-label">{{ meta.label }}</span>
         <span v-if="currentStep" class="sticky-bar-step">Step {{ currentStep }}</span>
       </div>
@@ -133,6 +157,21 @@ function emergency() {
         <span class="sticky-bar-emerg-text">Emergency</span>
       </button>
     </div>
+
+    <div class="sticky-bar-rail" aria-hidden="true">
+      <span
+        v-for="(rail, idx) in railPhases"
+        :key="rail.id"
+        class="sticky-bar-rail-seg"
+        :class="[
+          `sticky-bar-rail-seg--${rail.tint}`,
+          {
+            'is-done': railActiveIndex > -1 && idx < railActiveIndex,
+            'is-active': idx === railActiveIndex,
+          },
+        ]"
+      />
+    </div>
   </header>
 </template>
 
@@ -144,7 +183,7 @@ function emergency() {
   display: flex;
   align-items: stretch;
   gap: 0;
-  background: rgba(11, 20, 34, 0.85);
+  background: var(--color-frosted-bg);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid var(--color-border);
@@ -184,6 +223,33 @@ function emergency() {
   align-items: center;
   gap: 8px;
 }
+.sticky-bar-phase-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px transparent;
+  transition: box-shadow var(--dur-250) var(--ease-standard);
+}
+.sticky-bar-phase-dot--ph1 {
+  background: var(--ph1-color);
+  box-shadow: 0 0 0 3px var(--ph1-soft);
+}
+.sticky-bar-phase-dot--ph2 {
+  background: var(--ph2-color);
+  box-shadow: 0 0 0 3px var(--ph2-soft);
+}
+.sticky-bar-phase-dot--ph3 {
+  background: var(--ph3-color);
+  box-shadow: 0 0 0 3px var(--ph3-soft);
+}
+.sticky-bar-phase-dot--ph4 {
+  background: var(--ph4-color);
+  box-shadow: 0 0 0 3px var(--ph4-soft);
+}
+.sticky-bar-phase-dot--qr {
+  background: var(--color-text-tertiary);
+}
 .sticky-bar-phase-label {
   font-size: var(--type-footnote);
   font-weight: var(--weight-bold);
@@ -193,7 +259,7 @@ function emergency() {
 .sticky-bar-step {
   font-size: var(--type-footnote);
   font-weight: var(--weight-medium);
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-tertiary);
 }
 .sticky-bar-sub {
   display: flex;
@@ -202,17 +268,17 @@ function emergency() {
   font-size: var(--type-caption);
 }
 .sticky-bar-phase-sub {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-tertiary);
   letter-spacing: 0.2px;
 }
 .sticky-bar-clearance-label {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-tertiary);
 }
 .sticky-bar-clearance-bar {
   flex: 1;
   height: 3px;
   max-width: 140px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-elevated);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -326,6 +392,51 @@ function emergency() {
   background: var(--color-danger-soft);
   color: var(--color-danger);
   font-weight: var(--weight-bold);
+}
+
+/* Four-segment phase progress rail at the bottom edge. Inert visual — the
+   nav drawer is the actual phase-navigation surface. */
+.sticky-bar-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 3px;
+  display: flex;
+  gap: 2px;
+  padding: 0 6px;
+  pointer-events: none;
+}
+.sticky-bar-rail-seg {
+  flex: 1;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-surface-elevated);
+  transition:
+    background var(--dur-250) var(--ease-standard),
+    opacity var(--dur-250) var(--ease-standard);
+}
+.sticky-bar-rail-seg--ph1.is-done,
+.sticky-bar-rail-seg--ph1.is-active {
+  background: var(--ph1-color);
+}
+.sticky-bar-rail-seg--ph2.is-done,
+.sticky-bar-rail-seg--ph2.is-active {
+  background: var(--ph2-color);
+}
+.sticky-bar-rail-seg--ph3.is-done,
+.sticky-bar-rail-seg--ph3.is-active {
+  background: var(--ph3-color);
+}
+.sticky-bar-rail-seg--ph4.is-done,
+.sticky-bar-rail-seg--ph4.is-active {
+  background: var(--ph4-color);
+}
+.sticky-bar-rail-seg.is-done {
+  opacity: 0.55;
+}
+.sticky-bar-rail-seg.is-active {
+  opacity: 1;
 }
 
 /* Save indicator — a subtle "Saved · HH:MM" pill that briefly flips to

@@ -406,7 +406,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
   transition: background var(--dur-150) var(--ease-standard);
 }
 .related-row:active {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-surface);
 }
 .related-row--airway {
   border-left-color: #38bdf8;

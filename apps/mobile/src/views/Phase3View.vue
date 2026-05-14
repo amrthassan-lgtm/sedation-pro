@@ -934,7 +934,7 @@ function onNaloxone() {
   color: var(--color-crisis);
 }
 .reversal-info {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-surface-subtle);
   border: 1px solid var(--color-border);
   border-radius: var(--r-md);
   padding: var(--sp-3) var(--sp-4);

@@ -115,8 +115,8 @@ onUnmounted(() => {
 }
 
 .ui-modal {
-  background: #0b1422;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
   border-radius: var(--r-xl);
   padding: var(--sp-5);
   max-width: 360px;

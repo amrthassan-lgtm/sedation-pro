@@ -232,7 +232,7 @@ onMounted(() => {
 .ui-sig-frame {
   position: relative;
   width: 100%;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-surface);
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--r-md);
   overflow: hidden;
@@ -278,14 +278,14 @@ onMounted(() => {
   padding: 4px 10px;
   border-radius: var(--r-pill);
   border: 1px solid var(--color-border-strong);
-  background: rgba(11, 20, 34, 0.6);
+  background: var(--color-frosted-bg);
   color: var(--color-text-secondary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background var(--dur-150) var(--ease-standard);
 }
 .ui-sig-clear:active {
-  background: rgba(11, 20, 34, 0.85);
+  background: var(--color-card-bg);
 }
 .ui-sig-meta {
   display: flex;

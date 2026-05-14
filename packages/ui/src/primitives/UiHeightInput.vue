@@ -84,7 +84,7 @@ function onIn(e: Event) {
 .ui-height-input {
   -webkit-appearance: none;
   appearance: none;
-  background-color: #0d1527;
+  background-color: var(--color-input-bg);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   padding: 13px 14px;
@@ -110,8 +110,8 @@ function onIn(e: Event) {
 .ui-height-suffix {
   padding: 0 6px;
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.35);
-  background: #0d1527;
+  color: var(--color-text-tertiary);
+  background: var(--color-input-bg);
   border: 1px solid var(--color-border);
   min-height: 52px;
   display: flex;

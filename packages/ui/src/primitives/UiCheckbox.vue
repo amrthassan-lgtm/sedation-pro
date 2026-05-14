@@ -95,7 +95,7 @@ function toggle() {
 }
 .ui-check.is-checked {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-surface-subtle);
 }
 .ui-check.is-disabled {
   cursor: not-allowed;

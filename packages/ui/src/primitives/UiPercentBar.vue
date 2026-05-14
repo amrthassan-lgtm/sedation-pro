@@ -45,7 +45,7 @@ const fillWidth = () => `${Math.min(100, Math.max(0, props.percent))}%`;
 <style scoped>
 .ui-percent-bar {
   width: 100%;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-surface-elevated);
   border-radius: 3px;
   overflow: hidden;
 }

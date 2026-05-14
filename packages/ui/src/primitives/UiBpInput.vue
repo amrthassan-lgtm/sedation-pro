@@ -68,7 +68,7 @@ function onDia(e: Event) {
 .ui-bp-input {
   -webkit-appearance: none;
   appearance: none;
-  background-color: #0d1527;
+  background-color: var(--color-input-bg);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   padding: 13px 16px;
@@ -93,8 +93,8 @@ function onDia(e: Event) {
 .ui-bp-sep {
   padding: 0 8px;
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.2);
-  background: #0d1527;
+  color: var(--color-text-disabled);
+  background: var(--color-input-bg);
   border: 1px solid var(--color-border);
   border-left: none;
   border-right: none;
