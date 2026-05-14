@@ -47,11 +47,19 @@ export function useDockSentinel(elRef: Ref<HTMLElement | null>): void {
     (el) => {
       disconnect();
       if (!el) return;
-      observer = new IntersectionObserver(([entry]) => {
-        if (!entry) return;
-        sentinelInView.value = entry.isIntersecting;
-        if (entry.isIntersecting) hasRevealed.value = true;
-      });
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry) return;
+          sentinelInView.value = entry.isIntersecting;
+          if (entry.isIntersecting) hasRevealed.value = true;
+        },
+        // Require ~80 px of card 5 to be inside the viewport (top + bottom
+        // insets) before it counts as "in view". Without this, a 1-px peek
+        // at the edges of viewport flips the dock — twitchy on small
+        // scrolls. 80 px keeps the toggle calm without making the dock
+        // feel sluggish.
+        { rootMargin: '-80px 0px -80px 0px' },
+      );
       observer.observe(el);
     },
     { immediate: true },

@@ -5,6 +5,7 @@ import App from './App.vue';
 import { router } from './router';
 
 import '@sedation-pro/ui/styles';
+import './styles/utilities.css';
 
 const app = createApp(App);
 app.use(createPinia());

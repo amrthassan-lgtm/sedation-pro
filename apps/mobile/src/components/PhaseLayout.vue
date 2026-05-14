@@ -72,6 +72,10 @@
     max-height: calc(100vh - 72px - env(safe-area-inset-top) - var(--sp-5));
     overflow-y: auto;
     scrollbar-width: thin;
+    /* Animates in lockstep with `.app-shell`'s padding-bottom so the rail
+       shrinks smoothly when the SedationDock slides in (see App.vue + the
+       `.app-shell.has-dock .phase-layout-rail` override in utilities.css). */
+    transition: max-height var(--dur-250) var(--ease-standard);
   }
 }
 </style>

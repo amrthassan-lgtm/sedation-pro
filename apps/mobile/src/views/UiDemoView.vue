@@ -286,10 +286,6 @@ function fireVersed() {
   gap: var(--sp-2);
 }
 
-.muted {
-  color: var(--color-text-secondary);
-}
-
 .demo-section {
   display: flex;
   flex-direction: column;
@@ -303,10 +299,6 @@ function fireVersed() {
 
 .demo-hint {
   margin-bottom: var(--sp-2);
-}
-
-.mt-3 {
-  margin-top: var(--sp-3);
 }
 
 .kv {

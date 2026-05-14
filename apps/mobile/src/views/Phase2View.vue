@@ -172,17 +172,6 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
 </template>
 
 <style scoped>
-.phase-hero {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-.muted {
-  color: var(--color-text-secondary);
-}
-.mt-2 {
-  margin-top: var(--sp-3);
-}
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

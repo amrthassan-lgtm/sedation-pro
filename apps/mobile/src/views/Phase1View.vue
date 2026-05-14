@@ -726,17 +726,6 @@ const diazepamModalCopy = computed(() => {
 </template>
 
 <style scoped>
-.phase-hero {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-.muted {
-  color: var(--color-text-secondary);
-}
-.mt-2 {
-  margin-top: var(--sp-3);
-}
 /* Inline copy of VitalsStatGrid inside Vitals & Metrics. The right rail
    takes ownership at iPad-landscape widths, so we hide the inline copy
    there to avoid a duplicate. */

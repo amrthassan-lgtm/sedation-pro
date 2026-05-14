@@ -368,15 +368,6 @@ function clearSearch() {
   max-width: 760px;
   margin-inline: auto;
 }
-.phase-hero {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-.muted {
-  color: var(--color-text-secondary);
-}
-
 /* ----------------- IV drug reference -------------------------------- */
 .drug-ref-card {
   display: flex;

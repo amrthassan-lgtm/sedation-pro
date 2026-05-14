@@ -554,20 +554,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 </template>
 
 <style scoped>
-.phase-hero {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-.muted {
-  color: var(--color-text-secondary);
-}
-.mt-1 {
-  margin-top: var(--sp-2);
-}
-.mt-2 {
-  margin-top: var(--sp-3);
-}
 .blocker-list {
   margin: var(--sp-2) 0 0;
   padding-left: var(--sp-5);

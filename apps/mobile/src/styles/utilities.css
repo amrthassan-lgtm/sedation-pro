@@ -1,0 +1,44 @@
+/*
+ * Global utility classes used across phase views, Quick Reference, and other
+ * top-level views. Previously each view defined its own scoped copy — six
+ * files held identical `.phase-hero` / `.muted` / `.mt-*` declarations. This
+ * file is the single source of truth so a token change ripples everywhere.
+ *
+ * Imported from `main.ts` after `@sedation-pro/ui/styles` so any token
+ * referenced here is already defined.
+ */
+
+.phase-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.mt-1 {
+  margin-top: var(--sp-2);
+}
+.mt-2 {
+  margin-top: var(--sp-3);
+}
+.mt-3 {
+  margin-top: var(--sp-4);
+}
+
+/*
+ * When the SedationDock is on-screen on Phase 3 (App.vue adds `.has-dock`
+ * to `.app-shell`), the bottom 250 px of the viewport is occupied. The
+ * iPad-landscape rail sits to the right of the form column and otherwise
+ * extends nearly the full viewport height — without this override its
+ * lower portion gets hidden behind the dock. Shorten the max-height by
+ * ~250 px while the dock is up; the transition in PhaseLayout.vue keeps
+ * the change smooth as the dock slides in or out.
+ */
+@media (min-width: 1024px) {
+  .app-shell.has-dock .phase-layout-rail {
+    max-height: calc(100vh - 72px - 250px - env(safe-area-inset-top) - var(--sp-5));
+  }
+}
