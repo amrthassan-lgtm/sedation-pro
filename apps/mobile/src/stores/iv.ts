@@ -181,6 +181,15 @@ export const useIVStore = defineStore('iv', () => {
     n2oOn.value = false;
     o2OnlyOn.value = true;
   }
+  /**
+   * Restore the gas-flow flags to an arbitrary prior pair — used by the undo
+   * stack so an undone N₂O ON / OFF action puts BOTH booleans back to the
+   * state they had before the action, not just the one the setter touched.
+   */
+  function restoreGasState(prevN2oOn: boolean, prevO2OnlyOn: boolean) {
+    n2oOn.value = prevN2oOn;
+    o2OnlyOn.value = prevO2OnlyOn;
+  }
   function startIV() {
     ivStarted.value = true;
     if (ivStartedAt.value === null) {
@@ -343,6 +352,7 @@ export const useIVStore = defineStore('iv', () => {
     removeDoseById,
     setN2oOn,
     setN2oOff,
+    restoreGasState,
     startIV,
     setPreOpVitals,
     setSedationVitals,

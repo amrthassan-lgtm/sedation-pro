@@ -7,6 +7,7 @@ import { useEventLogStore } from './event-log';
 import { useUndoStore } from './undo';
 import { useToastStore } from './toast';
 import { usePatientStore } from './patient';
+import { useIVStore } from './iv';
 
 describe('shell stores — single sources of truth', () => {
   beforeEach(() => {
@@ -65,6 +66,50 @@ describe('shell stores — single sources of truth', () => {
     expect(undo.canUndo).toBe(false);
     expect(reverted).toBe(1);
     expect(toast.current).toBeNull();
+  });
+
+  it('iv.restoreGasState reverts both flags so undo of N₂O ON returns to the prior state', () => {
+    const iv = useIVStore();
+    const undo = useUndoStore();
+
+    // Cold start — neither flag set.
+    expect(iv.n2oOn).toBe(false);
+    expect(iv.o2OnlyOn).toBe(false);
+
+    const prevN2oOn = iv.n2oOn;
+    const prevO2OnlyOn = iv.o2OnlyOn;
+    iv.setN2oOn();
+    undo.stamp({
+      event: 'N₂O/O₂ ON',
+      details: { Route: 'Inhalation' },
+      toast: { label: '✓ N₂O/O₂ ON', tone: 'safe' },
+      revert: () => iv.restoreGasState(prevN2oOn, prevO2OnlyOn),
+    });
+    expect(iv.n2oOn).toBe(true);
+    expect(iv.o2OnlyOn).toBe(false);
+
+    expect(undo.undo()).toBe(true);
+    expect(iv.n2oOn).toBe(false);
+    expect(iv.o2OnlyOn).toBe(false);
+
+    // Same shape for the OFF transition — from (on, off) → (off, on) → undo
+    // must put it back to (on, off), not (off, off).
+    iv.setN2oOn();
+    const prev2N2oOn = iv.n2oOn;
+    const prev2O2OnlyOn = iv.o2OnlyOn;
+    iv.setN2oOff();
+    undo.stamp({
+      event: 'N₂O/O₂ OFF · O₂ 100% ON',
+      details: {},
+      toast: { label: '✓ N₂O off', tone: 'safe' },
+      revert: () => iv.restoreGasState(prev2N2oOn, prev2O2OnlyOn),
+    });
+    expect(iv.n2oOn).toBe(false);
+    expect(iv.o2OnlyOn).toBe(true);
+
+    expect(undo.undo()).toBe(true);
+    expect(iv.n2oOn).toBe(true);
+    expect(iv.o2OnlyOn).toBe(false);
   });
 
   it('undo.undo returns false when the stack is empty', () => {

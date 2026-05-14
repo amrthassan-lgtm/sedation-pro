@@ -169,20 +169,29 @@ function stampPreOpVitals() {
 // -------- Gas flow ----------------------------------------------------------
 
 function onN2oOn() {
+  // Capture before mutation — undo must restore both booleans, not just the
+  // one this setter touches. Without an explicit revert the stamp would only
+  // remove the event-log entry and the toggle would stay flipped.
+  const prevN2oOn = iv.n2oOn;
+  const prevO2OnlyOn = iv.o2OnlyOn;
   iv.setN2oOn();
   undo.stamp({
     event: 'N₂O/O₂ ON',
     details: { Route: 'Inhalation' },
     toast: { label: '✓ N₂O/O₂ ON', tone: 'safe' },
+    revert: () => iv.restoreGasState(prevN2oOn, prevO2OnlyOn),
   });
 }
 
 function onN2oOff() {
+  const prevN2oOn = iv.n2oOn;
+  const prevO2OnlyOn = iv.o2OnlyOn;
   iv.setN2oOff();
   undo.stamp({
     event: 'N₂O/O₂ OFF · O₂ 100% ON',
     details: { 'N₂O': 'Discontinued', 'O₂': '100% via nasal cannula' },
     toast: { label: '✓ N₂O off · O₂ 100% on', tone: 'safe' },
+    revert: () => iv.restoreGasState(prevN2oOn, prevO2OnlyOn),
   });
 }
 
