@@ -2,10 +2,14 @@
 import { useRouter } from 'vue-router';
 
 import { haptic } from '@/composables/useHaptics';
+import type { PhaseTint } from '@sedation-pro/ui';
 
 interface NavTarget {
   readonly label: string;
   readonly route: string;
+  /** Phase tint of the *destination* — paints the button in that phase's
+   *  identity color so the button visually previews where it leads. */
+  readonly tint?: PhaseTint;
 }
 
 interface Props {
@@ -39,6 +43,7 @@ function goForward() {
       v-if="props.back"
       type="button"
       class="phase-nav-btn phase-nav-btn--back"
+      :class="props.back.tint ? `phase-nav-btn--tint-${props.back.tint}` : null"
       @click="goBack"
     >
       <span class="phase-nav-icon" aria-hidden="true">←</span>
@@ -49,6 +54,7 @@ function goForward() {
       v-if="props.forward"
       type="button"
       class="phase-nav-btn phase-nav-btn--forward"
+      :class="props.forward.tint ? `phase-nav-btn--tint-${props.forward.tint}` : null"
       @click="goForward"
     >
       <span class="phase-nav-text">{{ props.forward.label }}</span>
@@ -94,15 +100,6 @@ function goForward() {
 .phase-nav-btn:active {
   transform: scale(0.98);
 }
-.phase-nav-btn--forward {
-  background: var(--color-accent-soft);
-  border-color: rgba(59, 130, 246, 0.45);
-  color: var(--color-accent);
-  font-weight: var(--weight-bold);
-}
-.phase-nav-btn--forward:hover {
-  background: rgba(59, 130, 246, 0.18);
-}
 .phase-nav-btn--back:hover {
   background: var(--color-surface);
   color: var(--color-text-primary);
@@ -115,5 +112,34 @@ function goForward() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Tinted variants — paint the button in its destination phase's color so
+   the user gets a quiet preview of where they're going. Forward buttons
+   carry the soft fill (primary action); back buttons fall through to the
+   same rule for symmetry. The four tints map directly to the --ph{n}
+   token family declared in tokens.css. */
+.phase-nav-btn--tint-ph1 {
+  background: var(--ph1-soft);
+  border-color: var(--ph1-color);
+  color: var(--ph1-color);
+}
+.phase-nav-btn--tint-ph2 {
+  background: var(--ph2-soft);
+  border-color: var(--ph2-color);
+  color: var(--ph2-color);
+}
+.phase-nav-btn--tint-ph3 {
+  background: var(--ph3-soft);
+  border-color: var(--ph3-color);
+  color: var(--ph3-color);
+}
+.phase-nav-btn--tint-ph4 {
+  background: var(--ph4-soft);
+  border-color: var(--ph4-color);
+  color: var(--ph4-color);
+}
+.phase-nav-btn--forward[class*='phase-nav-btn--tint-'] {
+  font-weight: var(--weight-bold);
 }
 </style>

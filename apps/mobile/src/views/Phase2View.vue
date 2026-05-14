@@ -160,8 +160,8 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
     </UiCard>
 
     <PhaseFooterNav
-      :back="{ label: 'Phase 1 · Assessment', route: '/phase/1' }"
-      :forward="{ label: 'Phase 3 · IV Sedation', route: '/phase/3' }"
+      :back="{ label: 'Phase 1 · Assessment', route: '/phase/1', tint: 'ph1' }"
+      :forward="{ label: 'Phase 3 · IV Sedation', route: '/phase/3', tint: 'ph3' }"
     />
 
     <template #rail>

@@ -40,10 +40,13 @@ const now = useNow(1000);
 
 const { weightLb, diabetic, safetyAlerts } = storeToRefs(patient);
 
-// Wire the card-5 ("Initial Test Dose") IntersectionObserver — drives the
-// SedationDock's auto-hide. See `useDockVisibility` for behavior.
-const card5Ref = ref<HTMLElement | null>(null);
-useDockSentinel(card5Ref);
+// Wire the card-6 ("Additional Doses") IntersectionObserver — drives the
+// SedationDock's auto-hide. While cards 5 (test dose) and 6 (additional
+// doses) are in view, the in-card dose buttons cover the workflow; the
+// dock only takes over once the user scrolls past them. See
+// `useDockVisibility` for behavior.
+const dockSentinelRef = ref<HTMLElement | null>(null);
+useDockSentinel(dockSentinelRef);
 
 const {
   n2oOn,
@@ -527,141 +530,141 @@ function onNaloxone() {
       </UiButton>
     </UiCard>
 
-    <!-- Card 5 — Initial test dose. Wrapper ref drives the SedationDock
-         auto-hide: while this card is in viewport the dock stays tucked
-         away (the in-card Versed button below already covers the action);
-         scrolling past reveals the dock. See useDockVisibility. -->
-
-    <div ref="card5Ref">
-      <UiCard tint="ph3">
-        <p class="heading">5 · Initial Test Dose</p>
-        <p class="body muted">
-          Always start Versed with a 1 mg test dose. Wait 3-5 min before any additional dose — the
-          timer pill below tracks it in real time.
-        </p>
-        <div class="drug-grid mt-2">
-          <UiDrugButton
-            tone="versed"
-            name="Versed · Test"
-            dose="1 mg"
-            sub="0.2 ml"
-            :state="versedTestState"
-            :logged-at="fmtClock(lastVersedAt)"
-            @click="logIvVersed(1, 'test dose')"
-          />
-        </div>
-      </UiCard>
-    </div>
-
-    <!-- Card 6 — Additional IV doses with live timers + cumulative -- -->
+    <!-- Card 5 — Initial test dose. -->
 
     <UiCard tint="ph3">
-      <p class="heading">6 · Additional Doses</p>
-      <UiStack :gap="3" class="mt-2">
-        <UiRow :gap="3" wrap>
-          <UiTimerPill
-            label="Versed timer"
-            tone="versed"
-            :count="versedTimerView.count"
-            :hint="versedTimerView.hint"
-            :status="versedTimerView.status"
-          />
-          <UiTimerPill
-            label="Fentanyl timer"
-            tone="fentanyl"
-            :count="fentanylTimerView.count"
-            :hint="fentanylTimerView.hint"
-            :status="fentanylTimerView.status"
-          />
-        </UiRow>
-
-        <p class="caption">Versed (Midazolam)</p>
-        <div class="drug-grid">
-          <UiDrugButton
-            tone="versed"
-            name="Versed"
-            dose="1 mg"
-            sub="0.2 ml"
-            @click="logIvVersed(1, 'additional')"
-          />
-          <UiDrugButton
-            tone="versed"
-            name="Versed"
-            dose="2 mg"
-            sub="0.4 ml"
-            @click="logIvVersed(2, 'additional')"
-          />
-        </div>
-
-        <p class="caption">Fentanyl</p>
-        <div class="drug-grid">
-          <UiDrugButton
-            tone="fentanyl"
-            name="Fentanyl"
-            dose="25 mcg"
-            sub="0.5 ml"
-            @click="logIvFentanyl(25, 'additional')"
-          />
-          <UiDrugButton
-            tone="fentanyl"
-            name="Fentanyl"
-            dose="50 mcg"
-            sub="1.0 ml"
-            @click="logIvFentanyl(50, 'additional')"
-          />
-        </div>
-
-        <p class="caption">Antiemetic</p>
-        <div class="drug-grid">
-          <UiDrugButton
-            tone="zofran"
-            name="Zofran"
-            dose="4 mg"
-            sub="2.0 ml · over 2-5 min"
-            @click="logIvZofran(4)"
-          />
-        </div>
-
-        <!-- IV max-dose stat cards. -->
-        <div class="stat-grid">
-          <UiStatCard
-            label="Versed total"
-            :value="versedCard.value"
-            :unit="versedCard.value !== '—' ? `/ ${versedCard.ceiling.toFixed(1)} mg` : undefined"
-            :category="versedCard.severity"
-            :severity="versedCard.severity"
-            :detail="
-              versedCard.ceilingReducedByOpioid
-                ? `Synergy: ceiling reduced 30% (Fentanyl on board)`
-                : `Solo ceiling: ${versedCeilingFromFormulary} mg`
-            "
-          />
-          <UiStatCard
-            label="Fentanyl total"
-            :value="fentanylCard.value"
-            :unit="fentanylCard.value !== '—' ? `/ ${fentanylCard.ceiling} mcg` : undefined"
-            :category="fentanylCard.severity"
-            :severity="fentanylCard.severity"
-          />
-        </div>
-
-        <!-- Combined sedation load — Apple Health-style with bar. -->
-        <UiCard>
-          <UiRow :gap="3" align="center" justify="between">
-            <div>
-              <p class="caption">Combined sedation load</p>
-              <p class="body muted">
-                Average of Versed % and Fentanyl % — caution ≥70 / limit ≥90 / crisis ≥100.
-              </p>
-            </div>
-            <p class="big-pct" :class="`big-pct--${combinedCard.severity}`">
-              {{ combinedCard.percent.toFixed(0) }}%
-            </p>
-          </UiRow>
-          <UiPercentBar :percent="combinedCard.percent" thickness="lg" class="mt-2" />
-        </UiCard>
-      </UiStack>
+      <p class="heading">5 · Initial Test Dose</p>
+      <p class="body muted">
+        Always start Versed with a 1 mg test dose. Wait 3-5 min before any additional dose — the
+        timer pill below tracks it in real time.
+      </p>
+      <div class="drug-grid mt-2">
+        <UiDrugButton
+          tone="versed"
+          name="Versed · Test"
+          dose="1 mg"
+          sub="0.2 ml"
+          :state="versedTestState"
+          :logged-at="fmtClock(lastVersedAt)"
+          @click="logIvVersed(1, 'test dose')"
+        />
+      </div>
     </UiCard>
+
+    <!-- Card 6 — Additional IV doses with live timers + cumulative.
+         Wrapper ref drives the SedationDock auto-hide: while this card is
+         in viewport the dock stays tucked away (the in-card titration
+         buttons cover the workflow); scrolling past reveals the dock. -->
+
+    <div ref="dockSentinelRef">
+      <UiCard tint="ph3">
+        <p class="heading">6 · Additional Doses</p>
+        <UiStack :gap="3" class="mt-2">
+          <UiRow :gap="3" wrap>
+            <UiTimerPill
+              label="Versed timer"
+              tone="versed"
+              :count="versedTimerView.count"
+              :hint="versedTimerView.hint"
+              :status="versedTimerView.status"
+            />
+            <UiTimerPill
+              label="Fentanyl timer"
+              tone="fentanyl"
+              :count="fentanylTimerView.count"
+              :hint="fentanylTimerView.hint"
+              :status="fentanylTimerView.status"
+            />
+          </UiRow>
+
+          <p class="caption">Versed (Midazolam)</p>
+          <div class="drug-grid">
+            <UiDrugButton
+              tone="versed"
+              name="Versed"
+              dose="1 mg"
+              sub="0.2 ml"
+              @click="logIvVersed(1, 'additional')"
+            />
+            <UiDrugButton
+              tone="versed"
+              name="Versed"
+              dose="2 mg"
+              sub="0.4 ml"
+              @click="logIvVersed(2, 'additional')"
+            />
+          </div>
+
+          <p class="caption">Fentanyl</p>
+          <div class="drug-grid">
+            <UiDrugButton
+              tone="fentanyl"
+              name="Fentanyl"
+              dose="25 mcg"
+              sub="0.5 ml"
+              @click="logIvFentanyl(25, 'additional')"
+            />
+            <UiDrugButton
+              tone="fentanyl"
+              name="Fentanyl"
+              dose="50 mcg"
+              sub="1.0 ml"
+              @click="logIvFentanyl(50, 'additional')"
+            />
+          </div>
+
+          <p class="caption">Antiemetic</p>
+          <div class="drug-grid">
+            <UiDrugButton
+              tone="zofran"
+              name="Zofran"
+              dose="4 mg"
+              sub="2.0 ml · over 2-5 min"
+              @click="logIvZofran(4)"
+            />
+          </div>
+
+          <!-- IV max-dose stat cards. -->
+          <div class="stat-grid">
+            <UiStatCard
+              label="Versed total"
+              :value="versedCard.value"
+              :unit="versedCard.value !== '—' ? `/ ${versedCard.ceiling.toFixed(1)} mg` : undefined"
+              :category="versedCard.severity"
+              :severity="versedCard.severity"
+              :detail="
+                versedCard.ceilingReducedByOpioid
+                  ? `Synergy: ceiling reduced 30% (Fentanyl on board)`
+                  : `Solo ceiling: ${versedCeilingFromFormulary} mg`
+              "
+            />
+            <UiStatCard
+              label="Fentanyl total"
+              :value="fentanylCard.value"
+              :unit="fentanylCard.value !== '—' ? `/ ${fentanylCard.ceiling} mcg` : undefined"
+              :category="fentanylCard.severity"
+              :severity="fentanylCard.severity"
+            />
+          </div>
+
+          <!-- Combined sedation load — Apple Health-style with bar. -->
+          <UiCard>
+            <UiRow :gap="3" align="center" justify="between">
+              <div>
+                <p class="caption">Combined sedation load</p>
+                <p class="body muted">
+                  Average of Versed % and Fentanyl % — caution ≥70 / limit ≥90 / crisis ≥100.
+                </p>
+              </div>
+              <p class="big-pct" :class="`big-pct--${combinedCard.severity}`">
+                {{ combinedCard.percent.toFixed(0) }}%
+              </p>
+            </UiRow>
+            <UiPercentBar :percent="combinedCard.percent" thickness="lg" class="mt-2" />
+          </UiCard>
+        </UiStack>
+      </UiCard>
+    </div>
 
     <!-- Card 7 — Sedation Level Vitals ---------------------------------- -->
 
@@ -886,8 +889,8 @@ function onNaloxone() {
     </UiCard>
 
     <PhaseFooterNav
-      :back="{ label: 'Phase 2 · Oral Sedation', route: '/phase/2' }"
-      :forward="{ label: 'Phase 4 · Recovery', route: '/phase/4' }"
+      :back="{ label: 'Phase 2 · Oral Sedation', route: '/phase/2', tint: 'ph2' }"
+      :forward="{ label: 'Phase 4 · Recovery', route: '/phase/4', tint: 'ph4' }"
     />
 
     <template #rail>

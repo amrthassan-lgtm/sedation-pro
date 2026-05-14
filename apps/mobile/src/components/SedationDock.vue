@@ -15,7 +15,7 @@ import type { Severity, TimerPillStatus } from '@sedation-pro/ui';
  * Premium iOS pattern: a frosted-glass surface that sits above the home
  * indicator with two states:
  *  - **compact** — drug status row (mg given / ceiling, live half-life timer,
- *    redose-window status) plus two "next-dose" buttons (Versed +0.5,
+ *    redose-window status) plus two "next-dose" buttons (Versed +1 mg,
  *    Fentanyl +25). One tap = log.
  *  - **expanded** — full per-class dose grid (sedation, anti-emetic, reversal)
  *    with cooldown overlays on every button. Reversal is visually demoted
@@ -35,7 +35,7 @@ const { lastVersedAt, lastFentanylAt, sedationStatus } = storeToRefs(iv);
 
 // Shared visibility singletons. `expanded` is the dock's own state (the
 // per-class dose grid sheet); `dockOnScreen` decides whether the dock root
-// is on-screen at all (driven by the card-5 IntersectionObserver in
+// is on-screen at all (driven by the card-6 IntersectionObserver in
 // Phase3View).
 const { expanded, dockOnScreen } = useDockVisibility();
 
@@ -175,11 +175,11 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
         <button
           type="button"
           class="dock-btn dock-btn--versed"
-          aria-label="Log Versed 0.5 mg IV"
-          @click="dosing.logIvVersed(0.5, 'dock')"
+          aria-label="Log Versed 1 mg IV"
+          @click="dosing.logIvVersed(1, 'dock')"
         >
           <span class="dock-btn-label">Versed</span>
-          <span class="dock-btn-dose">+0.5 mg</span>
+          <span class="dock-btn-dose">+1 mg</span>
         </button>
         <button
           type="button"
@@ -471,25 +471,25 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   color: var(--color-text-primary);
 }
 .dock-btn--versed {
-  border-color: rgba(245, 158, 11, 0.45);
-  background: rgba(245, 158, 11, 0.08);
+  border-color: var(--color-orange);
+  background: var(--color-orange-soft);
 }
 .dock-btn--versed .dock-btn-dose {
-  color: #f59e0b;
+  color: var(--color-orange);
 }
 .dock-btn--fentanyl {
-  border-color: rgba(59, 130, 246, 0.45);
-  background: rgba(59, 130, 246, 0.08);
+  border-color: var(--color-blue);
+  background: var(--color-blue-soft);
 }
 .dock-btn--fentanyl .dock-btn-dose {
-  color: #3b82f6;
+  color: var(--color-blue);
 }
 .dock-btn--zofran {
-  border-color: rgba(74, 222, 128, 0.4);
-  background: rgba(74, 222, 128, 0.08);
+  border-color: var(--color-slate);
+  background: var(--color-slate-soft);
 }
 .dock-btn--zofran .dock-btn-dose {
-  color: var(--color-good);
+  color: var(--color-slate);
 }
 .dock-btn--reversal {
   border-color: rgba(239, 68, 68, 0.5);

@@ -4,12 +4,13 @@ import { computed, onScopeDispose, ref, watch, type Ref } from 'vue';
  * Bottom-dock visibility controller for Phase 3.
  *
  * UX: the SedationDock should not compete with the in-card dose buttons on
- * card 5 ("Initial Test Dose"). The dock starts hidden when the user lands
- * on Phase 3 — there's nothing to titrate yet — and reveals itself the
- * first time card 5 enters the viewport (one-way "reveal" flag). After that
- * reveal, dock visibility mirrors card 5's viewport state inversely: hidden
- * while card 5 is in view (its dose buttons are visible in the form), shown
- * whenever card 5 is off-screen (above OR below the viewport).
+ * cards 5 ("Initial Test Dose") and 6 ("Additional Doses"). The dock starts
+ * hidden when the user lands on Phase 3 — there's nothing to titrate yet —
+ * and reveals itself the first time card 6 enters the viewport (one-way
+ * "reveal" flag). After that reveal, dock visibility mirrors card 6's
+ * viewport state inversely: hidden while card 6 is in view (its in-card
+ * titration buttons cover the workflow), shown whenever card 6 is
+ * off-screen (above OR below the viewport).
  *
  * The dock's expanded sheet suppresses auto-hide — once the user has
  * opened the per-class dose grid, the dock stays mounted until they close
@@ -31,7 +32,7 @@ export function useDockVisibility() {
 }
 
 /**
- * Attach an IntersectionObserver to the given Phase 3 card-5 wrapper.
+ * Attach an IntersectionObserver to the given Phase 3 card-6 wrapper.
  * Called once from Phase3View; auto-disconnects on scope dispose.
  */
 export function useDockSentinel(elRef: Ref<HTMLElement | null>): void {
