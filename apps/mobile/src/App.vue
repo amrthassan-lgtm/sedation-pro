@@ -43,7 +43,10 @@ if (typeof window !== 'undefined') {
 </script>
 
 <template>
-  <StickyBar />
+  <StickyBar class="no-print" />
+  <!-- NavDrawer + UndoToast teleport their roots into <body>, so a class
+       attribute on the component tag doesn't reach the rendered DOM. They
+       tag their own root elements with `no-print` internally. -->
   <NavDrawer />
   <UndoToast />
   <div class="app-shell" :class="{ 'has-dock': dockReservesSpace }">
@@ -52,9 +55,9 @@ if (typeof window !== 'undefined') {
         <component :is="Component" />
       </transition>
     </RouterView>
-    <AppFooter />
+    <AppFooter class="no-print" />
   </div>
-  <SedationDock v-if="showSedationDock" />
+  <SedationDock v-if="showSedationDock" class="no-print" />
 </template>
 
 <style scoped>

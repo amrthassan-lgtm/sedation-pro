@@ -16,7 +16,7 @@ function onUndo() {
 <template>
   <Teleport to="body">
     <Transition name="toast">
-      <div v-if="current" class="undo-toast-container">
+      <div v-if="current" class="undo-toast-container no-print">
         <div class="undo-toast" :class="`undo-toast--${current.tone}`" role="status">
           <div class="undo-toast-body">
             <div class="undo-toast-action">{{ current.label }}</div>

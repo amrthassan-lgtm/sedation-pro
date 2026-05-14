@@ -6,15 +6,22 @@ import { ref, watch } from 'vue';
  * Operatory environments often have one preference all day, but a manual
  * override matters when a clinician moves between rooms with different
  * lighting or hands the iPad to a patient for the consent screen.
+ *
+ * Default is `'dark'` rather than `'auto'`: this is a clinical operatory
+ * app where the screen is held under bright overhead lighting most of the
+ * day; dark reduces glare and matches the visual style the app was
+ * designed for. A user who wants OS-following can pick `'auto'` from the
+ * nav-drawer theme cycle and the choice persists.
  */
 export type ThemeChoice = 'auto' | 'light' | 'dark';
 
 const STORAGE_KEY = 'sedation-pro:theme:v1';
 
 function readStoredChoice(): ThemeChoice {
-  if (typeof localStorage === 'undefined') return 'auto';
+  if (typeof localStorage === 'undefined') return 'dark';
   const raw = localStorage.getItem(STORAGE_KEY);
-  return raw === 'light' || raw === 'dark' ? raw : 'auto';
+  if (raw === 'light' || raw === 'dark' || raw === 'auto') return raw;
+  return 'dark';
 }
 
 const choice = ref<ThemeChoice>(readStoredChoice());
@@ -36,9 +43,11 @@ function applyTheme() {
 }
 
 watch(choice, (next) => {
+  // Persist every explicit pick, including 'auto'. Otherwise picking 'auto'
+  // would wipe the entry, and the next launch's default-when-missing rule
+  // (now 'dark') would silently override the user's choice to follow OS.
   if (typeof localStorage !== 'undefined') {
-    if (next === 'auto') localStorage.removeItem(STORAGE_KEY);
-    else localStorage.setItem(STORAGE_KEY, next);
+    localStorage.setItem(STORAGE_KEY, next);
   }
   applyTheme();
 });

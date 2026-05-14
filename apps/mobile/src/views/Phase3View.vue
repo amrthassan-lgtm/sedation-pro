@@ -372,6 +372,11 @@ const flumazenilProcessOpen = ref(false);
 const naloxoneProcessOpen = ref(false);
 
 function onFlumazenil() {
+  // Capture the panel state *before* mutating so undo restores both the
+  // dose log and the process-panel visibility. Without this, the dose is
+  // removed but the panel stays open — the same class of bug as the N₂O
+  // toggle revert that the prior commit fixed.
+  const prevPanelOpen = flumazenilProcessOpen.value;
   iv.logDose({ drug: 'flumazenil', mg: 0.2 });
   flumazenilProcessOpen.value = true;
   undo.stamp({
@@ -385,11 +390,13 @@ function onFlumazenil() {
     revert: () => {
       const last = iv.doses[iv.doses.length - 1];
       if (last && last.drug === 'flumazenil') iv.removeDoseById(last.id);
+      flumazenilProcessOpen.value = prevPanelOpen;
     },
   });
 }
 
 function onNaloxone() {
+  const prevPanelOpen = naloxoneProcessOpen.value;
   iv.logDose({ drug: 'naloxone', mg: 0.4 });
   naloxoneProcessOpen.value = true;
   undo.stamp({
@@ -403,6 +410,7 @@ function onNaloxone() {
     revert: () => {
       const last = iv.doses[iv.doses.length - 1];
       if (last && last.drug === 'naloxone') iv.removeDoseById(last.id);
+      naloxoneProcessOpen.value = prevPanelOpen;
     },
   });
 }

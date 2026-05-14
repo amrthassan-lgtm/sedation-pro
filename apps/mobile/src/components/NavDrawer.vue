@@ -276,7 +276,7 @@ function onTouchEnd() {
          hamburger button still owns the top region. -->
     <div
       v-if="!drawerOpen"
-      class="nav-edge-sensor"
+      class="nav-edge-sensor no-print"
       aria-hidden="true"
       @touchstart.passive="onEdgeTouchStart"
       @touchmove="onTouchMove"
@@ -285,13 +285,13 @@ function onTouchEnd() {
     />
     <div
       v-if="overlayVisible"
-      class="nav-overlay"
+      class="nav-overlay no-print"
       role="presentation"
       :style="overlayStyle"
       @click="session.closeDrawer()"
     />
     <aside
-      class="nav-drawer"
+      class="nav-drawer no-print"
       :class="{ 'is-open': drawerOpen }"
       :style="drawerStyle"
       :aria-hidden="!drawerOpen"

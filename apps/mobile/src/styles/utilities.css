@@ -42,3 +42,17 @@
     max-height: calc(100vh - 72px - 250px - env(safe-area-inset-top) - var(--sp-5));
   }
 }
+
+/*
+ * Print hygiene — anything tagged `.no-print` (sticky bar, nav drawer, app
+ * footer, sedation dock, undo toast, the per-view toolbars on the clinical
+ * note) drops out of print output. The clinical note's paper body and the
+ * page chrome it owns are the only things that should land on the printed
+ * page. !important is used because scoped component styles can otherwise
+ * override the print rule.
+ */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
