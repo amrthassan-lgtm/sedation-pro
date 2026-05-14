@@ -787,9 +787,11 @@ const diazepamModalCopy = computed(() => {
   transform: scale(0.97);
 }
 
-/* Bottom-of-page advance button. Two tones — ready (Phase 1 complete; routes
-   straight to Phase 2) and locked (count of remaining required fields; clicks
-   trigger the validation feedback). */
+/* Bottom-of-page advance button. Two tones:
+   - ready: tinted with the destination phase's color (Phase 2 = purple) so
+     the button visually previews where it leads, matching PhaseFooterNav.
+   - locked: warn-yellow because it doesn't actually navigate — clicks
+     trigger the "show me what's missing" validation feedback path. */
 .phase-nav {
   margin-top: var(--sp-4);
   display: flex;
@@ -819,20 +821,20 @@ const diazepamModalCopy = computed(() => {
   transform: scale(0.98);
 }
 .phase-advance--ready {
-  background: var(--color-good-soft);
-  border-color: rgba(74, 222, 128, 0.45);
-  color: var(--color-good);
+  background: var(--ph2-soft);
+  border-color: var(--ph2-color);
+  color: var(--ph2-color);
 }
 .phase-advance--ready:hover {
-  background: rgba(74, 222, 128, 0.18);
+  background: var(--color-purple-soft);
 }
 .phase-advance--locked {
   background: var(--color-warn-soft);
-  border-color: rgba(250, 204, 21, 0.45);
+  border-color: var(--color-warn);
   color: var(--color-warn);
 }
 .phase-advance--locked:hover {
-  background: rgba(250, 204, 21, 0.18);
+  background: var(--color-warn-soft);
 }
 .phase-advance-icon {
   font-size: 18px;
