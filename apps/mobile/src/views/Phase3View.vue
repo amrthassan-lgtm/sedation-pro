@@ -6,9 +6,12 @@ import { useIVStore } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
+import { useDockSentinel } from '@/composables/useDockVisibility';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
+import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
+import PhaseLayout from '@/components/PhaseLayout.vue';
 import {
   UiBanner,
   UiBpInput,
@@ -35,7 +38,12 @@ const patient = usePatientStore();
 const undo = useUndoStore();
 const now = useNow(1000);
 
-const { weightLb, diabetic } = storeToRefs(patient);
+const { weightLb, diabetic, safetyAlerts } = storeToRefs(patient);
+
+// Wire the card-5 ("Initial Test Dose") IntersectionObserver — drives the
+// SedationDock's auto-hide. See `useDockVisibility` for behavior.
+const card5Ref = ref<HTMLElement | null>(null);
+useDockSentinel(card5Ref);
 
 const {
   n2oOn,
@@ -389,7 +397,7 @@ function onNaloxone() {
 </script>
 
 <template>
-  <main class="phase-view">
+  <PhaseLayout>
     <header class="phase-hero">
       <p class="caption">Phase 3 · IV Sedation & Procedure</p>
       <h1 class="title-display">Drug Administration</h1>
@@ -519,26 +527,31 @@ function onNaloxone() {
       </UiButton>
     </UiCard>
 
-    <!-- Card 5 — Initial test dose ------------------------------------- -->
+    <!-- Card 5 — Initial test dose. Wrapper ref drives the SedationDock
+         auto-hide: while this card is in viewport the dock stays tucked
+         away (the in-card Versed button below already covers the action);
+         scrolling past reveals the dock. See useDockVisibility. -->
 
-    <UiCard tint="ph3">
-      <p class="heading">5 · Initial Test Dose</p>
-      <p class="body muted">
-        Always start Versed with a 1 mg test dose. Wait 3-5 min before any additional dose — the
-        timer pill below tracks it in real time.
-      </p>
-      <div class="drug-grid mt-2">
-        <UiDrugButton
-          tone="versed"
-          name="Versed · Test"
-          dose="1 mg"
-          sub="0.2 ml"
-          :state="versedTestState"
-          :logged-at="fmtClock(lastVersedAt)"
-          @click="logIvVersed(1, 'test dose')"
-        />
-      </div>
-    </UiCard>
+    <div ref="card5Ref">
+      <UiCard tint="ph3">
+        <p class="heading">5 · Initial Test Dose</p>
+        <p class="body muted">
+          Always start Versed with a 1 mg test dose. Wait 3-5 min before any additional dose — the
+          timer pill below tracks it in real time.
+        </p>
+        <div class="drug-grid mt-2">
+          <UiDrugButton
+            tone="versed"
+            name="Versed · Test"
+            dose="1 mg"
+            sub="0.2 ml"
+            :state="versedTestState"
+            :logged-at="fmtClock(lastVersedAt)"
+            @click="logIvVersed(1, 'test dose')"
+          />
+        </div>
+      </UiCard>
+    </div>
 
     <!-- Card 6 — Additional IV doses with live timers + cumulative -- -->
 
@@ -876,18 +889,21 @@ function onNaloxone() {
       :back="{ label: 'Phase 2 · Oral Sedation', route: '/phase/2' }"
       :forward="{ label: 'Phase 4 · Recovery', route: '/phase/4' }"
     />
-  </main>
+
+    <template #rail>
+      <PatientSummaryCard />
+      <UiBanner
+        v-for="alert in safetyAlerts"
+        :key="alert.code"
+        :tone="alert.tone === 'danger' ? 'limit' : 'caution'"
+        :title="alert.label"
+        icon="⚠"
+      />
+    </template>
+  </PhaseLayout>
 </template>
 
 <style scoped>
-.phase-view {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  padding: var(--sp-5) var(--sp-4) var(--sp-7);
-  max-width: 760px;
-  margin-inline: auto;
-}
 .phase-hero {
   display: flex;
   flex-direction: column;

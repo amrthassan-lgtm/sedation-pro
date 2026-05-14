@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useIVStore } from '@/stores/iv';
+import { useDockVisibility } from '@/composables/useDockVisibility';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
 import { UiPercentBar, UiTimerPill } from '@sedation-pro/ui';
@@ -32,7 +33,11 @@ const now = useNow(1000);
 
 const { lastVersedAt, lastFentanylAt, sedationStatus } = storeToRefs(iv);
 
-const expanded = ref(false);
+// Shared visibility singletons. `expanded` is the dock's own state (the
+// per-class dose grid sheet); `dockOnScreen` decides whether the dock root
+// is on-screen at all (driven by the card-5 IntersectionObserver in
+// Phase3View).
+const { expanded, dockOnScreen } = useDockVisibility();
 
 function toggle() {
   expanded.value = !expanded.value;
@@ -93,7 +98,11 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
 </script>
 
 <template>
-  <div class="dock-root" :class="{ 'is-expanded': expanded }">
+  <div
+    class="dock-root"
+    :class="{ 'is-expanded': expanded, 'is-hidden': !dockOnScreen }"
+    :aria-hidden="!dockOnScreen ? 'true' : undefined"
+  >
     <!-- Backdrop dims the page when expanded so the dock reads as a sheet. -->
     <div v-if="expanded" class="dock-backdrop" @click="collapse" aria-hidden="true" />
 
@@ -278,6 +287,26 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   right: 0;
   z-index: 90;
   pointer-events: none;
+  transition:
+    transform var(--dur-250) var(--ease-standard),
+    opacity var(--dur-250) var(--ease-standard);
+}
+/* Auto-hide: when the user is on Phase 3 before reaching card 5, OR scrolled
+   into card 5 itself (its in-card dose buttons already cover what the dock
+   does), the dock slides below the viewport. The expanded sheet suppresses
+   this — once the per-class dose grid is open, dock stays mounted regardless
+   of scroll position (`useDockVisibility` rolls `expanded` into `dockOnScreen`). */
+.dock-root.is-hidden {
+  transform: translateY(110%);
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dock-root {
+    transition: opacity var(--dur-150) linear;
+  }
+  .dock-root.is-hidden {
+    transform: none;
+  }
 }
 
 .dock-backdrop {
