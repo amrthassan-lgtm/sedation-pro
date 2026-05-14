@@ -178,7 +178,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
       </UiCard>
     </template>
 
-    <UiBanner v-else tone="caution" icon="🔍" title="Protocol not found">
+    <UiBanner v-else tone="info" icon="🔍" title="Protocol not found">
       No protocol matches <strong>“{{ props.id }}”</strong>. Tap back to browse the library.
     </UiBanner>
   </main>
@@ -292,8 +292,8 @@ function syringeFor(drug: EmergencyDrugCallout) {
   border: 1px solid transparent;
 }
 .step--critical {
-  background: var(--color-danger-soft);
-  border-color: rgba(251, 113, 133, 0.35);
+  background: var(--color-crisis-soft);
+  border-color: var(--color-crisis);
 }
 .step--final {
   background: var(--color-surface-elevated);
@@ -313,7 +313,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
   justify-content: center;
 }
 .step--critical .step-num {
-  background: var(--color-danger);
+  background: var(--color-crisis);
   color: white;
 }
 .step-body {

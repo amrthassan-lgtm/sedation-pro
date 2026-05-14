@@ -64,7 +64,10 @@ const railActiveIndex = computed(() => {
 });
 
 function emergency() {
-  void router.push('/quick-reference');
+  // `focus=search` signals the QR view to autofocus its input on mount.
+  // Direct navigation (nav drawer, deep link) won't carry the query param
+  // and lands without stealing focus from a visual scan.
+  void router.push({ path: '/quick-reference', query: { focus: 'search' } });
 }
 </script>
 

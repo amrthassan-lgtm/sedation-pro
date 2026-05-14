@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, onScopeDispose, ref, useTemplateRef, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 import {
   CRITICAL_PROTOCOL_IDS,
@@ -12,8 +12,32 @@ import {
 import { UiBanner, UiCard, UiStack, UiSyringe, UiTextInput } from '@sedation-pro/ui';
 
 const router = useRouter();
+const route = useRoute();
 
 const query = ref('');
+/**
+ * Debounced mirror of `query`. The search filter runs against 32 protocols
+ * × ~8 steps each on every keystroke; debouncing collapses fast typing
+ * bursts into a single recompute. 100 ms is below the perceptual threshold
+ * so the search still feels live.
+ */
+const debouncedQuery = ref('');
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+watch(query, (next) => {
+  if (debounceTimer !== null) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    debouncedQuery.value = next;
+    debounceTimer = null;
+  }, 100);
+});
+onScopeDispose(() => {
+  if (debounceTimer !== null) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+});
+
+const searchInputRef = useTemplateRef<{ focus: () => void }>('searchInputRef');
 
 /**
  * IV drug reference table — restores the legacy app's drawing-up chart so a
@@ -149,7 +173,7 @@ const criticalProtocols = computed<ReadonlyArray<EmergencyProtocol>>(() =>
   ),
 );
 
-const normalizedQuery = computed(() => query.value.trim().toLowerCase());
+const normalizedQuery = computed(() => debouncedQuery.value.trim().toLowerCase());
 
 function protocolMatches(p: EmergencyProtocol, q: string): boolean {
   if (q === '') return true;
@@ -183,8 +207,28 @@ function open(id: string) {
 }
 
 function clearSearch() {
+  // Skip the debounce delay — clear should feel instant.
+  if (debounceTimer !== null) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
   query.value = '';
+  debouncedQuery.value = '';
 }
+
+/**
+ * Autofocus the search input when the user lands here via the sticky bar's
+ * Emergency button. The button pushes `?focus=search`; we consume the flag
+ * and `router.replace` it away so a refresh doesn't keep stealing focus.
+ * Direct navigation (nav drawer, deep link) leaves the input unfocused so
+ * a visual scan of the category cards comes first.
+ */
+onMounted(() => {
+  if (route.query.focus === 'search') {
+    searchInputRef.value?.focus();
+    void router.replace({ path: route.path, query: {} });
+  }
+});
 </script>
 
 <template>
@@ -287,13 +331,21 @@ function clearSearch() {
     <!-- Search across protocol name, signs, drug names. -->
 
     <section class="search">
-      <UiTextInput v-model="query" placeholder="Search — signs, drug, protocol name…" block />
+      <UiTextInput
+        ref="searchInputRef"
+        v-model="query"
+        type="search"
+        inputmode="search"
+        leading-icon="🔍"
+        placeholder="Search — signs, drug, protocol name…"
+        block
+      />
       <button v-if="isSearching" type="button" class="search-clear" @click="clearSearch">
         Clear search
       </button>
     </section>
 
-    <UiBanner v-if="isSearching && filtered.length === 0" tone="caution" icon="🔍">
+    <UiBanner v-if="isSearching && filtered.length === 0" tone="info" icon="🔍">
       No protocols match <strong>“{{ query }}”</strong>. Try a shorter keyword or browse the
       categories below.
     </UiBanner>
@@ -482,7 +534,7 @@ function clearSearch() {
   font-size: var(--type-footnote);
   color: var(--color-warn);
   background: var(--color-warn-soft);
-  border: 1px solid rgba(250, 204, 21, 0.3);
+  border: 1px solid var(--color-warn);
   border-radius: var(--r-sm);
   padding: 6px 10px;
   margin: 0;
