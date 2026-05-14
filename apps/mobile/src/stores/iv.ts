@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 import {
   fentanylTimer,
@@ -12,6 +12,7 @@ import type { BpValue } from '@sedation-pro/ui';
 
 import { haptic } from '@/composables/useHaptics';
 import { persistRefs } from './persistence';
+import { usePatientStore } from './patient';
 
 /**
  * Per-drug IV dose record. Stored exactly as logged so totals and timer
@@ -247,6 +248,18 @@ export const useIVStore = defineStore('iv', () => {
     sedStampedAt.value = null;
     procedureStartedAt.value = null;
   }
+
+  // Pre-op glucose is collected only when the patient is flagged diabetic;
+  // flipping diabetic back to "no" wipes the stale reading so it can't leak
+  // into the chart or the recovery comparison.
+  const patient = usePatientStore();
+  watch(
+    () => patient.diabetic,
+    (isDiabetic) => {
+      if (!isDiabetic) preOpGlucose.value = null;
+    },
+    { flush: 'sync' },
+  );
 
   // Persistence — every dose, every timer anchor, every gas-flow flag, every
   // input keystroke must survive a reload mid-procedure.

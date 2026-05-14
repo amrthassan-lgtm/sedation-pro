@@ -28,8 +28,6 @@ export interface DismissalInputs {
   readonly companionDocumented: boolean;
   /** Provider signature captured? */
   readonly providerSigned: boolean;
-  /** Companion signature captured? */
-  readonly companionSigned: boolean;
   /**
    * Pulse-oximetry printout copied and filed with the sedation visit document.
    * Legacy clinical anchor — the SpO₂ trend record is the medicolegal proof
@@ -48,7 +46,6 @@ export type DismissalBlockerCode =
   | 'bp-crisis'
   | 'no-companion'
   | 'no-provider-signature'
-  | 'no-companion-signature'
   | 'no-pulse-ox-printout';
 
 export interface DismissalBlocker {
@@ -122,14 +119,6 @@ export function dismissalSafety(inputs: DismissalInputs): DismissalSafety {
 
   if (!inputs.providerSigned) {
     blockers.push({ code: 'no-provider-signature', label: 'Provider signature missing' });
-  }
-
-  if (!inputs.companionSigned) {
-    blockers.push({
-      code: 'no-companion-signature',
-      label: 'Responsible companion signature missing',
-      detail: 'Companion co-signs post-op instructions per the practice protocol.',
-    });
   }
 
   if (!inputs.pulseOxPrintoutFiled) {

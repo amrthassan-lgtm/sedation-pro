@@ -82,9 +82,9 @@ const returnVisitOptions = [
   { value: 'scheduled', label: 'Scheduled — date below' },
 ];
 
-// Provider signature lives here in-app. The companion's signature is captured
-// on a separate paper form per practice protocol — so we pass
-// `companionSigned: true` to dismissalSafety to skip that gate.
+// The companion signs a separate paper consent (post-op instructions), so
+// the engine no longer carries a companion-signature gate. Only the provider
+// signature is captured in-app.
 const providerSigned = computed(() => providerSignatureDataUrl.value !== null);
 
 const responseOptions = [
@@ -190,7 +190,6 @@ const dismissal = computed(() =>
     bp: { sbp: endBpSys.value, dbp: endBpDia.value },
     companionDocumented: companionDocumented.value,
     providerSigned: providerSigned.value,
-    companionSigned: true,
     pulseOxPrintoutFiled: !!discharge.value.pulseOxPrinted,
   }),
 );

@@ -190,6 +190,19 @@ export const usePatientStore = defineStore('patient', () => {
     if (complete) phase1ValidationAttempted.value = false;
   });
 
+  // Flipping diabetic back to "no" must wipe the baseline glucose so a stale
+  // value from an earlier toggle can't flow into the chart. Cross-store
+  // glucose refs (IV pre-op, recovery end-of-case) clear themselves via the
+  // same diabetic-watch pattern in their own stores. flush: 'sync' so the
+  // cleanup is observable in the same tick the toggle happens.
+  watch(
+    diabetic,
+    (isDiabetic) => {
+      if (!isDiabetic) baselineGlucose.value = null;
+    },
+    { flush: 'sync' },
+  );
+
   // Persist the form so reloading the page (or relaunching from the iPhone
   // home screen) doesn't wipe progress. Schema migrations land in Phase 5
   // proper — for now we trust the snapshot.
@@ -269,6 +282,7 @@ export const usePatientStore = defineStore('patient', () => {
     teamReady.value = false;
     emergencyDrugsAvailable.value = false;
     monitoringEquipmentChecked.value = false;
+    phase1ValidationAttempted.value = false;
   }
 
   return {

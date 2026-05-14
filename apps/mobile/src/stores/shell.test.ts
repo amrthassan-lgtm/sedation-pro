@@ -10,6 +10,10 @@ import { usePatientStore } from './patient';
 
 describe('shell stores — single sources of truth', () => {
   beforeEach(() => {
+    // persistRefs() reads from localStorage on store init; without clearing,
+    // values written by an earlier test would re-hydrate the next store and
+    // mask the assertion under test.
+    localStorage.clear();
     setActivePinia(createPinia());
   });
 
@@ -162,6 +166,24 @@ describe('shell stores — single sources of truth', () => {
     expect(patient.isPhase1Complete).toBe(true);
     await nextTick();
     expect(patient.phase1ValidationAttempted).toBe(false);
+  });
+
+  it('patient.reset clears the validation-attempted flag', () => {
+    const patient = usePatientStore();
+    patient.markValidationAttempted();
+    expect(patient.phase1ValidationAttempted).toBe(true);
+    patient.reset();
+    expect(patient.phase1ValidationAttempted).toBe(false);
+  });
+
+  it('flipping diabetic back to no wipes the baseline glucose', async () => {
+    const patient = usePatientStore();
+    patient.diabetic = true;
+    patient.baselineGlucose = 142;
+    expect(patient.baselineGlucose).toBe(142);
+    patient.diabetic = false;
+    await nextTick();
+    expect(patient.baselineGlucose).toBeNull();
   });
 
   it('patient.completeness adds baseline_glucose when diabetic is yes', () => {

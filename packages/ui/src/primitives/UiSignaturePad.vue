@@ -129,7 +129,23 @@ function commit() {
   }
   const canvas = canvasRef.value;
   if (!canvas) return;
-  emit('update:modelValue', canvas.toDataURL('image/png'));
+  // Flatten white-ink-on-transparent over a solid black background and
+  // export JPEG. Consumers apply `filter: invert(1)` at display time, which
+  // flips the black background to white and the white ink to black — same
+  // visual result as the previous transparent-PNG path, ~10× smaller on
+  // disk so localStorage doesn't fill up after a few cases.
+  const flat = document.createElement('canvas');
+  flat.width = canvas.width;
+  flat.height = canvas.height;
+  const fctx = flat.getContext('2d');
+  if (!fctx) {
+    emit('update:modelValue', canvas.toDataURL('image/png'));
+    return;
+  }
+  fctx.fillStyle = '#000';
+  fctx.fillRect(0, 0, flat.width, flat.height);
+  fctx.drawImage(canvas, 0, 0);
+  emit('update:modelValue', flat.toDataURL('image/jpeg', 0.75));
 }
 
 function onPointerUp(event: PointerEvent) {

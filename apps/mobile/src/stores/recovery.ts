@@ -1,8 +1,9 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import { haptic } from '@/composables/useHaptics';
 import { persistRefs } from './persistence';
+import { usePatientStore } from './patient';
 
 /**
  * Recovery + discharge state. Separate store so Phase 4 owns its own
@@ -141,6 +142,18 @@ export const useRecoveryStore = defineStore('recovery', () => {
 
   const companionDocumented = computed(
     () => companionName.value.trim() !== '' && companionRelation.value.trim() !== '',
+  );
+
+  // End-of-case glucose mirrors the pre-op reading and is only collected for
+  // diabetic patients; flipping diabetic off wipes the value so it can't
+  // leak into the chart.
+  const patient = usePatientStore();
+  watch(
+    () => patient.diabetic,
+    (isDiabetic) => {
+      if (!isDiabetic) endGlucose.value = null;
+    },
+    { flush: 'sync' },
   );
 
   persistRefs('sedation-pro:recovery:v5', {

@@ -11,7 +11,6 @@ const READY: DismissalInputs = {
   bp: { sbp: 118, dbp: 76 },
   companionDocumented: true,
   providerSigned: true,
-  companionSigned: true,
   pulseOxPrintoutFiled: true,
 };
 
@@ -74,11 +73,9 @@ describe('dismissalSafety', () => {
     expect(r.blockers[0]?.code).toBe('no-companion');
   });
 
-  it('requires both provider and companion signatures', () => {
-    const r = dismissalSafety({ ...READY, providerSigned: false, companionSigned: false });
-    expect(r.blockers.map((b) => b.code)).toEqual(
-      expect.arrayContaining(['no-provider-signature', 'no-companion-signature']),
-    );
+  it('requires the provider signature', () => {
+    const r = dismissalSafety({ ...READY, providerSigned: false });
+    expect(r.blockers.map((b) => b.code)).toEqual(['no-provider-signature']);
   });
 
   it('blocks when the pulse-oximetry printout has not been filed', () => {
@@ -97,7 +94,6 @@ describe('dismissalSafety', () => {
       bp: { sbp: 200, dbp: 130 },
       companionDocumented: false,
       providerSigned: false,
-      companionSigned: false,
       pulseOxPrintoutFiled: false,
     });
     expect(r.blockers.map((b) => b.code)).toEqual([
@@ -109,7 +105,6 @@ describe('dismissalSafety', () => {
       'bp-crisis',
       'no-companion',
       'no-provider-signature',
-      'no-companion-signature',
       'no-pulse-ox-printout',
     ]);
   });
