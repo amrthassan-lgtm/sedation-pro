@@ -333,14 +333,15 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
     {
       const sentences: string[] = [];
       if (iv.ivStarted) {
-        const gauge = iv.ivCatheterGauge || '—';
-        const site = iv.ivSite || 'IV site';
+        const gauge = iv.ivCatheterGauge.trim();
+        const site = iv.ivSite.trim();
+        const fluid = iv.ivFluid.trim();
         const attempts =
           iv.ivCatheterAttempts === 1 ? '1 attempt' : `${iv.ivCatheterAttempts} attempts`;
-        const fluid = iv.ivFluid || 'maintenance fluid';
-        sentences.push(
-          `An IV catheter (${gauge}g) was placed in the ${site} after ${attempts}; ${fluid} was initiated.`,
-        );
+        const gaugePart = gauge ? ` (${gauge}g)` : '';
+        const sitePart = site ? ` in the ${site}` : '';
+        const placement = `An IV catheter${gaugePart} was placed${sitePart} after ${attempts}`;
+        sentences.push(fluid ? `${placement}; ${fluid} was initiated.` : `${placement}.`);
       }
       const meds: string[] = [];
       if (iv.versedTotalMg > 0) meds.push(`${iv.versedTotalMg.toFixed(1)} mg midazolam`);
