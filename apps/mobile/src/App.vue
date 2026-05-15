@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
 
 import AppFooter from '@/components/AppFooter.vue';
@@ -10,10 +10,71 @@ import UndoToast from '@/components/UndoToast.vue';
 import { useAlarms, unlockAudio } from '@/composables/useAlarms';
 import { useDockVisibility } from '@/composables/useDockVisibility';
 import { useWakeLock } from '@/composables/useWakeLock';
+import { useCaseReset } from '@/composables/useCaseReset';
+import { usePatientStore } from '@/stores/patient';
+import { useEventLogStore } from '@/stores/event-log';
+import { readPersistedSavedAt, isStaleSession } from '@/stores/persistence';
+import { UiModal } from '@sedation-pro/ui';
 
 /** Sedation Dock is only mounted in Phase 3 — every other screen hides it. */
 const route = useRoute();
 const showSedationDock = computed(() => route.path === '/phase/3');
+
+/**
+ * Launch-time wrong-patient gate (parity with the legacy app).
+ *
+ * `persistRefs` silently rehydrates the previous patient's full chart on
+ * boot. If that chart was saved on a *different calendar day* it's almost
+ * certainly a different patient, so we block on first paint and make the
+ * clinician choose: resume, or wipe and start fresh. Same-day reloads
+ * (accidental refresh, backgrounded-then-resumed) restore silently — the
+ * legacy behaviour — so we don't nag during an active case.
+ *
+ * Safety mapping: confirm = Resume (the non-destructive choice, so a
+ * reflexive confirm-tap can't lose data); cancel = Start new case (the
+ * deliberate destructive path). Backdrop dismissal is disabled.
+ */
+const patient = usePatientStore();
+const eventLog = useEventLogStore();
+const { reset: resetCase } = useCaseReset();
+
+const resumeGateOpen = ref(false);
+const resumeSavedDate = ref('');
+
+function sessionHasContent(): boolean {
+  return patient.name.trim() !== '' || patient.mrn.trim() !== '' || eventLog.count > 0;
+}
+
+const resumePatientLine = computed(() => {
+  const name = patient.name.trim() || '—';
+  const mrn = patient.mrn.trim() || '—';
+  return `${name}  ·  MRN ${mrn}`;
+});
+const resumeProcedure = computed(() => patient.procedure.trim() || '—');
+const resumeProvider = computed(() => patient.provider.trim() || '—');
+
+function resumeSession(): void {
+  resumeGateOpen.value = false;
+}
+function discardSession(): void {
+  resumeGateOpen.value = false;
+  // useCaseReset wipes every sedation-pro:* key (incl. the saved-at marker)
+  // and hard-reloads onto Phase 1, so the gate can't re-trigger after this.
+  resetCase();
+}
+
+onMounted(() => {
+  const savedAt = readPersistedSavedAt();
+  if (savedAt === null || !sessionHasContent()) return;
+  if (!isStaleSession(savedAt, Date.now())) return; // same-day — restore silently
+  resumeSavedDate.value = new Date(savedAt).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  resumeGateOpen.value = true;
+});
 
 /** Whether the dock is currently rendered ON-SCREEN (mounted + not in its
  * auto-hidden state). Drives `has-dock` so the bottom padding collapses
@@ -58,9 +119,44 @@ if (typeof window !== 'undefined') {
     <AppFooter class="no-print" />
   </div>
   <SedationDock v-if="showSedationDock" class="no-print" />
+
+  <UiModal
+    :open="resumeGateOpen"
+    title="Previous session found"
+    tone="primary"
+    confirm-label="Resume patient"
+    cancel-label="Start new case"
+    :dismiss-on-backdrop="false"
+    @confirm="resumeSession"
+    @cancel="discardSession"
+  >
+    A chart from <strong>{{ resumeSavedDate }}</strong> is still loaded. Is this the
+    <strong>same patient</strong>?
+    <ul class="resume-gate-list">
+      <li>
+        👤 <strong>{{ resumePatientLine }}</strong>
+      </li>
+      <li>🦷 {{ resumeProcedure }}</li>
+      <li>🩺 {{ resumeProvider }}</li>
+    </ul>
+    Choosing <strong>Start new case</strong> permanently clears the loaded chart.
+  </UiModal>
 </template>
 
 <style scoped>
+.resume-gate-list {
+  margin: var(--sp-3) 0;
+  padding-left: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+}
+.resume-gate-list li {
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+}
+
 /**
  * iOS-style page transition — a short slide in from the right plus fade.
  * Both leaving and entering pages share the same easing so the swap reads
