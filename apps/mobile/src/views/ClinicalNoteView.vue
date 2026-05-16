@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useClinicalNote } from '@/composables/useClinicalNote';
+import { clinicalNoteToText } from '@/composables/clinicalNoteText';
 import { UiButton } from '@sedation-pro/ui';
 
 const router = useRouter();
@@ -17,17 +19,49 @@ function printNote() {
   }
 }
 
+// "Copy note" → plain text to clipboard. Works on every browser incl.
+// desktop, no Web Share dependency. Pairs with the printed/shared PDF: PDF
+// is the formal record, this is the paste-into-EHR / paste-into-email copy.
+const copyState = ref<'idle' | 'copied' | 'failed'>('idle');
+let copyResetTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function copyNote() {
+  const text = clinicalNoteToText(note.value);
+  try {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      throw new Error('clipboard unavailable');
+    }
+    await navigator.clipboard.writeText(text);
+    copyState.value = 'copied';
+  } catch {
+    copyState.value = 'failed';
+  }
+  if (copyResetTimer !== null) clearTimeout(copyResetTimer);
+  copyResetTimer = setTimeout(() => {
+    copyState.value = 'idle';
+    copyResetTimer = null;
+  }, 2500);
+}
+
+const copyLabel = computed(() =>
+  copyState.value === 'copied'
+    ? '✓ Copied'
+    : copyState.value === 'failed'
+      ? 'Copy failed'
+      : 'Copy text',
+);
+
 const supportsShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
 async function shareNote() {
   if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') return;
+  // Share the serialized note text itself — not a dead SPA URL. The
+  // recipient gets the actual record in the message body (Mail, Notes,
+  // Messages, etc.). The PDF, when needed, goes via Print → Save as PDF.
   const payload: ShareData = {
     title: `Sedation note · ${note.value.header.patient}`,
-    text: 'See attached clinical note.',
+    text: clinicalNoteToText(note.value),
   };
-  if (typeof window !== 'undefined') {
-    payload.url = window.location.href;
-  }
   try {
     await navigator.share(payload);
   } catch {
@@ -42,6 +76,7 @@ async function shareNote() {
       <UiButton tone="neutral" @click="goBack">← Back</UiButton>
       <h1 class="toolbar-title">Clinical Note</h1>
       <div class="toolbar-actions">
+        <UiButton tone="neutral" @click="copyNote">{{ copyLabel }}</UiButton>
         <UiButton v-if="supportsShare" tone="primary" @click="shareNote">Share</UiButton>
         <UiButton tone="success" @click="printNote">Print</UiButton>
       </div>
