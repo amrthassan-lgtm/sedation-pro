@@ -272,6 +272,70 @@ errors or undo regrets.
 - Telehealth / remote monitoring.
 - Pediatric sedation — adult workflow only.
 - Non-IV sedation modalities beyond oral premedication.
-- EHR integration (Open Dental, Dentrix) — exportable note only.
+- EHR integration — exportable / copyable / shareable note only in v1.
+  Open Dental write-back is designed below as a post-v1 candidate.
 
 Each is a candidate for v2 once v1 is live and stable.
+
+## Post-v1 candidate — Open Dental note write-back
+
+**Intent.** One-tap "send to chart": resolve the patient in the
+practice's Open Dental by MRN, then write the generated clinical note
+into their record. Builds directly on the existing
+`clinicalNoteToText()` serializer — the note is already a stable,
+testable string contract, so this is an export adapter plus the
+compliance scaffolding around it, not a rewrite.
+
+**API shape (researched May 2026 against the Open Dental REST API v1).**
+
+- Base URL `https://api.opendental.com/api/v1`,
+  `Content-Type: application/json`.
+- Auth header: `Authorization: ODFHIR {DeveloperKey}/{CustomerKey}`.
+  Developer key from the Open Dental Developer Portal
+  (vendor.relations@opendental.com, 1–3 business days); the Customer
+  key is per practice/developer pair. This is a bearer credential —
+  it must live in secure native storage (Capacitor Preferences /
+  Keychain), never in localStorage or the JS bundle.
+- Permissions + throttling: read-only keys (`ApiReadAll`) are
+  throttled to 1 request / 5 s; any write permission (e.g.
+  `ApiComm`) relaxes to 1 request / 1 s. One note per case is far
+  under either limit.
+
+**Flow.**
+
+1. **Resolve patient (needs read access — already held):**
+   `GET /patients?ChartNumber={MRN}`. Open Dental has _no dedicated
+   MRN field_ — the practice's MRN must map to `ChartNumber`
+   (≤ 15 chars) or a custom `PatField`. Search is partial-match and
+   case-insensitive, so the adapter must exact-match and, given the
+   wrong-patient stakes, cross-check name + birthdate before writing.
+   Returns `PatNum` (the internal key for step 2).
+2. **Write the note (needs write access — `ApiComm`, to be purchased):**
+   `POST /commlogs` with
+   `{ PatNum, Note: clinicalNoteToText(note), CommDateTime, commType }`.
+   Commlogs is the right target: append-only (every POST is a new
+   timestamped entry), patient-keyed, free-text body. _Not_
+   `PatientNotes` — that's a single 1:1 field per patient and `PUT`
+   replaces it (no per-visit history). `ProcNotes` is a fallback only
+   if the visit must attach to a specific `ProcNum`.
+
+**Open risks to design around (not yet solved).**
+
+- PHI in transit flips the app's "local-only, no network without
+  explicit action" stance — needs a BAA with Open Dental, an audit
+  trail of what was sent and when, and a _non-silent_ failure path
+  (a chart write that fails the way localStorage silently fails would
+  be a documentation gap, not a cosmetic one).
+- MRN→ChartNumber mapping is practice-configured and not guaranteed
+  unique/populated; the patient-match step is itself a wrong-patient
+  surface and needs a confirm-before-send gate.
+- Requires the practice's Open Dental to expose the remote API
+  (eConnector / cloud), not just Local/Service mode.
+
+**References.**
+
+- API specification — <https://www.opendental.com/site/apispecification.html>
+- Commlogs — <https://www.opendental.com/site/apicommlogs.html>
+- Patients (lookup) — <https://www.opendental.com/site/apipatients.html>
+- PatientNotes — <https://www.opendental.com/site/apipatientnotes.html>
+- Developer setup — <https://www.opendental.com/site/apisetup.html>
