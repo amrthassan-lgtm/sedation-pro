@@ -88,7 +88,7 @@ function emergency() {
 </script>
 
 <template>
-  <header class="sticky-bar" :class="`sticky-bar--${meta.tint}`">
+  <header class="sticky-bar">
     <button
       type="button"
       class="sticky-bar-nav"
@@ -277,7 +277,6 @@ function emergency() {
   font-size: var(--type-footnote);
   font-weight: var(--weight-bold);
   letter-spacing: 0.2px;
-  opacity: 0.85;
 }
 .sticky-bar-step {
   font-size: var(--type-footnote);
@@ -447,14 +446,16 @@ function emergency() {
   font-weight: var(--weight-bold);
 }
 
-/* Four-segment phase progress rail at the bottom edge. Inert visual — the
+/* Four-segment phase progress rail at the bottom edge. With cards now
+   neutral this is the primary "how far through the case" cue, so it sits
+   flush and a touch taller than the old 3px hairline. Inert visual — the
    nav drawer is the actual phase-navigation surface. */
 .sticky-bar-rail {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -1px;
-  height: 3px;
+  bottom: 0;
+  height: 4px;
   display: flex;
   gap: 2px;
   padding: 0 6px;
