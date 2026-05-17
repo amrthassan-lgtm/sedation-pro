@@ -343,15 +343,6 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.35);
   transition: padding-bottom var(--dur-250) var(--ease-standard);
-  /* Hard ceiling so the dock can never eat the screen on a tall
-     tablet held in portrait — especially the expanded dose grid,
-     which is content-sized and otherwise unbounded. At/above the cap
-     the dock body scrolls internally; `overscroll-behavior: contain`
-     stops that scroll from chaining to the form behind it. 52vh keeps
-     it to roughly half the viewport at most on iPad and Samsung. */
-  max-height: 52vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 .is-expanded .dock {
   padding-bottom: calc(18px + env(safe-area-inset-bottom));
@@ -554,34 +545,6 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   color: var(--color-text-disabled);
   text-align: center;
   letter-spacing: 0.4px;
-}
-
-/* Portrait tightening. A tablet (iPad / Samsung) in portrait has a wide
-   dock but the same content, so the compact footprint can feel heavy
-   relative to the form above it. Trim the vertical padding/gaps and the
-   quick-button height (kept at the 44 px touch-target floor) so the
-   compact dock is leaner. Untouched in landscape, where the iPad rail
-   layout and its existing spacing must not regress. */
-@media (orientation: portrait) {
-  .dock {
-    padding-top: 4px;
-  }
-  .dock-handle {
-    padding: 2px 0 4px;
-  }
-  .dock-status {
-    gap: 4px;
-  }
-  .dock-drug-row {
-    gap: 2px;
-  }
-  .dock-quick-row {
-    gap: 6px;
-    margin-top: 6px;
-  }
-  .dock-btn {
-    min-height: 46px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
