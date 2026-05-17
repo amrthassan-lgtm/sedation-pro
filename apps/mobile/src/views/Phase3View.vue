@@ -461,19 +461,20 @@ function onNaloxone() {
 
     <!-- Card 2 — N₂O / O₂ ON ------------------------------------------- -->
 
-    <div class="phase-step">
-      <p class="phase-step-label">Step 2</p>
+    <UiCard tint="ph3">
+      <p class="heading">2 · N₂O / O₂ ON</p>
       <UiButton
         tone="primary"
         block
         :state="n2oOn ? 'logged' : 'idle'"
         logged-at="On"
         :cooldown-ms="0"
+        class="mt-2"
         @click="onN2oOn"
       >
         N₂O / O₂ ON
       </UiButton>
-    </div>
+    </UiCard>
 
     <!-- Card 3 — IV Start --------------------------------------------- -->
 
@@ -516,8 +517,8 @@ function onNaloxone() {
 
     <!-- Card 4 — N₂O OFF -> O₂ 100% ------------------------------------ -->
 
-    <div class="phase-step">
-      <p class="phase-step-label">Step 4</p>
+    <UiCard tint="ph3">
+      <p class="heading">4 · N₂O OFF → O₂ 100%</p>
       <UiButton
         tone="primary"
         block
@@ -525,11 +526,12 @@ function onNaloxone() {
         logged-at="O₂ 100%"
         :cooldown-ms="0"
         :disabled="!n2oOn && !o2OnlyOn"
+        class="mt-2"
         @click="onN2oOff"
       >
         N₂O OFF · O₂ 100% ON
       </UiButton>
-    </div>
+    </UiCard>
 
     <!-- Card 5 — Initial test dose. -->
 
@@ -700,19 +702,20 @@ function onNaloxone() {
 
     <!-- Card 8 — Procedure Start ----------------------------------------- -->
 
-    <div class="phase-step">
-      <p class="phase-step-label">Step 8</p>
+    <UiCard tint="ph3">
+      <p class="heading">8 · Procedure Start</p>
       <UiButton
         tone="primary"
         block
         :state="procStartState"
         :logged-at="fmtClock(procedureStartedAt)"
         :cooldown-ms="0"
+        class="mt-2"
         @click="onProcedureStart"
       >
         Start Procedure
       </UiButton>
-    </div>
+    </UiCard>
 
     <!-- Card 9 — Local Anesthesia + live Malamed combined-% -------------- -->
 
@@ -887,23 +890,6 @@ function onNaloxone() {
 </template>
 
 <style scoped>
-/* Slim step: a one-tap workflow action that doesn't earn a full card.
-   No panel chrome — just a quiet sequence eyebrow + the action button —
-   so it reads as "confirm a step" between the heavier "do work" cards
-   while keeping the full-width tap target. */
-.phase-step {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.phase-step-label {
-  margin: 0;
-  font-size: var(--type-caption);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: var(--color-text-tertiary);
-}
 .drug-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
