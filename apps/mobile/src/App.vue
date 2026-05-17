@@ -93,13 +93,26 @@ const wakeLock = useWakeLock();
 void wakeLock.request();
 
 /**
- * Audio alerts on Versed + Fentanyl timer "ready" transitions. The
- * AudioContext starts `suspended` on iOS until a user gesture — a single
- * pointerdown listener resumes it, after which beeps play freely.
+ * Audio alerts on Versed + Fentanyl timer "ready" transitions.
+ *
+ * The AudioContext starts `suspended` until a user gesture. The earlier
+ * `{ once: true }` listener unlocked it on the first tap and then removed
+ * itself — which broke the chime in the installed (Add-to-Home-Screen)
+ * app: iOS standalone PWAs re-suspend the AudioContext whenever the app is
+ * backgrounded or the screen sleeps, which is exactly what happens during
+ * the multi-minute redose wait. With nothing left to resume it, `tick()`
+ * silently no-ops (it requires `state === 'running'`).
+ *
+ * Fix: keep a persistent pointerdown listener (idempotent, cheap — every
+ * dose tap re-warms the context) plus a visibilitychange handler that
+ * resumes the context when the app returns to the foreground.
  */
 useAlarms();
 if (typeof window !== 'undefined') {
-  window.addEventListener('pointerdown', () => unlockAudio(), { once: true, passive: true });
+  window.addEventListener('pointerdown', () => unlockAudio(), { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') unlockAudio();
+  });
 }
 </script>
 

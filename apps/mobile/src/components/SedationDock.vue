@@ -62,9 +62,12 @@ const versedPill = computed(() => {
   }
   const t = iv.versedTimerAt(now.value);
   if (!t) return { count: '—', hint: 'No dose', status: 'cooling' as TimerPillStatus };
+  // Mirror the in-card pill exactly. Deliberately NOT "redose ok" — the
+  // timer only knows the safety wait elapsed, not whether the patient is
+  // already at ceiling, so it must not imply a re-dose is clinically safe.
   return {
     count: fmtDuration(t.elapsedSec),
-    hint: t.state === 'cooling' ? 'wait' : t.state === 'ramping' ? 'ramp' : 'redose ok',
+    hint: t.state === 'ready' ? 'Ready' : 'Waiting',
     status: t.state as TimerPillStatus,
   };
 });
@@ -77,7 +80,7 @@ const fentanylPill = computed(() => {
   if (!t) return { count: '—', hint: 'No dose', status: 'cooling' as TimerPillStatus };
   return {
     count: fmtDuration(t.elapsedSec),
-    hint: t.state === 'cooling' ? 'wait' : t.state === 'ramping' ? 'ramp' : 'redose ok',
+    hint: t.state === 'ready' ? 'Ready' : 'Waiting',
     status: t.state as TimerPillStatus,
   };
 });

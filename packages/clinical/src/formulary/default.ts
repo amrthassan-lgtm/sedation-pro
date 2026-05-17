@@ -167,7 +167,11 @@ const DEFAULT_CEILINGS: IVCeilings = {
 
 const DEFAULT_TIMINGS: FormularyTimings = {
   versedMinWaitMin: 3,
-  versedReadyMin: 5,
+  // Apex protocol: Versed is re-dosable as soon as the 3-min safety wait
+  // clears — there is no separate "peak/ramp" window. Setting ready === min
+  // collapses the ramping tier (same mechanism Fentanyl uses). A practice
+  // that wants a distinct ramp window sets versedReadyMin > versedMinWaitMin.
+  versedReadyMin: 3,
   fentanylMinWaitMin: 5,
   premedWaitMin: 30,
   releaseWaitMin: 20,

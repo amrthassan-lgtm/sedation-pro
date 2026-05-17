@@ -58,19 +58,20 @@ describe('useAlarms', () => {
     (globalThis as unknown as { AudioContext?: unknown }).AudioContext = MockAudioContext;
   });
 
-  it('chimes once when Versed transitions from ramping to ready', async () => {
+  it('chimes once when Versed transitions from cooling to ready', async () => {
     const iv = useIVStore();
-    // Log a Versed dose 3 minutes ago — state should already be `ramping`.
+    // Log a Versed dose 2 minutes ago — still inside the 3-min cooling wait.
     iv.logDose({ drug: 'versed', mg: 2 });
-    vi.advanceTimersByTime(3 * 60_000);
+    vi.advanceTimersByTime(2 * 60_000);
 
     const scope = effectScope();
     scope.run(() => useAlarms());
     await nextTick();
     expect(oscillatorStarts).toBe(0);
 
-    // Advance past the ramping → ready threshold.
-    vi.advanceTimersByTime(3 * 60_000);
+    // Cross the 3-min ready threshold (no ramping tier on the default
+    // formulary — cooling goes straight to ready).
+    vi.advanceTimersByTime(2 * 60_000);
     await nextTick();
 
     expect(oscillatorStarts).toBeGreaterThanOrEqual(1);
