@@ -289,7 +289,7 @@ const diazepamModalCopy = computed(() => {
       <h1 class="title-display">Patient Clearance</h1>
     </header>
 
-    <UiCard tint="ph1" active>
+    <UiCard tint="ph1">
       <p class="heading">Patient Identification</p>
       <UiStack :gap="3" class="mt-2">
         <UiField id="field-pt" label="Patient name" required :invalid="isMissing('pt')">

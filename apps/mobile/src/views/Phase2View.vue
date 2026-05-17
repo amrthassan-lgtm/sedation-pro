@@ -91,7 +91,7 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
       />
     </div>
 
-    <UiCard tint="ph2" active>
+    <UiCard tint="ph2">
       <p class="heading">Triazolam · Halcion</p>
       <DrugAttributes :attributes="oralAttrs('triazolam')" />
       <UiRow :gap="2" wrap class="mt-2">

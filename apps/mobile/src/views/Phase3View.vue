@@ -423,7 +423,7 @@ function onNaloxone() {
 
     <!-- Card 1 — Pre-Op Vitals ------------------------------------------ -->
 
-    <UiCard tint="ph3" active>
+    <UiCard tint="ph3">
       <p class="heading">1 · Pre-Op Vitals</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>

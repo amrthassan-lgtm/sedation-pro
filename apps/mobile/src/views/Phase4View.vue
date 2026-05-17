@@ -232,7 +232,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
     <!-- Card 11 — Recovery Vitals -->
 
-    <UiCard tint="ph4" active>
+    <UiCard tint="ph4">
       <p class="heading">11 · Recovery Vitals</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
