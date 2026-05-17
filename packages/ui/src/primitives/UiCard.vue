@@ -46,12 +46,10 @@ defineEmits<{
   text-align: inherit;
   background: var(--color-card-bg);
   border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-surface-elevated);
+  border-left: 3px solid var(--color-surface-elevated);
   border-radius: var(--r-lg);
   padding: var(--sp-5);
-  box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.25),
-    0 8px 28px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
   transition:
     border-color var(--dur-250) var(--ease-standard),
     background var(--dur-250) var(--ease-standard),
