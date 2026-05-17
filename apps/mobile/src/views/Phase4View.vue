@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useRouter } from 'vue-router';
@@ -198,17 +198,22 @@ const dismissal = computed(() =>
   }),
 );
 
-// Each blocker drives its own field's invalid ring, so the form shows
-// exactly what's holding release — not just the one pulse-ox box.
+// Blocker rings stay hidden until the clinician actually attempts release
+// (mirrors Phase 1's validation-attempted gate) so Phase 4 doesn't open
+// "all red". After an attempt each active blocker lights its own field.
+const releaseAttempted = ref(false);
+const canRelease = computed(() => !dismissal.value.blocked && releaseStatus.value.eligible);
+
 const activeBlockers = computed(() => new Set(dismissal.value.blockers.map((b) => b.code)));
 function isBlocking(code: DismissalBlockerCode): boolean {
-  return activeBlockers.value.has(code);
+  return releaseAttempted.value && activeBlockers.value.has(code);
 }
 
 const dischargeState = computed<ActionState>(() => 'idle');
 
 function releasePatient() {
-  if (dismissal.value.blocked || !releaseStatus.value.eligible) {
+  if (!canRelease.value) {
+    releaseAttempted.value = true;
     haptic('error');
     return;
   }
@@ -514,11 +519,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       </UiBanner>
 
       <UiButton
-        tone="success"
+        :tone="canRelease ? 'success' : 'neutral'"
         block
         :state="dischargeState"
         :cooldown-ms="0"
-        :disabled="dismissal.blocked || !releaseStatus.eligible"
         class="mt-2"
         @click="releasePatient"
       >
