@@ -228,11 +228,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <header class="phase-hero">
       <p class="caption">Phase 4 · Recovery & Discharge</p>
       <h1 class="title-display">Recovery & Release</h1>
-      <p class="body muted">
-        Recovery vitals → IV-out countdown → discharge checklist → release. The release button stays
-        disabled until the IV-out gate clears AND every dismissal-safety check passes. The signature
-        pad + generated clinical note land in the next push.
-      </p>
     </header>
 
     <!-- Card 11 — Recovery Vitals -->

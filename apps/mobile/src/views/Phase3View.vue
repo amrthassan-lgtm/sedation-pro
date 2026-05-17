@@ -419,11 +419,6 @@ function onNaloxone() {
     <header class="phase-hero">
       <p class="caption">Phase 3 · IV Sedation & Procedure</p>
       <h1 class="title-display">Drug Administration</h1>
-      <p class="body muted">
-        Vitals → N₂O → IV start → test dose → titrate. Timer pills, max-dose ceilings, and the
-        combined sedation load all update live. Local anesthesia + reversal panel ship in the next
-        push.
-      </p>
     </header>
 
     <!-- Card 1 — Pre-Op Vitals ------------------------------------------ -->

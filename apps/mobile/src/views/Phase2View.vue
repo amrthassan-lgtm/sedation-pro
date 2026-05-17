@@ -66,7 +66,6 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
     <header class="phase-hero">
       <p class="caption">Phase 2 · Oral Sedation</p>
       <h1 class="title-display">Pre-Op Anxiolytic</h1>
-      <p class="body muted">Optional pre-op anxiolytic 30 minutes before IV start.</p>
     </header>
 
     <UiBanner v-if="!weightLb" tone="caution" title="Weight required" icon="⚖️">
