@@ -2,9 +2,14 @@
 import type { PhaseTint } from '../types';
 
 interface Props {
-  /** Phase tint — applies the matching border-left color and background hint. */
+  /**
+   * Retained for API compatibility; no longer paints. Phase identity now
+   * lives in the app chrome (sticky bar + nav drawer), not on every card.
+   * Kept as a consumed prop so existing `tint="phN"` call sites stay
+   * valid and it isn't leaked to the DOM as a stray attribute.
+   */
   tint?: PhaseTint | undefined;
-  /** Active card: full opacity, intensified border. Siblings dim via parent CSS. */
+  /** Subtle neutral emphasis — a stronger border, no colour wash. */
   active?: boolean;
   /** Completed cards retain full opacity; consumer chooses styling. */
   completed?: boolean;
@@ -29,10 +34,7 @@ defineEmits<{
     :is="props.interactive ? 'button' : 'section'"
     :type="props.interactive ? 'button' : undefined"
     class="ui-card"
-    :class="[
-      props.tint ? `ui-card--${props.tint}` : null,
-      { 'is-active': props.active, 'is-completed': props.completed },
-    ]"
+    :class="{ 'is-active': props.active, 'is-completed': props.completed }"
     @click="$emit('click')"
   >
     <slot />
@@ -46,7 +48,6 @@ defineEmits<{
   text-align: inherit;
   background: var(--color-card-bg);
   border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-surface-elevated);
   border-radius: var(--r-lg);
   padding: var(--sp-5);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
@@ -56,36 +57,9 @@ defineEmits<{
     opacity var(--dur-250) var(--ease-standard);
 }
 
-.ui-card--ph1 {
-  border-left-color: rgba(59, 130, 246, 0.25);
-}
-.ui-card--ph1.is-active {
-  border-left-color: var(--ph1-color);
-  background: var(--ph1-soft);
-}
-
-.ui-card--ph2 {
-  border-left-color: rgba(139, 92, 246, 0.25);
-}
-.ui-card--ph2.is-active {
-  border-left-color: var(--ph2-color);
-  background: var(--ph2-soft);
-}
-
-.ui-card--ph3 {
-  border-left-color: rgba(249, 115, 22, 0.25);
-}
-.ui-card--ph3.is-active {
-  border-left-color: var(--ph3-color);
-  background: var(--ph3-soft);
-}
-
-.ui-card--ph4 {
-  border-left-color: rgba(74, 222, 128, 0.25);
-}
-.ui-card--ph4.is-active {
-  border-left-color: var(--ph4-color);
-  background: var(--ph4-soft);
+/* Neutral emphasis only — phase colour no longer lives on cards. */
+.ui-card.is-active {
+  border-color: var(--color-border-strong);
 }
 
 button.ui-card {

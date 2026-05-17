@@ -7,8 +7,11 @@ import type { PhaseTint } from '@sedation-pro/ui';
 interface NavTarget {
   readonly label: string;
   readonly route: string;
-  /** Phase tint of the *destination* — paints the button in that phase's
-   *  identity color so the button visually previews where it leads. */
+  /**
+   * Retained for API compatibility; no longer rendered. Phase identity
+   * now lives in the sticky bar + nav drawer, so footer buttons stay
+   * neutral and signal direction by weight + arrow, not colour.
+   */
   readonly tint?: PhaseTint;
 }
 
@@ -43,7 +46,6 @@ function goForward() {
       v-if="props.back"
       type="button"
       class="phase-nav-btn phase-nav-btn--back"
-      :class="props.back.tint ? `phase-nav-btn--tint-${props.back.tint}` : null"
       @click="goBack"
     >
       <span class="phase-nav-icon" aria-hidden="true">←</span>
@@ -54,7 +56,6 @@ function goForward() {
       v-if="props.forward"
       type="button"
       class="phase-nav-btn phase-nav-btn--forward"
-      :class="props.forward.tint ? `phase-nav-btn--tint-${props.forward.tint}` : null"
       @click="goForward"
     >
       <span class="phase-nav-text">{{ props.forward.label }}</span>
@@ -114,32 +115,15 @@ function goForward() {
   text-overflow: ellipsis;
 }
 
-/* Tinted variants — paint the button in its destination phase's color so
-   the user gets a quiet preview of where they're going. Forward buttons
-   carry the soft fill (primary action); back buttons fall through to the
-   same rule for symmetry. The four tints map directly to the --ph{n}
-   token family declared in tokens.css. */
-.phase-nav-btn--tint-ph1 {
-  background: var(--ph1-soft);
-  border-color: var(--ph1-color);
-  color: var(--ph1-color);
-}
-.phase-nav-btn--tint-ph2 {
-  background: var(--ph2-soft);
-  border-color: var(--ph2-color);
-  color: var(--ph2-color);
-}
-.phase-nav-btn--tint-ph3 {
-  background: var(--ph3-soft);
-  border-color: var(--ph3-color);
-  color: var(--ph3-color);
-}
-.phase-nav-btn--tint-ph4 {
-  background: var(--ph4-soft);
-  border-color: var(--ph4-color);
-  color: var(--ph4-color);
-}
-.phase-nav-btn--forward[class*='phase-nav-btn--tint-'] {
+/* Neutral hierarchy — phase colour now lives only in the app chrome.
+   Forward (the primary direction) reads stronger than back by weight +
+   contrast, not hue. */
+.phase-nav-btn--forward {
+  color: var(--color-text-primary);
   font-weight: var(--weight-bold);
+  border-color: var(--color-border-strong);
+}
+.phase-nav-btn--forward:hover {
+  background: var(--color-surface-elevated);
 }
 </style>

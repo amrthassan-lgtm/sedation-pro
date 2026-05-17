@@ -750,12 +750,12 @@ const diazepamModalCopy = computed(() => {
   transform: scale(0.98);
 }
 .phase-advance--ready {
-  background: var(--ph2-soft);
-  border-color: var(--ph2-color);
-  color: var(--ph2-color);
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
 }
 .phase-advance--ready:hover {
-  background: var(--color-purple-soft);
+  background: var(--color-surface-elevated);
 }
 .phase-advance--locked {
   background: var(--color-warn-soft);
