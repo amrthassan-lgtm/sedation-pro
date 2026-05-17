@@ -31,6 +31,11 @@ const { drawerOpen, currentPhase } = storeToRefs(session);
 const { name: patientName, mrn, age, completeness, isPhase1Complete } = storeToRefs(patient);
 const { count: eventCount } = storeToRefs(eventLog);
 
+// Single-source logo (same asset as the favicon / PWA icon). Static here —
+// no draw animation; the drawer is opened many times a day and a replaying
+// animation would be noise. BASE_URL for subpath/custom-domain safety.
+const logoSrc = `${import.meta.env.BASE_URL}logo-source.svg`;
+
 const initial = computed(() => {
   const raw = patientName.value.trim();
   if (!raw) return 'PT';
@@ -302,6 +307,14 @@ function onTouchEnd() {
       @touchend="onTouchEnd"
       @touchcancel="onTouchEnd"
     >
+      <div class="nav-brand">
+        <img class="nav-brand-logo" :src="logoSrc" alt="" width="28" height="28" />
+        <div class="nav-brand-text">
+          <span class="nav-brand-name">Sedation Pro</span>
+          <span class="nav-brand-sub">Apex Dental</span>
+        </div>
+      </div>
+
       <header class="nav-summary">
         <div class="nav-summary-top">
           <div class="nav-avatar" aria-hidden="true">{{ initial }}</div>
@@ -475,6 +488,34 @@ function onTouchEnd() {
   left: 0;
 }
 
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px 10px;
+}
+.nav-brand-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+}
+.nav-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.nav-brand-name {
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.3px;
+  color: var(--color-text-primary);
+}
+.nav-brand-sub {
+  font-size: var(--type-caption);
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.3px;
+}
 .nav-summary {
   padding: 16px 18px 12px;
   border-bottom: 1px solid var(--color-surface-elevated);

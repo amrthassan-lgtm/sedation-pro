@@ -8,6 +8,9 @@ import { UiButton } from '@sedation-pro/ui';
 
 const router = useRouter();
 const note = useClinicalNote();
+// Single-source logo (same asset as the favicon / PWA icon). BASE_URL so it
+// resolves under the GitHub Pages subpath and a custom-domain root alike.
+const logoSrc = `${import.meta.env.BASE_URL}logo-source.svg`;
 
 function goBack() {
   void router.back();
@@ -85,8 +88,11 @@ async function shareNote() {
     <article class="note-paper">
       <header class="note-header">
         <div class="note-brand">
-          <p class="brand-mark">APEX DENTAL</p>
-          <p class="brand-sub">Moderate IV Sedation · Clinical Record</p>
+          <img class="brand-logo" :src="logoSrc" alt="" width="44" height="44" />
+          <div class="note-brand-text">
+            <p class="brand-mark">APEX DENTAL</p>
+            <p class="brand-sub">Moderate IV Sedation · Clinical Record</p>
+          </div>
         </div>
         <dl class="note-meta">
           <dt>Patient</dt>
@@ -219,6 +225,22 @@ async function shareNote() {
   border-bottom: 2px solid #0369a1;
   padding-bottom: var(--sp-4);
   margin-bottom: var(--sp-4);
+}
+.note-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.note-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .brand-mark {
   margin: 0;
