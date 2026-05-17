@@ -156,6 +156,28 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       ['Monitors functional', patient.monitoringEquipmentChecked ? 'Yes' : '—'],
     ];
 
+    // -------- Pre-operative oral sedation ----------------------------------
+    // Derived from the dose events Phase 2 stamps. The weight-based ceiling
+    // was captured at administration (see Phase2View.logOral), so this
+    // documents dose-given against the limit in force at that moment — not a
+    // value recomputed later from a weight that may have changed.
+
+    const oralRows: Array<readonly [string, string]> = [];
+    for (const e of events.value) {
+      if (e.event !== 'Preoperative Oral Dose') continue;
+      const drug = e.details.Drug ?? 'Oral anxiolytic';
+      const dose = e.details.Dose ?? '—';
+      const route = e.details.Route ?? 'PO';
+      const max = e.details['Weight-based max'];
+      oralRows.push([
+        drug,
+        max ? `${dose} ${route} · within weight-based max ${max}` : `${dose} ${route}`,
+      ]);
+    }
+    if (oralRows.length === 0) {
+      oralRows.push(['Pre-operative oral sedation', 'None administered']);
+    }
+
     // -------- IV sedation totals -------------------------------------------
 
     const ivRows: Array<readonly [string, string]> = [];
@@ -329,6 +351,20 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       if (sentences.length > 0) narrative.push(sentences.join(' '));
     }
 
+    // Para — Pre-operative oral sedation (if any)
+    {
+      const oral = events.value.filter((e) => e.event === 'Preoperative Oral Dose');
+      if (oral.length > 0) {
+        const parts = oral.map((e) => {
+          const drug = e.details.Drug ?? 'oral anxiolytic';
+          const dose = e.details.Dose ?? '';
+          const max = e.details['Weight-based max'];
+          return max ? `${drug} ${dose} PO (within weight-based max ${max})` : `${drug} ${dose} PO`;
+        });
+        narrative.push(`Pre-operative oral sedation: ${parts.join('; ')}.`);
+      }
+    }
+
     // Para 3 — Sedation course
     {
       const sentences: string[] = [];
@@ -446,6 +482,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       narrative,
       sections: [
         { heading: 'Pre-Sedation Assessment', rows: preSedation },
+        { heading: 'Pre-Operative Sedation', rows: oralRows },
         { heading: 'IV Sedation Totals', rows: ivRows },
         { heading: 'Local Anesthesia', rows: localRows },
         { heading: 'Recovery & Discharge', rows: recoveryRows },

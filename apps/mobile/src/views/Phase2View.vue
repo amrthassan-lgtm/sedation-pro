@@ -20,14 +20,32 @@ const { weightLb } = storeToRefs(patient);
 const triazolam = computed(() => (weightLb.value ? triazolamMax(weightLb.value) : null));
 const lorazepam = computed(() => (weightLb.value ? lorazepamMax(weightLb.value) : null));
 
+/**
+ * Weight-based ceiling for the drug, captured at the moment of
+ * administration. Stamping it into the dose event (rather than recomputing
+ * at note time) keeps the medicolegal record point-in-time accurate — it
+ * documents the limit the clinician was actually working against, against
+ * the weight on file then. Hydroxyzine is a fixed-dose antihistamine with
+ * no weight ceiling, so it returns null and the row is simply omitted.
+ */
+function weightBasedMaxLabel(drug: string): string | null {
+  const w = weightLb.value;
+  if (!w) return null;
+  const m = drug === 'Triazolam' ? triazolamMax(w) : drug === 'Lorazepam' ? lorazepamMax(w) : null;
+  if (!m) return null;
+  return `${m.mg.toFixed(2)} mg (≤${m.tablets} × ${m.tabletMg} mg tab @ ${w} lb)`;
+}
+
 function logOral(drug: string, doseMg: number, unit: string = 'mg') {
   haptic('medium');
+  const max = weightBasedMaxLabel(drug);
   undo.stamp({
     event: 'Preoperative Oral Dose',
     details: {
       Drug: drug,
       Dose: `${doseMg} ${unit}`,
       Route: 'PO swallowed',
+      ...(max ? { 'Weight-based max': max } : {}),
     },
     toast: {
       label: `✓ ${drug} ${doseMg} ${unit} PO`,
