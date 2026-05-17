@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useIVStore } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
+import { useSessionStore } from '@/stores/session';
 import { useDockSentinel } from '@/composables/useDockVisibility';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
@@ -80,6 +81,34 @@ const {
   sedStampedAt,
   procedureStartedAt,
 } = storeToRefs(iv);
+
+const session = useSessionStore();
+
+/**
+ * Furthest Phase 3 step the clinician has reached, derived from existing
+ * store flags (latched timestamps where possible). Drives the sticky-bar
+ * "Step N": it only advances as actions are logged, so it reads as calm
+ * progress, not a scroll-jumpy cursor. Skipped/optional steps are fine —
+ * it's the max completed, not a require-all-in-order gate.
+ */
+const phase3Step = computed<number | null>(() => {
+  const steps: ReadonlyArray<readonly [number, boolean]> = [
+    [1, preOpStampedAt.value !== null],
+    [2, n2oOn.value || o2OnlyOn.value],
+    [3, ivStarted.value],
+    [4, o2OnlyOn.value],
+    [5, lastVersedAt.value !== null],
+    [6, lastFentanylAt.value !== null || versedTotalMg.value > 1],
+    [7, sedStampedAt.value !== null],
+    [8, procedureStartedAt.value !== null],
+    [9, local.doses.length > 0],
+    [10, iv.doses.some((d) => d.drug === 'flumazenil' || d.drug === 'naloxone')],
+  ];
+  let furthest: number | null = null;
+  for (const [n, done] of steps) if (done) furthest = n;
+  return furthest;
+});
+watch(phase3Step, (s) => session.setStep(s), { immediate: true });
 
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },

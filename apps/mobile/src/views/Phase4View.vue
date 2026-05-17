@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useRouter } from 'vue-router';
@@ -8,6 +8,7 @@ import { useIVStore } from '@/stores/iv';
 import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
+import { useSessionStore } from '@/stores/session';
 import { useNow } from '@/composables/useNow';
 import { haptic } from '@/composables/useHaptics';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
@@ -69,6 +70,24 @@ const {
   ivOutAt,
   companionDocumented,
 } = storeToRefs(recovery);
+
+const session = useSessionStore();
+
+/**
+ * Furthest Phase 4 step reached, from latched recovery flags. Feeds the
+ * sticky-bar "Step N" the same calm, progress-only way Phase 3 does.
+ */
+const phase4Step = computed<number | null>(() => {
+  const steps: ReadonlyArray<readonly [number, boolean]> = [
+    [11, endStampedAt.value !== null],
+    [12, ivOutAt.value !== null],
+    [13, providerSignatureDataUrl.value !== null],
+  ];
+  let furthest: number | null = null;
+  for (const [n, done] of steps) if (done) furthest = n;
+  return furthest;
+});
+watch(phase4Step, (s) => session.setStep(s), { immediate: true });
 
 const sedationRatingOptions = [
   { value: 'excellent', label: 'Excellent — pt cooperative, no movement' },
