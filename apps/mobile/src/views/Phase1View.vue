@@ -10,7 +10,6 @@ import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { haptic } from '@/composables/useHaptics';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
-import TrainingNote from '@/components/TrainingNote.vue';
 import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
 import {
   UiBanner,
@@ -254,7 +253,7 @@ const diazepamModalCopy = computed(() => {
   if (decision === 'block-missing-osa') {
     return {
       title: 'OSA history required',
-      body: 'Select the patient’s OSA / CPAP status before prescribing bedtime diazepam — OSA changes the airway-risk math.',
+      body: 'Select the patient’s OSA / CPAP status before prescribing bedtime diazepam — the gate exists because OSA changes the airway-risk math.',
       tone: 'primary' as const,
       confirmLabel: 'Got it',
       hideCancel: true,
@@ -275,6 +274,10 @@ const diazepamModalCopy = computed(() => {
     <header class="phase-hero">
       <p class="caption">Phase 1 · Pre-Sedation Assessment</p>
       <h1 class="title-display">Patient Clearance</h1>
+      <p class="body muted">
+        Fill the required fields to unlock Phase 2 / 3 / 4. BMI, BP, and SpO₂ classify live as you
+        type. Sticky bar and nav drawer read from the same store — they can&apos;t drift.
+      </p>
     </header>
 
     <UiBanner
@@ -282,7 +285,10 @@ const diazepamModalCopy = computed(() => {
       tone="safe"
       :title="phase1LockedAt ? `Phase 1 locked at ${fmtClock(phase1LockedAt)}` : 'Phase 1 complete'"
       icon="✓"
-    />
+    >
+      All required fields filled. Phases 2 / 3 / 4 unlocked. Amendments to vitals, ASA, Mallampati,
+      OSA, meds, allergies, and other clinical fields are recorded automatically to the chronology.
+    </UiBanner>
 
     <UiCard tint="ph1" active>
       <p class="heading">Patient Identification</p>
@@ -604,14 +610,18 @@ const diazepamModalCopy = computed(() => {
     <UiCard tint="ph1">
       <p class="heading">Bedtime Premedication <span class="muted body">· optional</span></p>
       <p class="body muted">
-        Diazepam at bedtime the night before. A documented OSA / CPAP patient requires explicit
-        override.
+        Diazepam at bedtime the night before. Locked until OSA status is selected; a documented OSA
+        / CPAP patient requires explicit override.
       </p>
-      <TrainingNote v-if="heavyAsa1DiazepamHint">
-        <UiBanner tone="caution" title="Heavier ASA I patient" icon="⚖" class="mt-2">
-          Over 200 lb and ASA I — consider <strong>10 mg</strong> at bedtime; 5 mg often underdoses.
-        </UiBanner>
-      </TrainingNote>
+      <UiBanner
+        v-if="heavyAsa1DiazepamHint"
+        tone="caution"
+        title="Heavier ASA I patient"
+        icon="⚖"
+        class="mt-2"
+      >
+        Over 200 lb and ASA I — consider <strong>10 mg</strong> at bedtime; 5 mg often underdoses.
+      </UiBanner>
       <div class="drug-grid mt-2">
         <UiDrugButton
           tone="bedtime"

@@ -12,7 +12,6 @@ import { useNow } from '@/composables/useNow';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
-import TrainingNote from '@/components/TrainingNote.vue';
 import {
   UiBanner,
   UiBpInput,
@@ -420,7 +419,11 @@ function onNaloxone() {
     <header class="phase-hero">
       <p class="caption">Phase 3 · IV Sedation & Procedure</p>
       <h1 class="title-display">Drug Administration</h1>
-      <TrainingNote>Vitals → N₂O → IV start → test dose → titrate.</TrainingNote>
+      <p class="body muted">
+        Vitals → N₂O → IV start → test dose → titrate. Timer pills, max-dose ceilings, and the
+        combined sedation load all update live. Local anesthesia + reversal panel ship in the next
+        push.
+      </p>
     </header>
 
     <!-- Card 1 — Pre-Op Vitals ------------------------------------------ -->
@@ -465,8 +468,9 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading">2 · N₂O / O₂ ON</p>
-      <TrainingNote>Mild anxiolysis before IV catheter placement.</TrainingNote>
-      <p class="body muted">30-50% N₂O, the rest O₂.</p>
+      <p class="body muted">
+        Mild anxiolysis before IV catheter placement. 30-50% N₂O, the rest O₂.
+      </p>
       <UiButton
         tone="primary"
         block
@@ -502,7 +506,9 @@ function onNaloxone() {
         <UiBanner v-if="premedChip" :tone="premedChip.eligible ? 'safe' : 'caution'" icon="⏱">
           Pre-med wait —
           <template v-if="premedChip.eligible"> ready to start IV. </template>
-          <template v-else> {{ premedChip.remainingMin }} min remaining. </template>
+          <template v-else>
+            {{ premedChip.remainingMin }} min remaining (clinical cushion, not a hard block).
+          </template>
         </UiBanner>
         <UiButton
           tone="primary"
@@ -521,8 +527,10 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading">4 · N₂O OFF → O₂ 100%</p>
-      <p class="body muted">Discontinue N₂O before IV sedation drugs.</p>
-      <TrainingNote>100% oxygen keeps the safety margin while you titrate.</TrainingNote>
+      <p class="body muted">
+        Discontinue N₂O before IV sedation drugs. 100% oxygen keeps the safety margin while you
+        titrate.
+      </p>
       <UiButton
         tone="primary"
         block
@@ -542,7 +550,8 @@ function onNaloxone() {
     <UiCard tint="ph3">
       <p class="heading">5 · Initial Test Dose</p>
       <p class="body muted">
-        Always start Versed with a 1 mg test dose. Wait 3-5 min before any additional dose.
+        Always start Versed with a 1 mg test dose. Wait 3-5 min before any additional dose — the
+        timer pill below tracks it in real time.
       </p>
       <div class="drug-grid mt-2">
         <UiDrugButton
@@ -739,12 +748,13 @@ function onNaloxone() {
     <UiCard tint="ph3">
       <p class="heading">9 · Local Anesthesia</p>
       <p class="body muted">
-        Half-life decay: lidocaine 100 min · septocaine 30 min · marcaine 170 min · mepivacaine 100
-        min.
+        Each tap logs one carpule. The combined-percent card uses half-life decay (lidocaine 100
+        min, septocaine 30 min, marcaine 170 min, mepivacaine 100 min) — the bar drops live as each
+        agent metabolizes.
       </p>
 
       <UiBanner v-if="!weightLb" tone="caution" icon="⚖️" class="mt-2">
-        Patient weight required — fill in Phase 1.
+        Patient weight is required for the per-drug max-dose math. Fill weight in Phase 1.
       </UiBanner>
 
       <div class="drug-grid mt-2">
@@ -822,8 +832,9 @@ function onNaloxone() {
     <UiCard tint="ph3">
       <p class="heading">10 · Reversal Agents</p>
       <UiBanner tone="limit" icon="🚨" class="mt-2">
-        <strong>Emergency use only.</strong> Flumazenil also extends the IV-out / sign-note wait to
-        120 min per the DOCS reversal monitoring protocol.
+        <strong>Emergency use only.</strong> Tapping either button reveals the full administration
+        process below. Flumazenil also extends the IV-out / sign-note wait to 120 min per the DOCS
+        reversal monitoring protocol.
       </UiBanner>
       <div class="drug-grid mt-2">
         <UiDrugButton

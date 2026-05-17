@@ -13,7 +13,6 @@ import { haptic } from '@/composables/useHaptics';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
-import TrainingNote from '@/components/TrainingNote.vue';
 import {
   UiBanner,
   UiBpInput,
@@ -167,7 +166,7 @@ const ivOutChipTone = computed(() => {
 
 const ivOutChipHeadline = computed(() => {
   if (releaseStatus.value.reason === 'no-medication-given') {
-    return 'No IV medication recorded yet.';
+    return 'No IV medication recorded yet — IV-out gate inactive.';
   }
   if (releaseStatus.value.eligible) {
     return releaseStatus.value.reason === 'flumazenil-reversal'
@@ -229,9 +228,11 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <header class="phase-hero">
       <p class="caption">Phase 4 · Recovery & Discharge</p>
       <h1 class="title-display">Recovery & Release</h1>
-      <TrainingNote
-        >Recovery vitals → IV-out countdown → discharge checklist → release.</TrainingNote
-      >
+      <p class="body muted">
+        Recovery vitals → IV-out countdown → discharge checklist → release. The release button stays
+        disabled until the IV-out gate clears AND every dismissal-safety check passes. The signature
+        pad + generated clinical note land in the next push.
+      </p>
     </header>
 
     <!-- Card 11 — Recovery Vitals -->
@@ -278,8 +279,9 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <UiCard tint="ph4">
       <p class="heading">12 · IV Out</p>
       <p class="body muted">
-        Standard wait is 20 minutes from the last IV med. After flumazenil, the wait extends to 120
-        minutes for post-reversal monitoring.
+        Live countdown using <code class="mono">releaseEligibility</code>. Standard wait is 20
+        minutes from the last IV med. After flumazenil, the engine extends the wait to 120 minutes
+        for post-reversal monitoring.
       </p>
 
       <UiBanner :tone="ivOutChipTone" icon="⏱" class="mt-2">
@@ -418,7 +420,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <p class="heading">13b · Provider Sign-off</p>
       <p class="body muted">
         Rate the sedation course, capture complications, and document any procedure-relevant
-        observations.
+        observations. All fields flow into the printed clinical note.
       </p>
 
       <UiStack :gap="3" class="mt-2">
@@ -505,7 +507,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         All discharge checks pass — waiting on the IV-out countdown above before release.
       </UiBanner>
 
-      <UiBanner v-else tone="safe" icon="✓" class="mt-2"> All discharge gates clear. </UiBanner>
+      <UiBanner v-else tone="safe" icon="✓" class="mt-2">
+        All discharge gates clear. Tapping below logs <strong>Patient Released</strong> to the
+        chrono log; the generated clinical note ships next push.
+      </UiBanner>
 
       <UiButton
         tone="success"
@@ -529,6 +534,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <PatientSummaryCard />
       <UiCard>
         <p class="heading">Case summary</p>
+        <p class="body muted">
+          Quick read-out — full printable clinical note lands with the signature pad in the next
+          push.
+        </p>
         <div class="stat-grid mt-2">
           <UiStatCard
             label="Patient"

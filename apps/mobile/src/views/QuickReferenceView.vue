@@ -236,6 +236,10 @@ onMounted(() => {
     <header class="phase-hero">
       <p class="caption">Quick Reference</p>
       <h1 class="title-display">Emergency Protocols</h1>
+      <p class="body muted">
+        Tap a shortcut, search by sign / drug, or pick a category. Reachable from any phase via the
+        sticky bar's <strong>Emergency</strong> button.
+      </p>
     </header>
 
     <!-- IV Drug Reference — collapsible pills showing draw-up chart per drug. -->
