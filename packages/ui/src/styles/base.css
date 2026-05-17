@@ -70,7 +70,11 @@ a {
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-tight);
-  margin: 0;
+  /* Owns its gap to the content below so the title→body rhythm is
+     consistent regardless of the caller's mt-* (margins collapse in the
+     card's block flow; flex-row headings already zero this via their
+     own scoped overrides). */
+  margin: 0 0 var(--sp-3);
 }
 
 /* Quiet numeric step index inside a numbered card .heading. Mono + tabular
