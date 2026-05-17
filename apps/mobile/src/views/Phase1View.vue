@@ -98,35 +98,34 @@ function isMissing(id: string): boolean {
   return phase1ValidationAttempted.value && missingIds.value.has(id);
 }
 
-// Scroll the first missing field into view when a failed navigation flips the
-// validation flag. `nextTick` so the freshly-applied `is-invalid` class has
-// painted before we measure offsets.
-watch(phase1ValidationAttempted, async (attempted) => {
-  if (!attempted) return;
+/**
+ * Scroll the first still-missing required field to centre. `nextTick` so the
+ * freshly-applied `is-invalid` ring has painted before we measure offsets.
+ */
+async function scrollToFirstMissing(): Promise<void> {
   await nextTick();
   const first = completeness.value.missing[0];
   if (!first) return;
   const el = document.getElementById(`field-${first.id}`);
   el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-});
-
-/**
- * Click handler for each missing-field chip in the in-page banner. Scrolls
- * straight to that field — handy when the user wants to fix the list out of
- * order rather than top-to-bottom.
- */
-function scrollToField(id: string): void {
-  const el = document.getElementById(`field-${id}`);
-  el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
+
+// A blocked navigation (router guard) flips the flag false→true; scroll then.
+// Repeat taps of the bottom button while already-attempted don't change the
+// flag, so the button handler scrolls explicitly too (see advanceOrShowMissing).
+watch(phase1ValidationAttempted, (attempted) => {
+  if (attempted) void scrollToFirstMissing();
+});
 
 const missingCount = computed(() => completeness.value.total - completeness.value.done);
 
 /**
- * Bottom-of-page advance button. When Phase 1 is complete, it routes to
- * Phase 2 directly so the user never has to open the nav drawer. When fields
- * are still missing, it flips the validation flag — which paints the red
- * rings, scrolls to the first missing entry, and lights up the banner chips.
+ * Bottom-of-page advance button — the single required-field handler. When
+ * Phase 1 is complete it routes to Phase 2. When fields are still missing it
+ * paints the red rings (via the validation flag) and scrolls to the first
+ * missing field. The scroll runs on EVERY tap, not just the first: the flag
+ * is already `true` on a second tap so the watcher wouldn't re-fire — calling
+ * it here directly fixes the "second click doesn't scroll" bug.
  */
 function advanceOrShowMissing(): void {
   if (isPhase1Complete.value) {
@@ -136,6 +135,7 @@ function advanceOrShowMissing(): void {
   }
   patient.markValidationAttempted();
   haptic('warning');
+  void scrollToFirstMissing();
 }
 
 function fmtClock(ms: number | null): string {
@@ -288,32 +288,6 @@ const diazepamModalCopy = computed(() => {
     >
       All required fields filled. Phases 2 / 3 / 4 unlocked. Amendments to vitals, ASA, Mallampati,
       OSA, meds, allergies, and other clinical fields are recorded automatically to the chronology.
-    </UiBanner>
-    <UiBanner
-      v-else
-      :tone="phase1ValidationAttempted ? 'caution' : 'info'"
-      :title="
-        phase1ValidationAttempted
-          ? `${missingCount} required field${missingCount === 1 ? '' : 's'} still missing — Phase 2 locked`
-          : 'Clearance progress'
-      "
-      :icon="phase1ValidationAttempted ? '⚠' : 'ℹ'"
-    >
-      <strong>{{ completeness.done }}</strong> of {{ completeness.total }} required fields filled.
-      <template v-if="completeness.missing.length">
-        <p class="missing-chips-label">Tap a field to jump to it:</p>
-        <div class="missing-chips">
-          <button
-            v-for="m in completeness.missing"
-            :key="m.id"
-            type="button"
-            class="missing-chip"
-            @click="scrollToField(m.id)"
-          >
-            {{ m.label }}
-          </button>
-        </div>
-      </template>
     </UiBanner>
 
     <UiCard tint="ph1" active>
@@ -744,47 +718,6 @@ const diazepamModalCopy = computed(() => {
   .drug-grid {
     grid-template-columns: 1fr;
   }
-}
-
-/* Missing-field chips inside the Clearance progress banner. Each chip scrolls
-   straight to its field — so the user can fix the list out of order rather
-   than top-to-bottom. */
-.missing-chips-label {
-  margin: var(--sp-2) 0 var(--sp-1);
-  font-size: var(--type-caption);
-  letter-spacing: 0.3px;
-  color: var(--color-text-tertiary);
-  text-transform: uppercase;
-  font-weight: var(--weight-bold);
-}
-.missing-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.missing-chip {
-  font-size: var(--type-caption);
-  font-weight: var(--weight-semibold);
-  padding: 4px 10px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    background var(--dur-150) var(--ease-standard),
-    border-color var(--dur-150) var(--ease-standard),
-    color var(--dur-150) var(--ease-standard),
-    transform var(--dur-150) var(--ease-standard);
-}
-.missing-chip:hover,
-.missing-chip:focus-visible {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-}
-.missing-chip:active {
-  transform: scale(0.97);
 }
 
 /* Bottom-of-page advance button. Two tones:
