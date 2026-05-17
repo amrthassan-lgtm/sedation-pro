@@ -378,9 +378,19 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             label="Patient property returned"
             @update:model-value="(v) => recovery.setDischarge('propertyReturned', v)"
           />
+        </UiStack>
+
+        <!-- Split out from the optional confirmations above: this is the only
+             one of the discharge checkboxes that is a hard dismissalSafety
+             blocker, so it must look like a gate (required ring) and go red
+             while it's actively blocking release. -->
+        <p class="caption mt-1">Required to discharge</p>
+        <UiStack :gap="1">
           <UiCheckbox
             :model-value="!!discharge.pulseOxPrinted"
             label="Pulse-ox printout filed"
+            required
+            :invalid="dismissal.blocked && !discharge.pulseOxPrinted"
             @update:model-value="(v) => recovery.setDischarge('pulseOxPrinted', v)"
           />
         </UiStack>
