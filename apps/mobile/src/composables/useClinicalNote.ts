@@ -38,6 +38,16 @@ export interface ClinicalNote {
     readonly companion: string;
     readonly signedAt: string | null;
   };
+  /**
+   * Case disposition. A clinical note is only a *final* record once the
+   * patient has been released; before that it's preliminary. The view and
+   * the text export declare this so an incomplete note can't be mistaken
+   * for the finished medicolegal record.
+   */
+  readonly disposition: {
+    readonly released: boolean;
+    readonly at: string | null;
+  };
   /** ISO date string of when the note was rendered — printed in the footer. */
   readonly generatedAt: string;
 }
@@ -288,6 +298,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
             : '—',
       ],
       ['IV catheter removed', fmtClock(recovery.ivOutAt)],
+      ['Patient released', fmtClock(recovery.releasedAt)],
     );
 
     // -------- Narrative paragraphs -----------------------------------------
@@ -453,6 +464,9 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
           `Patient was discharged accompanied by ${recovery.companionName} (${recovery.companionRelation}). Verbal and written post-op instructions were given; companion co-signed the printed post-op-instructions form.`,
         );
       }
+      if (recovery.releasedAt !== null) {
+        sentences.push(`Patient was released at ${fmtClock(recovery.releasedAt)}.`);
+      }
       const rx = recovery.prescriptions.trim();
       if (rx !== '') {
         sentences.push(`Prescriptions provided: ${rx}.`);
@@ -494,6 +508,10 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
           ? `${recovery.companionName} (${recovery.companionRelation})`
           : '—',
         signedAt: providerSignedAt !== null ? fmtClock(providerSignedAt) : null,
+      },
+      disposition: {
+        released: recovery.releasedAt !== null,
+        at: recovery.releasedAt !== null ? fmtClock(recovery.releasedAt) : null,
       },
       generatedAt: new Date().toLocaleString(),
     };

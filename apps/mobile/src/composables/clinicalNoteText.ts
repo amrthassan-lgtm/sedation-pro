@@ -25,6 +25,11 @@ export function clinicalNoteToText(note: ClinicalNote): string {
   lines.push(`Provider:         ${note.header.provider}`);
   lines.push(`Dental assistant: ${note.header.assistants}`);
   lines.push(`Procedure:        ${note.header.procedure}`);
+  lines.push(
+    note.disposition.released
+      ? `Status:           FINAL — patient released ${note.disposition.at}`
+      : 'Status:           PRELIMINARY — patient not yet released',
+  );
 
   if (note.narrative.length > 0) {
     lines.push('');

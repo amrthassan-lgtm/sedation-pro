@@ -71,6 +71,7 @@ const {
   returnVisitPlan,
   returnVisitDate,
   ivOutAt,
+  releasedAt,
   companionDocumented,
 } = storeToRefs(recovery);
 
@@ -209,7 +210,7 @@ function isBlocking(code: DismissalBlockerCode): boolean {
   return releaseAttempted.value && activeBlockers.value.has(code);
 }
 
-const dischargeState = computed<ActionState>(() => 'idle');
+const dischargeState = computed<ActionState>(() => (releasedAt.value !== null ? 'logged' : 'idle'));
 
 function releasePatient() {
   if (!canRelease.value) {
@@ -218,12 +219,14 @@ function releasePatient() {
     return;
   }
   haptic('success');
+  recovery.stampReleased();
   undo.stamp({
     event: 'Patient Released',
     details: {
       Companion: `${companionName.value} (${companionRelation.value})`,
     },
     toast: { label: '✓ Patient released', tone: 'safe' },
+    revert: () => recovery.clearReleased(),
   });
 }
 
@@ -522,15 +525,25 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         :tone="canRelease ? 'success' : 'neutral'"
         block
         :state="dischargeState"
+        :logged-at="fmtClock(releasedAt)"
         :cooldown-ms="0"
         class="mt-2"
         @click="releasePatient"
       >
         🏠 Release Patient
       </UiButton>
-      <UiButton tone="primary" block class="mt-2" @click="goToClinicalNote">
+      <UiButton
+        tone="primary"
+        block
+        class="mt-2"
+        :disabled="releasedAt === null"
+        @click="goToClinicalNote"
+      >
         📄 Generate Clinical Note
       </UiButton>
+      <p v-if="releasedAt === null" class="caption release-note-hint">
+        Final note is available once the patient is released
+      </p>
     </UiCard>
 
     <PhaseFooterNav :back="{ label: 'Phase 3 · IV Sedation', route: '/phase/3', tint: 'ph3' }" />
@@ -565,6 +578,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 </template>
 
 <style scoped>
+.release-note-hint {
+  margin-top: var(--sp-2);
+  text-align: center;
+}
 .blocker-list {
   margin: var(--sp-2) 0 0;
   padding-left: var(--sp-5);

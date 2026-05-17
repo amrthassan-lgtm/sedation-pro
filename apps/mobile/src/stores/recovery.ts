@@ -81,6 +81,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
   // ------- IV-out stamp -----------------------------------------------------
 
   const ivOutAt = ref<number | null>(null);
+  const releasedAt = ref<number | null>(null);
 
   // ------- Procedure-end-vitals helpers -------------------------------------
 
@@ -101,6 +102,18 @@ export const useRecoveryStore = defineStore('recovery', () => {
   }
   function clearIvOut() {
     ivOutAt.value = null;
+  }
+  // Release is the case-closing event. Its timestamp is the medicolegal
+  // anchor that turns the clinical note from preliminary into a final
+  // record, so it's persisted and undo-revertible like the other stamps.
+  function stampReleased() {
+    if (releasedAt.value === null) {
+      releasedAt.value = Date.now();
+      haptic('success');
+    }
+  }
+  function clearReleased() {
+    releasedAt.value = null;
   }
 
   function setDischarge(key: string, value: boolean) {
@@ -138,6 +151,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     returnVisitPlan.value = '';
     returnVisitDate.value = '';
     ivOutAt.value = null;
+    releasedAt.value = null;
   }
 
   const companionDocumented = computed(
@@ -181,6 +195,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     returnVisitPlan,
     returnVisitDate,
     ivOutAt,
+    releasedAt,
   });
 
   return {
@@ -209,6 +224,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     returnVisitPlan,
     returnVisitDate,
     ivOutAt,
+    releasedAt,
 
     // derived
     companionDocumented,
@@ -218,6 +234,8 @@ export const useRecoveryStore = defineStore('recovery', () => {
     clearRecoveryStamp,
     stampIvOut,
     clearIvOut,
+    stampReleased,
+    clearReleased,
     setDischarge,
     reset,
   };

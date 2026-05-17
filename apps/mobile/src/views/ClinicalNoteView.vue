@@ -109,6 +109,13 @@ async function shareNote() {
           <dd>{{ note.header.assistants }}</dd>
           <dt>Procedure</dt>
           <dd>{{ note.header.procedure }}</dd>
+          <dt>Disposition</dt>
+          <dd>
+            <strong v-if="note.disposition.released" class="note-final">
+              Final — patient released {{ note.disposition.at }}
+            </strong>
+            <strong v-else class="note-prelim">Preliminary — patient not yet released</strong>
+          </dd>
         </dl>
       </header>
 
@@ -272,6 +279,14 @@ async function shareNote() {
 .note-meta dd {
   margin: 0;
   color: #1f2937;
+}
+/* Paper-palette status colours (this view is a printed-document theme,
+   not the app tokens): final = clinical green, preliminary = amber. */
+.note-final {
+  color: #15803d;
+}
+.note-prelim {
+  color: #b45309;
 }
 
 .note-section {
