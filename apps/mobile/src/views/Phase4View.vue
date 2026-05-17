@@ -30,7 +30,11 @@ import {
   UiTextarea,
   UiTextInput,
 } from '@sedation-pro/ui';
-import { dismissalSafety, releaseEligibility } from '@sedation-pro/clinical';
+import {
+  dismissalSafety,
+  releaseEligibility,
+  type DismissalBlockerCode,
+} from '@sedation-pro/clinical';
 import type { ActionState, BpValue } from '@sedation-pro/ui';
 
 const router = useRouter();
@@ -194,6 +198,13 @@ const dismissal = computed(() =>
   }),
 );
 
+// Each blocker drives its own field's invalid ring, so the form shows
+// exactly what's holding release — not just the one pulse-ox box.
+const activeBlockers = computed(() => new Set(dismissal.value.blockers.map((b) => b.code)));
+function isBlocking(code: DismissalBlockerCode): boolean {
+  return activeBlockers.value.has(code);
+}
+
 const dischargeState = computed<ActionState>(() => 'idle');
 
 function releasePatient() {
@@ -239,10 +250,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           <UiField label="HR" hint="bpm">
             <UiNumberInput v-model="endHr" placeholder="HR" />
           </UiField>
-          <UiField label="BP" hint="mmHg">
+          <UiField label="BP" hint="mmHg" :invalid="isBlocking('bp-crisis')">
             <UiBpInput v-model="endBp" />
           </UiField>
-          <UiField label="SpO₂" hint="%">
+          <UiField label="SpO₂" hint="%" :invalid="isBlocking('low-spo2')">
             <UiNumberInput v-model="endSpo2" :min="0" :max="100" placeholder="%" />
           </UiField>
           <UiField label="EtCO₂" hint="mmHg">
@@ -315,32 +326,36 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             label="Patient ambulatory at discharge"
             hint="Steady walking, no support needed"
             required
+            :invalid="isBlocking('not-ambulatory')"
           />
           <UiCheckbox
             v-model="orientedX3"
             label="Oriented ×3"
             hint="Person · place · time"
             required
+            :invalid="isBlocking('not-oriented')"
           />
           <UiCheckbox
             v-model="nauseaOrVomiting"
             tone="danger"
             label="Nausea or vomiting noted"
             hint="Defer discharge if checked"
+            :invalid="isBlocking('nausea-vomiting')"
           />
           <UiCheckbox
             v-model="excessiveBleeding"
             tone="danger"
             label="Excessive bleeding observed"
+            :invalid="isBlocking('excessive-bleeding')"
           />
         </UiStack>
 
         <p class="caption mt-1">Companion</p>
         <UiRow :gap="3" wrap>
-          <UiField label="Companion name" required>
+          <UiField label="Companion name" required :invalid="isBlocking('no-companion')">
             <UiTextInput v-model="companionName" placeholder="Accompanying adult" />
           </UiField>
-          <UiField label="Relation" required>
+          <UiField label="Relation" required :invalid="isBlocking('no-companion')">
             <UiTextInput v-model="companionRelation" placeholder="e.g. spouse, parent" />
           </UiField>
         </UiRow>
@@ -369,17 +384,17 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           />
         </UiStack>
 
-        <!-- Split out from the optional confirmations above: this is the only
-             one of the discharge checkboxes that is a hard dismissalSafety
-             blocker, so it must look like a gate (required ring) and go red
-             while it's actively blocking release. -->
+        <!-- Every dismissalSafety blocker now drives its own field's invalid
+             ring (see isBlocking), so the form shows exactly what's holding
+             release, matching the Card 14 blocker list. This one is split
+             out only because it's a documentation step, not a patient state. -->
         <p class="caption mt-1">Required to discharge</p>
         <UiStack :gap="1">
           <UiCheckbox
             :model-value="!!discharge.pulseOxPrinted"
             label="Pulse-ox printout filed"
             required
-            :invalid="dismissal.blocked && !discharge.pulseOxPrinted"
+            :invalid="isBlocking('no-pulse-ox-printout')"
             @update:model-value="(v) => recovery.setDischarge('pulseOxPrinted', v)"
           />
         </UiStack>
@@ -394,7 +409,11 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         </UiField>
 
         <p class="caption mt-1">Provider signature</p>
-        <UiField label="Sign to complete the record" required>
+        <UiField
+          label="Sign to complete the record"
+          required
+          :invalid="isBlocking('no-provider-signature')"
+        >
           <UiSignaturePad v-model="providerSignatureDataUrl" />
         </UiField>
       </UiStack>
