@@ -463,9 +463,6 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading">2 · N₂O / O₂ ON</p>
-      <p class="body muted">
-        Mild anxiolysis before IV catheter placement. 30-50% N₂O, the rest O₂.
-      </p>
       <UiButton
         tone="primary"
         block
@@ -522,10 +519,6 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading">4 · N₂O OFF → O₂ 100%</p>
-      <p class="body muted">
-        Discontinue N₂O before IV sedation drugs. 100% oxygen keeps the safety margin while you
-        titrate.
-      </p>
       <UiButton
         tone="primary"
         block
@@ -544,10 +537,6 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading">5 · Initial Test Dose</p>
-      <p class="body muted">
-        Always start Versed with a 1 mg test dose. Wait 3-5 min before any additional dose — the
-        timer pill below tracks it in real time.
-      </p>
       <div class="drug-grid mt-2">
         <UiDrugButton
           tone="versed"
@@ -662,9 +651,6 @@ function onNaloxone() {
             <UiRow :gap="3" align="center" justify="between">
               <div>
                 <p class="caption">Combined sedation load</p>
-                <p class="body muted">
-                  Average of Versed % and Fentanyl % — caution ≥70 / limit ≥90 / crisis ≥100.
-                </p>
               </div>
               <p class="big-pct" :class="`big-pct--${combinedCard.severity}`">
                 {{ combinedCard.percent.toFixed(0) }}%
@@ -680,10 +666,6 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading">7 · Sedation Level Achieved</p>
-      <p class="body muted">
-        Stamp a vitals row once the patient reaches target sedation — relaxed, cooperative,
-        maintains verbal response, stable vitals.
-      </p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
@@ -722,9 +704,6 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading">8 · Procedure Start</p>
-      <p class="body muted">
-        Timestamps the official start of the dental procedure in the medicolegal record.
-      </p>
       <UiButton
         tone="primary"
         block
@@ -742,11 +721,6 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading">9 · Local Anesthesia</p>
-      <p class="body muted">
-        Each tap logs one carpule. The combined-percent card uses half-life decay (lidocaine 100
-        min, septocaine 30 min, marcaine 170 min, mepivacaine 100 min) — the bar drops live as each
-        agent metabolizes.
-      </p>
 
       <UiBanner v-if="!weightLb" tone="caution" icon="⚖️" class="mt-2">
         Patient weight is required for the per-drug max-dose math. Fill weight in Phase 1.
@@ -811,7 +785,6 @@ function onNaloxone() {
           <UiRow :gap="3" align="center" justify="between">
             <div>
               <p class="caption">Malamed combined load</p>
-              <p class="body muted">Sum of per-drug active% — keep below 100.</p>
             </div>
             <p class="big-pct" :class="`big-pct--${localResult.severity}`">
               {{ localResult.combinedPercent.toFixed(0) }}%

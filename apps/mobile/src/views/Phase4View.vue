@@ -234,7 +234,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
     <UiCard tint="ph4" active>
       <p class="heading">11 · Recovery Vitals</p>
-      <p class="body muted">Stamp once stable, alert, oriented ×3, vitals back to baseline.</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
@@ -273,11 +272,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
     <UiCard tint="ph4">
       <p class="heading">12 · IV Out</p>
-      <p class="body muted">
-        Live countdown using <code class="mono">releaseEligibility</code>. Standard wait is 20
-        minutes from the last IV med. After flumazenil, the engine extends the wait to 120 minutes
-        for post-reversal monitoring.
-      </p>
 
       <UiBanner :tone="ivOutChipTone" icon="⏱" class="mt-2">
         <strong>{{ ivOutChipHeadline }}</strong>
@@ -403,9 +397,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         <UiField label="Sign to complete the record" required>
           <UiSignaturePad v-model="providerSignatureDataUrl" />
         </UiField>
-        <p class="body muted footnote-note">
-          Companion signs the printed post-op-instruction form by hand — not captured in-app.
-        </p>
       </UiStack>
     </UiCard>
 
@@ -413,10 +404,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
     <UiCard tint="ph4">
       <p class="heading">13b · Provider Sign-off</p>
-      <p class="body muted">
-        Rate the sedation course, capture complications, and document any procedure-relevant
-        observations. All fields flow into the printed clinical note.
-      </p>
 
       <UiStack :gap="3" class="mt-2">
         <UiField label="Sedation quality rating" hint="provider impression">
@@ -529,10 +516,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <PatientSummaryCard />
       <UiCard>
         <p class="heading">Case summary</p>
-        <p class="body muted">
-          Quick read-out — full printable clinical note lands with the signature pad in the next
-          push.
-        </p>
         <div class="stat-grid mt-2">
           <UiStatCard
             label="Patient"
@@ -567,10 +550,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
   gap: 2px;
   font-size: var(--type-footnote);
   line-height: 1.5;
-}
-.footnote-note {
-  font-size: var(--type-footnote);
-  font-style: italic;
 }
 .stat-grid {
   display: grid;
