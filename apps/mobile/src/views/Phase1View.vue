@@ -5,7 +5,6 @@ import { useRouter } from 'vue-router';
 
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
-import { useEventLogStore } from '@/stores/event-log';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { haptic } from '@/composables/useHaptics';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
@@ -37,7 +36,6 @@ import {
 const router = useRouter();
 const patient = usePatientStore();
 const undo = useUndoStore();
-const eventLog = useEventLogStore();
 
 useAssessmentAudit();
 
@@ -83,8 +81,6 @@ const {
   isPhase1Complete,
   phase1ValidationAttempted,
 } = storeToRefs(patient);
-
-const { phase1LockedAt } = storeToRefs(eventLog);
 
 /**
  * Set of clinical-engine ids for every still-missing required field. The keys
@@ -136,11 +132,6 @@ function advanceOrShowMissing(): void {
   patient.markValidationAttempted();
   haptic('warning');
   void scrollToFirstMissing();
-}
-
-function fmtClock(ms: number | null): string {
-  if (ms === null) return '—';
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 const asaOptions = [
@@ -274,21 +265,7 @@ const diazepamModalCopy = computed(() => {
     <header class="phase-hero">
       <p class="caption">Phase 1 · Pre-Sedation Assessment</p>
       <h1 class="title-display">Patient Clearance</h1>
-      <p class="body muted">
-        Fill the required fields to unlock Phase 2 / 3 / 4. BMI, BP, and SpO₂ classify live as you
-        type. Sticky bar and nav drawer read from the same store — they can&apos;t drift.
-      </p>
     </header>
-
-    <UiBanner
-      v-if="isPhase1Complete"
-      tone="safe"
-      :title="phase1LockedAt ? `Phase 1 locked at ${fmtClock(phase1LockedAt)}` : 'Phase 1 complete'"
-      icon="✓"
-    >
-      All required fields filled. Phases 2 / 3 / 4 unlocked. Amendments to vitals, ASA, Mallampati,
-      OSA, meds, allergies, and other clinical fields are recorded automatically to the chronology.
-    </UiBanner>
 
     <UiCard tint="ph1" active>
       <p class="heading">Patient Identification</p>
