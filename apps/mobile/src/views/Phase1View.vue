@@ -74,8 +74,6 @@ const {
   recreationalDrugs,
   cigarettesPerDay,
   ekgPlaced,
-  timeOutPerformed,
-  teamReady,
   emergencyDrugsAvailable,
   monitoringEquipmentChecked,
   safetyAlerts,
@@ -570,22 +568,6 @@ const diazepamModalCopy = computed(() => {
           :invalid="isMissing('ekg_placed')"
           label="EKG leads placed"
           hint="3-lead — verify rhythm and waveform"
-        />
-        <UiCheckbox
-          id="field-time_out"
-          v-model="timeOutPerformed"
-          required
-          :invalid="isMissing('time_out')"
-          label="Pre-procedure time-out performed"
-          hint="Patient · procedure · site · allergies confirmed aloud with team"
-        />
-        <UiCheckbox
-          id="field-team_ready"
-          v-model="teamReady"
-          required
-          :invalid="isMissing('team_ready')"
-          label="Team readiness confirmed"
-          hint="Assistant + provider + monitor watcher present"
         />
         <UiCheckbox
           id="field-emergency_drugs_available"

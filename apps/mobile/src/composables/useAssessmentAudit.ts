@@ -130,8 +130,6 @@ export function useAssessmentAudit(): void {
       'Anesthesia history': norm(patient.anesthesiaHistory),
       'Family history': norm(patient.familyHistory),
       'EKG placed': bool(patient.ekgPlaced),
-      'Time-out': bool(patient.timeOutPerformed),
-      'Team ready': bool(patient.teamReady),
       'Emergency drugs': bool(patient.emergencyDrugsAvailable),
       'Monitors functional': bool(patient.monitoringEquipmentChecked),
     };

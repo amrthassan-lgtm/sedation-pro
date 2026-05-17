@@ -160,8 +160,6 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       ],
       ['Recreational drugs', patient.recreationalDrugs.trim() || 'Denies'],
       ['EKG placed', patient.ekgPlaced ? 'Yes' : '—'],
-      ['Pre-procedure time-out', patient.timeOutPerformed ? 'Performed' : '—'],
-      ['Team readiness', patient.teamReady ? 'Confirmed' : '—'],
       ['Emergency drugs accessible', patient.emergencyDrugsAvailable ? 'Yes' : '—'],
       ['Monitors functional', patient.monitoringEquipmentChecked ? 'Yes' : '—'],
     ];

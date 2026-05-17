@@ -19,7 +19,7 @@ export interface Phase1FieldSpec {
 }
 
 /**
- * The 16 unconditional required fields, plus `baseline_glucose` which is
+ * The 19 unconditional required fields, plus `baseline_glucose` which is
  * required only when `diabetic === 'yes'`.
  */
 export const PHASE1_REQUIRED_FIELDS: ReadonlyArray<Phase1FieldSpec> = [
@@ -46,8 +46,6 @@ export const PHASE1_REQUIRED_FIELDS: ReadonlyArray<Phase1FieldSpec> = [
   { id: 'npo_confirmed', label: 'NPO confirmation', step: 6 },
   { id: 'consent_obtained', label: 'Informed consent obtained', step: 6 },
   { id: 'ekg_placed', label: 'EKG leads placed', step: 6 },
-  { id: 'time_out', label: 'Pre-procedure time-out', step: 6 },
-  { id: 'team_ready', label: 'Team readiness confirmed', step: 6 },
   { id: 'emergency_drugs_available', label: 'Emergency drugs available', step: 6 },
   { id: 'monitoring_equipment_checked', label: 'Monitors functional', step: 6 },
 ];

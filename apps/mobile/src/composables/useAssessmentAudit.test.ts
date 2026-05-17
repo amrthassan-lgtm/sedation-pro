@@ -32,8 +32,6 @@ function fillAllRequiredFields(patient: Patient): void {
   patient.npoConfirmed = true;
   patient.consentObtained = true;
   patient.ekgPlaced = true;
-  patient.timeOutPerformed = true;
-  patient.teamReady = true;
   patient.emergencyDrugsAvailable = true;
   patient.monitoringEquipmentChecked = true;
 }

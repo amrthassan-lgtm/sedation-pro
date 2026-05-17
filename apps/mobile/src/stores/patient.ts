@@ -80,8 +80,6 @@ export const usePatientStore = defineStore('patient', () => {
 
   // -------- Expanded safety checklist (required to unlock) ------------------
   const ekgPlaced = ref(false);
-  const timeOutPerformed = ref(false);
-  const teamReady = ref(false);
   const emergencyDrugsAvailable = ref(false);
   const monitoringEquipmentChecked = ref(false);
 
@@ -160,8 +158,6 @@ export const usePatientStore = defineStore('patient', () => {
         npo_confirmed: npoConfirmed.value,
         consent_obtained: consentObtained.value,
         ekg_placed: ekgPlaced.value,
-        time_out: timeOutPerformed.value,
-        team_ready: teamReady.value,
         emergency_drugs_available: emergencyDrugsAvailable.value,
         monitoring_equipment_checked: monitoringEquipmentChecked.value,
         baseline_glucose: baselineGlucose.value ?? '',
@@ -239,8 +235,6 @@ export const usePatientStore = defineStore('patient', () => {
     recreationalDrugs,
     cigarettesPerDay,
     ekgPlaced,
-    timeOutPerformed,
-    teamReady,
     emergencyDrugsAvailable,
     monitoringEquipmentChecked,
   });
@@ -278,8 +272,6 @@ export const usePatientStore = defineStore('patient', () => {
     recreationalDrugs.value = '';
     cigarettesPerDay.value = null;
     ekgPlaced.value = false;
-    timeOutPerformed.value = false;
-    teamReady.value = false;
     emergencyDrugsAvailable.value = false;
     monitoringEquipmentChecked.value = false;
     phase1ValidationAttempted.value = false;
@@ -318,8 +310,6 @@ export const usePatientStore = defineStore('patient', () => {
     recreationalDrugs,
     cigarettesPerDay,
     ekgPlaced,
-    timeOutPerformed,
-    teamReady,
     emergencyDrugsAvailable,
     monitoringEquipmentChecked,
     bmi,

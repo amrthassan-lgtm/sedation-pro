@@ -149,8 +149,6 @@ describe('shell stores — single sources of truth', () => {
     patient.npoConfirmed = true;
     patient.consentObtained = true;
     patient.ekgPlaced = true;
-    patient.timeOutPerformed = true;
-    patient.teamReady = true;
     patient.emergencyDrugsAvailable = true;
     patient.monitoringEquipmentChecked = true;
 
@@ -203,8 +201,6 @@ describe('shell stores — single sources of truth', () => {
     patient.npoConfirmed = true;
     patient.consentObtained = true;
     patient.ekgPlaced = true;
-    patient.timeOutPerformed = true;
-    patient.teamReady = true;
     patient.emergencyDrugsAvailable = true;
     patient.monitoringEquipmentChecked = true;
 
@@ -250,16 +246,14 @@ describe('shell stores — single sources of truth', () => {
     patient.npoConfirmed = true;
     patient.consentObtained = true;
     patient.ekgPlaced = true;
-    patient.timeOutPerformed = true;
-    patient.teamReady = true;
     patient.emergencyDrugsAvailable = true;
     patient.monitoringEquipmentChecked = true;
 
     expect(patient.isPhase1Complete).toBe(true);
-    expect(patient.completeness.total).toBe(21);
+    expect(patient.completeness.total).toBe(19);
 
     patient.diabetic = true;
-    expect(patient.completeness.total).toBe(22);
+    expect(patient.completeness.total).toBe(20);
     expect(patient.isPhase1Complete).toBe(false);
 
     patient.baselineGlucose = 110;
