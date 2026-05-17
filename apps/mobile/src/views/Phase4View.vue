@@ -344,6 +344,14 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             :invalid="isBlocking('not-oriented')"
           />
           <UiCheckbox
+            :model-value="!!discharge.pulseOxPrinted"
+            label="Pulse-ox printout filed"
+            hint="SpO₂ trend copied + stapled to the sedation visit document"
+            required
+            :invalid="isBlocking('no-pulse-ox-printout')"
+            @update:model-value="(v) => recovery.setDischarge('pulseOxPrinted', v)"
+          />
+          <UiCheckbox
             v-model="nauseaOrVomiting"
             tone="danger"
             label="Nausea or vomiting noted"
@@ -389,21 +397,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             :model-value="!!discharge.propertyReturned"
             label="Patient property returned"
             @update:model-value="(v) => recovery.setDischarge('propertyReturned', v)"
-          />
-        </UiStack>
-
-        <!-- Every dismissalSafety blocker now drives its own field's invalid
-             ring (see isBlocking), so the form shows exactly what's holding
-             release, matching the Card 14 blocker list. This one is split
-             out only because it's a documentation step, not a patient state. -->
-        <p class="caption mt-1">Required to discharge</p>
-        <UiStack :gap="1">
-          <UiCheckbox
-            :model-value="!!discharge.pulseOxPrinted"
-            label="Pulse-ox printout filed"
-            required
-            :invalid="isBlocking('no-pulse-ox-printout')"
-            @update:model-value="(v) => recovery.setDischarge('pulseOxPrinted', v)"
           />
         </UiStack>
 
