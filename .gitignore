@@ -12,6 +12,14 @@ coverage/
 .turbo/
 .cache/
 
+# Generated app icons — rasterized from apps/mobile/public/logo-source.svg
+# by scripts/generate-icons.mjs on every dev/build. Source-of-truth is the
+# SVG; these are reproducible artifacts and must never be hand-edited.
+apps/mobile/public/icon-192.png
+apps/mobile/public/icon-512.png
+apps/mobile/public/icon-maskable-512.png
+apps/mobile/public/apple-touch-icon-180.png
+
 # Editor
 .vscode/
 .idea/
