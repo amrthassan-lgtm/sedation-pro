@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useAudioStore } from '@/stores/audio';
+import { useModeStore } from '@/stores/mode';
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
@@ -113,6 +114,15 @@ const { muted: audioMuted } = storeToRefs(audio);
 function toggleMute(): void {
   audioMuted.value = !audioMuted.value;
 }
+
+// -------- Training / Clinical mode toggle --------------------------------
+//
+// Clinical (default) is the lean chairside screen; Training reveals the
+// teaching prose wrapped in <TrainingNote>. Reset to Clinical on "Start
+// new case" via the sedation-pro: namespace wipe.
+
+const mode = useModeStore();
+const { training } = storeToRefs(mode);
 
 // -------- Theme toggle ----------------------------------------------------
 //
@@ -420,6 +430,15 @@ function onTouchEnd() {
       >
         <span class="nav-utility-icon" aria-hidden="true">{{ themeMeta[themeChoice].icon }}</span>
         <span class="nav-utility-label">{{ themeMeta[themeChoice].label }}</span>
+      </button>
+
+      <!-- Training/Clinical mode. Clinical is the lean default; Training
+           reveals drug-selection rationale and pharmacology "why" prose. -->
+      <button type="button" class="nav-utility" :aria-pressed="training" @click="mode.toggle()">
+        <span class="nav-utility-icon" aria-hidden="true">{{ training ? '🎓' : '🩺' }}</span>
+        <span class="nav-utility-label">
+          {{ training ? 'Training mode' : 'Clinical mode' }}
+        </span>
       </button>
 
       <!-- Destructive action — start a fresh case. Sits below the nav and is

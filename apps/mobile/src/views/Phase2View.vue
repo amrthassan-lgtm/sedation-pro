@@ -8,6 +8,7 @@ import { haptic } from '@/composables/useHaptics';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
+import TrainingNote from '@/components/TrainingNote.vue';
 import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
 import { UiBanner, UiCard, UiDrugButton, UiRow, UiStatCard } from '@sedation-pro/ui';
 import { lorazepamMax, triazolamMax } from '@sedation-pro/clinical';
@@ -43,14 +44,11 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
     <header class="phase-hero">
       <p class="caption">Phase 2 · Oral Sedation</p>
       <h1 class="title-display">Pre-Op Anxiolytic</h1>
-      <p class="body muted">
-        Optional pre-op anxiolytic 30 minutes before IV start. Max-dose hints update live from the
-        entered weight.
-      </p>
+      <p class="body muted">Optional pre-op anxiolytic 30 minutes before IV start.</p>
     </header>
 
     <UiBanner v-if="!weightLb" tone="caution" title="Weight required" icon="⚖️">
-      Enter patient weight in Phase 1 so max-dose hints can compute against the entered patient.
+      Enter patient weight in Phase 1.
     </UiBanner>
 
     <div v-if="weightLb" class="stat-grid">
@@ -74,9 +72,10 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
 
     <UiCard tint="ph2" active>
       <p class="heading">Triazolam · Halcion</p>
+      <TrainingNote>Most common pre-op anxiolytic.</TrainingNote>
       <p class="body muted">
-        Most common pre-op anxiolytic. 30-90 min before appointment. Counts as a CNS depressant —
-        use conservative IV titration if also using Versed.
+        30-90 min before appointment. Counts as a CNS depressant — use conservative IV titration if
+        also using Versed.
       </p>
       <UiRow :gap="2" wrap class="mt-2">
         <UiDrugButton
@@ -136,9 +135,11 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
 
     <UiCard tint="ph2">
       <p class="heading">Hydroxyzine · Vistaril</p>
-      <p class="body muted">
+      <TrainingNote>
         Non-benzodiazepine alternative — antihistamine with sedative properties. Use for benzo-abuse
         history, severe respiratory compromise, or chronic nausea.
+      </TrainingNote>
+      <p class="body muted">
         <strong>No reversal agent</strong> — effects must wear off naturally over 4-6 hours.
       </p>
       <UiRow :gap="2" wrap class="mt-2">
