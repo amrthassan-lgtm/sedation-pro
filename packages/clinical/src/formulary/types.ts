@@ -1,6 +1,24 @@
 import type { DrugCategory, Route } from '../types';
 
 /**
+ * One scannable attribute shown on a drug-selection card — a fixed
+ * label/value slot replacing free prose so the same shape renders
+ * identically across every phase. `tone` marks the clinically dangerous
+ * fact (no reversal, contraindication) so the UI can highlight it instead
+ * of burying it mid-sentence. This is presentation data, not algorithm —
+ * it lives in the formulary so a practice that ships its own drug list
+ * gets consistent cards for free.
+ */
+export interface DrugAttribute {
+  /** Slot label — e.g. `'Onset'`, `'Use when'`, `'Caution'`. */
+  readonly label: string;
+  /** Slot value — e.g. `'30–90 min pre-op'`. */
+  readonly value: string;
+  /** Safety highlight: `'caution'` (advisory) or `'limit'` (hard risk). */
+  readonly tone?: 'caution' | 'limit';
+}
+
+/**
  * A drug entry in the formulary. Drugs are *data*, not constants — practices
  * can ship their own formulary by passing a `Formulary` into engine
  * functions. The `id` is the stable key used for lookups and dose recording.
@@ -22,6 +40,8 @@ export interface DrugEntry {
   readonly color?: string;
   /** Optional human notes — printed labels, tape colour, etc. */
   readonly notes?: string;
+  /** Scannable selection attributes rendered on the drug card. */
+  readonly attributes?: ReadonlyArray<DrugAttribute>;
 }
 
 /** Mass per millilitre — separates value from unit so display is unambiguous. */

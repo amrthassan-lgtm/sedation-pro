@@ -80,6 +80,15 @@ const ORAL_DRUGS: ReadonlyArray<OralDrug> = [
     route: 'PO',
     color: '#8b5cf6',
     notes: 'Given 30-90 min pre-op',
+    attributes: [
+      { label: 'Onset', value: '30–90 min pre-op' },
+      { label: 'Use when', value: 'First-line anxiolytic' },
+      {
+        label: 'Caution',
+        value: 'CNS depressant — conservative IV titration with Versed',
+        tone: 'caution',
+      },
+    ],
   },
   {
     id: 'lorazepam',
@@ -90,6 +99,12 @@ const ORAL_DRUGS: ReadonlyArray<OralDrug> = [
     route: 'PO',
     color: '#8b5cf6',
     notes: 'Alternative for patients on CYP3A4 inhibitors',
+    attributes: [
+      {
+        label: 'Use when',
+        value: 'Alternative on CYP3A4 inhibitors (macrolides, antifungals, HIV antivirals)',
+      },
+    ],
   },
   {
     id: 'hydroxyzine',
@@ -100,6 +115,11 @@ const ORAL_DRUGS: ReadonlyArray<OralDrug> = [
     route: 'PO',
     color: '#8b5cf6',
     notes: 'Non-benzo · no reversal agent',
+    attributes: [
+      { label: 'Class', value: 'Non-benzodiazepine antihistamine' },
+      { label: 'Use when', value: 'Benzo-abuse hx · resp compromise · chronic nausea' },
+      { label: 'Caution', value: 'No reversal — wears off over 4–6 h', tone: 'limit' },
+    ],
   },
 ];
 

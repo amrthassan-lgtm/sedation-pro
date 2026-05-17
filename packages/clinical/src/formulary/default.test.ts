@@ -40,6 +40,23 @@ describe('DEFAULT_FORMULARY', () => {
     expect(DEFAULT_FORMULARY.ceilings.benzoOpioidSynergyReduction).toBeCloseTo(0.3);
   });
 
+  it('gives every oral anxiolytic scannable card attributes with one safety-toned slot', () => {
+    for (const drug of DEFAULT_FORMULARY.oral) {
+      expect(drug.attributes && drug.attributes.length).toBeGreaterThan(0);
+      for (const attr of drug.attributes ?? []) {
+        expect(attr.label.length).toBeGreaterThan(0);
+        expect(attr.value.length).toBeGreaterThan(0);
+        if (attr.tone !== undefined) expect(['caution', 'limit']).toContain(attr.tone);
+      }
+    }
+    // Triazolam carries the Versed-synergy caution; hydroxyzine the
+    // no-reversal hard limit — both must be tone-flagged, not buried.
+    const triazolam = DEFAULT_FORMULARY.oral.find((d) => d.id === 'triazolam');
+    const hydroxyzine = DEFAULT_FORMULARY.oral.find((d) => d.id === 'hydroxyzine');
+    expect(triazolam?.attributes?.some((a) => a.tone === 'caution')).toBe(true);
+    expect(hydroxyzine?.attributes?.some((a) => a.tone === 'limit')).toBe(true);
+  });
+
   it('encodes the standard wait windows', () => {
     expect(DEFAULT_FORMULARY.timings.premedWaitMin).toBe(30);
     expect(DEFAULT_FORMULARY.timings.releaseWaitMin).toBe(20);
