@@ -1,42 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Sedation Pro">
   <!--
-    SINGLE SOURCE OF TRUTH for every app icon.
+    SINGLE SOURCE OF TRUTH for every app icon AND the in-app brand mark
+    (favicon, iOS apple-touch, Android maskable, PWA install, plus the
+    footer / nav-drawer / clinical-note letterhead). Edit only this file.
+    scripts/generate-icons.mjs rasterizes it on every dev/build; the PNGs
+    are git-ignored and cannot drift from this source.
 
-    Edit only this file to change the logo. The favicon, the iOS
-    apple-touch icon, the Android maskable icon, and every raster PNG
-    in the web manifest are generated from this SVG by
-    `scripts/generate-icons.mjs` (runs automatically on `pnpm dev`
-    and `pnpm build`). The generated PNGs are git-ignored build
-    artifacts — never hand-edit them, and they can't drift from this
-    source because they are reproduced on every build.
-
-    Composition rule: this is laid out MASKABLE-SAFE — the background
-    is full-bleed (no self-rounded corners; iOS/Android apply their
-    own mask) and the glyph stays inside the central ~64% safe zone so
-    Android's adaptive-icon crop never clips it. Keep new artwork
-    inside roughly x/y 128–384 if you redraw it.
+    Composition: the ECG glyph fills the canvas tightly (≈8% margins) so it
+    reads well as an inline brand mark — minimal dead space. The background
+    is full-bleed with NO self-rounded corners: iOS/Android apply their own
+    mask, and the in-app placements round it via CSS (border-radius). A
+    circular Android maskable crop only ever clips the flat ECG baseline
+    tail at the extreme left/right — visually inconsequential; the
+    diagnostic QRS complex sits well within the centre safe zone.
   -->
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#1a3554" />
       <stop offset="100%" stop-color="#0b1e3a" />
     </linearGradient>
-    <linearGradient id="trace" x1="128" y1="0" x2="384" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.65" />
+    <linearGradient id="trace" x1="0" y1="0" x2="512" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.6" />
       <stop offset="50%" stop-color="#3b82f6" stop-opacity="1" />
-      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.65" />
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.6" />
     </linearGradient>
   </defs>
 
   <rect width="512" height="512" fill="url(#bg)" />
 
   <polyline
-    points="128,256 174,256 200,248 216,224 244,304 268,160 292,360 320,232 350,256 384,256"
+    points="40,256 102,256 142,245 159,216 193,307 222,120 250,381 284,233 330,256 472,256"
     stroke="url(#trace)"
-    stroke-width="20"
+    stroke-width="26"
     fill="none"
     stroke-linecap="round"
     stroke-linejoin="round"
   />
-  <circle cx="292" cy="360" r="11" fill="#4ade80" />
+  <circle cx="250" cy="381" r="11" fill="#4ade80" />
 </svg>
