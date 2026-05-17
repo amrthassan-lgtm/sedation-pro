@@ -133,6 +133,14 @@ const BEDTIME_DRUGS: ReadonlyArray<BedtimeDrug> = [
     route: 'PO',
     color: '#8b5cf6',
     notes: 'Bedtime night before · contraindicated with OSA',
+    attributes: [
+      { label: 'Timing', value: 'Bedtime, the night before' },
+      {
+        label: 'Caution',
+        value: 'Documented OSA / CPAP — airway risk; requires explicit override',
+        tone: 'limit',
+      },
+    ],
   },
 ];
 

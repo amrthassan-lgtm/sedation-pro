@@ -57,6 +57,12 @@ describe('DEFAULT_FORMULARY', () => {
     expect(hydroxyzine?.attributes?.some((a) => a.tone === 'limit')).toBe(true);
   });
 
+  it('flags the bedtime diazepam OSA contraindication as a tone-limited attribute', () => {
+    const diazepam = DEFAULT_FORMULARY.bedtime.find((d) => d.id === 'diazepam');
+    expect(diazepam?.attributes?.length).toBeGreaterThan(0);
+    expect(diazepam?.attributes?.some((a) => a.tone === 'limit')).toBe(true);
+  });
+
   it('encodes the standard wait windows', () => {
     expect(DEFAULT_FORMULARY.timings.premedWaitMin).toBe(30);
     expect(DEFAULT_FORMULARY.timings.releaseWaitMin).toBe(20);

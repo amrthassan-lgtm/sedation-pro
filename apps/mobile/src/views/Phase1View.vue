@@ -7,6 +7,7 @@ import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { haptic } from '@/composables/useHaptics';
+import DrugAttributes from '@/components/DrugAttributes.vue';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
 import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
@@ -586,10 +587,7 @@ const diazepamModalCopy = computed(() => {
 
     <UiCard tint="ph1">
       <p class="heading">Bedtime Premedication <span class="muted body">· optional</span></p>
-      <p class="body muted">
-        Diazepam at bedtime the night before. Locked until OSA status is selected; a documented OSA
-        / CPAP patient requires explicit override.
-      </p>
+      <DrugAttributes :attributes="diazepamOptions?.attributes ?? []" />
       <UiBanner
         v-if="heavyAsa1DiazepamHint"
         tone="caution"
