@@ -92,9 +92,9 @@ const renderState = computed<ActionState>(() => {
   align-items: center;
   justify-content: center;
   gap: var(--sp-2);
-  padding: 15px 24px;
-  min-height: 56px;
-  font-size: var(--type-heading);
+  padding: 12px 22px;
+  min-height: 48px;
+  font-size: var(--type-body);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.2px;
   border-radius: var(--r-md);
