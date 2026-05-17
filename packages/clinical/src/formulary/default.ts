@@ -81,7 +81,6 @@ const ORAL_DRUGS: ReadonlyArray<OralDrug> = [
     color: '#8b5cf6',
     notes: 'Given 30-90 min pre-op',
     attributes: [
-      { label: 'Onset', value: '30–90 min pre-op' },
       { label: 'Use when', value: 'First-line anxiolytic' },
       {
         label: 'Caution',
@@ -133,14 +132,11 @@ const BEDTIME_DRUGS: ReadonlyArray<BedtimeDrug> = [
     route: 'PO',
     color: '#8b5cf6',
     notes: 'Bedtime night before · contraindicated with OSA',
-    attributes: [
-      { label: 'Timing', value: 'Bedtime, the night before' },
-      {
-        label: 'Caution',
-        value: 'Documented OSA / CPAP — airway risk; requires explicit override',
-        tone: 'limit',
-      },
-    ],
+    // Only the intrinsic timing fact ships statically. The OSA / CPAP
+    // airway-risk caution is patient-conditional — Phase1View injects it
+    // once the OSA status has actually been assessed as a risk, so a
+    // no-OSA patient never sees an irrelevant red warning.
+    attributes: [{ label: 'Timing', value: 'Bedtime, the night before' }],
   },
 ];
 

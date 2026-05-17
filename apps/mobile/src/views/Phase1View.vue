@@ -32,6 +32,7 @@ import {
   diazepamGate,
   lastExamCheck,
   nicotineProtocol,
+  type DrugAttribute,
 } from '@sedation-pro/clinical';
 
 const router = useRouter();
@@ -180,6 +181,26 @@ const nicotineRec = computed(() => {
 const diazepamModalOpen = ref(false);
 const pendingDiazepamDose = ref<string | null>(null);
 const diazepamOptions = DEFAULT_FORMULARY.bedtime[0];
+
+/**
+ * Diazepam card attributes. The intrinsic timing fact always shows; the
+ * OSA / CPAP airway-risk caution is appended only once OSA status has been
+ * assessed *as a risk* — a no-OSA patient never sees an irrelevant red
+ * warning, and before assessment the disabled buttons + modal own the gate.
+ */
+const diazepamAttributes = computed<ReadonlyArray<DrugAttribute>>(() => {
+  const base = diazepamOptions?.attributes ?? [];
+  const osaRisk = osaStatus.value === 'osa-diagnosed' || osaStatus.value === 'cpap-prescribed';
+  if (!osaRisk) return base;
+  return [
+    ...base,
+    {
+      label: 'Caution',
+      value: 'Documented OSA / CPAP — airway risk; requires explicit override',
+      tone: 'limit',
+    },
+  ];
+});
 
 /**
  * Larger ASA-I patients often clear benzodiazepines fast enough that the
@@ -587,7 +608,7 @@ const diazepamModalCopy = computed(() => {
 
     <UiCard tint="ph1">
       <p class="heading">Bedtime Premedication <span class="muted body">· optional</span></p>
-      <DrugAttributes :attributes="diazepamOptions?.attributes ?? []" />
+      <DrugAttributes :attributes="diazepamAttributes" />
       <UiBanner
         v-if="heavyAsa1DiazepamHint"
         tone="caution"

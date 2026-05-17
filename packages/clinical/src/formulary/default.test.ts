@@ -57,10 +57,12 @@ describe('DEFAULT_FORMULARY', () => {
     expect(hydroxyzine?.attributes?.some((a) => a.tone === 'limit')).toBe(true);
   });
 
-  it('flags the bedtime diazepam OSA contraindication as a tone-limited attribute', () => {
+  it('ships diazepam timing as an intrinsic attribute with no standing risk tone', () => {
+    // The OSA / CPAP caution is patient-conditional — injected by the view
+    // once risk is assessed, never shipped as a static formulary tone.
     const diazepam = DEFAULT_FORMULARY.bedtime.find((d) => d.id === 'diazepam');
     expect(diazepam?.attributes?.length).toBeGreaterThan(0);
-    expect(diazepam?.attributes?.some((a) => a.tone === 'limit')).toBe(true);
+    expect(diazepam?.attributes?.every((a) => a.tone === undefined)).toBe(true);
   });
 
   it('encodes the standard wait windows', () => {
