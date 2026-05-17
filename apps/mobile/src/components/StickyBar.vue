@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia';
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
+import { useIVStore } from '@/stores/iv';
 import { lastSavedAt } from '@/stores/persistence';
 import { useNow } from '@/composables/useNow';
 
@@ -13,11 +14,26 @@ const router = useRouter();
 const session = useSessionStore();
 const patient = usePatientStore();
 const undo = useUndoStore();
+const iv = useIVStore();
 const now = useNow(15_000);
 
 const { currentPhase, currentStep } = storeToRefs(session);
 const { canUndo, count: undoCount } = storeToRefs(undo);
 const { completeness, isPhase1Complete, safetyAlerts } = storeToRefs(patient);
+const { n2oOn, o2OnlyOn } = storeToRefs(iv);
+
+/**
+ * Live gas state, surfaced globally so "is nitrous flowing?" is answerable
+ * at a glance from any phase — not only while the Phase 3 gas card is on
+ * screen. N₂O on is the safety-relevant state (anaesthetic gas flowing →
+ * amber); O₂-only is the reassuring post-gas state (→ green). Null when no
+ * gas is engaged so the pill simply isn't there.
+ */
+const gasStatus = computed<{ label: string; tone: 'n2o' | 'o2' } | null>(() => {
+  if (n2oOn.value) return { label: 'N₂O on', tone: 'n2o' };
+  if (o2OnlyOn.value) return { label: 'O₂ 100%', tone: 'o2' };
+  return null;
+});
 
 /**
  * "Saved · HH:MM" pill text. Hides itself until the first autosave fires so
@@ -99,6 +115,10 @@ function emergency() {
         <span v-if="currentStep" class="sticky-bar-step">Step {{ currentStep }}</span>
       </div>
       <div class="sticky-bar-sub">
+        <span v-if="gasStatus" class="sticky-bar-gas" :class="`sticky-bar-gas--${gasStatus.tone}`">
+          <span class="sticky-bar-gas-dot" aria-hidden="true" />
+          {{ gasStatus.label }}
+        </span>
         <template v-if="showClearance">
           <span class="sticky-bar-clearance-label">Clearance</span>
           <span class="sticky-bar-clearance-bar" aria-hidden="true">
@@ -273,6 +293,36 @@ function emergency() {
 .sticky-bar-phase-sub {
   color: var(--color-text-tertiary);
   letter-spacing: 0.2px;
+}
+.sticky-bar-gas {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.sticky-bar-gas-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.sticky-bar-gas--n2o {
+  color: var(--color-warn);
+  background: var(--color-warn-soft);
+  border-color: rgba(250, 204, 21, 0.3);
+}
+.sticky-bar-gas--o2 {
+  color: var(--color-good);
+  background: var(--color-good-soft);
+  border-color: rgba(74, 222, 128, 0.3);
 }
 .sticky-bar-clearance-label {
   color: var(--color-text-tertiary);
