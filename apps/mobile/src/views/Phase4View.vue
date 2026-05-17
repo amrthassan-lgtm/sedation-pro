@@ -233,7 +233,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 11 — Recovery Vitals -->
 
     <UiCard tint="ph4">
-      <p class="heading">11 · Recovery Vitals</p>
+      <p class="heading"><span class="heading-step">11</span>Recovery Vitals</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
@@ -271,7 +271,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 12 — IV Out -->
 
     <UiCard tint="ph4">
-      <p class="heading">12 · IV Out</p>
+      <p class="heading"><span class="heading-step">12</span>IV Out</p>
 
       <UiBanner :tone="ivOutChipTone" icon="⏱" class="mt-2">
         <strong>{{ ivOutChipHeadline }}</strong>
@@ -307,7 +307,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 13 — Discharge Checklist & Companion -->
 
     <UiCard tint="ph4">
-      <p class="heading">13 · Discharge Checklist</p>
+      <p class="heading"><span class="heading-step">13</span>Discharge Checklist</p>
       <UiStack :gap="3" class="mt-2">
         <UiStack :gap="1">
           <UiCheckbox
@@ -403,7 +403,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 13b — Provider Sign-off / Procedure Notes -->
 
     <UiCard tint="ph4">
-      <p class="heading">13b · Provider Sign-off</p>
+      <p class="heading"><span class="heading-step">13b</span>Provider Sign-off</p>
 
       <UiStack :gap="3" class="mt-2">
         <UiField label="Sedation quality rating" hint="provider impression">
@@ -466,7 +466,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 14 — Release Patient (gated) -->
 
     <UiCard tint="ph4">
-      <p class="heading">14 · Release Patient</p>
+      <p class="heading"><span class="heading-step">14</span>Release Patient</p>
 
       <UiBanner v-if="dismissal.blocked" tone="limit" icon="🚧" class="mt-2">
         <strong

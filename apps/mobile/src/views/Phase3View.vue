@@ -424,7 +424,7 @@ function onNaloxone() {
     <!-- Card 1 — Pre-Op Vitals ------------------------------------------ -->
 
     <UiCard tint="ph3">
-      <p class="heading">1 · Pre-Op Vitals</p>
+      <p class="heading"><span class="heading-step">1</span>Pre-Op Vitals</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
@@ -462,7 +462,7 @@ function onNaloxone() {
     <!-- Card 2 — N₂O / O₂ ON ------------------------------------------- -->
 
     <UiCard tint="ph3">
-      <p class="heading">2 · N₂O / O₂ ON</p>
+      <p class="heading"><span class="heading-step">2</span>N₂O / O₂ ON</p>
       <UiButton
         tone="primary"
         block
@@ -479,7 +479,7 @@ function onNaloxone() {
     <!-- Card 3 — IV Start --------------------------------------------- -->
 
     <UiCard tint="ph3">
-      <p class="heading">3 · IV Start</p>
+      <p class="heading"><span class="heading-step">3</span>IV Start</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="Catheter" hint="gauge">
@@ -518,7 +518,7 @@ function onNaloxone() {
     <!-- Card 4 — N₂O OFF -> O₂ 100% ------------------------------------ -->
 
     <UiCard tint="ph3">
-      <p class="heading">4 · N₂O OFF → O₂ 100%</p>
+      <p class="heading"><span class="heading-step">4</span>N₂O OFF → O₂ 100%</p>
       <UiButton
         tone="primary"
         block
@@ -536,7 +536,7 @@ function onNaloxone() {
     <!-- Card 5 — Initial test dose. -->
 
     <UiCard tint="ph3">
-      <p class="heading">5 · Initial Test Dose</p>
+      <p class="heading"><span class="heading-step">5</span>Initial Test Dose</p>
       <div class="drug-grid mt-2">
         <UiDrugButton
           tone="versed"
@@ -557,7 +557,7 @@ function onNaloxone() {
 
     <div ref="dockSentinelRef">
       <UiCard tint="ph3">
-        <p class="heading">6 · Additional Doses</p>
+        <p class="heading"><span class="heading-step">6</span>Additional Doses</p>
         <UiStack :gap="3" class="mt-2">
           <UiRow :gap="3" wrap>
             <UiTimerPill
@@ -665,7 +665,7 @@ function onNaloxone() {
     <!-- Card 7 — Sedation Level Vitals ---------------------------------- -->
 
     <UiCard tint="ph3">
-      <p class="heading">7 · Sedation Level Achieved</p>
+      <p class="heading"><span class="heading-step">7</span>Sedation Level Achieved</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
@@ -703,7 +703,7 @@ function onNaloxone() {
     <!-- Card 8 — Procedure Start ----------------------------------------- -->
 
     <UiCard tint="ph3">
-      <p class="heading">8 · Procedure Start</p>
+      <p class="heading"><span class="heading-step">8</span>Procedure Start</p>
       <UiButton
         tone="primary"
         block
@@ -720,7 +720,7 @@ function onNaloxone() {
     <!-- Card 9 — Local Anesthesia + live Malamed combined-% -------------- -->
 
     <UiCard tint="ph3">
-      <p class="heading">9 · Local Anesthesia</p>
+      <p class="heading"><span class="heading-step">9</span>Local Anesthesia</p>
 
       <UiBanner v-if="!weightLb" tone="caution" icon="⚖️" class="mt-2">
         Patient weight is required for the per-drug max-dose math. Fill weight in Phase 1.
@@ -798,7 +798,7 @@ function onNaloxone() {
     <!-- Card 10 — Reversal Agents (emergency use only) ------------------ -->
 
     <UiCard tint="ph3">
-      <p class="heading">10 · Reversal Agents</p>
+      <p class="heading"><span class="heading-step">10</span>Reversal Agents</p>
       <UiBanner tone="limit" icon="🚨" class="mt-2">
         <strong>Emergency use only.</strong> Tapping either button reveals the full administration
         process below. Flumazenil also extends the IV-out / sign-note wait to 120 min per the DOCS

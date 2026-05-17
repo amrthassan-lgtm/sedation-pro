@@ -73,6 +73,19 @@ a {
   margin: 0;
 }
 
+/* Quiet numeric step index inside a numbered card .heading. Mono + tabular
+   so 1…14 (and "13b") align like an index; tertiary + medium so the title
+   stays dominant. Replaces the inline "N ·" prefix. */
+.heading-step {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-normal);
+  color: var(--color-text-tertiary);
+  margin-right: var(--sp-2);
+}
+
 .body {
   font-size: var(--type-body);
   line-height: var(--leading-normal);
