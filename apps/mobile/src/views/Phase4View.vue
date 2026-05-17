@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useRouter } from 'vue-router';
@@ -212,10 +212,37 @@ function isBlocking(code: DismissalBlockerCode): boolean {
 
 const dischargeState = computed<ActionState>(() => (releasedAt.value !== null ? 'logged' : 'idle'));
 
+// First blocking field in document order — a blocked release scrolls
+// there so the clinician is taken straight to what to fix, the same way
+// Phase 1's advance button scrolls to the first missing field.
+const GATE_ANCHORS: ReadonlyArray<{ code: DismissalBlockerCode; id: string }> = [
+  { code: 'bp-crisis', id: 'gate-bp' },
+  { code: 'low-spo2', id: 'gate-spo2' },
+  { code: 'not-ambulatory', id: 'gate-ambulatory' },
+  { code: 'not-oriented', id: 'gate-oriented' },
+  { code: 'no-pulse-ox-printout', id: 'gate-pulseox' },
+  { code: 'nausea-vomiting', id: 'gate-nausea' },
+  { code: 'excessive-bleeding', id: 'gate-bleeding' },
+  { code: 'no-companion', id: 'gate-companion' },
+  { code: 'no-provider-signature', id: 'gate-signature' },
+];
+
+async function scrollToFirstBlocker(): Promise<void> {
+  await nextTick();
+  const codes = activeBlockers.value;
+  const field = GATE_ANCHORS.find((a) => codes.has(a.code));
+  // A dismissal field first; if only the IV-out countdown is pending it
+  // isn't a field, so point at the IV-out card instead.
+  const id = field ? field.id : !releaseStatus.value.eligible ? 'gate-ivout' : null;
+  if (id === null) return;
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function releasePatient() {
   if (!canRelease.value) {
     releaseAttempted.value = true;
     haptic('error');
+    void scrollToFirstBlocker();
     return;
   }
   haptic('success');
@@ -258,10 +285,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           <UiField label="HR" hint="bpm">
             <UiNumberInput v-model="endHr" placeholder="HR" />
           </UiField>
-          <UiField label="BP" hint="mmHg" :invalid="isBlocking('bp-crisis')">
+          <UiField id="gate-bp" label="BP" hint="mmHg" :invalid="isBlocking('bp-crisis')">
             <UiBpInput v-model="endBp" />
           </UiField>
-          <UiField label="SpO₂" hint="%" :invalid="isBlocking('low-spo2')">
+          <UiField id="gate-spo2" label="SpO₂" hint="%" :invalid="isBlocking('low-spo2')">
             <UiNumberInput v-model="endSpo2" :min="0" :max="100" placeholder="%" />
           </UiField>
           <UiField label="EtCO₂" hint="mmHg">
@@ -289,7 +316,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
     <!-- Card 12 — IV Out -->
 
-    <UiCard tint="ph4">
+    <UiCard tint="ph4" id="gate-ivout">
       <p class="heading"><span class="heading-step">12</span>IV Out</p>
 
       <UiBanner :tone="ivOutChipTone" icon="⏱" class="mt-2">
@@ -330,6 +357,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <UiStack :gap="3" class="mt-2">
         <UiStack :gap="1">
           <UiCheckbox
+            id="gate-ambulatory"
             v-model="ambulatory"
             label="Patient ambulatory at discharge"
             hint="Steady walking, no support needed"
@@ -337,6 +365,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             :invalid="isBlocking('not-ambulatory')"
           />
           <UiCheckbox
+            id="gate-oriented"
             v-model="orientedX3"
             label="Oriented ×3"
             hint="Person · place · time"
@@ -344,6 +373,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             :invalid="isBlocking('not-oriented')"
           />
           <UiCheckbox
+            id="gate-pulseox"
             :model-value="!!discharge.pulseOxPrinted"
             label="Pulse-ox printout filed"
             hint="SpO₂ trend copied + stapled to the sedation visit document"
@@ -352,6 +382,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             @update:model-value="(v) => recovery.setDischarge('pulseOxPrinted', v)"
           />
           <UiCheckbox
+            id="gate-nausea"
             v-model="nauseaOrVomiting"
             tone="danger"
             label="Nausea or vomiting noted"
@@ -359,6 +390,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             :invalid="isBlocking('nausea-vomiting')"
           />
           <UiCheckbox
+            id="gate-bleeding"
             v-model="excessiveBleeding"
             tone="danger"
             label="Excessive bleeding observed"
@@ -368,7 +400,12 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
         <p class="caption mt-1">Companion</p>
         <UiRow :gap="3" wrap>
-          <UiField label="Companion name" required :invalid="isBlocking('no-companion')">
+          <UiField
+            id="gate-companion"
+            label="Companion name"
+            required
+            :invalid="isBlocking('no-companion')"
+          >
             <UiTextInput v-model="companionName" placeholder="Accompanying adult" />
           </UiField>
           <UiField label="Relation" required :invalid="isBlocking('no-companion')">
@@ -411,6 +448,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
         <p class="caption mt-1">Provider signature</p>
         <UiField
+          id="gate-signature"
           label="Sign to complete the record"
           required
           :invalid="isBlocking('no-provider-signature')"
