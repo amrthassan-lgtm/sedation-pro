@@ -89,7 +89,7 @@ const DRUG_REF_SEEDS: ReadonlyArray<DrugRefSeed> = [
   {
     id: 'flumazenil',
     syringeMl: 3,
-    tapeLabel: 'BLACK sharpie',
+    tapeLabel: 'Flumazenil',
     doses: [0.2],
     doseUnit: 'mg',
     note: 'Draw 2 mL per dose. Repeat q3 min. Max 1.0 mg total (5 doses).',
@@ -98,7 +98,7 @@ const DRUG_REF_SEEDS: ReadonlyArray<DrugRefSeed> = [
   {
     id: 'naloxone',
     syringeMl: 3,
-    tapeLabel: 'BLACK sharpie',
+    tapeLabel: 'Naloxone',
     doses: [0.4],
     doseUnit: 'mg',
     note: 'Single-dose vial = 1 mL. Repeat q2-3 min PRN. Give over 2-3 min.',

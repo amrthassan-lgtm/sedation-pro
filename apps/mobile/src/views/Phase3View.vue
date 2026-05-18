@@ -845,7 +845,7 @@ function onNaloxone() {
           caption="0.2 mg · 2.0 mL"
         />
         <ol class="reversal-steps">
-          <li>Draw 2 ml (0.2 mg) into a 3 cc syringe; label BLACK.</li>
+          <li>Draw 2 ml (0.2 mg) into a 3 cc syringe; label &ldquo;Flumazenil&rdquo;.</li>
           <li>Open IV all the way; administer slowly over 15-20 seconds.</li>
           <li><strong>Wait 3 minutes</strong>, then re-assess respiration and arousal.</li>
           <li>If improving → <strong>stop.</strong> Do not give more.</li>
@@ -868,7 +868,10 @@ function onNaloxone() {
           caption="0.4 mg · 1.0 mL"
         />
         <ol class="reversal-steps">
-          <li>Draw the single-dose vial (0.4 mg in 1 ml) into a 3 cc syringe; label BLACK.</li>
+          <li>
+            Draw the single-dose vial (0.4 mg in 1 ml) into a 3 cc syringe; label
+            &ldquo;Naloxone&rdquo;.
+          </li>
           <li>Administer slowly over 2-3 minutes via the existing IV line.</li>
           <li><strong>Wait 3 minutes</strong>, then re-assess respiration.</li>
           <li>If still inadequate → repeat 0.4 mg q3 min.</li>
