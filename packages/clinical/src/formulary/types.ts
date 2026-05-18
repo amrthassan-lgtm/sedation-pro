@@ -144,6 +144,12 @@ export interface PracticePicklists {
   readonly catheterGauges: ReadonlyArray<string>;
   /** Discharge-companion relationship choices. */
   readonly companionRelations: ReadonlyArray<string>;
+  /**
+   * Dental assistants on staff, as `Name, Title` (e.g. credential). Drives
+   * the Phase 1 case-staff multi-select — a practice swaps in its own roster
+   * at setup, nothing in the UI is hard-coded to one office.
+   */
+  readonly dentalAssistants: ReadonlyArray<string>;
 }
 
 /** Complete formulary surface — practices can ship their own. */

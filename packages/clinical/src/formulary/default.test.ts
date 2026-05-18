@@ -77,6 +77,15 @@ describe('DEFAULT_FORMULARY', () => {
     expect(p.ivFluids.length).toBeGreaterThan(0);
     expect(p.catheterGauges.length).toBeGreaterThan(0);
     expect(p.companionRelations.length).toBeGreaterThan(0);
+    expect(p.dentalAssistants.length).toBeGreaterThan(0);
+  });
+
+  it('ships the practice EFDA roster carried over from the legacy app', () => {
+    expect(DEFAULT_FORMULARY.picklists.dentalAssistants).toEqual([
+      'Raycha Dobbins, EFDA',
+      'Yvette Vega, EFDA',
+      'Arlet Torres, EFDA',
+    ]);
   });
 
   it('keeps every shipped store default a valid pick-list option', () => {

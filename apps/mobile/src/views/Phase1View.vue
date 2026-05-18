@@ -83,6 +83,32 @@ const {
   phase1ValidationAttempted,
 } = storeToRefs(patient);
 
+// Dental assistants: a per-practice roster from the formulary (swapped at
+// setup), not free text. `assistants` stays a single string so the clinical
+// note contract is untouched; we join with "; " because the names embed a
+// ", Title" and would otherwise be unsplittable. Selection mirrors formulary
+// order for a stable, readable record.
+const ASSISTANT_SEP = '; ';
+const assistantRoster = DEFAULT_FORMULARY.picklists.dentalAssistants;
+const selectedAssistants = computed<ReadonlySet<string>>(
+  () =>
+    new Set(
+      assistants.value
+        .split(ASSISTANT_SEP)
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+);
+function isAssistantOn(nameTitle: string): boolean {
+  return selectedAssistants.value.has(nameTitle);
+}
+function toggleAssistant(nameTitle: string): void {
+  const next = new Set(selectedAssistants.value);
+  if (next.has(nameTitle)) next.delete(nameTitle);
+  else next.add(nameTitle);
+  assistants.value = assistantRoster.filter((a) => next.has(a)).join(ASSISTANT_SEP);
+}
+
 /**
  * Set of clinical-engine ids for every still-missing required field. The keys
  * (`pt`, `mrn`, `npo_confirmed`, …) come from `PHASE1_REQUIRED_FIELDS` in
@@ -304,12 +330,16 @@ const diazepamModalCopy = computed(() => {
             <UiTextInput v-model="provider" placeholder="Dr. Hassan" />
           </UiField>
         </UiRow>
-        <UiField label="Dental assistant(s)">
-          <UiTextInput
-            v-model="assistants"
-            placeholder="e.g. Raycha Dobbins EFDA, Yvette Vega EFDA"
-            block
-          />
+        <UiField label="Dental assistant(s)" hint="select one or more">
+          <UiStack :gap="2">
+            <UiCheckbox
+              v-for="a in assistantRoster"
+              :key="a"
+              :model-value="isAssistantOn(a)"
+              :label="a"
+              @update:model-value="toggleAssistant(a)"
+            />
+          </UiStack>
         </UiField>
         <UiField label="Procedure">
           <UiTextInput v-model="procedure" placeholder="e.g. EXT #19, root canal #14" />
