@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useRouter } from 'vue-router';
@@ -114,6 +114,17 @@ const sedationRatingOptions = [
 const returnVisitOptions = [
   { value: 'prn', label: 'PRN — return as needed' },
   { value: 'scheduled', label: 'Scheduled — date below' },
+];
+
+const companionRelationOptions = [
+  { value: 'Spouse', label: 'Spouse' },
+  { value: 'Partner', label: 'Partner' },
+  { value: 'Parent', label: 'Parent' },
+  { value: 'Adult child', label: 'Adult child' },
+  { value: 'Sibling', label: 'Sibling' },
+  { value: 'Friend', label: 'Friend' },
+  { value: 'Caregiver', label: 'Caregiver' },
+  { value: 'Other', label: 'Other' },
 ];
 
 // The companion signs a separate paper consent (post-op instructions), so
@@ -295,7 +306,17 @@ function goToClinicalNote() {
 
 // -------- Drug summary stats (for clinical-note teaser) --------------------
 
-const { name: patientName, weightLb, diabetic } = storeToRefs(patient);
+const { name: patientName, weightLb, diabetic, careName } = storeToRefs(patient);
+
+// Pre-fill the discharge companion with the caregiver the clinician
+// already named in Phase 1 — usually the same person; still fully
+// editable. Seed only when blank so a deliberate companion (or a
+// cleared field) is never overwritten.
+onMounted(() => {
+  if (companionName.value.trim() === '' && careName.value.trim() !== '') {
+    companionName.value = careName.value;
+  }
+});
 const { versedTotalMg, fentanylTotalMcg } = storeToRefs(iv);
 
 const blockerCount = computed(() => dismissal.value.blockers.length);
@@ -446,7 +467,12 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             <UiTextInput v-model="companionName" placeholder="Accompanying adult" />
           </UiField>
           <UiField label="Relation" required :invalid="gate.isInvalid('gate-companion')">
-            <UiTextInput v-model="companionRelation" placeholder="e.g. spouse, parent" />
+            <UiSelect
+              v-model="companionRelation"
+              :options="companionRelationOptions"
+              placeholder="Select…"
+              block
+            />
           </UiField>
         </UiRow>
 
