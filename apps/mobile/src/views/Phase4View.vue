@@ -145,7 +145,7 @@ function stampRecoveryVitals() {
 
 const releaseStatus = computed(() =>
   releaseEligibility({
-    lastMedicationAt: lastIvMedAt.value,
+    lastSedativeAt: lastIvMedAt.value,
     lastFlumazenilAt: lastFlumazenilAt.value,
     now: now.value,
   }),
@@ -164,13 +164,13 @@ function stampIvOut() {
 }
 
 const ivOutChipTone = computed(() => {
-  if (releaseStatus.value.reason === 'no-medication-given') return 'info';
+  if (releaseStatus.value.reason === 'no-sedative-given') return 'info';
   if (releaseStatus.value.eligible) return 'safe';
   return 'caution';
 });
 
 const ivOutChipHeadline = computed(() => {
-  if (releaseStatus.value.reason === 'no-medication-given') {
+  if (releaseStatus.value.reason === 'no-sedative-given') {
     return 'No IV medication recorded yet — IV-out gate inactive.';
   }
   if (releaseStatus.value.eligible) {
@@ -321,7 +321,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
       <UiBanner :tone="ivOutChipTone" icon="⏱" class="mt-2">
         <strong>{{ ivOutChipHeadline }}</strong>
-        <template v-if="!releaseStatus.eligible && releaseStatus.reason !== 'no-medication-given'">
+        <template v-if="!releaseStatus.eligible && releaseStatus.reason !== 'no-sedative-given'">
           <UiPercentBar
             :percent="
               releaseStatus.waitMin > 0

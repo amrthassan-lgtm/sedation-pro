@@ -6,14 +6,17 @@ const T0 = 1_700_000_000_000;
 const MIN = 60_000;
 
 describe('releaseEligibility', () => {
-  it('blocks release when no medication has been given', () => {
+  it('is vacuously eligible when no sedative was given (assessment-only)', () => {
+    // No oral pre-med, no IV med → no residual sedation to wait out, so
+    // the observation gate must not block (it used to return false).
     const r = releaseEligibility({ now: T0 });
-    expect(r.eligible).toBe(false);
-    expect(r.reason).toBe('no-medication-given');
+    expect(r.eligible).toBe(true);
+    expect(r.remainingMin).toBe(0);
+    expect(r.reason).toBe('no-sedative-given');
   });
 
-  it('requires a 20-minute wait after last IV medication by default', () => {
-    const r = releaseEligibility({ lastMedicationAt: T0, now: T0 + 10 * MIN });
+  it('requires a 20-minute wait after the last sedative by default', () => {
+    const r = releaseEligibility({ lastSedativeAt: T0, now: T0 + 10 * MIN });
     expect(r.eligible).toBe(false);
     expect(r.waitMin).toBe(20);
     expect(r.reason).toBe('standard');
@@ -21,14 +24,14 @@ describe('releaseEligibility', () => {
   });
 
   it('becomes eligible exactly at the 20-minute boundary', () => {
-    const r = releaseEligibility({ lastMedicationAt: T0, now: T0 + 20 * MIN });
+    const r = releaseEligibility({ lastSedativeAt: T0, now: T0 + 20 * MIN });
     expect(r.eligible).toBe(true);
     expect(r.remainingMin).toBe(0);
   });
 
   it('extends the wait to 120 minutes when flumazenil was given', () => {
     const r = releaseEligibility({
-      lastMedicationAt: T0,
+      lastSedativeAt: T0,
       lastFlumazenilAt: T0 + 5 * MIN,
       now: T0 + 30 * MIN,
     });
@@ -40,12 +43,12 @@ describe('releaseEligibility', () => {
   it('anchors the flumazenil wait on the reversal timestamp, not the last med', () => {
     // Last med at T0, flumazenil at T0+5min — release eligible at T0+125min.
     const before = releaseEligibility({
-      lastMedicationAt: T0,
+      lastSedativeAt: T0,
       lastFlumazenilAt: T0 + 5 * MIN,
       now: T0 + 124 * MIN,
     });
     const after = releaseEligibility({
-      lastMedicationAt: T0,
+      lastSedativeAt: T0,
       lastFlumazenilAt: T0 + 5 * MIN,
       now: T0 + 125 * MIN,
     });
@@ -58,7 +61,7 @@ describe('releaseEligibility', () => {
     // 20-min wait ends at T0+135min — later than the flumazenil deadline
     // at T0+120min — so we stay blocked until T0+135min.
     const tBlocked = releaseEligibility({
-      lastMedicationAt: T0 + 115 * MIN,
+      lastSedativeAt: T0 + 115 * MIN,
       lastFlumazenilAt: T0,
       now: T0 + 130 * MIN,
     });
@@ -67,7 +70,7 @@ describe('releaseEligibility', () => {
     expect(tBlocked.remainingMin).toBe(5);
 
     const tClear = releaseEligibility({
-      lastMedicationAt: T0 + 115 * MIN,
+      lastSedativeAt: T0 + 115 * MIN,
       lastFlumazenilAt: T0,
       now: T0 + 135 * MIN,
     });
@@ -80,7 +83,7 @@ describe('releaseEligibility', () => {
     // clears at T0+120min — so we stay blocked for 5 more min on the
     // reversal anchor.
     const r = releaseEligibility({
-      lastMedicationAt: T0 + 90 * MIN,
+      lastSedativeAt: T0 + 90 * MIN,
       lastFlumazenilAt: T0,
       now: T0 + 115 * MIN,
     });
@@ -91,7 +94,7 @@ describe('releaseEligibility', () => {
 
   it('honours a custom flumazenil wait window', () => {
     const r = releaseEligibility(
-      { lastMedicationAt: T0, lastFlumazenilAt: T0, now: T0 + 60 * MIN },
+      { lastSedativeAt: T0, lastFlumazenilAt: T0, now: T0 + 60 * MIN },
       {
         versedMinWaitMin: 3,
         versedReadyMin: 5,

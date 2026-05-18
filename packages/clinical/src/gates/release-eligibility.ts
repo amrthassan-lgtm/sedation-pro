@@ -7,8 +7,12 @@ import type { Millis } from '../types';
  * `null` / `undefined` for events that haven't occurred yet.
  */
 export interface ReleaseInputs {
-  /** When the last IV medication was given. */
-  readonly lastMedicationAt?: Millis | null;
+  /**
+   * When the last in-office sedative was given — *any route*. Callers pass
+   * `max(last oral pre-med, last IV med)`. Bedtime pre-med is take-home
+   * (night before) and is deliberately NOT a sedative-given input.
+   */
+  readonly lastSedativeAt?: Millis | null;
   /** When flumazenil reversal was given, if at all. */
   readonly lastFlumazenilAt?: Millis | null;
   /** "Now" — epoch ms when the check is being made. */
@@ -23,35 +27,40 @@ export interface ReleaseEligibility {
   /** Total wait window applied to this case — 20 or 120 min by default. */
   readonly waitMin: number;
   /** Reason the wait window was extended, if applicable. */
-  readonly reason: 'standard' | 'flumazenil-reversal' | 'no-medication-given';
+  readonly reason: 'standard' | 'flumazenil-reversal' | 'no-sedative-given';
 }
 
 /**
- * Compute release eligibility against the standard 20-minute IV-out window,
- * extended to 120 minutes when flumazenil reversal was given (flumazenil's
- * half-life is shorter than the benzo it reverses, so the patient is watched
- * longer for re-sedation).
+ * Compute release eligibility against the standard 20-minute observation
+ * window, extended to 120 minutes when flumazenil reversal was given
+ * (flumazenil's half-life is shorter than the benzo it reverses, so the
+ * patient is watched longer for re-sedation).
  *
- * When *both* a flumazenil dose and a subsequent IV medication are present,
- * we honour whichever deadline is later — `lastFlumazenilAt + 120 min`
- * vs `lastMedicationAt + 20 min` — so a fresh IV dose after a reversal can
- * never short-circuit the post-reversal monitoring window.
+ * The window guards *residual sedation*. When no sedative was given at all
+ * (no oral pre-med, no IV med — a pre-sedation-assessment-only encounter)
+ * there is no residual to wait out, so the gate is vacuously satisfied
+ * (`eligible: true`, reason `no-sedative-given`) rather than blocking.
+ *
+ * When *both* a flumazenil dose and a subsequent sedative are present, we
+ * honour whichever deadline is later — `lastFlumazenilAt + 120 min` vs
+ * `lastSedativeAt + 20 min` — so a fresh dose after a reversal can never
+ * short-circuit the post-reversal monitoring window.
  */
 export function releaseEligibility(
   inputs: ReleaseInputs,
   timings: FormularyTimings = DEFAULT_FORMULARY.timings,
 ): ReleaseEligibility {
-  const { lastMedicationAt, lastFlumazenilAt, now } = inputs;
-  if (lastMedicationAt === null || lastMedicationAt === undefined) {
+  const { lastSedativeAt, lastFlumazenilAt, now } = inputs;
+  if (lastSedativeAt === null || lastSedativeAt === undefined) {
     return {
-      eligible: false,
+      eligible: true,
       remainingMin: 0,
       waitMin: timings.releaseWaitMin,
-      reason: 'no-medication-given',
+      reason: 'no-sedative-given',
     };
   }
   const flumazenilGiven = lastFlumazenilAt !== null && lastFlumazenilAt !== undefined;
-  const standardDeadline = lastMedicationAt + timings.releaseWaitMin * 60_000;
+  const standardDeadline = lastSedativeAt + timings.releaseWaitMin * 60_000;
   const flumazenilDeadline = flumazenilGiven
     ? lastFlumazenilAt + timings.flumazenilDischargeWaitMin * 60_000
     : standardDeadline;

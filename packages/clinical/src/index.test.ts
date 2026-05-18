@@ -5,6 +5,7 @@ import {
   DEFAULT_FORMULARY,
   classifyBmi,
   classifyBp,
+  classifyEncounter,
   classifySpo2,
   diazepamGate,
   ivSedationStatus,
@@ -30,6 +31,7 @@ describe('@sedation-pro/clinical', () => {
     expect(lastExamCutoffMonths(65)).toBe(6);
     expect(nicotineProtocol(15)?.hoursBefore).toBe(8);
     expect(phase1Completeness({ values: {} }).complete).toBe(false);
-    expect(releaseEligibility({ now: Date.now() }).eligible).toBe(false);
+    expect(releaseEligibility({ now: Date.now() }).eligible).toBe(true);
+    expect(classifyEncounter({ oralPremedGiven: false, ivMedGiven: false })).toBe('assessment');
   });
 });

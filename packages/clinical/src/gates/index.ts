@@ -1,4 +1,5 @@
 export { diazepamGate, type DiazepamGateDecision } from './diazepam-osa';
+export { classifyEncounter, type EncounterKind, type EncounterInputs } from './classify-encounter';
 export {
   dismissalSafety,
   type DismissalBlocker,
