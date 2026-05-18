@@ -54,20 +54,21 @@ export function unlockAudio(): void {
 }
 
 /**
- * Play the "ready to redose" alert: a four-pulse two-tone pattern
- * (880/660 Hz triangle, ~1.6 s total) at a volume that carries across an
- * operatory — loud and long enough not to be missed, but a deliberate
- * cadence rather than a continuous klaxon (this is a "you *may* redose"
- * cue, not a crisis alarm). No-op if the AudioContext isn't available, is
- * still suspended (no user gesture yet), or audio is muted.
+ * Play the "ready to redose" alert: a rising four-note motif
+ * (E5→A5→D6→G6 triangle, ~1.9 s total) at a volume that carries across
+ * an operatory. The *ascending* shape reads as "cleared / you may
+ * proceed" rather than an alarm, and it's long enough to recognise
+ * mid-task without being a crisis klaxon. No-op if the AudioContext
+ * isn't available, is still suspended (no user gesture yet), or audio is
+ * muted.
  *
  * Still fully synthesized — no bundled audio file, identical behaviour in
  * iOS WKWebView and Android WebView. To audition a different character,
  * change PULSES / PULSE_SEC / GAP_SEC / PEAK_GAIN below.
  */
-const PULSES: ReadonlyArray<number> = [880, 660, 880, 660];
-const PULSE_SEC = 0.28;
-const GAP_SEC = 0.12;
+const PULSES: ReadonlyArray<number> = [659, 880, 1175, 1568];
+const PULSE_SEC = 0.38;
+const GAP_SEC = 0.1;
 const PEAK_GAIN = 0.6;
 
 function tick(muted: boolean): void {
