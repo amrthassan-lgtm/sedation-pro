@@ -125,6 +125,21 @@ const {
   selectValue: gaugeValue,
 } = otherableSelect(ivCatheterGauge, DEFAULT_FORMULARY.picklists.catheterGauges);
 
+// Venipuncture attempts: a bounded count, not practice vocabulary, so a
+// plain 1–6 select (no formulary list, no "Other" — beyond ~4 sticks the
+// clinical answer is to stop, not to chart a 7th). UiSelect is string-only;
+// bridge the numeric store ref.
+const attemptsOptions: SelectOption[] = [1, 2, 3, 4, 5, 6].map((n) => ({
+  value: String(n),
+  label: String(n),
+}));
+const attemptsValue = computed<string>({
+  get: () => String(ivCatheterAttempts.value),
+  set: (v) => {
+    ivCatheterAttempts.value = Number(v);
+  },
+});
+
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },
   { value: 'Relaxed', label: 'Relaxed' },
@@ -543,7 +558,7 @@ function onNaloxone() {
             />
           </UiField>
           <UiField label="Attempts">
-            <UiNumberInput v-model="ivCatheterAttempts" />
+            <UiSelect v-model="attemptsValue" :options="attemptsOptions" block />
           </UiField>
           <UiField label="Site">
             <UiSelect v-model="siteValue" :options="siteOptions" block />
