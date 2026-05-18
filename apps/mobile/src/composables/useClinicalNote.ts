@@ -6,7 +6,12 @@ import { useIVStore } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
 import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
-import { localCombined, type LocalCombinedResult } from '@sedation-pro/clinical';
+import {
+  classifyEncounter,
+  localCombined,
+  type EncounterKind,
+  type LocalCombinedResult,
+} from '@sedation-pro/clinical';
 
 /** Single row in the chronological table of the printable note. */
 export interface ClinicalNoteRow {
@@ -39,12 +44,15 @@ export interface ClinicalNote {
     readonly signedAt: string | null;
   };
   /**
-   * Case disposition. A clinical note is only a *final* record once the
-   * patient has been released; before that it's preliminary. The view and
-   * the text export declare this so an incomplete note can't be mistaken
-   * for the finished medicolegal record.
+   * Case disposition. `kind` is derived from what was actually given — an
+   * `assessment` until a sedative is administered, then `sedation`. A note
+   * is only a *final* record once concluded (released / assessment closed);
+   * before that it's preliminary. The view and text export declare both so
+   * an incomplete or assessment-only note can't be mistaken for a finished
+   * full-sedation record.
    */
   readonly disposition: {
+    readonly kind: EncounterKind;
     readonly released: boolean;
     readonly at: string | null;
   };
@@ -472,6 +480,14 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       narrative.push(sentences.join(' '));
     }
 
+    // -------- Encounter kind (derived) ------------------------------------
+    // Bedtime pre-med is take-home, not an in-office sedative → excluded by
+    // not being one of these inputs.
+    const kind = classifyEncounter({
+      oralPremedGiven: events.value.some((e) => e.event === 'Preoperative Oral Dose'),
+      ivMedGiven: iv.doses.length > 0,
+    });
+
     // -------- Chronology table --------------------------------------------
 
     const chronology: ClinicalNoteRow[] = events.value.map((e: LogEvent) => ({
@@ -508,6 +524,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
         signedAt: providerSignedAt !== null ? fmtClock(providerSignedAt) : null,
       },
       disposition: {
+        kind,
         released: recovery.releasedAt !== null,
         at: recovery.releasedAt !== null ? fmtClock(recovery.releasedAt) : null,
       },

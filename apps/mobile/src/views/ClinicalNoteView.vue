@@ -8,6 +8,17 @@ import { UiButton } from '@sedation-pro/ui';
 
 const router = useRouter();
 const note = useClinicalNote();
+
+// Kind- and status-aware disposition line (mirrors the text export).
+const dispositionLabel = computed(() => {
+  const d = note.value.disposition;
+  if (d.kind === 'assessment') {
+    return d.released
+      ? 'Final — pre-sedation assessment; sedation deferred'
+      : 'Preliminary — pre-sedation assessment (sedation deferred)';
+  }
+  return d.released ? `Final — patient released ${d.at}` : 'Preliminary — patient not yet released';
+});
 // Single-source logo (same asset as the favicon / PWA icon). BASE_URL so it
 // resolves under the GitHub Pages subpath and a custom-domain root alike.
 const logoSrc = `${import.meta.env.BASE_URL}logo-source.svg`;
@@ -111,10 +122,9 @@ async function shareNote() {
           <dd>{{ note.header.procedure }}</dd>
           <dt>Disposition</dt>
           <dd>
-            <strong v-if="note.disposition.released" class="note-final">
-              Final — patient released {{ note.disposition.at }}
+            <strong :class="note.disposition.released ? 'note-final' : 'note-prelim'">
+              {{ dispositionLabel }}
             </strong>
-            <strong v-else class="note-prelim">Preliminary — patient not yet released</strong>
           </dd>
         </dl>
       </header>

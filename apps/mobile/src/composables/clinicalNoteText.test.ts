@@ -31,7 +31,7 @@ const BASE: ClinicalNote = {
     companion: 'John Doe (spouse)',
     signedAt: '11:02',
   },
-  disposition: { released: true, at: '11:05' },
+  disposition: { kind: 'sedation', released: true, at: '11:05' },
   generatedAt: '5/16/2026, 11:05:00 AM',
 };
 
@@ -75,10 +75,28 @@ describe('clinicalNoteToText', () => {
     expect(clinicalNoteToText(BASE)).toContain('Status:           FINAL — patient released 11:05');
     const prelim = clinicalNoteToText({
       ...BASE,
-      disposition: { released: false, at: null },
+      disposition: { kind: 'sedation', released: false, at: null },
     });
     expect(prelim).toContain('Status:           PRELIMINARY — patient not yet released');
     expect(prelim).not.toContain('FINAL');
+  });
+
+  it('labels an assessment-only note as a deferred pre-sedation assessment', () => {
+    const prelim = clinicalNoteToText({
+      ...BASE,
+      disposition: { kind: 'assessment', released: false, at: null },
+    });
+    expect(prelim).toContain(
+      'Status:           PRELIMINARY — pre-sedation assessment (sedation deferred)',
+    );
+    const closed = clinicalNoteToText({
+      ...BASE,
+      disposition: { kind: 'assessment', released: true, at: '10:30' },
+    });
+    expect(closed).toContain(
+      'Status:           FINAL — pre-sedation assessment; sedation deferred',
+    );
+    expect(closed).not.toContain('patient released');
   });
 
   it('is deterministic — same note in, same string out', () => {

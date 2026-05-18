@@ -2,6 +2,16 @@ import type { ClinicalNote } from './useClinicalNote';
 
 const WIDTH = 52;
 
+/** Human disposition line — kind- and status-aware. */
+function dispositionLine(d: ClinicalNote['disposition']): string {
+  if (d.kind === 'assessment') {
+    return d.released
+      ? 'FINAL — pre-sedation assessment; sedation deferred'
+      : 'PRELIMINARY — pre-sedation assessment (sedation deferred)';
+  }
+  return d.released ? `FINAL — patient released ${d.at}` : 'PRELIMINARY — patient not yet released';
+}
+
 /**
  * Serialize a ClinicalNote into plain text for the clipboard-copy button and
  * the Web Share text payload.
@@ -25,11 +35,7 @@ export function clinicalNoteToText(note: ClinicalNote): string {
   lines.push(`Provider:         ${note.header.provider}`);
   lines.push(`Dental assistant: ${note.header.assistants}`);
   lines.push(`Procedure:        ${note.header.procedure}`);
-  lines.push(
-    note.disposition.released
-      ? `Status:           FINAL — patient released ${note.disposition.at}`
-      : 'Status:           PRELIMINARY — patient not yet released',
-  );
+  lines.push(`Status:           ${dispositionLine(note.disposition)}`);
 
   if (note.narrative.length > 0) {
     lines.push('');
