@@ -40,10 +40,14 @@ export interface SafetyAlert {
 export const usePatientStore = defineStore('patient', () => {
   const name = ref('');
   const mrn = ref('');
-  const provider = ref('');
-  /** Comma-separated dental assistant name(s) on the case. Surfaces in the
-   * clinical note's header block and the procedure narrative. */
-  const assistants = ref('');
+  // Seeded to the practice's first roster entry (formulary
+  // picklists.providers[0] / dentalAssistants[0]); default.test.ts guards
+  // that these literals stay in sync with the shipped formulary.
+  const provider = ref('Dr. Amr Hassan');
+  /** "; "-separated dental assistant name(s) on the case (names embed a
+   * ", Title", so they can't be comma-joined). Surfaces in the clinical
+   * note's header block and the procedure narrative. */
+  const assistants = ref('Raycha Dobbins, EFDA');
   /** Procedure description — e.g. "EXT #19". Optional; surfaces in the note narrative. */
   const procedure = ref('');
   const careName = ref('');
@@ -242,8 +246,8 @@ export const usePatientStore = defineStore('patient', () => {
   function reset() {
     name.value = '';
     mrn.value = '';
-    provider.value = '';
-    assistants.value = '';
+    provider.value = 'Dr. Amr Hassan';
+    assistants.value = 'Raycha Dobbins, EFDA';
     procedure.value = '';
     careName.value = '';
     carePhone.value = '';

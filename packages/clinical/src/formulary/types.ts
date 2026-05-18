@@ -136,6 +136,12 @@ export interface FormularyTimings {
  * be able to state the truth, even when it isn't on the practice's list.
  */
 export interface PracticePicklists {
+  /**
+   * Sedation providers (dentists) on staff, as `Dr. Full Name`. Drives the
+   * Phase 1 provider select; a practice swaps in its own at setup. The first
+   * entry is the value the patient store seeds as the default provider.
+   */
+  readonly providers: ReadonlyArray<string>;
   /** IV catheter insertion sites. */
   readonly ivSites: ReadonlyArray<string>;
   /** IV fluids / maintenance solutions stocked. */

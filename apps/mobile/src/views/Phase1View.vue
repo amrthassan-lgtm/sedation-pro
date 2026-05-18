@@ -7,6 +7,7 @@ import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { useGateFeedback } from '@/composables/useGateFeedback';
+import { useOtherableSelect } from '@/composables/useOtherableSelect';
 import { haptic } from '@/composables/useHaptics';
 import DrugAttributes from '@/components/DrugAttributes.vue';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
@@ -82,6 +83,15 @@ const {
   isPhase1Complete,
   phase1ValidationAttempted,
 } = storeToRefs(patient);
+
+// Provider: a per-practice roster from the formulary, with an "Other…"
+// escape so a covering/locum dentist is still chartable (required +
+// medicolegal). Store seeds the first roster entry as the default.
+const {
+  options: providerOptions,
+  isOther: providerIsOther,
+  selectValue: providerValue,
+} = useOtherableSelect(provider, DEFAULT_FORMULARY.picklists.providers);
 
 // Dental assistants: a per-practice roster from the formulary (swapped at
 // setup), not free text. `assistants` stays a single string so the clinical
@@ -327,7 +337,13 @@ const diazepamModalCopy = computed(() => {
             <UiTextInput v-model="mrn" placeholder="MRN" inputmode="numeric" />
           </UiField>
           <UiField id="field-prov" label="Provider" required :invalid="isMissing('prov')">
-            <UiTextInput v-model="provider" placeholder="Dr. Hassan" />
+            <UiSelect v-model="providerValue" :options="providerOptions" block />
+            <UiTextInput
+              v-if="providerIsOther"
+              v-model="provider"
+              placeholder="Provider name"
+              class="mt-2"
+            />
           </UiField>
         </UiRow>
         <UiField label="Dental assistant(s)" hint="select one or more">

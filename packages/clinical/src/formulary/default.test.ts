@@ -73,6 +73,7 @@ describe('DEFAULT_FORMULARY', () => {
 
   it('ships non-empty charting pick-lists', () => {
     const p = DEFAULT_FORMULARY.picklists;
+    expect(p.providers.length).toBeGreaterThan(0);
     expect(p.ivSites.length).toBeGreaterThan(0);
     expect(p.ivFluids.length).toBeGreaterThan(0);
     expect(p.catheterGauges.length).toBeGreaterThan(0);
@@ -80,7 +81,8 @@ describe('DEFAULT_FORMULARY', () => {
     expect(p.dentalAssistants.length).toBeGreaterThan(0);
   });
 
-  it('ships the practice EFDA roster carried over from the legacy app', () => {
+  it('ships the practice provider + EFDA rosters', () => {
+    expect(DEFAULT_FORMULARY.picklists.providers).toEqual(['Dr. Amr Hassan', 'Dr. Camila Flach']);
     expect(DEFAULT_FORMULARY.picklists.dentalAssistants).toEqual([
       'Raycha Dobbins, EFDA',
       'Yvette Vega, EFDA',
@@ -93,6 +95,8 @@ describe('DEFAULT_FORMULARY', () => {
     // drops one, a fresh chart would open with the dropdown showing the
     // value as "Other" instead of the intended pre-selection.
     const p = DEFAULT_FORMULARY.picklists;
+    expect(p.providers[0]).toBe('Dr. Amr Hassan');
+    expect(p.dentalAssistants[0]).toBe('Raycha Dobbins, EFDA');
     expect(p.ivSites).toContain('Right dorsal hand');
     expect(p.ivFluids).toContain('D5W 100 mL');
     expect(p.catheterGauges).toContain('22');

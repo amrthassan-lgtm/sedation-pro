@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, type Ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useIVStore } from '@/stores/iv';
@@ -10,6 +10,7 @@ import { useEventLogStore } from '@/stores/event-log';
 import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
+import { useOtherableSelect } from '@/composables/useOtherableSelect';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
@@ -88,42 +89,24 @@ const {
   procedureStartedAt,
 } = storeToRefs(iv);
 
-// IV-start fields are practice pick-lists (formulary), not free text — but
-// the chart must always be able to state the truth, so each select carries
-// an "Other…" entry that reveals a free-text box. `isOther` is derived from
-// the model (not stored), so a rehydrated custom value, a case reset, or an
-// undo all settle correctly without extra state to keep in sync.
-const OTHER_OPTION = 'Other…';
-function otherableSelect(model: Ref<string>, choices: ReadonlyArray<string>) {
-  const options = computed<SelectOption[]>(() => [
-    ...choices.map((c) => ({ value: c, label: c })),
-    { value: OTHER_OPTION, label: OTHER_OPTION },
-  ]);
-  const isOther = computed(() => !choices.includes(model.value));
-  const selectValue = computed<string>({
-    get: () => (isOther.value ? OTHER_OPTION : model.value),
-    set: (v) => {
-      model.value = v === OTHER_OPTION ? '' : v;
-    },
-  });
-  return { options, isOther, selectValue };
-}
-
+// IV-start fields are practice pick-lists (formulary), not free text. The
+// shared composable keeps an "Other…" escape so an off-list value is still
+// chartable.
 const {
   options: siteOptions,
   isOther: siteIsOther,
   selectValue: siteValue,
-} = otherableSelect(ivSite, DEFAULT_FORMULARY.picklists.ivSites);
+} = useOtherableSelect(ivSite, DEFAULT_FORMULARY.picklists.ivSites);
 const {
   options: fluidOptions,
   isOther: fluidIsOther,
   selectValue: fluidValue,
-} = otherableSelect(ivFluid, DEFAULT_FORMULARY.picklists.ivFluids);
+} = useOtherableSelect(ivFluid, DEFAULT_FORMULARY.picklists.ivFluids);
 const {
   options: gaugeOptions,
   isOther: gaugeIsOther,
   selectValue: gaugeValue,
-} = otherableSelect(ivCatheterGauge, DEFAULT_FORMULARY.picklists.catheterGauges);
+} = useOtherableSelect(ivCatheterGauge, DEFAULT_FORMULARY.picklists.catheterGauges);
 
 // Venipuncture attempts: a bounded count, not practice vocabulary, so a
 // plain 1–6 select (no formulary list, no "Other" — beyond ~4 sticks the

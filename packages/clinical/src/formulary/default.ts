@@ -205,13 +205,15 @@ const DEFAULT_TIMINGS: FormularyTimings = {
 
 /**
  * First entry of each list is the shipped default the corresponding store
- * seeds — IV store: site `'Right dorsal hand'`, fluid `'D5W 100 mL'`, gauge
- * `'22'`. Keep them first (and present) so a fresh chart opens pre-selected
- * and `default.test.ts` guards against silently dropping a shipped default.
+ * seeds — provider `'Dr. Amr Hassan'`, IV site `'Right dorsal hand'`, fluid
+ * `'D5W 100 mL'`, gauge `'22'`, first assistant `'Raycha Dobbins, EFDA'`.
+ * Keep them first (and present) so a fresh chart opens pre-selected and
+ * `default.test.ts` guards against silently dropping a shipped default.
  * Companion relation has no pre-selection (recovery store seeds `''` behind a
  * "Select…" placeholder), so its order is just convenience.
  */
 const DEFAULT_PICKLISTS: PracticePicklists = {
+  providers: ['Dr. Amr Hassan', 'Dr. Camila Flach'],
   ivSites: [
     'Right dorsal hand',
     'Left dorsal hand',
