@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useIVStore } from '@/stores/iv';
@@ -7,7 +7,7 @@ import { useLocalAnestheticStore } from '@/stores/local';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
-import { useDockSentinel } from '@/composables/useDockVisibility';
+import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
@@ -42,11 +42,16 @@ const now = useNow(1000);
 
 const { weightLb, diabetic, safetyAlerts } = storeToRefs(patient);
 
-// Wire the card-6 ("Additional Doses") IntersectionObserver — drives the
-// SedationDock's auto-hide. While cards 5 (test dose) and 6 (additional
-// doses) are in view, the in-card dose buttons cover the workflow; the
-// dock only takes over once the user scrolls past them. See
-// `useDockVisibility` for behavior.
+// The SedationDock is a redose cockpit — arm it only once a sedative has
+// actually been given, not on scroll. (A beta tester scrolled ahead to
+// read the protocol with no drug given and the dock appeared, which was
+// confusing.) Watching the dose log instead of mount means returning to
+// Phase 3 mid-case with doses already on file re-arms it immediately.
+watch(() => iv.doses.length > 0, setDockDosed, { immediate: true });
+
+// Card-6 ("Additional Doses") IntersectionObserver — once armed, the dock
+// auto-hides while card 6's in-card titration buttons are in view and
+// reappears when the user scrolls away. See `useDockVisibility`.
 const dockSentinelRef = ref<HTMLElement | null>(null);
 useDockSentinel(dockSentinelRef);
 
