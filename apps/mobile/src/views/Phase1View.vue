@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
+import { useGateFeedback } from '@/composables/useGateFeedback';
 import { haptic } from '@/composables/useHaptics';
 import DrugAttributes from '@/components/DrugAttributes.vue';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
@@ -88,22 +89,24 @@ const {
  * `@sedation-pro/clinical`. Pairing this with `phase1ValidationAttempted`
  * lets each UiField paint its red ring on demand, not on first render.
  */
-const missingIds = computed(() => new Set(completeness.value.missing.map((m) => m.id)));
+// Shared gate-feedback idiom (same as Phase 4's discharge gate). The
+// engine orders `missing` by registry order, so that *is* document order.
+// Phase 1's attempted flag stays in the patient store (persisted, also
+// flipped by the router guard) — the composable just consumes it.
+const phase1Gate = useGateFeedback({
+  entries: computed(() =>
+    completeness.value.missing.map((m) => ({ anchorId: `field-${m.id}`, failing: true })),
+  ),
+  attempted: phase1ValidationAttempted,
+});
 
+// Thin wrappers keep the existing call sites (every UiField `:invalid`,
+// the watcher, advanceOrShowMissing) unchanged.
 function isMissing(id: string): boolean {
-  return phase1ValidationAttempted.value && missingIds.value.has(id);
+  return phase1Gate.isInvalid(`field-${id}`);
 }
-
-/**
- * Scroll the first still-missing required field to centre. `nextTick` so the
- * freshly-applied `is-invalid` ring has painted before we measure offsets.
- */
 async function scrollToFirstMissing(): Promise<void> {
-  await nextTick();
-  const first = completeness.value.missing[0];
-  if (!first) return;
-  const el = document.getElementById(`field-${first.id}`);
-  el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  await phase1Gate.scrollToFirst();
 }
 
 // A blocked navigation (router guard) flips the flag false→true; scroll then.

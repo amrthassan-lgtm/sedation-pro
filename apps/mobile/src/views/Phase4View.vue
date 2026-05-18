@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue';
+import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useRouter } from 'vue-router';
@@ -10,6 +10,7 @@ import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { useNow } from '@/composables/useNow';
+import { useGateFeedback, type GateEntry } from '@/composables/useGateFeedback';
 import { haptic } from '@/composables/useHaptics';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
@@ -31,12 +32,7 @@ import {
   UiTextarea,
   UiTextInput,
 } from '@sedation-pro/ui';
-import {
-  classifyEncounter,
-  dismissalSafety,
-  releaseEligibility,
-  type DismissalBlockerCode,
-} from '@sedation-pro/clinical';
+import { classifyEncounter, dismissalSafety, releaseEligibility } from '@sedation-pro/clinical';
 import type { ActionState, BpValue } from '@sedation-pro/ui';
 
 const router = useRouter();
@@ -231,11 +227,6 @@ const dismissal = computed(() =>
   }),
 );
 
-// Blocker rings stay hidden until the clinician actually attempts release
-// (mirrors Phase 1's validation-attempted gate) so Phase 4 doesn't open
-// "all red". After an attempt each active blocker lights its own field.
-const releaseAttempted = ref(false);
-
 // Two-axis conclude gate. A sedation encounter needs the full recovery
 // checklist + observation countdown clear. An assessment-only encounter
 // was never sedated — the recovery checks don't apply — so only the
@@ -249,57 +240,37 @@ const terminalLabel = computed(() =>
   isAssessment.value ? '✅ Complete Assessment' : '🏠 Release Patient',
 );
 
-const activeBlockers = computed(() => new Set(dismissal.value.blockers.map((b) => b.code)));
-function isBlocking(code: DismissalBlockerCode): boolean {
-  if (!releaseAttempted.value) return false;
-  // Assessment-only: the recovery checklist is N/A; only the signature
-  // field can be a blocker.
-  if (isAssessment.value) return code === 'no-provider-signature' && !providerSigned.value;
-  return activeBlockers.value.has(code);
-}
-
 const dischargeState = computed<ActionState>(() => (releasedAt.value !== null ? 'logged' : 'idle'));
 
-// First blocking field in document order — a blocked release scrolls
-// there so the clinician is taken straight to what to fix, the same way
-// Phase 1's advance button scrolls to the first missing field.
-const GATE_ANCHORS: ReadonlyArray<{ code: DismissalBlockerCode; id: string }> = [
-  { code: 'bp-crisis', id: 'gate-bp' },
-  { code: 'low-spo2', id: 'gate-spo2' },
-  { code: 'not-ambulatory', id: 'gate-ambulatory' },
-  { code: 'not-oriented', id: 'gate-oriented' },
-  { code: 'no-pulse-ox-printout', id: 'gate-pulseox' },
-  { code: 'nausea-vomiting', id: 'gate-nausea' },
-  { code: 'excessive-bleeding', id: 'gate-bleeding' },
-  { code: 'no-companion', id: 'gate-companion' },
-  { code: 'no-provider-signature', id: 'gate-signature' },
-];
-
-async function scrollToFirstBlocker(): Promise<void> {
-  await nextTick();
-  // Assessment-only: the signature is the only thing that can block.
+// Gate entries in document order — this list *is* the blocker→anchor
+// mapping, colocated so a new gate can't drift out of sync with the
+// scroll. Assessment-only was never sedated, so only the signature can
+// block; the recovery / IV-out gates simply aren't in the list.
+const gateBlockers = computed(() => new Set(dismissal.value.blockers.map((b) => b.code)));
+const gateEntries = computed<GateEntry[]>(() => {
   if (isAssessment.value) {
-    if (!providerSigned.value) {
-      document
-        .getElementById('gate-signature')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    return;
+    return [{ anchorId: 'gate-signature', failing: !providerSigned.value }];
   }
-  const codes = activeBlockers.value;
-  const field = GATE_ANCHORS.find((a) => codes.has(a.code));
-  // A dismissal field first; if only the IV-out countdown is pending it
-  // isn't a field, so point at the IV-out card instead.
-  const id = field ? field.id : !releaseStatus.value.eligible ? 'gate-ivout' : null;
-  if (id === null) return;
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
+  const b = gateBlockers.value;
+  return [
+    { anchorId: 'gate-bp', failing: b.has('bp-crisis') },
+    { anchorId: 'gate-spo2', failing: b.has('low-spo2') },
+    { anchorId: 'gate-ivout', failing: !releaseStatus.value.eligible },
+    { anchorId: 'gate-ambulatory', failing: b.has('not-ambulatory') },
+    { anchorId: 'gate-oriented', failing: b.has('not-oriented') },
+    { anchorId: 'gate-pulseox', failing: b.has('no-pulse-ox-printout') },
+    { anchorId: 'gate-nausea', failing: b.has('nausea-vomiting') },
+    { anchorId: 'gate-bleeding', failing: b.has('excessive-bleeding') },
+    { anchorId: 'gate-companion', failing: b.has('no-companion') },
+    { anchorId: 'gate-signature', failing: b.has('no-provider-signature') },
+  ];
+});
+const gate = useGateFeedback({ entries: gateEntries });
 
 function releasePatient() {
   if (!canConclude.value) {
-    releaseAttempted.value = true;
+    void gate.attempt();
     haptic('error');
-    void scrollToFirstBlocker();
     return;
   }
   haptic('success');
@@ -345,10 +316,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           <UiField label="HR" hint="bpm">
             <UiNumberInput v-model="endHr" placeholder="HR" />
           </UiField>
-          <UiField id="gate-bp" label="BP" hint="mmHg" :invalid="isBlocking('bp-crisis')">
+          <UiField id="gate-bp" label="BP" hint="mmHg" :invalid="gate.isInvalid('gate-bp')">
             <UiBpInput v-model="endBp" />
           </UiField>
-          <UiField id="gate-spo2" label="SpO₂" hint="%" :invalid="isBlocking('low-spo2')">
+          <UiField id="gate-spo2" label="SpO₂" hint="%" :invalid="gate.isInvalid('gate-spo2')">
             <UiNumberInput v-model="endSpo2" :min="0" :max="100" placeholder="%" />
           </UiField>
           <UiField label="EtCO₂" hint="mmHg">
@@ -422,7 +393,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             label="Patient ambulatory at discharge"
             hint="Steady walking, no support needed"
             required
-            :invalid="isBlocking('not-ambulatory')"
+            :invalid="gate.isInvalid('gate-ambulatory')"
           />
           <UiCheckbox
             id="gate-oriented"
@@ -430,7 +401,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             label="Oriented ×3"
             hint="Person · place · time"
             required
-            :invalid="isBlocking('not-oriented')"
+            :invalid="gate.isInvalid('gate-oriented')"
           />
           <UiCheckbox
             id="gate-pulseox"
@@ -438,7 +409,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             label="Pulse-ox printout filed"
             hint="SpO₂ trend copied + stapled to the sedation visit document"
             required
-            :invalid="isBlocking('no-pulse-ox-printout')"
+            :invalid="gate.isInvalid('gate-pulseox')"
             @update:model-value="(v) => recovery.setDischarge('pulseOxPrinted', v)"
           />
           <UiCheckbox
@@ -447,14 +418,14 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             tone="danger"
             label="Nausea or vomiting noted"
             hint="Defer discharge if checked"
-            :invalid="isBlocking('nausea-vomiting')"
+            :invalid="gate.isInvalid('gate-nausea')"
           />
           <UiCheckbox
             id="gate-bleeding"
             v-model="excessiveBleeding"
             tone="danger"
             label="Excessive bleeding observed"
-            :invalid="isBlocking('excessive-bleeding')"
+            :invalid="gate.isInvalid('gate-bleeding')"
           />
         </UiStack>
 
@@ -464,11 +435,11 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             id="gate-companion"
             label="Companion name"
             required
-            :invalid="isBlocking('no-companion')"
+            :invalid="gate.isInvalid('gate-companion')"
           >
             <UiTextInput v-model="companionName" placeholder="Accompanying adult" />
           </UiField>
-          <UiField label="Relation" required :invalid="isBlocking('no-companion')">
+          <UiField label="Relation" required :invalid="gate.isInvalid('gate-companion')">
             <UiTextInput v-model="companionRelation" placeholder="e.g. spouse, parent" />
           </UiField>
         </UiRow>
@@ -511,7 +482,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           id="gate-signature"
           label="Sign to complete the record"
           required
-          :invalid="isBlocking('no-provider-signature')"
+          :invalid="gate.isInvalid('gate-signature')"
         >
           <UiSignaturePad v-model="providerSignatureDataUrl" />
         </UiField>
