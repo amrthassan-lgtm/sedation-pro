@@ -238,7 +238,7 @@ const canConclude = computed(() =>
     : !dismissal.value.blocked && releaseStatus.value.eligible,
 );
 const terminalLabel = computed(() =>
-  isAssessment.value ? '✅ Complete Assessment' : '🏠 Release Patient',
+  isAssessment.value ? 'Complete Assessment' : 'Release Patient',
 );
 
 const dischargeState = computed<ActionState>(() => (releasedAt.value !== null ? 'logged' : 'idle'));
@@ -613,8 +613,8 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       >
         {{ terminalLabel }}
       </UiButton>
-      <UiButton tone="primary" block class="mt-2" @click="goToClinicalNote">
-        📄 Generate Clinical Note
+      <UiButton tone="neutral" block class="mt-2" @click="goToClinicalNote">
+        Generate Clinical Note
       </UiButton>
     </UiCard>
 
