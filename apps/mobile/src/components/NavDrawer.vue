@@ -10,6 +10,7 @@ import { useEventLogStore } from '@/stores/event-log';
 import { useCaseReset } from '@/composables/useCaseReset';
 import { useTheme, type ThemeChoice } from '@/composables/useTheme';
 import { UiModal } from '@sedation-pro/ui';
+import { DEFAULT_FORMULARY } from '@sedation-pro/clinical';
 import { snapDecision } from './navDrawerSwipe';
 
 interface NavPhaseEntry {
@@ -35,6 +36,7 @@ const { count: eventCount } = storeToRefs(eventLog);
 // no draw animation; the drawer is opened many times a day and a replaying
 // animation would be noise. BASE_URL for subpath/custom-domain safety.
 const logoSrc = `${import.meta.env.BASE_URL}logo-source.svg`;
+const practiceName = DEFAULT_FORMULARY.practiceName;
 
 const initial = computed(() => {
   const raw = patientName.value.trim();
@@ -311,7 +313,7 @@ function onTouchEnd() {
         <img class="nav-brand-logo" :src="logoSrc" alt="" width="28" height="28" />
         <div class="nav-brand-text">
           <span class="nav-brand-name">Sedation Pro</span>
-          <span class="nav-brand-sub">Apex Dental</span>
+          <span class="nav-brand-sub">{{ practiceName }}</span>
         </div>
       </div>
 

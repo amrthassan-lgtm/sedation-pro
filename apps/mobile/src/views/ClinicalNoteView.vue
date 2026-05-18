@@ -101,7 +101,7 @@ async function shareNote() {
         <div class="note-brand">
           <img class="brand-logo" :src="logoSrc" alt="" width="44" height="44" />
           <div class="note-brand-text">
-            <p class="brand-mark">APEX DENTAL</p>
+            <p class="brand-mark">{{ note.header.practice }}</p>
             <p class="brand-sub">Moderate IV Sedation · Clinical Record</p>
           </div>
         </div>
@@ -266,6 +266,7 @@ async function shareNote() {
   font-weight: 700;
   letter-spacing: 1.5px;
   color: #0369a1;
+  text-transform: uppercase;
 }
 .brand-sub {
   margin: 0;

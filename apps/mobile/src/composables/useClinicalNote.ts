@@ -8,6 +8,7 @@ import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 import {
   classifyEncounter,
+  DEFAULT_FORMULARY,
   localCombined,
   type EncounterKind,
   type LocalCombinedResult,
@@ -27,6 +28,7 @@ export interface ClinicalNoteSection {
 
 export interface ClinicalNote {
   readonly header: {
+    readonly practice: string;
     readonly patient: string;
     readonly mrn: string;
     readonly date: string;
@@ -60,7 +62,7 @@ export interface ClinicalNote {
   readonly generatedAt: string;
 }
 
-const PRACTICE_NAME = 'Apex Dental';
+const PRACTICE_NAME = DEFAULT_FORMULARY.practiceName;
 
 function fmtClock(ms: number | null | undefined): string {
   if (ms === null || ms === undefined) return '—';
@@ -500,6 +502,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
 
     return {
       header: {
+        practice: PRACTICE_NAME,
         patient: patient.name || '[Patient Name]',
         mrn: patient.mrn || '—',
         date: today,

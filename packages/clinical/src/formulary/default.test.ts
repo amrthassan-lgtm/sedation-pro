@@ -71,6 +71,10 @@ describe('DEFAULT_FORMULARY', () => {
     expect(DEFAULT_FORMULARY.timings.flumazenilDischargeWaitMin).toBe(120);
   });
 
+  it('ships the practice name used on the note letterhead + prose', () => {
+    expect(DEFAULT_FORMULARY.practiceName).toBe('Apex Dental');
+  });
+
   it('ships non-empty charting pick-lists', () => {
     const p = DEFAULT_FORMULARY.picklists;
     expect(p.providers.length).toBeGreaterThan(0);

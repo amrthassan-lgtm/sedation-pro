@@ -5,6 +5,7 @@ import type { ClinicalNote } from './useClinicalNote';
 
 const BASE: ClinicalNote = {
   header: {
+    practice: 'Apex Dental',
     patient: 'Jane Doe',
     mrn: '12345',
     date: 'May 16, 2026',
@@ -38,6 +39,7 @@ const BASE: ClinicalNote = {
 describe('clinicalNoteToText', () => {
   it('renders header, narrative, sections, chronology, and signatures', () => {
     const text = clinicalNoteToText(BASE);
+    expect(text).toContain('APEX DENTAL — Moderate IV Sedation · Clinical Record');
     expect(text).toContain('Patient:          Jane Doe');
     expect(text).toContain('MRN:              12345');
     expect(text).toContain('CLINICAL NARRATIVE');

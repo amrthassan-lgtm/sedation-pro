@@ -160,6 +160,14 @@ export interface PracticePicklists {
 
 /** Complete formulary surface — practices can ship their own. */
 export interface Formulary {
+  /**
+   * Practice (clinic) name as it should read in the medicolegal note prose
+   * and on the letterhead — e.g. `'Apex Dental'`. Stored canonical-case;
+   * surfaces that want all-caps apply it in CSS. The product name
+   * ("Sedation Pro") and the logo are app branding, not practice data, and
+   * are intentionally not configurable here.
+   */
+  readonly practiceName: string;
   readonly iv: ReadonlyArray<IVDrug>;
   readonly oral: ReadonlyArray<OralDrug>;
   readonly bedtime: ReadonlyArray<BedtimeDrug>;

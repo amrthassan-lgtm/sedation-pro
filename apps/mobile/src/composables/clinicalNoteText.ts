@@ -27,7 +27,7 @@ export function clinicalNoteToText(note: ClinicalNote): string {
   const major = '='.repeat(WIDTH);
   const minor = '-'.repeat(WIDTH);
 
-  lines.push('APEX DENTAL — Moderate IV Sedation · Clinical Record');
+  lines.push(`${note.header.practice.toUpperCase()} — Moderate IV Sedation · Clinical Record`);
   lines.push(major);
   lines.push(`Patient:          ${note.header.patient}`);
   lines.push(`MRN:              ${note.header.mrn}`);

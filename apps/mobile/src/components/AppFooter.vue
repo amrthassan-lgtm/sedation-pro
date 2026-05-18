@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CLINICAL_LIB_VERSION } from '@sedation-pro/clinical';
+import { CLINICAL_LIB_VERSION, DEFAULT_FORMULARY } from '@sedation-pro/clinical';
 import { UI_LIB_VERSION } from '@sedation-pro/ui';
 
 /**
@@ -11,6 +11,7 @@ import { UI_LIB_VERSION } from '@sedation-pro/ui';
  */
 const year = new Date().getFullYear();
 const logoSrc = `${import.meta.env.BASE_URL}logo-source.svg`;
+const practiceName = DEFAULT_FORMULARY.practiceName;
 </script>
 
 <template>
@@ -18,12 +19,12 @@ const logoSrc = `${import.meta.env.BASE_URL}logo-source.svg`;
     <div class="app-footer-brand">
       <img class="app-footer-logo" :src="logoSrc" alt="" width="32" height="32" />
       <div class="app-footer-name">
-        <p class="app-footer-mark">APEX DENTAL</p>
+        <p class="app-footer-mark">{{ practiceName }}</p>
         <p class="app-footer-tagline">Moderate IV Sedation Companion</p>
       </div>
     </div>
     <p class="app-footer-meta">
-      © {{ year }} Apex Dental · Sedation Pro · clinical&nbsp;v{{ CLINICAL_LIB_VERSION }} ·
+      © {{ year }} {{ practiceName }} · Sedation Pro · clinical&nbsp;v{{ CLINICAL_LIB_VERSION }} ·
       ui&nbsp;v{{ UI_LIB_VERSION }}
     </p>
   </footer>
@@ -61,6 +62,7 @@ const logoSrc = `${import.meta.env.BASE_URL}logo-source.svg`;
   font-weight: var(--weight-bold);
   letter-spacing: 2px;
   color: var(--color-text-primary);
+  text-transform: uppercase;
 }
 .app-footer-tagline {
   margin: 0;

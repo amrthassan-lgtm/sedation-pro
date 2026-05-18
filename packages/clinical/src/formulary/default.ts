@@ -253,6 +253,7 @@ const DEFAULT_PICKLISTS: PracticePicklists = {
  * and passing it to engine functions.
  */
 export const DEFAULT_FORMULARY: Formulary = {
+  practiceName: 'Apex Dental',
   iv: IV_DRUGS,
   oral: ORAL_DRUGS,
   bedtime: BEDTIME_DRUGS,
