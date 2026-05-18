@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, type Ref } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useIVStore } from '@/stores/iv';
@@ -31,7 +31,7 @@ import {
   UiTimerPill,
 } from '@sedation-pro/ui';
 import { DEFAULT_FORMULARY, premedWait } from '@sedation-pro/clinical';
-import type { ActionState, BpValue, TimerPillStatus } from '@sedation-pro/ui';
+import type { ActionState, BpValue, SelectOption, TimerPillStatus } from '@sedation-pro/ui';
 
 const iv = useIVStore();
 const local = useLocalAnestheticStore();
@@ -87,6 +87,43 @@ const {
   sedStampedAt,
   procedureStartedAt,
 } = storeToRefs(iv);
+
+// IV-start fields are practice pick-lists (formulary), not free text — but
+// the chart must always be able to state the truth, so each select carries
+// an "Other…" entry that reveals a free-text box. `isOther` is derived from
+// the model (not stored), so a rehydrated custom value, a case reset, or an
+// undo all settle correctly without extra state to keep in sync.
+const OTHER_OPTION = 'Other…';
+function otherableSelect(model: Ref<string>, choices: ReadonlyArray<string>) {
+  const options = computed<SelectOption[]>(() => [
+    ...choices.map((c) => ({ value: c, label: c })),
+    { value: OTHER_OPTION, label: OTHER_OPTION },
+  ]);
+  const isOther = computed(() => !choices.includes(model.value));
+  const selectValue = computed<string>({
+    get: () => (isOther.value ? OTHER_OPTION : model.value),
+    set: (v) => {
+      model.value = v === OTHER_OPTION ? '' : v;
+    },
+  });
+  return { options, isOther, selectValue };
+}
+
+const {
+  options: siteOptions,
+  isOther: siteIsOther,
+  selectValue: siteValue,
+} = otherableSelect(ivSite, DEFAULT_FORMULARY.picklists.ivSites);
+const {
+  options: fluidOptions,
+  isOther: fluidIsOther,
+  selectValue: fluidValue,
+} = otherableSelect(ivFluid, DEFAULT_FORMULARY.picklists.ivFluids);
+const {
+  options: gaugeOptions,
+  isOther: gaugeIsOther,
+  selectValue: gaugeValue,
+} = otherableSelect(ivCatheterGauge, DEFAULT_FORMULARY.picklists.catheterGauges);
 
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },
@@ -496,16 +533,35 @@ function onNaloxone() {
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="Catheter" hint="gauge">
-            <UiTextInput v-model="ivCatheterGauge" inputmode="numeric" />
+            <UiSelect v-model="gaugeValue" :options="gaugeOptions" block />
+            <UiTextInput
+              v-if="gaugeIsOther"
+              v-model="ivCatheterGauge"
+              inputmode="numeric"
+              placeholder="Gauge"
+              class="mt-2"
+            />
           </UiField>
           <UiField label="Attempts">
             <UiNumberInput v-model="ivCatheterAttempts" />
           </UiField>
           <UiField label="Site">
-            <UiTextInput v-model="ivSite" />
+            <UiSelect v-model="siteValue" :options="siteOptions" block />
+            <UiTextInput
+              v-if="siteIsOther"
+              v-model="ivSite"
+              placeholder="Specify site"
+              class="mt-2"
+            />
           </UiField>
           <UiField label="Fluid" hint="ml">
-            <UiTextInput v-model="ivFluid" />
+            <UiSelect v-model="fluidValue" :options="fluidOptions" block />
+            <UiTextInput
+              v-if="fluidIsOther"
+              v-model="ivFluid"
+              placeholder="Specify fluid"
+              class="mt-2"
+            />
           </UiField>
         </UiRow>
         <UiBanner v-if="premedChip" :tone="premedChip.eligible ? 'safe' : 'caution'" icon="⏱">

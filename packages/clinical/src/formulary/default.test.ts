@@ -70,4 +70,24 @@ describe('DEFAULT_FORMULARY', () => {
     expect(DEFAULT_FORMULARY.timings.releaseWaitMin).toBe(20);
     expect(DEFAULT_FORMULARY.timings.flumazenilDischargeWaitMin).toBe(120);
   });
+
+  it('ships non-empty charting pick-lists', () => {
+    const p = DEFAULT_FORMULARY.picklists;
+    expect(p.ivSites.length).toBeGreaterThan(0);
+    expect(p.ivFluids.length).toBeGreaterThan(0);
+    expect(p.catheterGauges.length).toBeGreaterThan(0);
+    expect(p.companionRelations.length).toBeGreaterThan(0);
+  });
+
+  it('keeps every shipped store default a valid pick-list option', () => {
+    // Regression guard: the IV store seeds these exact strings. If a list
+    // drops one, a fresh chart would open with the dropdown showing the
+    // value as "Other" instead of the intended pre-selection.
+    const p = DEFAULT_FORMULARY.picklists;
+    expect(p.ivSites).toContain('Right dorsal hand');
+    expect(p.ivFluids).toContain('D5W 100 mL');
+    expect(p.catheterGauges).toContain('22');
+    expect(p.companionRelations).toContain('Spouse');
+    expect(p.companionRelations).toContain('Other');
+  });
 });

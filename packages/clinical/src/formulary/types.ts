@@ -125,6 +125,27 @@ export interface FormularyTimings {
   readonly flumazenilDischargeWaitMin: number;
 }
 
+/**
+ * Per-practice pick-list vocabularies for the structured charting fields.
+ * These are workflow conveniences, not clinical algorithm — a practice that
+ * stocks only Lactated Ringer's, or labels IV sites its own way, ships its
+ * own lists without touching UI code. Each list's first entry is the
+ * shipped default the relevant store seeds (so a fresh chart opens with a
+ * sensible pre-selection). The UI always appends an "Other…" escape so an
+ * off-list value can still be charted — the medicolegal record must always
+ * be able to state the truth, even when it isn't on the practice's list.
+ */
+export interface PracticePicklists {
+  /** IV catheter insertion sites. */
+  readonly ivSites: ReadonlyArray<string>;
+  /** IV fluids / maintenance solutions stocked. */
+  readonly ivFluids: ReadonlyArray<string>;
+  /** IV catheter gauges stocked. */
+  readonly catheterGauges: ReadonlyArray<string>;
+  /** Discharge-companion relationship choices. */
+  readonly companionRelations: ReadonlyArray<string>;
+}
+
 /** Complete formulary surface — practices can ship their own. */
 export interface Formulary {
   readonly iv: ReadonlyArray<IVDrug>;
@@ -133,4 +154,5 @@ export interface Formulary {
   readonly locals: ReadonlyArray<LocalAnesthetic>;
   readonly ceilings: IVCeilings;
   readonly timings: FormularyTimings;
+  readonly picklists: PracticePicklists;
 }

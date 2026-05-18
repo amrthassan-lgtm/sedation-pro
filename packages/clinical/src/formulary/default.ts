@@ -6,6 +6,7 @@ import type {
   IVDrug,
   LocalAnesthetic,
   OralDrug,
+  PracticePicklists,
 } from './types';
 
 const IV_DRUGS: ReadonlyArray<IVDrug> = [
@@ -203,6 +204,45 @@ const DEFAULT_TIMINGS: FormularyTimings = {
 };
 
 /**
+ * First entry of each list is the shipped default the corresponding store
+ * seeds — IV store: site `'Right dorsal hand'`, fluid `'D5W 100 mL'`, gauge
+ * `'22'`. Keep them first (and present) so a fresh chart opens pre-selected
+ * and `default.test.ts` guards against silently dropping a shipped default.
+ * Companion relation has no pre-selection (recovery store seeds `''` behind a
+ * "Select…" placeholder), so its order is just convenience.
+ */
+const DEFAULT_PICKLISTS: PracticePicklists = {
+  ivSites: [
+    'Right dorsal hand',
+    'Left dorsal hand',
+    'Right forearm',
+    'Left forearm',
+    'Right antecubital',
+    'Left antecubital',
+    'Right wrist',
+    'Left wrist',
+  ],
+  ivFluids: [
+    'D5W 100 mL',
+    'D5W 250 mL',
+    '0.9% NaCl 250 mL',
+    "Lactated Ringer's 250 mL",
+    'Saline lock (no infusion)',
+  ],
+  catheterGauges: ['18', '20', '22', '24'],
+  companionRelations: [
+    'Spouse',
+    'Partner',
+    'Parent',
+    'Adult child',
+    'Sibling',
+    'Friend',
+    'Caregiver',
+    'Other',
+  ],
+};
+
+/**
  * Apex Dental default formulary. Bundled so the engine works out-of-the-box,
  * but practices can override any subset by composing their own `Formulary`
  * and passing it to engine functions.
@@ -214,4 +254,5 @@ export const DEFAULT_FORMULARY: Formulary = {
   locals: LOCAL_ANESTHETICS,
   ceilings: DEFAULT_CEILINGS,
   timings: DEFAULT_TIMINGS,
+  picklists: DEFAULT_PICKLISTS,
 };

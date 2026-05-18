@@ -32,7 +32,12 @@ import {
   UiTextarea,
   UiTextInput,
 } from '@sedation-pro/ui';
-import { classifyEncounter, dismissalSafety, releaseEligibility } from '@sedation-pro/clinical';
+import {
+  classifyEncounter,
+  DEFAULT_FORMULARY,
+  dismissalSafety,
+  releaseEligibility,
+} from '@sedation-pro/clinical';
 import type { ActionState, BpValue } from '@sedation-pro/ui';
 
 const router = useRouter();
@@ -116,16 +121,10 @@ const returnVisitOptions = [
   { value: 'scheduled', label: 'Scheduled — date below' },
 ];
 
-const companionRelationOptions = [
-  { value: 'Spouse', label: 'Spouse' },
-  { value: 'Partner', label: 'Partner' },
-  { value: 'Parent', label: 'Parent' },
-  { value: 'Adult child', label: 'Adult child' },
-  { value: 'Sibling', label: 'Sibling' },
-  { value: 'Friend', label: 'Friend' },
-  { value: 'Caregiver', label: 'Caregiver' },
-  { value: 'Other', label: 'Other' },
-];
+const companionRelationOptions = DEFAULT_FORMULARY.picklists.companionRelations.map((r) => ({
+  value: r,
+  label: r,
+}));
 
 // Quick-add chips for the complication fields. Small, deliberately the
 // same set already shown as placeholder examples (extend the arrays to
