@@ -5,13 +5,12 @@ import { storeToRefs } from 'pinia';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { haptic } from '@/composables/useHaptics';
-import DrugAttributes from '@/components/DrugAttributes.vue';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
 import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
 import { UiBanner, UiCard, UiDrugButton, UiRow, UiStatCard } from '@sedation-pro/ui';
-import { DEFAULT_FORMULARY, lorazepamMax, triazolamMax } from '@sedation-pro/clinical';
+import { lorazepamMax, triazolamMax } from '@sedation-pro/clinical';
 
 const patient = usePatientStore();
 const undo = useUndoStore();
@@ -20,10 +19,6 @@ const { weightLb } = storeToRefs(patient);
 
 const triazolam = computed(() => (weightLb.value ? triazolamMax(weightLb.value) : null));
 const lorazepam = computed(() => (weightLb.value ? lorazepamMax(weightLb.value) : null));
-
-function oralAttrs(id: string) {
-  return DEFAULT_FORMULARY.oral.find((d) => d.id === id)?.attributes ?? [];
-}
 
 /**
  * Weight-based ceiling for the drug, captured at the moment of
@@ -93,7 +88,6 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
 
     <UiCard tint="ph2">
       <p class="heading">Triazolam · Halcion</p>
-      <DrugAttributes :attributes="oralAttrs('triazolam')" />
       <UiRow :gap="2" wrap class="mt-2">
         <UiDrugButton
           tone="oral"
@@ -121,7 +115,6 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
 
     <UiCard tint="ph2">
       <p class="heading">Lorazepam · Ativan</p>
-      <DrugAttributes :attributes="oralAttrs('lorazepam')" />
       <UiRow :gap="2" wrap class="mt-2">
         <UiDrugButton
           tone="oral"
@@ -149,7 +142,6 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
 
     <UiCard tint="ph2">
       <p class="heading">Hydroxyzine · Vistaril</p>
-      <DrugAttributes :attributes="oralAttrs('hydroxyzine')" />
       <UiRow :gap="2" wrap class="mt-2">
         <UiDrugButton
           tone="oral"
