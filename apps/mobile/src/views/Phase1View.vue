@@ -574,7 +574,7 @@ const diazepamModalCopy = computed(() => {
           required
           :invalid="isMissing('emergency_drugs_available')"
           label="Emergency drugs accessible"
-          hint="Flumazenil · Naloxone · Epinephrine · Atropine · Albuterol · Diphenhydramine · Hydrocortisone · Nitroglycerin · Aspirin · Dextrose/Glucagon · Aromatic ammonia · Lipid 20% — all in reach"
+          hint="Flumazenil · Naloxone · Epinephrine · Atropine · Albuterol · Nitroglycerin · Aspirin · Dextrose — all in reach"
         />
         <UiCheckbox
           id="field-monitoring_equipment_checked"
