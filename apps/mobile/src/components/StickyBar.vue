@@ -550,10 +550,10 @@ function emergency() {
     gap: 4px;
     padding-right: 8px;
   }
-}
-@media (max-width: 420px) {
   .sticky-bar-saved {
-    /* Free up room for the Undo + Emergency buttons on narrow phones. */
+    /* Cosmetic reassurance — drop it on every phone-portrait width
+       (incl. the ~430px Pro Max that cleared the old 420px cutoff and
+       let it crowd the phase title) so the title always has room. */
     display: none;
   }
 }
