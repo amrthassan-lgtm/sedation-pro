@@ -21,36 +21,13 @@ const SEDATION_PHASES: ReadonlyArray<Phase> = ['phase1', 'phase2', 'phase3', 'ph
  */
 export const useSessionStore = defineStore('session', () => {
   const currentPhase = ref<Phase>('phase1');
-  const currentStep = ref<number | null>(null);
-  const lastStepPerPhase = ref<Record<Phase, number | null>>({
-    quickref: null,
-    phase1: null,
-    phase2: null,
-    phase3: null,
-    phase4: null,
-  });
-
   const drawerOpen = ref(false);
 
   const isQuickRef = computed(() => currentPhase.value === 'quickref');
   const isSedationPhase = computed(() => SEDATION_PHASES.includes(currentPhase.value));
 
   function setPhase(phase: Phase) {
-    if (currentPhase.value !== phase) {
-      // Remember where we were before leaving the previous phase.
-      if (currentStep.value !== null) {
-        lastStepPerPhase.value[currentPhase.value] = currentStep.value;
-      }
-      currentPhase.value = phase;
-      currentStep.value = lastStepPerPhase.value[phase] ?? null;
-    }
-  }
-
-  function setStep(step: number | null) {
-    currentStep.value = step;
-    if (step !== null) {
-      lastStepPerPhase.value[currentPhase.value] = step;
-    }
+    currentPhase.value = phase;
   }
 
   function openDrawer() {
@@ -65,24 +42,17 @@ export const useSessionStore = defineStore('session', () => {
     drawerOpen.value = !drawerOpen.value;
   }
 
-  // Persist phase + step memory so a reload mid-procedure lands the user
-  // back where they were. Drawer state is deliberately *not* persisted —
-  // it should always start closed on a fresh load.
-  persistRefs('sedation-pro:session:v1', {
-    currentPhase,
-    currentStep,
-    lastStepPerPhase,
-  });
+  // Persist the current phase so a reload lands the user back where they
+  // were. Drawer state is deliberately *not* persisted — it should always
+  // start closed on a fresh load.
+  persistRefs('sedation-pro:session:v1', { currentPhase });
 
   return {
     currentPhase,
-    currentStep,
-    lastStepPerPhase,
     drawerOpen,
     isQuickRef,
     isSedationPhase,
     setPhase,
-    setStep,
     openDrawer,
     closeDrawer,
     toggleDrawer,

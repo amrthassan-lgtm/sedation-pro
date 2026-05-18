@@ -17,7 +17,7 @@ const undo = useUndoStore();
 const iv = useIVStore();
 const now = useNow(15_000);
 
-const { currentPhase, currentStep } = storeToRefs(session);
+const { currentPhase } = storeToRefs(session);
 const { canUndo, count: undoCount } = storeToRefs(undo);
 const { completeness, isPhase1Complete, safetyAlerts } = storeToRefs(patient);
 const { n2oOn, o2OnlyOn } = storeToRefs(iv);
@@ -112,7 +112,6 @@ function emergency() {
           aria-hidden="true"
         />
         <span class="sticky-bar-phase-label">{{ meta.label }}</span>
-        <span v-if="currentStep" class="sticky-bar-step">Step {{ currentStep }}</span>
       </div>
       <div class="sticky-bar-sub">
         <span v-if="gasStatus" class="sticky-bar-gas" :class="`sticky-bar-gas--${gasStatus.tone}`">
@@ -277,11 +276,6 @@ function emergency() {
   font-size: var(--type-footnote);
   font-weight: var(--weight-bold);
   letter-spacing: 0.2px;
-}
-.sticky-bar-step {
-  font-size: var(--type-footnote);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-tertiary);
 }
 .sticky-bar-sub {
   display: flex;

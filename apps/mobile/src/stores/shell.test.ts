@@ -18,23 +18,11 @@ describe('shell stores — single sources of truth', () => {
     setActivePinia(createPinia());
   });
 
-  it('session.setPhase remembers the last step per phase', () => {
+  it('session.setPhase updates the current phase', () => {
     const session = useSessionStore();
     expect(session.currentPhase).toBe('phase1');
-
-    session.setStep(3);
-    expect(session.currentStep).toBe(3);
-
     session.setPhase('phase3');
     expect(session.currentPhase).toBe('phase3');
-    expect(session.currentStep).toBeNull();
-
-    session.setStep(6);
-    session.setPhase('phase1');
-    expect(session.currentStep).toBe(3);
-
-    session.setPhase('phase3');
-    expect(session.currentStep).toBe(6);
   });
 
   it('undo.stamp appends an event and undo restores the previous state', () => {
