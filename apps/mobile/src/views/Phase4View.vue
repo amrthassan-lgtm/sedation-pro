@@ -554,10 +554,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           />
         </UiField>
 
-        <UiField
-          label="Sedation complications"
-          hint="apnea episodes · paradoxical reaction · oversedation · etc."
-        >
+        <UiField label="Sedation complications">
           <div class="cx-chips">
             <button
               v-for="c in sedationComplicationOptions"
@@ -577,10 +574,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           />
         </UiField>
 
-        <UiField
-          label="Venipuncture complications"
-          hint="missed stick · infiltration · hematoma · vasospasm"
-        >
+        <UiField label="Venipuncture complications">
           <div class="cx-chips">
             <button
               v-for="c in venipunctureComplicationOptions"
