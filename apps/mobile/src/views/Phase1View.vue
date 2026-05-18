@@ -304,14 +304,14 @@ const diazepamModalCopy = computed(() => {
             <UiTextInput v-model="provider" placeholder="Dr. Hassan" />
           </UiField>
         </UiRow>
-        <UiField label="Dental assistant(s)" hint="comma-separated">
+        <UiField label="Dental assistant(s)">
           <UiTextInput
             v-model="assistants"
             placeholder="e.g. Raycha Dobbins EFDA, Yvette Vega EFDA"
             block
           />
         </UiField>
-        <UiField label="Procedure" hint="optional">
+        <UiField label="Procedure">
           <UiTextInput v-model="procedure" placeholder="e.g. EXT #19, root canal #14" />
         </UiField>
       </UiStack>
@@ -426,7 +426,7 @@ const diazepamModalCopy = computed(() => {
         >
           <UiSelect v-model="osaStatus" :options="osaOptions" placeholder="Select…" block />
         </UiField>
-        <UiCheckbox v-model="diabetic" label="Diabetic" hint="Reveals baseline glucose field" />
+        <UiCheckbox v-model="diabetic" label="Diabetic" />
         <UiField
           v-if="diabetic"
           id="field-baseline_glucose"
@@ -438,7 +438,7 @@ const diazepamModalCopy = computed(() => {
           <UiNumberInput v-model="baselineGlucose" placeholder="mg/dL" />
         </UiField>
 
-        <UiField label="Current medications" hint="comma-separated; include dose + frequency">
+        <UiField label="Current medications">
           <UiTextarea
             v-model="medicationsList"
             placeholder="e.g. Lisinopril 10 mg qd, Metformin 500 mg bid"
@@ -446,7 +446,7 @@ const diazepamModalCopy = computed(() => {
             block
           />
         </UiField>
-        <UiField label="Allergies" hint="drug + reaction">
+        <UiField label="Allergies">
           <UiTextarea
             v-model="allergiesList"
             placeholder="e.g. Penicillin → hives; Codeine → nausea"
@@ -454,7 +454,7 @@ const diazepamModalCopy = computed(() => {
             block
           />
         </UiField>
-        <UiField label="Past hospitalisations" hint="year + reason">
+        <UiField label="Past hospitalisations">
           <UiTextarea
             v-model="hospitalisations"
             placeholder="e.g. 2022 — pneumonia; 2018 — MVA"
@@ -462,7 +462,7 @@ const diazepamModalCopy = computed(() => {
             block
           />
         </UiField>
-        <UiField label="Past surgeries" hint="year + procedure">
+        <UiField label="Past surgeries">
           <UiTextarea
             v-model="surgeries"
             placeholder="e.g. 2021 — appendectomy; 2015 — wisdom teeth"
@@ -470,7 +470,7 @@ const diazepamModalCopy = computed(() => {
             block
           />
         </UiField>
-        <UiField label="Anesthesia history" hint="prior reactions to anesthesia / sedation">
+        <UiField label="Anesthesia history">
           <UiTextarea
             v-model="anesthesiaHistory"
             placeholder="e.g. PONV with general; uneventful with IV sedation 2023"
@@ -478,7 +478,7 @@ const diazepamModalCopy = computed(() => {
             block
           />
         </UiField>
-        <UiField label="Family history" hint="relevant cardiac / anesthesia / bleeding">
+        <UiField label="Family history">
           <UiTextarea
             v-model="familyHistory"
             placeholder="e.g. Father — MI age 58; no known MH"
@@ -500,11 +500,7 @@ const diazepamModalCopy = computed(() => {
         >
           <UiSelect v-model="smokingStatus" :options="smokingOptions" placeholder="Select…" block />
         </UiField>
-        <UiField
-          v-if="smokingStatus === 'current'"
-          label="Cigarettes per day"
-          hint="drives nicotine protocol timing"
-        >
+        <UiField v-if="smokingStatus === 'current'" label="Cigarettes per day">
           <UiNumberInput v-model="cigarettesPerDay" placeholder="cigs/day" :min="0" :max="100" />
         </UiField>
         <UiBanner v-if="nicotineRec" tone="caution" title="Pre-op nicotine protocol" icon="🚬">
@@ -516,7 +512,7 @@ const diazepamModalCopy = computed(() => {
             <UiNumberInput v-model="alcoholPerWeek" placeholder="drinks/wk" :min="0" />
           </UiField>
         </UiRow>
-        <UiField label="Recreational drugs" hint="substance + frequency; leave blank if none">
+        <UiField label="Recreational drugs">
           <UiTextarea
             v-model="recreationalDrugs"
             placeholder="e.g. Cannabis — weekends; cocaine — denies"

@@ -499,7 +499,7 @@ function onNaloxone() {
           <UiField label="Site">
             <UiTextInput v-model="ivSite" />
           </UiField>
-          <UiField label="Fluid">
+          <UiField label="Fluid" hint="ml">
             <UiTextInput v-model="ivFluid" />
           </UiField>
         </UiRow>
