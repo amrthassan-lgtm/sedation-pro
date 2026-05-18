@@ -563,27 +563,25 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <UiCard tint="ph4">
       <p class="heading">
         <span class="heading-step">14</span
-        >{{ isAssessment ? 'Conclude Assessment' : 'Release Patient' }}
+        >{{ isAssessment ? 'Complete Assessment' : 'Release Patient' }}
       </p>
 
       <template v-if="isAssessment">
         <UiBanner v-if="!providerSigned" tone="caution" icon="✍️" class="mt-2">
-          Pre-sedation assessment — provider signature required to finalise the note. Sedation
-          deferred to a later date.
+          Pre-sedation assessment — provider signature required. Sedation deferred to a later date.
         </UiBanner>
         <UiBanner v-else tone="info" icon="🗒" class="mt-2">
-          Pre-sedation assessment complete — sedation deferred. The note prints now and keeps
-          building if the case is carried out later.
+          Pre-sedation assessment complete — sedation deferred to a later date.
         </UiBanner>
       </template>
 
       <template v-else>
         <UiBanner v-if="dismissal.blocked" tone="limit" icon="🚧" class="mt-2">
           <strong
-            >Cannot release yet — {{ blockerCount }} blocker{{
+            >Cannot release yet — {{ blockerCount }} item{{
               blockerCount === 1 ? '' : 's'
             }}
-            active:</strong
+            outstanding:</strong
           >
           <ul class="blocker-list">
             <li v-for="b in dismissal.blockers" :key="b.code">
@@ -596,10 +594,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         </UiBanner>
 
         <UiBanner v-else-if="!releaseStatus.eligible" tone="caution" icon="⏱" class="mt-2">
-          All discharge checks pass — waiting on the observation countdown above before release.
+          Discharge checks complete — finishing the post-sedation observation window.
         </UiBanner>
 
-        <UiBanner v-else tone="safe" icon="✓" class="mt-2"> All discharge gates clear. </UiBanner>
+        <UiBanner v-else tone="safe" icon="✓" class="mt-2"> All discharge criteria met. </UiBanner>
       </template>
 
       <UiButton
