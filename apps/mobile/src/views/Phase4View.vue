@@ -127,6 +127,24 @@ const companionRelationOptions = [
   { value: 'Other', label: 'Other' },
 ];
 
+// Quick-add chips for the complication fields. Small, deliberately the
+// same set already shown as placeholder examples (extend the arrays to
+// add more). Tapping appends the term to the free-text — the textarea
+// stays the canonical, note-bound field so the chart reads as a
+// narrative and the medicolegal contract is untouched. "Other" is just
+// typing in the box.
+const sedationComplicationOptions = ['Apnea episode', 'Paradoxical reaction', 'Oversedation'];
+const venipunctureComplicationOptions = ['Missed stick', 'Infiltration', 'Hematoma', 'Vasospasm'];
+
+function addComplication(which: 'sedation' | 'venipuncture', term: string): void {
+  // Templates auto-unwrap refs, so take a key and mutate the ref here in
+  // script scope where it's still a Ref.
+  const field = which === 'sedation' ? sedationComplications : venipunctureComplications;
+  const cur = field.value.trim();
+  if (cur.toLowerCase().includes(term.toLowerCase())) return; // already noted
+  field.value = cur === '' ? term : `${cur}; ${term}`;
+}
+
 // The companion signs a separate paper consent (post-op instructions), so
 // the engine no longer carries a companion-signature gate. Only the provider
 // signature is captured in-app.
@@ -540,6 +558,17 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           label="Sedation complications"
           hint="apnea episodes · paradoxical reaction · oversedation · etc."
         >
+          <div class="cx-chips">
+            <button
+              v-for="c in sedationComplicationOptions"
+              :key="c"
+              type="button"
+              class="cx-chip"
+              @click="addComplication('sedation', c)"
+            >
+              + {{ c }}
+            </button>
+          </div>
           <UiTextarea
             v-model="sedationComplications"
             placeholder="None — or describe and link to corrective action"
@@ -552,6 +581,17 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           label="Venipuncture complications"
           hint="missed stick · infiltration · hematoma · vasospasm"
         >
+          <div class="cx-chips">
+            <button
+              v-for="c in venipunctureComplicationOptions"
+              :key="c"
+              type="button"
+              class="cx-chip"
+              @click="addComplication('venipuncture', c)"
+            >
+              + {{ c }}
+            </button>
+          </div>
           <UiTextarea
             v-model="venipunctureComplications"
             placeholder="None — or describe site / corrective action"
@@ -674,6 +714,33 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 </template>
 
 <style scoped>
+.cx-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 var(--sp-2);
+}
+.cx-chip {
+  font-size: var(--type-caption);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.2px;
+  padding: 5px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-150) var(--ease-standard),
+    color var(--dur-150) var(--ease-standard),
+    transform var(--dur-150) var(--ease-standard);
+}
+.cx-chip:active {
+  transform: scale(0.96);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+}
 .blocker-list {
   margin: var(--sp-2) 0 0;
   padding-left: var(--sp-5);
