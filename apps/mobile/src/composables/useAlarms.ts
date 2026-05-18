@@ -54,28 +54,44 @@ export function unlockAudio(): void {
 }
 
 /**
- * Play a single soft "tick" chime — ~200 ms, 660 Hz sine with a quick
- * attack-decay envelope. No-op if the AudioContext isn't available, is
+ * Play the "ready to redose" alert: a four-pulse two-tone pattern
+ * (880/660 Hz triangle, ~1.6 s total) at a volume that carries across an
+ * operatory — loud and long enough not to be missed, but a deliberate
+ * cadence rather than a continuous klaxon (this is a "you *may* redose"
+ * cue, not a crisis alarm). No-op if the AudioContext isn't available, is
  * still suspended (no user gesture yet), or audio is muted.
+ *
+ * Still fully synthesized — no bundled audio file, identical behaviour in
+ * iOS WKWebView and Android WebView. To audition a different character,
+ * change PULSES / PULSE_SEC / GAP_SEC / PEAK_GAIN below.
  */
+const PULSES: ReadonlyArray<number> = [880, 660, 880, 660];
+const PULSE_SEC = 0.28;
+const GAP_SEC = 0.12;
+const PEAK_GAIN = 0.6;
+
 function tick(muted: boolean): void {
   if (muted) return;
   const ctx = getAudioContext();
   if (!ctx || ctx.state !== 'running') return;
 
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.value = 660;
+  const t0 = ctx.currentTime;
+  PULSES.forEach((freq, i) => {
+    const start = t0 + i * (PULSE_SEC + GAP_SEC);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
 
-  const t = ctx.currentTime;
-  gain.gain.setValueAtTime(0, t);
-  gain.gain.linearRampToValueAtTime(0.18, t + 0.015);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(PEAK_GAIN, start + 0.02);
+    gain.gain.setValueAtTime(PEAK_GAIN, start + PULSE_SEC - 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + PULSE_SEC);
 
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(t);
-  osc.stop(t + 0.22);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + PULSE_SEC + 0.02);
+  });
 }
 
 /**
