@@ -82,6 +82,9 @@ export const useRecoveryStore = defineStore('recovery', () => {
 
   const ivOutAt = ref<number | null>(null);
   const releasedAt = ref<number | null>(null);
+  // Persisted so a reload mid-discharge doesn't silently drop the
+  // blocker rings — symmetric with patient.phase1ValidationAttempted.
+  const releaseAttempted = ref(false);
 
   // ------- Procedure-end-vitals helpers -------------------------------------
 
@@ -152,6 +155,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     returnVisitDate.value = '';
     ivOutAt.value = null;
     releasedAt.value = null;
+    releaseAttempted.value = false;
   }
 
   const companionDocumented = computed(
@@ -196,6 +200,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     returnVisitDate,
     ivOutAt,
     releasedAt,
+    releaseAttempted,
   });
 
   return {
@@ -225,6 +230,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     returnVisitDate,
     ivOutAt,
     releasedAt,
+    releaseAttempted,
 
     // derived
     companionDocumented,

@@ -100,6 +100,7 @@ const {
   returnVisitDate,
   ivOutAt,
   releasedAt,
+  releaseAttempted,
   companionDocumented,
 } = storeToRefs(recovery);
 
@@ -199,16 +200,16 @@ const ivOutChipTone = computed(() => {
 
 const ivOutChipHeadline = computed(() => {
   if (releaseStatus.value.reason === 'no-sedative-given') {
-    return 'No IV medication recorded yet — IV-out gate inactive.';
+    return 'No sedative given — observation not required.';
   }
   if (releaseStatus.value.eligible) {
     return releaseStatus.value.reason === 'flumazenil-reversal'
-      ? `Post-reversal monitoring complete (${releaseStatus.value.waitMin} min). Safe to remove IV.`
-      : `${releaseStatus.value.waitMin}-minute wait complete. Safe to remove IV.`;
+      ? `Post-reversal monitoring complete (${releaseStatus.value.waitMin} min).`
+      : `${releaseStatus.value.waitMin}-minute observation complete.`;
   }
   return releaseStatus.value.reason === 'flumazenil-reversal'
     ? `Post-flumazenil monitoring — ${releaseStatus.value.remainingMin} min remaining (120 min total).`
-    : `${releaseStatus.value.remainingMin} min remaining of the 20-min IV-out wait.`;
+    : `${releaseStatus.value.remainingMin} min remaining of the 20-min observation wait.`;
 });
 
 // -------- Discharge safety guard (card 13) ---------------------------------
@@ -265,7 +266,7 @@ const gateEntries = computed<GateEntry[]>(() => {
     { anchorId: 'gate-signature', failing: b.has('no-provider-signature') },
   ];
 });
-const gate = useGateFeedback({ entries: gateEntries });
+const gate = useGateFeedback({ entries: gateEntries, attempted: releaseAttempted });
 
 function releasePatient() {
   if (!canConclude.value) {
