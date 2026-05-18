@@ -307,9 +307,14 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <h1 class="title-display">Recovery & Release</h1>
     </header>
 
+    <!-- Cards 11–12 are sedation-recovery only — an assessment-only visit
+         was never sedated, so they don't apply. Card 13 stays (it carries
+         the provider signature the assessment note needs) and 13b stays
+         (return-visit plan is how a deferred sedation is scheduled). -->
+
     <!-- Card 11 — Recovery Vitals -->
 
-    <UiCard tint="ph4">
+    <UiCard v-if="!isAssessment" tint="ph4">
       <p class="heading"><span class="heading-step">11</span>Recovery Vitals</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
@@ -347,7 +352,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
     <!-- Card 12 — IV Out -->
 
-    <UiCard tint="ph4" id="gate-ivout">
+    <UiCard v-if="!isAssessment" tint="ph4" id="gate-ivout">
       <p class="heading"><span class="heading-step">12</span>IV Out</p>
 
       <UiBanner :tone="ivOutChipTone" icon="⏱" class="mt-2">
