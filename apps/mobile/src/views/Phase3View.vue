@@ -6,6 +6,7 @@ import { useIVStore } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
+import { useEventLogStore } from '@/stores/event-log';
 import { useDockSentinel } from '@/composables/useDockVisibility';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
@@ -36,6 +37,7 @@ const iv = useIVStore();
 const local = useLocalAnestheticStore();
 const patient = usePatientStore();
 const undo = useUndoStore();
+const eventLog = useEventLogStore();
 const now = useNow(1000);
 
 const { weightLb, diabetic, safetyAlerts } = storeToRefs(patient);
@@ -214,11 +216,17 @@ function onIvStart() {
 
 // -------- Pre-med wait chip (cosmetic — IV start isn't hard-blocked) -------
 
-// Phase 2 oral premeds aren't tracked in their own store yet, but the event
-// log has them. Scan for the most recent oral premed timestamp.
-const lastPremedAt = computed(() => {
-  // Phase 2 is a soft chip only — null is fine until we wire the oral store.
-  return null;
+// Oral pre-meds live only in the event log (Phase 2 stamps them). Scan for
+// the most recent so the pre-med wait chip is live — not the old stub.
+const { events } = storeToRefs(eventLog);
+const lastPremedAt = computed<number | null>(() => {
+  let latest: number | null = null;
+  for (const e of events.value) {
+    if (e.event === 'Preoperative Oral Dose' && (latest === null || e.timestamp > latest)) {
+      latest = e.timestamp;
+    }
+  }
+  return latest;
 });
 
 const premedChip = computed(() => {

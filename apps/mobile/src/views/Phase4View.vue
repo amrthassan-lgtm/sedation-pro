@@ -8,6 +8,7 @@ import { useIVStore } from '@/stores/iv';
 import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
+import { useEventLogStore } from '@/stores/event-log';
 import { useNow } from '@/composables/useNow';
 import { haptic } from '@/composables/useHaptics';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
@@ -31,6 +32,7 @@ import {
   UiTextInput,
 } from '@sedation-pro/ui';
 import {
+  classifyEncounter,
   dismissalSafety,
   releaseEligibility,
   type DismissalBlockerCode,
@@ -45,7 +47,37 @@ const recovery = useRecoveryStore();
 const undo = useUndoStore();
 const now = useNow(1000);
 
+const eventLog = useEventLogStore();
+const { events } = storeToRefs(eventLog);
 const { lastIvMedAt, lastFlumazenilAt } = storeToRefs(iv);
+
+// Last in-office sedative across *any* route. Oral pre-med lives only in
+// the event log; bedtime ('Bedtime Premedication') is take-home and is
+// deliberately not counted. This feeds both the observation countdown and
+// the encounter classification.
+const lastOralPremedAt = computed<number | null>(() => {
+  let latest: number | null = null;
+  for (const e of events.value) {
+    if (e.event === 'Preoperative Oral Dose' && (latest === null || e.timestamp > latest)) {
+      latest = e.timestamp;
+    }
+  }
+  return latest;
+});
+const lastSedativeAt = computed<number | null>(() => {
+  const oral = lastOralPremedAt.value;
+  const iv = lastIvMedAt.value;
+  if (oral === null) return iv;
+  if (iv === null) return oral;
+  return Math.max(oral, iv);
+});
+const encounterKind = computed(() =>
+  classifyEncounter({
+    oralPremedGiven: lastOralPremedAt.value !== null,
+    ivMedGiven: lastIvMedAt.value !== null,
+  }),
+);
+const isAssessment = computed(() => encounterKind.value === 'assessment');
 const {
   endGlucose,
   endHr,
@@ -145,7 +177,7 @@ function stampRecoveryVitals() {
 
 const releaseStatus = computed(() =>
   releaseEligibility({
-    lastSedativeAt: lastIvMedAt.value,
+    lastSedativeAt: lastSedativeAt.value,
     lastFlumazenilAt: lastFlumazenilAt.value,
     now: now.value,
   }),
@@ -203,11 +235,27 @@ const dismissal = computed(() =>
 // (mirrors Phase 1's validation-attempted gate) so Phase 4 doesn't open
 // "all red". After an attempt each active blocker lights its own field.
 const releaseAttempted = ref(false);
-const canRelease = computed(() => !dismissal.value.blocked && releaseStatus.value.eligible);
+
+// Two-axis conclude gate. A sedation encounter needs the full recovery
+// checklist + observation countdown clear. An assessment-only encounter
+// was never sedated — the recovery checks don't apply — so only the
+// medicolegal provider signature gates concluding it.
+const canConclude = computed(() =>
+  isAssessment.value
+    ? providerSigned.value
+    : !dismissal.value.blocked && releaseStatus.value.eligible,
+);
+const terminalLabel = computed(() =>
+  isAssessment.value ? '✅ Complete Assessment' : '🏠 Release Patient',
+);
 
 const activeBlockers = computed(() => new Set(dismissal.value.blockers.map((b) => b.code)));
 function isBlocking(code: DismissalBlockerCode): boolean {
-  return releaseAttempted.value && activeBlockers.value.has(code);
+  if (!releaseAttempted.value) return false;
+  // Assessment-only: the recovery checklist is N/A; only the signature
+  // field can be a blocker.
+  if (isAssessment.value) return code === 'no-provider-signature' && !providerSigned.value;
+  return activeBlockers.value.has(code);
 }
 
 const dischargeState = computed<ActionState>(() => (releasedAt.value !== null ? 'logged' : 'idle'));
@@ -229,6 +277,15 @@ const GATE_ANCHORS: ReadonlyArray<{ code: DismissalBlockerCode; id: string }> = 
 
 async function scrollToFirstBlocker(): Promise<void> {
   await nextTick();
+  // Assessment-only: the signature is the only thing that can block.
+  if (isAssessment.value) {
+    if (!providerSigned.value) {
+      document
+        .getElementById('gate-signature')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return;
+  }
   const codes = activeBlockers.value;
   const field = GATE_ANCHORS.find((a) => codes.has(a.code));
   // A dismissal field first; if only the IV-out countdown is pending it
@@ -239,7 +296,7 @@ async function scrollToFirstBlocker(): Promise<void> {
 }
 
 function releasePatient() {
-  if (!canRelease.value) {
+  if (!canConclude.value) {
     releaseAttempted.value = true;
     haptic('error');
     void scrollToFirstBlocker();
@@ -248,11 +305,14 @@ function releasePatient() {
   haptic('success');
   recovery.stampReleased();
   undo.stamp({
-    event: 'Patient Released',
-    details: {
-      Companion: `${companionName.value} (${companionRelation.value})`,
+    event: isAssessment.value ? 'Assessment Completed — sedation deferred' : 'Patient Released',
+    details: isAssessment.value
+      ? {}
+      : { Companion: `${companionName.value} (${companionRelation.value})` },
+    toast: {
+      label: isAssessment.value ? '✓ Assessment completed' : '✓ Patient released',
+      tone: 'safe',
     },
-    toast: { label: '✓ Patient released', tone: 'safe' },
     revert: () => recovery.clearReleased(),
   });
 }
@@ -524,36 +584,49 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 14 — Release Patient (gated) -->
 
     <UiCard tint="ph4">
-      <p class="heading"><span class="heading-step">14</span>Release Patient</p>
+      <p class="heading">
+        <span class="heading-step">14</span
+        >{{ isAssessment ? 'Conclude Assessment' : 'Release Patient' }}
+      </p>
 
-      <UiBanner v-if="dismissal.blocked" tone="limit" icon="🚧" class="mt-2">
-        <strong
-          >Cannot release yet — {{ blockerCount }} blocker{{
-            blockerCount === 1 ? '' : 's'
-          }}
-          active:</strong
-        >
-        <ul class="blocker-list">
-          <li v-for="b in dismissal.blockers" :key="b.code">
-            {{ b.label
-            }}<span v-if="b.detail">
-              — <em>{{ b.detail }}</em></span
-            >
-          </li>
-        </ul>
-      </UiBanner>
+      <template v-if="isAssessment">
+        <UiBanner v-if="!providerSigned" tone="caution" icon="✍️" class="mt-2">
+          Pre-sedation assessment — provider signature required to finalise the note. Sedation
+          deferred to a later date.
+        </UiBanner>
+        <UiBanner v-else tone="info" icon="🗒" class="mt-2">
+          Pre-sedation assessment complete — sedation deferred. The note prints now and keeps
+          building if the case is carried out later.
+        </UiBanner>
+      </template>
 
-      <UiBanner v-else-if="!releaseStatus.eligible" tone="caution" icon="⏱" class="mt-2">
-        All discharge checks pass — waiting on the IV-out countdown above before release.
-      </UiBanner>
+      <template v-else>
+        <UiBanner v-if="dismissal.blocked" tone="limit" icon="🚧" class="mt-2">
+          <strong
+            >Cannot release yet — {{ blockerCount }} blocker{{
+              blockerCount === 1 ? '' : 's'
+            }}
+            active:</strong
+          >
+          <ul class="blocker-list">
+            <li v-for="b in dismissal.blockers" :key="b.code">
+              {{ b.label
+              }}<span v-if="b.detail">
+                — <em>{{ b.detail }}</em></span
+              >
+            </li>
+          </ul>
+        </UiBanner>
 
-      <UiBanner v-else tone="safe" icon="✓" class="mt-2">
-        All discharge gates clear. Tapping below logs <strong>Patient Released</strong> to the
-        chrono log; the generated clinical note ships next push.
-      </UiBanner>
+        <UiBanner v-else-if="!releaseStatus.eligible" tone="caution" icon="⏱" class="mt-2">
+          All discharge checks pass — waiting on the observation countdown above before release.
+        </UiBanner>
+
+        <UiBanner v-else tone="safe" icon="✓" class="mt-2"> All discharge gates clear. </UiBanner>
+      </template>
 
       <UiButton
-        :tone="canRelease ? 'success' : 'neutral'"
+        :tone="canConclude ? 'success' : 'neutral'"
         block
         :state="dischargeState"
         :logged-at="fmtClock(releasedAt)"
@@ -561,20 +634,11 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         class="mt-2"
         @click="releasePatient"
       >
-        🏠 Release Patient
+        {{ terminalLabel }}
       </UiButton>
-      <UiButton
-        tone="primary"
-        block
-        class="mt-2"
-        :disabled="releasedAt === null"
-        @click="goToClinicalNote"
-      >
+      <UiButton tone="primary" block class="mt-2" @click="goToClinicalNote">
         📄 Generate Clinical Note
       </UiButton>
-      <p v-if="releasedAt === null" class="caption release-note-hint">
-        Final note is available once the patient is released
-      </p>
     </UiCard>
 
     <PhaseFooterNav :back="{ label: 'Phase 3 · IV Sedation', route: '/phase/3', tint: 'ph3' }" />
@@ -609,10 +673,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 </template>
 
 <style scoped>
-.release-note-hint {
-  margin-top: var(--sp-2);
-  text-align: center;
-}
 .blocker-list {
   margin: var(--sp-2) 0 0;
   padding-left: var(--sp-5);
