@@ -34,9 +34,15 @@ import { haptic } from '@/composables/useHaptics';
  *    programmatically.
  *  - Audio + haptic pair on every alert. The mute flag silences audio
  *    only; haptics are a separate sensory channel.
- *  - First-run guard: `watch` without `immediate: true` only fires on
- *    value changes, so a hydrated store already in `ready` after reload
- *    does not beep on mount.
+ *  - First-run guard: initial timer state is captured at setup, so a
+ *    hydrated store already in `ready` after reload does not beep on mount.
+ *  - Stale-resume guard: `useNow`'s interval is frozen while the app is
+ *    backgrounded (screen locked, app switched away — especially an iOS
+ *    home-screen app). On return `now` jumps by the whole absence. A
+ *    cooling→ready transition that resolved *during* that freeze is stale,
+ *    so the chime is suppressed when the `now` jump is far larger than the
+ *    tick interval — returning to the app must not replay a minutes-old
+ *    ding. The visual timer pill (already correct on return) carries it.
  *
  * Note: this does not defeat the iPhone hardware Ring/Silent switch (iOS
  * routes web audio through the ringer channel; only a native AVAudioSession
@@ -158,14 +164,26 @@ function tick(muted: boolean): void {
   if (p && typeof p.catch === 'function') p.catch(() => {});
 }
 
+// `useNow` ticks every 1 s. A jump materially larger than that means real
+// time skipped while the interval was frozen (app backgrounded), so any
+// transition surfacing on this tick happened during the freeze and is
+// stale. 5 s gives generous headroom over foreground timer jitter while
+// being far below any real inactivity gap.
+const TICK_MS = 1000;
+const FRESH_WINDOW_MS = 5_000;
+
 /**
- * Install watchers on Versed + Fentanyl timer state. Call once from the
- * app shell (`App.vue`) so the watchers live for the app lifetime.
+ * Install the Versed + Fentanyl "ready" chime. Call once from the app shell
+ * (`App.vue`) so it lives for the app lifetime.
+ *
+ * A single `now` watcher owns the logic: it has the real elapsed time
+ * (`curr - prev`) to gate staleness, and it tracks the previous timer
+ * states itself, so there is no watcher-ordering dependency.
  */
 export function useAlarms(): void {
   const iv = useIVStore();
   const audio = useAudioStore();
-  const now = useNow(1000);
+  const now = useNow(TICK_MS);
 
   const versedState = computed(() => iv.versedTimerAt(now.value)?.state ?? null);
   const fentanylState = computed(() => iv.fentanylTimerAt(now.value)?.state ?? null);
@@ -175,11 +193,24 @@ export function useAlarms(): void {
     haptic('light');
   }
 
-  watch(versedState, (curr, prev) => {
-    if (curr === 'ready' && prev !== 'ready') chime();
-  });
+  let prevVersed = versedState.value;
+  let prevFentanyl = fentanylState.value;
 
-  watch(fentanylState, (curr, prev) => {
-    if (curr === 'ready' && prev !== 'ready') chime();
-  });
+  // `flush: 'sync'` so each 1 s tick is evaluated on its own — the default
+  // batched flush would coalesce many ticks into a single huge delta and
+  // the freshness gate could never tell a normal second from a freeze.
+  // Sync also matches reality: a background→resume is one jumped tick.
+  watch(
+    now,
+    (curr, prev) => {
+      const fresh = curr - prev <= FRESH_WINDOW_MS;
+      const v = versedState.value;
+      const f = fentanylState.value;
+      if (fresh && v === 'ready' && prevVersed !== 'ready') chime();
+      if (fresh && f === 'ready' && prevFentanyl !== 'ready') chime();
+      prevVersed = v;
+      prevFentanyl = f;
+    },
+    { flush: 'sync' },
+  );
 }
