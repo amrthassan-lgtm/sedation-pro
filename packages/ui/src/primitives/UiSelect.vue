@@ -33,7 +33,11 @@ function onChange(e: Event) {
     :value="props.modelValue"
     @change="onChange"
   >
-    <option v-if="props.placeholder" value="" disabled>{{ props.placeholder }}</option>
+    <!-- Placeholder is a real, re-selectable option (emits '') so a
+         mis-tapped value can be cleared back to the unselected state —
+         important for clinical charting. Required-field gating, not a
+         disabled option, is what enforces "must choose". -->
+    <option v-if="props.placeholder" value="">{{ props.placeholder }}</option>
     <option
       v-for="option in props.options"
       :key="option.value"
