@@ -20,8 +20,9 @@ import { haptic } from '@/composables/useHaptics';
  *  - Web Audio API, synthesized. No bundled audio files, no Capacitor
  *    plugin. Works in WKWebView (iOS) and Android WebView.
  *  - iOS AudioContext starts `suspended` until a user gesture; the app
- *    shell installs a one-time pointerdown listener that calls
- *    `unlockAudio()` (exported below).
+ *    shell installs a persistent pointerdown listener that calls
+ *    `unlockAudio()` (exported below), which both resumes the context and
+ *    primes it with a silent buffer (see that function for the iOS why).
  *  - Audio + haptic pair on every alert — both fire together. Mute flag
  *    silences audio only; haptics are a separate sensory channel.
  *  - First-run guard: `watch` without `immediate: true` only fires on
@@ -43,14 +44,33 @@ function getAudioContext(): AudioContext | null {
 }
 
 /**
- * Resume the AudioContext on first user gesture. Safe to call repeatedly —
- * a no-op once the context is already running. Wired from App.vue's
- * one-time pointerdown listener.
+ * Resume the AudioContext on a user gesture. Safe to call repeatedly and on
+ * every gesture (cheap, idempotent) — wired from App.vue's persistent
+ * pointerdown listener.
+ *
+ * iOS quirk: `resume()` alone often does NOT flip the context to `running`
+ * — Mobile Safari needs an actual buffer *started inside the user gesture*
+ * before audio works, even when the ring switch is on. Without this the
+ * chime stays silent on iPhone because `tick()` bails on its
+ * `state !== 'running'` guard. Playing a one-sample silent buffer here is
+ * the standard unlock (Howler.js et al.) and is inaudible/free. Note this
+ * does not defeat the iPhone hardware mute switch — iOS routes Web Audio
+ * through the ringer channel, and no web API can override that (native
+ * AVAudioSession only).
  */
 export function unlockAudio(): void {
   const ctx = getAudioContext();
   if (!ctx) return;
   if (ctx.state === 'suspended') void ctx.resume();
+  try {
+    const source = ctx.createBufferSource();
+    source.buffer = ctx.createBuffer(1, 1, 22050);
+    source.connect(ctx.destination);
+    source.start(0);
+  } catch {
+    // Older Safari can throw if called before the context can build a
+    // buffer — harmless, the next gesture retries.
+  }
 }
 
 /**
