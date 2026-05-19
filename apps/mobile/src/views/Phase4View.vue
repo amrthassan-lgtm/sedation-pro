@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useRouter } from 'vue-router';
@@ -126,16 +126,33 @@ const companionRelationOptions = DEFAULT_FORMULARY.picklists.companionRelations.
   label: r,
 }));
 
-// Quick-add chips for the complication fields. Small, deliberately the
-// same set already shown as placeholder examples (extend the arrays to
-// add more). Tapping appends the term to the free-text — the textarea
-// stays the canonical, note-bound field so the chart reads as a
-// narrative and the medicolegal contract is untouched. "Other" is just
-// typing in the box.
-const sedationComplicationOptions = ['Apnea episode', 'Paradoxical reaction', 'Oversedation'];
-const venipunctureComplicationOptions = ['Missed stick', 'Infiltration', 'Hematoma', 'Vasospasm'];
+// Complications default to *none* in the overwhelming majority of cases,
+// so the fields rest collapsed (progressive disclosure) instead of showing
+// a standing quick-pick row — the calm/common path stays clean. When the
+// clinician opens one (or a rehydrated chart already has content), the
+// free-text note and a quiet "add common term" select appear. The textarea
+// stays the canonical, note-bound field; the term vocab is formulary data
+// so a practice tunes it at setup without touching the UI.
+const toSelectOptions = (terms: ReadonlyArray<string>) =>
+  terms.map((t) => ({ value: t, label: t }));
+const sedationCxOptions = toSelectOptions(DEFAULT_FORMULARY.picklists.sedationComplications);
+const venipunctureCxOptions = toSelectOptions(
+  DEFAULT_FORMULARY.picklists.venipunctureComplications,
+);
+
+const sedationCxOpened = ref(false);
+const venipunctureCxOpened = ref(false);
+// Content always forces the expanded view (so a rehydrated complication is
+// never hidden); the flag only handles the manual "open it to type" path.
+const sedationCxExpanded = computed(
+  () => sedationCxOpened.value || sedationComplications.value.trim() !== '',
+);
+const venipunctureCxExpanded = computed(
+  () => venipunctureCxOpened.value || venipunctureComplications.value.trim() !== '',
+);
 
 function addComplication(which: 'sedation' | 'venipuncture', term: string): void {
+  if (!term) return;
   // Templates auto-unwrap refs, so take a key and mutate the ref here in
   // script scope where it's still a Ref.
   const field = which === 'sedation' ? sedationComplications : venipunctureComplications;
@@ -554,43 +571,57 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         </UiField>
 
         <UiField label="Sedation complications">
-          <div class="cx-chips">
-            <button
-              v-for="c in sedationComplicationOptions"
-              :key="c"
-              type="button"
-              class="cx-chip"
-              @click="addComplication('sedation', c)"
-            >
-              + {{ c }}
-            </button>
-          </div>
-          <UiTextarea
-            v-model="sedationComplications"
-            placeholder="None — or describe and link to corrective action"
-            :rows="2"
-            block
-          />
+          <button
+            v-if="!sedationCxExpanded"
+            type="button"
+            class="cx-add"
+            @click="sedationCxOpened = true"
+          >
+            None — tap to record a complication
+          </button>
+          <template v-else>
+            <UiTextarea
+              v-model="sedationComplications"
+              placeholder="Describe and link to corrective action"
+              :rows="2"
+              block
+            />
+            <UiSelect
+              :model-value="''"
+              :options="sedationCxOptions"
+              placeholder="Add a common term…"
+              block
+              class="cx-quick"
+              @update:model-value="(v: string) => addComplication('sedation', v)"
+            />
+          </template>
         </UiField>
 
         <UiField label="Venipuncture complications">
-          <div class="cx-chips">
-            <button
-              v-for="c in venipunctureComplicationOptions"
-              :key="c"
-              type="button"
-              class="cx-chip"
-              @click="addComplication('venipuncture', c)"
-            >
-              + {{ c }}
-            </button>
-          </div>
-          <UiTextarea
-            v-model="venipunctureComplications"
-            placeholder="None — or describe site / corrective action"
-            :rows="2"
-            block
-          />
+          <button
+            v-if="!venipunctureCxExpanded"
+            type="button"
+            class="cx-add"
+            @click="venipunctureCxOpened = true"
+          >
+            None — tap to record a complication
+          </button>
+          <template v-else>
+            <UiTextarea
+              v-model="venipunctureComplications"
+              placeholder="Describe site / corrective action"
+              :rows="2"
+              block
+            />
+            <UiSelect
+              :model-value="''"
+              :options="venipunctureCxOptions"
+              placeholder="Add a common term…"
+              block
+              class="cx-quick"
+              @update:model-value="(v: string) => addComplication('venipuncture', v)"
+            />
+          </template>
         </UiField>
 
         <UiField label="Procedure notes" hint="anything else worth charting">
@@ -707,32 +738,29 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 </template>
 
 <style scoped>
-.cx-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 var(--sp-2);
-}
-.cx-chip {
-  font-size: var(--type-caption);
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.2px;
-  padding: 5px 10px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
+/* Quiet resting state for an "almost always none" field — reads as a calm
+   status line with a tap affordance, not a form control demanding input. */
+.cx-add {
+  width: 100%;
+  text-align: left;
+  font-size: var(--type-footnote);
+  color: var(--color-text-tertiary);
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
-    background var(--dur-150) var(--ease-standard),
     color var(--dur-150) var(--ease-standard),
-    transform var(--dur-150) var(--ease-standard);
+    border-color var(--dur-150) var(--ease-standard);
 }
-.cx-chip:active {
-  transform: scale(0.96);
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
+.cx-add:hover {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border-strong);
+}
+.cx-quick {
+  margin-top: var(--sp-2);
 }
 .blocker-list {
   margin: var(--sp-2) 0 0;

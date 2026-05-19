@@ -83,6 +83,22 @@ describe('DEFAULT_FORMULARY', () => {
     expect(p.catheterGauges.length).toBeGreaterThan(0);
     expect(p.companionRelations.length).toBeGreaterThan(0);
     expect(p.dentalAssistants.length).toBeGreaterThan(0);
+    expect(p.sedationComplications.length).toBeGreaterThan(0);
+    expect(p.venipunctureComplications.length).toBeGreaterThan(0);
+  });
+
+  it('ships the default complication quick-fill vocab', () => {
+    expect(DEFAULT_FORMULARY.picklists.sedationComplications).toEqual([
+      'Apnea episode',
+      'Paradoxical reaction',
+      'Oversedation',
+    ]);
+    expect(DEFAULT_FORMULARY.picklists.venipunctureComplications).toEqual([
+      'Missed stick',
+      'Infiltration',
+      'Hematoma',
+      'Vasospasm',
+    ]);
   });
 
   it('ships the practice provider + EFDA rosters', () => {

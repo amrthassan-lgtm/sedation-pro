@@ -245,6 +245,8 @@ const DEFAULT_PICKLISTS: PracticePicklists = {
     'Caregiver',
     'Other',
   ],
+  sedationComplications: ['Apnea episode', 'Paradoxical reaction', 'Oversedation'],
+  venipunctureComplications: ['Missed stick', 'Infiltration', 'Hematoma', 'Vasospasm'],
 };
 
 /**

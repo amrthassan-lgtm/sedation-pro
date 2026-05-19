@@ -156,6 +156,14 @@ export interface PracticePicklists {
    * at setup, nothing in the UI is hard-coded to one office.
    */
   readonly dentalAssistants: ReadonlyArray<string>;
+  /**
+   * Common sedation-complication terms offered as quick-fills in the Phase 4
+   * complications field. The free-text note stays the canonical medicolegal
+   * record; these just speed the common cases and are practice-tunable.
+   */
+  readonly sedationComplications: ReadonlyArray<string>;
+  /** Common venipuncture-complication terms (same role as above). */
+  readonly venipunctureComplications: ReadonlyArray<string>;
 }
 
 /** Complete formulary surface — practices can ship their own. */
