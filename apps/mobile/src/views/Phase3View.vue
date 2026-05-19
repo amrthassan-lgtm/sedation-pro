@@ -342,8 +342,6 @@ const fentanylCard = computed(() => {
 
 const combinedCard = computed(() => sedationStatus.value.combined);
 
-const versedCeilingFromFormulary = DEFAULT_FORMULARY.ceilings.versedMaxMg;
-
 // -------- Sedation level vitals (card 7) -----------------------------------
 
 function stampSedationVitals() {
@@ -698,11 +696,6 @@ function onNaloxone() {
               :unit="versedCard.value !== '—' ? `/ ${versedCard.ceiling.toFixed(1)} mg` : undefined"
               :category="versedCard.severity"
               :severity="versedCard.severity"
-              :detail="
-                versedCard.ceilingReducedByOpioid
-                  ? `Synergy: ceiling reduced 30% (Fentanyl on board)`
-                  : `Solo ceiling: ${versedCeilingFromFormulary} mg`
-              "
             />
             <UiStatCard
               label="Fentanyl total"
@@ -724,6 +717,9 @@ function onNaloxone() {
               </p>
             </UiRow>
             <UiPercentBar :percent="combinedCard.percent" thickness="lg" class="mt-2" />
+            <p v-if="versedCard.ceilingReducedByOpioid" class="synergy-note">
+              Synergy: Versed ceiling reduced 30% — Fentanyl on board
+            </p>
           </UiCard>
         </UiStack>
       </UiCard>
@@ -988,6 +984,11 @@ function onNaloxone() {
 }
 .big-pct--crisis {
   color: var(--color-crisis);
+}
+.synergy-note {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--type-footnote);
+  color: var(--color-text-tertiary);
 }
 .reversal-info {
   background: var(--color-surface-subtle);
