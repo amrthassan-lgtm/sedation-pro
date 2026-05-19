@@ -336,7 +336,7 @@ const diazepamModalCopy = computed(() => {
           <UiField id="field-mrn" label="MRN" required :invalid="isMissing('mrn')">
             <UiTextInput v-model="mrn" placeholder="MRN" inputmode="numeric" />
           </UiField>
-          <UiField id="field-prov" label="Provider" required :invalid="isMissing('prov')">
+          <UiField id="field-prov" label="Provider" :invalid="isMissing('prov')">
             <UiSelect v-model="providerValue" :options="providerOptions" block />
             <UiTextInput
               v-if="providerIsOther"
