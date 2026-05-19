@@ -652,17 +652,13 @@ function onTouchEnd() {
   color: #fff;
   flex-shrink: 0;
 }
-.nav-phase-icon--ph1 {
-  background: linear-gradient(135deg, var(--ph1-color), #2563eb);
-}
-.nav-phase-icon--ph2 {
-  background: linear-gradient(135deg, var(--ph2-color), #7c3aed);
-}
-.nav-phase-icon--ph3 {
-  background: linear-gradient(135deg, var(--ph3-color), #ea580c);
-}
+/* All four phases share one accent gradient — phase identity is the
+   number, not the hue (see tokens.css phase-tint note). */
+.nav-phase-icon--ph1,
+.nav-phase-icon--ph2,
+.nav-phase-icon--ph3,
 .nav-phase-icon--ph4 {
-  background: linear-gradient(135deg, var(--ph4-color), #16a34a);
+  background: linear-gradient(135deg, var(--color-accent), #2563eb);
 }
 .nav-phase-icon--qr {
   background: linear-gradient(135deg, #14b8a6, #0d9488);

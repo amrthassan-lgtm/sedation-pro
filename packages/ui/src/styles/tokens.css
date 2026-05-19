@@ -101,16 +101,20 @@
   --color-tan-soft: rgba(212, 165, 116, 0.14);
 
   /* Phase tints — drive sticky bar, nav drawer, card border-lefts, and the
-     phase-progress rail. Soft alpha bumped from 0.10 → 0.16 so the active-card
-     wash is visible without being garish. */
-  --ph1-color: var(--color-accent); /* Phase 1 — pre-sedation assessment */
-  --ph1-soft: rgba(59, 130, 246, 0.16);
-  --ph2-color: var(--color-purple); /* Phase 2 — oral premed */
-  --ph2-soft: rgba(139, 92, 246, 0.16);
-  --ph3-color: var(--color-orange); /* Phase 3 — IV sedation */
-  --ph3-soft: rgba(249, 115, 22, 0.16);
-  --ph4-color: var(--color-good); /* Phase 4 — recovery */
-  --ph4-soft: rgba(74, 222, 128, 0.16);
+     phase-progress rail. Collapsed to a single accent (was blue/purple/
+     orange/green per phase): one calm brand colour reads more premium, and
+     phase identity is carried by the label/number, not hue. Defined via the
+     accent tokens so the light theme inherits automatically (no per-phase
+     override needed below). Drug-tone colours stay distinct — those mirror a
+     real syringe-tape convention, not decoration. */
+  --ph1-color: var(--color-accent);
+  --ph1-soft: var(--color-accent-soft);
+  --ph2-color: var(--color-accent);
+  --ph2-soft: var(--color-accent-soft);
+  --ph3-color: var(--color-accent);
+  --ph3-soft: var(--color-accent-soft);
+  --ph4-color: var(--color-accent);
+  --ph4-soft: var(--color-accent-soft);
 
   /* -------- Layout -------- */
   --safe-top: env(safe-area-inset-top);
@@ -178,14 +182,8 @@
   --color-tan: #92400e;
   --color-tan-soft: rgba(146, 64, 14, 0.1);
 
-  --ph1-color: var(--color-accent);
-  --ph1-soft: rgba(29, 78, 216, 0.1);
-  --ph2-color: var(--color-purple);
-  --ph2-soft: rgba(109, 40, 217, 0.1);
-  --ph3-color: var(--color-orange);
-  --ph3-soft: rgba(194, 65, 12, 0.1);
-  --ph4-color: var(--color-good);
-  --ph4-soft: rgba(21, 128, 61, 0.1);
+  /* Phase tints inherit from :root (all → accent); only the accent tokens
+     above need a light override, so there are no per-phase lines here. */
 }
 
 @media (prefers-reduced-motion: reduce) {
