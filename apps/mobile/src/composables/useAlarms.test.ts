@@ -7,55 +7,34 @@ import { useAudioStore } from '@/stores/audio';
 import { useAlarms } from './useAlarms';
 
 /**
- * Minimal AudioContext mock — counts oscillator starts as "tick fired".
- * Vitest's jsdom does not provide a Web Audio implementation, so we install
- * just enough surface for `tick()` to run without throwing.
+ * The chime now plays through an HTMLAudioElement (jsdom has no media
+ * implementation), so we mock `Audio` and count play() calls as "chime
+ * fired". The composable lazily constructs one element and caches it at
+ * module scope, so the mock and the play counter live for the whole file;
+ * `playCount` is reset per test.
  */
-let oscillatorStarts = 0;
+let playCount = 0;
 
-class MockOscillator {
-  type = 'sine';
-  frequency = { value: 0 };
-  connect = vi.fn(() => this as unknown as MockGain);
-  start = vi.fn(() => {
-    oscillatorStarts += 1;
-  });
-  stop = vi.fn();
-}
-
-class MockGain {
-  gain = {
-    setValueAtTime: vi.fn(),
-    linearRampToValueAtTime: vi.fn(),
-    exponentialRampToValueAtTime: vi.fn(),
-  };
-  connect = vi.fn(() => ({}) as unknown);
-}
-
-class MockAudioContext {
-  state = 'running';
+class MockAudio {
+  preload = '';
+  muted = false;
   currentTime = 0;
-  destination = {} as unknown;
-  createOscillator(): MockOscillator {
-    return new MockOscillator();
-  }
-  createGain(): MockGain {
-    return new MockGain();
-  }
-  resume = vi.fn();
+  constructor(public src = '') {}
+  play = vi.fn(() => {
+    playCount += 1;
+    return Promise.resolve();
+  });
+  pause = vi.fn();
 }
 
 describe('useAlarms', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    oscillatorStarts = 0;
+    playCount = 0;
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-14T10:00:00Z'));
     localStorage.clear();
-    // Reset the cached singleton inside useAlarms by deleting the global
-    // AudioContext, then re-installing the mock — ensures each test gets a
-    // fresh context. `globalThis` is the cross-environment shim.
-    (globalThis as unknown as { AudioContext?: unknown }).AudioContext = MockAudioContext;
+    (globalThis as unknown as { Audio?: unknown }).Audio = MockAudio;
   });
 
   it('chimes once when Versed transitions from cooling to ready', async () => {
@@ -67,14 +46,14 @@ describe('useAlarms', () => {
     const scope = effectScope();
     scope.run(() => useAlarms());
     await nextTick();
-    expect(oscillatorStarts).toBe(0);
+    expect(playCount).toBe(0);
 
     // Cross the 3-min ready threshold (no ramping tier on the default
     // formulary — cooling goes straight to ready).
     vi.advanceTimersByTime(2 * 60_000);
     await nextTick();
 
-    expect(oscillatorStarts).toBeGreaterThanOrEqual(1);
+    expect(playCount).toBeGreaterThanOrEqual(1);
     scope.stop();
   });
 
@@ -85,13 +64,13 @@ describe('useAlarms', () => {
     const scope = effectScope();
     scope.run(() => useAlarms());
     await nextTick();
-    expect(oscillatorStarts).toBe(0);
+    expect(playCount).toBe(0);
 
     // Push well past either drug's longest cooling+ramping window.
     vi.advanceTimersByTime(10 * 60_000);
     await nextTick();
 
-    expect(oscillatorStarts).toBeGreaterThanOrEqual(1);
+    expect(playCount).toBeGreaterThanOrEqual(1);
     scope.stop();
   });
 
@@ -110,7 +89,7 @@ describe('useAlarms', () => {
     vi.advanceTimersByTime(5_000);
     await nextTick();
 
-    expect(oscillatorStarts).toBe(0);
+    expect(playCount).toBe(0);
     scope.stop();
   });
 
@@ -128,7 +107,7 @@ describe('useAlarms', () => {
     vi.advanceTimersByTime(10 * 60_000);
     await nextTick();
 
-    expect(oscillatorStarts).toBe(0);
+    expect(playCount).toBe(0);
     scope.stop();
   });
 });

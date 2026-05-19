@@ -6,113 +6,156 @@ import { useNow } from '@/composables/useNow';
 import { haptic } from '@/composables/useHaptics';
 
 /**
- * Audio alerts — synthesized "tick" chimes that fire when the Versed or
- * Fentanyl half-life timer transitions into the `ready` state (i.e. the
- * cooling + ramping windows have elapsed and the clinician can safely
- * redose if the case calls for it).
+ * Audio alerts — a synthesized "ready to redose" chime that fires when the
+ * Versed or Fentanyl half-life timer transitions into the `ready` state
+ * (cooling + ramping windows elapsed; the clinician may safely redose).
  *
  * Scope is deliberately narrow: only these two transitions. Phase 1 lock,
  * IV-out countdown, and crisis-vital alerts use the existing visual
  * channels (banner, sticky-bar pill, stat-card severity tint) — adding
  * audio for everything dilutes attention.
  *
- * Design:
- *  - Web Audio API, synthesized. No bundled audio files, no Capacitor
- *    plugin. Works in WKWebView (iOS) and Android WebView.
- *  - iOS AudioContext starts `suspended` until a user gesture; the app
- *    shell installs a persistent pointerdown listener that calls
- *    `unlockAudio()` (exported below), which both resumes the context and
- *    primes it with a silent buffer (see that function for the iOS why).
- *  - Audio + haptic pair on every alert — both fire together. Mute flag
- *    silences audio only; haptics are a separate sensory channel.
+ * Why HTMLAudioElement and not the Web Audio API:
+ *  - The chime *was* synthesized live with oscillators. That works on
+ *    Android and desktop Chrome but never sounded on iOS at all — Safari
+ *    tab *and* Home-Screen app alike. iOS gates audio hard on a real user
+ *    gesture and the prior `AudioContext.resume()`-based unlock did not
+ *    reliably take, so the timer-driven `tick()` produced silence on every
+ *    iPhone (the "works on Samsung, dead on iPhone" symptom).
+ *  - An `HTMLAudioElement` unlocked with a gesture-initiated muted
+ *    play()/pause() is the proven cross-iOS path (Safari tab + standalone)
+ *    and works on Android/desktop too, so it is the single portable path.
+ *  - Still fully synthesized / no bundled asset: the same rising motif is
+ *    rendered to an in-memory PCM WAV data-URI once, lazily, with plain
+ *    math (no AudioContext at all — removes every Web Audio quirk).
+ *  - iOS still gates playback on a user gesture, so the element is
+ *    "unlocked" with a muted play()/pause() inside App.vue's pointerdown
+ *    (see `unlockAudio`). After that, the timer-driven `tick()` may play it
+ *    programmatically.
+ *  - Audio + haptic pair on every alert. The mute flag silences audio
+ *    only; haptics are a separate sensory channel.
  *  - First-run guard: `watch` without `immediate: true` only fires on
- *    value changes, so a hydrated store starting in the `ready` state
- *    after page reload does not beep on mount.
- */
-
-let audioCtx: AudioContext | null = null;
-
-function getAudioContext(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-  if (audioCtx) return audioCtx;
-  const Ctor =
-    window.AudioContext ??
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Ctor) return null;
-  audioCtx = new Ctor();
-  return audioCtx;
-}
-
-/**
- * Resume the AudioContext on a user gesture. Safe to call repeatedly and on
- * every gesture (cheap, idempotent) — wired from App.vue's persistent
- * pointerdown listener.
+ *    value changes, so a hydrated store already in `ready` after reload
+ *    does not beep on mount.
  *
- * iOS quirk: `resume()` alone often does NOT flip the context to `running`
- * — Mobile Safari needs an actual buffer *started inside the user gesture*
- * before audio works, even when the ring switch is on. Without this the
- * chime stays silent on iPhone because `tick()` bails on its
- * `state !== 'running'` guard. Playing a one-sample silent buffer here is
- * the standard unlock (Howler.js et al.) and is inaudible/free. Note this
- * does not defeat the iPhone hardware mute switch — iOS routes Web Audio
- * through the ringer channel, and no web API can override that (native
- * AVAudioSession only).
+ * Note: this does not defeat the iPhone hardware Ring/Silent switch (iOS
+ * routes web audio through the ringer channel; only a native AVAudioSession
+ * can override that). With the ringer on, the chime now sounds.
  */
-export function unlockAudio(): void {
-  const ctx = getAudioContext();
-  if (!ctx) return;
-  if (ctx.state === 'suspended') void ctx.resume();
-  try {
-    const source = ctx.createBufferSource();
-    source.buffer = ctx.createBuffer(1, 1, 22050);
-    source.connect(ctx.destination);
-    source.start(0);
-  } catch {
-    // Older Safari can throw if called before the context can build a
-    // buffer — harmless, the next gesture retries.
-  }
-}
 
-/**
- * Play the "ready to redose" alert: a rising four-note motif
- * (E5→A5→D6→G6 triangle, ~1.9 s total) at a volume that carries across
- * an operatory. The *ascending* shape reads as "cleared / you may
- * proceed" rather than an alarm, and it's long enough to recognise
- * mid-task without being a crisis klaxon. No-op if the AudioContext
- * isn't available, is still suspended (no user gesture yet), or audio is
- * muted.
- *
- * Still fully synthesized — no bundled audio file, identical behaviour in
- * iOS WKWebView and Android WebView. To audition a different character,
- * change PULSES / PULSE_SEC / GAP_SEC / PEAK_GAIN below.
- */
+// Rising four-note motif (E5→A5→D6→G6), triangle timbre, ~1.9 s total. The
+// ascending shape reads as "cleared / you may proceed", long enough to
+// recognise mid-task without being a crisis klaxon. Tune here.
+const SAMPLE_RATE = 22050;
 const PULSES: ReadonlyArray<number> = [659, 880, 1175, 1568];
 const PULSE_SEC = 0.38;
 const GAP_SEC = 0.1;
-const PEAK_GAIN = 0.6;
+const PEAK = 0.6;
+const ATTACK_SEC = 0.02;
+const RELEASE_SEC = 0.06;
 
+/** Render the motif to 16-bit mono PCM samples (pure math, no Web Audio). */
+function renderPcm(): Int16Array {
+  const slot = PULSE_SEC + GAP_SEC;
+  const total = Math.ceil(PULSES.length * slot * SAMPLE_RATE);
+  const pcm = new Int16Array(total);
+  PULSES.forEach((freq, i) => {
+    const startSample = Math.floor(i * slot * SAMPLE_RATE);
+    const len = Math.floor(PULSE_SEC * SAMPLE_RATE);
+    for (let s = 0; s < len; s += 1) {
+      const t = s / SAMPLE_RATE;
+      // Triangle wave in [-1, 1] from the fractional phase.
+      const phase = (freq * t) % 1;
+      const tri = 4 * Math.abs(phase - 0.5) - 1;
+      let env = 1;
+      if (t < ATTACK_SEC) env = t / ATTACK_SEC;
+      else if (t > PULSE_SEC - RELEASE_SEC) env = Math.max(0, (PULSE_SEC - t) / RELEASE_SEC);
+      const idx = startSample + s;
+      if (idx < total) pcm[idx] = Math.round(tri * env * PEAK * 0x7fff);
+    }
+  });
+  return pcm;
+}
+
+/** Wrap PCM samples in a 44-byte WAV header and base64 into a data URI. */
+function pcmToWavDataUri(pcm: Int16Array): string {
+  const dataLen = pcm.length * 2;
+  const buf = new ArrayBuffer(44 + dataLen);
+  const dv = new DataView(buf);
+  const ascii = (off: number, s: string): void => {
+    for (let i = 0; i < s.length; i += 1) dv.setUint8(off + i, s.charCodeAt(i));
+  };
+  ascii(0, 'RIFF');
+  dv.setUint32(4, 36 + dataLen, true);
+  ascii(8, 'WAVE');
+  ascii(12, 'fmt ');
+  dv.setUint32(16, 16, true);
+  dv.setUint16(20, 1, true); // PCM
+  dv.setUint16(22, 1, true); // mono
+  dv.setUint32(24, SAMPLE_RATE, true);
+  dv.setUint32(28, SAMPLE_RATE * 2, true); // byte rate
+  dv.setUint16(32, 2, true); // block align
+  dv.setUint16(34, 16, true); // bits/sample
+  ascii(36, 'data');
+  dv.setUint32(40, dataLen, true);
+  for (let i = 0; i < pcm.length; i += 1) dv.setInt16(44 + i * 2, pcm[i]!, true);
+
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return `data:audio/wav;base64,${btoa(bin)}`;
+}
+
+let audioEl: HTMLAudioElement | null = null;
+let unlocked = false;
+
+function getAudioEl(): HTMLAudioElement | null {
+  if (typeof Audio === 'undefined') return null;
+  if (audioEl) return audioEl;
+  audioEl = new Audio(pcmToWavDataUri(renderPcm()));
+  audioEl.preload = 'auto';
+  return audioEl;
+}
+
+/**
+ * Unlock the audio element on a user gesture (App.vue's pointerdown +
+ * visibilitychange). iOS only allows later programmatic `play()` once the
+ * element has been played from within a gesture; a muted play()/pause()
+ * satisfies that without an audible blip. Runs at most once successfully —
+ * re-running on every pointerdown would cut off a chime that is playing
+ * when the clinician taps.
+ */
+export function unlockAudio(): void {
+  if (unlocked) return;
+  const el = getAudioEl();
+  if (!el) return;
+  el.muted = true;
+  const p = el.play();
+  if (p && typeof p.then === 'function') {
+    p.then(() => {
+      el.pause();
+      el.currentTime = 0;
+      el.muted = false;
+      unlocked = true;
+    }).catch(() => {
+      // No gesture yet / blocked — leave `unlocked` false so the next
+      // gesture retries.
+      el.muted = false;
+    });
+  }
+}
+
+/** Play the chime from the start. No-op when muted or unavailable. */
 function tick(muted: boolean): void {
   if (muted) return;
-  const ctx = getAudioContext();
-  if (!ctx || ctx.state !== 'running') return;
-
-  const t0 = ctx.currentTime;
-  PULSES.forEach((freq, i) => {
-    const start = t0 + i * (PULSE_SEC + GAP_SEC);
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = freq;
-
-    gain.gain.setValueAtTime(0, start);
-    gain.gain.linearRampToValueAtTime(PEAK_GAIN, start + 0.02);
-    gain.gain.setValueAtTime(PEAK_GAIN, start + PULSE_SEC - 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + PULSE_SEC);
-
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(start);
-    osc.stop(start + PULSE_SEC + 0.02);
-  });
+  const el = getAudioEl();
+  if (!el) return;
+  el.currentTime = 0;
+  const p = el.play();
+  if (p && typeof p.catch === 'function') p.catch(() => {});
 }
 
 /**
