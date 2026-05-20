@@ -163,11 +163,14 @@ function addComplication(which: 'sedation' | 'venipuncture', term: string): void
 // signature is captured in-app.
 const providerSigned = computed(() => providerSignatureDataUrl.value !== null);
 
+// Response state — short chip labels, full clinical phrases stay as the
+// stored values so the printed note + audit log read clinically ("Responds
+// to verbal" not "Verbal") regardless of how compact the input control is.
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },
   { value: 'Relaxed', label: 'Relaxed' },
-  { value: 'Responds to verbal', label: 'Responds to verbal' },
-  { value: 'Responds to tactile', label: 'Responds to tactile' },
+  { value: 'Responds to verbal', label: 'Verbal' },
+  { value: 'Responds to tactile', label: 'Tactile' },
   { value: 'Concern', label: 'Concern' },
 ];
 
@@ -388,7 +391,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           </UiField>
         </UiRow>
         <UiField label="Patient response">
-          <UiSelect v-model="endResponse" :options="responseOptions" block />
+          <UiChipGroup v-model="endResponse" :options="responseOptions" />
         </UiField>
         <UiButton
           tone="primary"

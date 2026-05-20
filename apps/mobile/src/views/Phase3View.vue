@@ -121,11 +121,14 @@ const attemptsChipOptions: ChipOption<number>[] = [
   { value: 4, label: '4+' },
 ];
 
+// Response state — short chip labels, full clinical phrases stay as the
+// stored values so the printed note + audit log read clinically ("Responds
+// to verbal" not "Verbal") regardless of how compact the input control is.
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },
   { value: 'Relaxed', label: 'Relaxed' },
-  { value: 'Responds to verbal', label: 'Responds to verbal' },
-  { value: 'Responds to tactile', label: 'Responds to tactile' },
+  { value: 'Responds to verbal', label: 'Verbal' },
+  { value: 'Responds to tactile', label: 'Tactile' },
   { value: 'Concern', label: 'Concern' },
 ];
 
@@ -488,7 +491,7 @@ function onNaloxone() {
           </UiField>
         </UiRow>
         <UiField label="Patient response">
-          <UiSelect v-model="preOpResponse" :options="responseOptions" block />
+          <UiChipGroup v-model="preOpResponse" :options="responseOptions" />
         </UiField>
         <UiButton
           tone="primary"
@@ -729,7 +732,7 @@ function onNaloxone() {
           </UiField>
         </UiRow>
         <UiField label="Patient response">
-          <UiSelect v-model="sedResponse" :options="responseOptions" block />
+          <UiChipGroup v-model="sedResponse" :options="responseOptions" />
         </UiField>
         <UiButton
           tone="primary"
