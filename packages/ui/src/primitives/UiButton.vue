@@ -125,10 +125,13 @@ const renderState = computed<ActionState>(() => {
 }
 
 /* Tones */
+/* Primary CTA: iOS-style high-contrast neutral fill — the contrast IS
+   the affordance, no accent hue needed. Theme-aware via the text tokens
+   (near-white-on-navy in dark; near-black-on-white in light). */
 .ui-btn--primary {
-  border-color: rgba(59, 130, 246, 0.45);
-  background: var(--surface-highlight), var(--color-accent-soft);
-  color: var(--color-accent);
+  border-color: transparent;
+  background: var(--color-text-primary);
+  color: var(--color-bg);
 }
 .ui-btn--danger {
   border-color: rgba(251, 113, 133, 0.4);

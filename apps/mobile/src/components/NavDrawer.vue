@@ -656,19 +656,21 @@ function onTouchEnd() {
   justify-content: center;
   font-size: 14px;
   font-weight: var(--weight-bold);
-  color: #fff;
+  color: var(--color-text-primary);
   flex-shrink: 0;
 }
-/* All four phases share one accent gradient — phase identity is the
-   number, not the hue (see tokens.css phase-tint note). */
+/* Neutral surface gradient — phase identity is the number, not the hue. */
 .nav-phase-icon--ph1,
 .nav-phase-icon--ph2,
 .nav-phase-icon--ph3,
 .nav-phase-icon--ph4 {
-  background: linear-gradient(135deg, var(--color-accent), #2563eb);
+  background: linear-gradient(135deg, var(--color-surface-elevated), var(--color-surface-overlay));
 }
+/* Quick Reference keeps its teal identity — separate destination, not a
+   numbered phase. White glyph reads on the saturated teal. */
 .nav-phase-icon--qr {
   background: linear-gradient(135deg, #14b8a6, #0d9488);
+  color: #fff;
 }
 .nav-phase.is-locked .nav-phase-icon {
   background: var(--color-surface-elevated);

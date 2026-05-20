@@ -79,6 +79,19 @@ const railActiveIndex = computed(() => {
   return idx === -1 ? -1 : idx;
 });
 
+/**
+ * Single thin spine + a small "head" dot at the leading edge — replaces
+ * the old 4-segment rail. After the phase-tint collapse to one accent the
+ * per-phase colour distinction was gone anyway; this reads as a calm
+ * "how far through the case am I" indicator (iOS music-scrubber pattern,
+ * neutral colours only). Both percentages are the same number — the fill
+ * extends to the current frontier and the head sits on it.
+ */
+const railProgressPercent = computed(() => {
+  if (railActiveIndex.value < 0) return 0;
+  return ((railActiveIndex.value + 1) / railPhases.length) * 100;
+});
+
 function emergency() {
   // `focus=search` signals the QR view to autofocus its input on mount.
   // Direct navigation (nav drawer, deep link) won't carry the query param
@@ -106,11 +119,6 @@ function emergency() {
 
     <div class="sticky-bar-info">
       <div class="sticky-bar-phase">
-        <span
-          class="sticky-bar-phase-dot"
-          :class="`sticky-bar-phase-dot--${meta.tint}`"
-          aria-hidden="true"
-        />
         <span class="sticky-bar-phase-label">{{ meta.label }}</span>
       </div>
       <div class="sticky-bar-sub">
@@ -181,17 +189,11 @@ function emergency() {
     </div>
 
     <div class="sticky-bar-rail" aria-hidden="true">
+      <span class="sticky-bar-rail-fill" :style="{ width: railProgressPercent + '%' }" />
       <span
-        v-for="(rail, idx) in railPhases"
-        :key="rail.id"
-        class="sticky-bar-rail-seg"
-        :class="[
-          `sticky-bar-rail-seg--${rail.tint}`,
-          {
-            'is-done': railActiveIndex > -1 && idx < railActiveIndex,
-            'is-active': idx === railActiveIndex,
-          },
-        ]"
+        v-if="railActiveIndex >= 0"
+        class="sticky-bar-rail-head"
+        :style="{ left: railProgressPercent + '%' }"
       />
     </div>
   </header>
@@ -228,7 +230,7 @@ function emergency() {
 }
 .sticky-bar-nav:hover,
 .sticky-bar-nav:active {
-  background: var(--color-accent-soft);
+  background: var(--color-surface-elevated);
   color: var(--color-text-primary);
 }
 
@@ -245,33 +247,6 @@ function emergency() {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.sticky-bar-phase-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: 0 0 0 3px transparent;
-  transition: box-shadow var(--dur-250) var(--ease-standard);
-}
-.sticky-bar-phase-dot--ph1 {
-  background: var(--ph1-color);
-  box-shadow: 0 0 0 3px var(--ph1-soft);
-}
-.sticky-bar-phase-dot--ph2 {
-  background: var(--ph2-color);
-  box-shadow: 0 0 0 3px var(--ph2-soft);
-}
-.sticky-bar-phase-dot--ph3 {
-  background: var(--ph3-color);
-  box-shadow: 0 0 0 3px var(--ph3-soft);
-}
-.sticky-bar-phase-dot--ph4 {
-  background: var(--ph4-color);
-  box-shadow: 0 0 0 3px var(--ph4-soft);
-}
-.sticky-bar-phase-dot--qr {
-  background: var(--color-text-tertiary);
 }
 .sticky-bar-phase-label {
   font-size: var(--type-footnote);
@@ -329,13 +304,13 @@ function emergency() {
 .sticky-bar-clearance-fill {
   display: block;
   height: 100%;
-  background: var(--ph1-color);
+  background: var(--color-text-tertiary);
   transition: width var(--dur-250) var(--ease-standard);
 }
 .sticky-bar-clearance-count {
   font-family: var(--font-mono);
   font-weight: var(--weight-bold);
-  color: var(--ph1-color);
+  color: var(--color-text-primary);
   letter-spacing: 0.3px;
 }
 .sticky-bar-ready {
@@ -442,47 +417,38 @@ function emergency() {
    neutral this is the primary "how far through the case" cue, so it sits
    flush and a touch taller than the old 3px hairline. Inert visual — the
    nav drawer is the actual phase-navigation surface. */
+/* Single thin spine across the bottom edge of the bar. Fill grows
+   left-to-right with phase progress; the small head dot sits on the
+   leading edge — iOS music-scrubber pattern, neutral colours only. */
 .sticky-bar-rail {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 12px;
+  right: 12px;
   bottom: 0;
-  height: 4px;
-  display: flex;
-  gap: 2px;
-  padding: 0 6px;
+  height: 3px;
+  background: var(--color-border);
+  border-radius: 999px;
+  overflow: visible;
   pointer-events: none;
 }
-.sticky-bar-rail-seg {
-  flex: 1;
-  height: 100%;
-  border-radius: 2px;
-  background: var(--color-surface-elevated);
-  transition:
-    background var(--dur-250) var(--ease-standard),
-    opacity var(--dur-250) var(--ease-standard);
+.sticky-bar-rail-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--color-text-tertiary);
+  border-radius: 999px;
+  transition: width var(--dur-250) var(--ease-standard);
 }
-.sticky-bar-rail-seg--ph1.is-done,
-.sticky-bar-rail-seg--ph1.is-active {
-  background: var(--ph1-color);
-}
-.sticky-bar-rail-seg--ph2.is-done,
-.sticky-bar-rail-seg--ph2.is-active {
-  background: var(--ph2-color);
-}
-.sticky-bar-rail-seg--ph3.is-done,
-.sticky-bar-rail-seg--ph3.is-active {
-  background: var(--ph3-color);
-}
-.sticky-bar-rail-seg--ph4.is-done,
-.sticky-bar-rail-seg--ph4.is-active {
-  background: var(--ph4-color);
-}
-.sticky-bar-rail-seg.is-done {
-  opacity: 0.55;
-}
-.sticky-bar-rail-seg.is-active {
-  opacity: 1;
+.sticky-bar-rail-head {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-text-primary);
+  transform: translate(-50%, -50%);
+  transition: left var(--dur-250) var(--ease-standard);
 }
 
 /* Save indicator — a subtle "Saved · HH:MM" pill that briefly flips to

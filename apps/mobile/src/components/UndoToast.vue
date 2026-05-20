@@ -103,13 +103,15 @@ function onUndo() {
 }
 
 /* Tone accents — match BannerTone palette. */
+/* Info-tone toast uses neutral chrome (was accent blue) — severity tones
+   below keep their clinical hue. */
 .undo-toast--info {
-  border-left-color: var(--color-accent);
+  border-left-color: var(--color-border-strong);
 }
 .undo-toast--info .undo-toast-btn {
-  border-color: rgba(59, 130, 246, 0.4);
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
 }
 .undo-toast--safe {
   border-left-color: var(--color-good);

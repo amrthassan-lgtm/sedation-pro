@@ -181,9 +181,9 @@ onUnmounted(() => {
   color: var(--color-danger);
 }
 .ui-modal-btn--primary {
-  background: var(--color-accent-soft);
-  border-color: rgba(59, 130, 246, 0.45);
-  color: var(--color-accent);
+  background: var(--color-text-primary);
+  border-color: transparent;
+  color: var(--color-bg);
 }
 .ui-modal-btn--neutral {
   background: var(--color-surface-overlay);

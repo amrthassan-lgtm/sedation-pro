@@ -84,15 +84,15 @@ const initial = computed(() => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-purple));
+  background: linear-gradient(135deg, var(--color-surface-elevated), var(--color-surface-overlay));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--type-heading);
   font-weight: var(--weight-bold);
-  color: #fff;
+  color: var(--color-text-primary);
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  box-shadow: var(--shadow-sm);
   letter-spacing: -0.3px;
 }
 .ps-identity {

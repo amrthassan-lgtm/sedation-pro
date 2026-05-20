@@ -358,7 +358,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
   font-family: var(--font-mono);
   font-size: var(--type-title);
   font-weight: var(--weight-bold);
-  color: var(--color-accent);
+  color: var(--color-text-primary);
 }
 .drug-route {
   margin: 0;
