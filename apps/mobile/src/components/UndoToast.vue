@@ -51,14 +51,15 @@ function onUndo() {
   background: rgba(18, 27, 46, 0.98);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid var(--color-border);
-  border-left-width: 3px;
+  /* No container border — left-edge accent stripe carries the tone; depth
+     is the two-layer shadow. */
+  border-left: 3px solid var(--color-border-strong);
   border-radius: var(--r-md);
   padding: 12px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-md);
   pointer-events: auto;
 }
 .undo-toast-body {
@@ -83,8 +84,8 @@ function onUndo() {
   font-size: var(--type-footnote);
   font-weight: var(--weight-bold);
   padding: 8px 14px;
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
+  border: none;
+  background: var(--color-surface-elevated);
   color: var(--color-text-primary);
   border-radius: var(--r-sm);
   min-height: 36px;
@@ -117,7 +118,6 @@ function onUndo() {
   border-left-color: var(--color-good);
 }
 .undo-toast--safe .undo-toast-btn {
-  border-color: rgba(74, 222, 128, 0.4);
   background: var(--color-good-soft);
   color: var(--color-good);
 }
@@ -125,7 +125,6 @@ function onUndo() {
   border-left-color: var(--color-warn);
 }
 .undo-toast--caution .undo-toast-btn {
-  border-color: rgba(250, 204, 21, 0.4);
   background: var(--color-warn-soft);
   color: var(--color-warn);
 }
@@ -133,7 +132,6 @@ function onUndo() {
   border-left-color: var(--color-danger);
 }
 .undo-toast--limit .undo-toast-btn {
-  border-color: rgba(251, 113, 133, 0.4);
   background: var(--color-danger-soft);
   color: var(--color-danger);
 }
@@ -141,7 +139,6 @@ function onUndo() {
   border-left-color: var(--color-crisis);
 }
 .undo-toast--crisis .undo-toast-btn {
-  border-color: rgba(239, 68, 68, 0.4);
   background: var(--color-crisis-soft);
   color: var(--color-crisis);
 }

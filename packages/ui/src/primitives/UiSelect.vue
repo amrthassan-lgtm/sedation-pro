@@ -71,7 +71,7 @@ function onChange(e: Event) {
 }
 .ui-select:focus {
   outline: none;
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-muted);
 }
 .ui-select:disabled {
   opacity: 0.5;

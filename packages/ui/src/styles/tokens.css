@@ -75,6 +75,9 @@
   /* Status colors (match clinical-engine Severity buckets). */
   --color-accent: #3b82f6;
   --color-accent-soft: rgba(59, 130, 246, 0.18);
+  /* Softer accent for input focus borders — saturated solid accent reads
+     too "hot" next to muted chrome. `color-mix` keeps it theme-aware. */
+  --color-accent-muted: color-mix(in srgb, var(--color-accent) 60%, transparent);
   --color-good: #4ade80;
   --color-good-soft: rgba(74, 222, 128, 0.12);
   --color-warn: #facc15;

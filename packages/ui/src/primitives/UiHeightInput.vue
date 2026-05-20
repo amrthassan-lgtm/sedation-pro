@@ -104,7 +104,7 @@ function onIn(e: Event) {
 }
 .ui-height-input:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.6);
+  border-color: var(--color-accent-muted);
 }
 .ui-height-sep,
 .ui-height-suffix {

@@ -88,7 +88,7 @@ function onDia(e: Event) {
 }
 .ui-bp-input:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.6);
+  border-color: var(--color-accent-muted);
 }
 .ui-bp-sep {
   padding: 0 8px;

@@ -65,7 +65,7 @@ function onInput(e: Event) {
 }
 .ui-textarea:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.6);
+  border-color: var(--color-accent-muted);
   background-color: rgba(13, 21, 39, 0.95);
 }
 .ui-textarea:disabled {

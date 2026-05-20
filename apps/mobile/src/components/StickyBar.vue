@@ -320,7 +320,6 @@ function emergency() {
   border-radius: 4px;
   font-size: var(--type-caption);
   background: var(--color-good-soft);
-  border: 1px solid rgba(74, 222, 128, 0.3);
   color: var(--color-good);
 }
 

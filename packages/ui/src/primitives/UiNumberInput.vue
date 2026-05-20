@@ -74,7 +74,7 @@ function onInput(e: Event) {
 }
 .ui-number:focus {
   outline: none;
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-muted);
 }
 .ui-number:disabled {
   opacity: 0.5;
