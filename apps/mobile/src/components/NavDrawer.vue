@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type CSSProperties } from 'vue';
+import { computed, onMounted, ref, type CSSProperties } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
@@ -274,6 +274,54 @@ function onTouchEnd() {
   if (decision === 'open') session.openDrawer();
   else session.closeDrawer();
 }
+
+// -------- First-launch hint --------------------------------------------------
+//
+// Discoverability for the swipe-from-left-edge gesture: on the first app
+// open after install, peek the drawer out ~88 px for a beat then retract
+// over ~900 ms. The motion shows there's something behind the edge and
+// teaches the swipe without permanent chrome. Fires exactly once per device
+// (persisted to localStorage under the `sedation-pro:` namespace so
+// `useCaseReset` doesn't wipe it — this is install-state, not chart data).
+//
+// Conditions for firing:
+//   * the flag isn't already set,
+//   * the drawer isn't already open (user touched the hamburger first),
+//   * no UiModal is up (the resume-session gate sets body.overflow=hidden
+//     on cross-day reloads — we'd be peeking behind a modal, confusing),
+//   * `prefers-reduced-motion` is off (otherwise we still flag-the-hint-as-
+//     seen and skip the animation, honouring the user's preference).
+const HINT_KEY = 'sedation-pro:drawer-hint-seen:v1';
+const HINT_DELAY_MS = 1200;
+const HINT_DURATION_MS = 900;
+const hinting = ref(false);
+
+onMounted(() => {
+  if (typeof window === 'undefined') return;
+  setTimeout(() => {
+    let seen: string | null = null;
+    try {
+      seen = localStorage.getItem(HINT_KEY);
+    } catch {
+      return; // localStorage unavailable; bail silently.
+    }
+    if (seen) return;
+    if (drawerOpen.value) return;
+    if (document.body.style.overflow === 'hidden') return; // a modal is up
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try {
+      localStorage.setItem(HINT_KEY, '1');
+    } catch {
+      /* unable to persist — still skip the rest of the run */
+      return;
+    }
+    if (reduced) return; // flagged-as-seen, animation skipped per user pref
+    hinting.value = true;
+    setTimeout(() => {
+      hinting.value = false;
+    }, HINT_DURATION_MS);
+  }, HINT_DELAY_MS);
+});
 </script>
 
 <template>
@@ -299,7 +347,7 @@ function onTouchEnd() {
     />
     <aside
       class="nav-drawer no-print"
-      :class="{ 'is-open': drawerOpen }"
+      :class="{ 'is-open': drawerOpen, 'is-hinting': hinting }"
       :style="drawerStyle"
       :aria-hidden="!drawerOpen"
       role="navigation"
@@ -490,6 +538,30 @@ function onTouchEnd() {
 }
 .nav-drawer.is-open {
   left: 0;
+}
+
+/* First-launch hint: peek out ~88 px for a beat, hold, then retract.
+   Pointer events are off so a tap during the animation never opens it
+   half-way. See script for the once-per-device flag. Reduced-motion
+   users skip the animation entirely (script bails before flipping the
+   `hinting` ref). */
+@keyframes nav-drawer-hint {
+  0% {
+    left: -288px;
+  }
+  35% {
+    left: -200px;
+  }
+  65% {
+    left: -200px;
+  }
+  100% {
+    left: -288px;
+  }
+}
+.nav-drawer.is-hinting {
+  animation: nav-drawer-hint 900ms var(--ease-decel);
+  pointer-events: none;
 }
 
 .nav-brand {
