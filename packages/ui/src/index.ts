@@ -1,5 +1,11 @@
 export type { ActionState, ButtonTone, DrugTone, PhaseTint, Severity } from './types';
-export type { BannerTone, BpValue, SelectOption, TimerPillStatus } from './primitive-types';
+export type {
+  BannerTone,
+  BpValue,
+  ChipOption,
+  SelectOption,
+  TimerPillStatus,
+} from './primitive-types';
 
 // Layout
 export { default as UiCard } from './primitives/UiCard.vue';
@@ -13,6 +19,7 @@ export { default as UiDrugButton } from './primitives/UiDrugButton.vue';
 // Form
 export { default as UiBpInput } from './primitives/UiBpInput.vue';
 export { default as UiCheckbox } from './primitives/UiCheckbox.vue';
+export { default as UiChipGroup } from './primitives/UiChipGroup.vue';
 export { default as UiField } from './primitives/UiField.vue';
 export { default as UiHeightInput } from './primitives/UiHeightInput.vue';
 export { default as UiNumberInput } from './primitives/UiNumberInput.vue';

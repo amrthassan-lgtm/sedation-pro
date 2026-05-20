@@ -27,3 +27,19 @@ export interface SelectOption {
   readonly label: string;
   readonly disabled?: boolean;
 }
+
+/**
+ * Option shape used by `<UiChipGroup>`. Generic over the value type so the
+ * same primitive handles numeric chip rows (bathroom breaks, attempts) and
+ * string chip rows (Roman-numeral classes, rating tokens).
+ *
+ * `caption` is surfaced beneath the chip row when the group is configured
+ * with `show-caption` and this option is active — used for ASA's
+ * "I → Healthy" subtitle without making the chips themselves wider.
+ */
+export interface ChipOption<T extends string | number> {
+  readonly value: T;
+  readonly label: string;
+  readonly caption?: string;
+  readonly disabled?: boolean;
+}

@@ -18,6 +18,7 @@ import {
   UiBpInput,
   UiCard,
   UiCheckbox,
+  UiChipGroup,
   UiDrugButton,
   UiField,
   UiHeightInput,
@@ -174,17 +175,22 @@ function advanceOrShowMissing(): void {
   void scrollToFirstMissing();
 }
 
+/**
+ * ASA chip row — Roman numeral on the chip, descriptive subtitle below
+ * via `show-caption` on UiChipGroup. Lets the chips stay tight + uniform
+ * regardless of the active class's tail length.
+ */
 const asaOptions = [
-  { value: 'I', label: 'ASA I · Healthy' },
-  { value: 'II', label: 'ASA II · Mild systemic disease' },
-  { value: 'III', label: 'ASA III · Severe systemic disease' },
-  { value: 'IV', label: 'ASA IV · Life-threatening' },
+  { value: 'I', label: 'I', caption: 'Healthy' },
+  { value: 'II', label: 'II', caption: 'Mild systemic disease' },
+  { value: 'III', label: 'III', caption: 'Severe systemic disease' },
+  { value: 'IV', label: 'IV', caption: 'Life-threatening' },
 ];
 const mallampatiOptions = [
-  { value: 'I', label: 'Class I' },
-  { value: 'II', label: 'Class II' },
-  { value: 'III', label: 'Class III' },
-  { value: 'IV', label: 'Class IV' },
+  { value: 'I', label: 'I' },
+  { value: 'II', label: 'II' },
+  { value: 'III', label: 'III' },
+  { value: 'IV', label: 'IV' },
 ];
 const osaOptions = [
   { value: 'none', label: 'No history' },
@@ -554,7 +560,7 @@ const diazepamModalCopy = computed(() => {
             required
             :invalid="isMissing('mallampati')"
           >
-            <UiSelect v-model="mallampati" :options="mallampatiOptions" placeholder="Select…" />
+            <UiChipGroup v-model="mallampati" :options="mallampatiOptions" />
           </UiField>
           <UiField
             id="field-asa_class"
@@ -562,7 +568,7 @@ const diazepamModalCopy = computed(() => {
             required
             :invalid="isMissing('asa_class')"
           >
-            <UiSelect v-model="asaClass" :options="asaOptions" placeholder="Select…" />
+            <UiChipGroup v-model="asaClass" :options="asaOptions" show-caption />
           </UiField>
         </UiRow>
         <UiCheckbox

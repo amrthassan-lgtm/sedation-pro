@@ -21,6 +21,7 @@ import {
   UiButton,
   UiCard,
   UiCheckbox,
+  UiChipGroup,
   UiField,
   UiNumberInput,
   UiPercentBar,
@@ -110,11 +111,17 @@ const {
   companionDocumented,
 } = storeToRefs(recovery);
 
-const sedationRatingOptions = [
-  { value: 'excellent', label: 'Excellent · pt cooperative, no movement' },
-  { value: 'good', label: 'Good · minor adjustments needed' },
-  { value: 'fair', label: 'Fair · required extra titration' },
-  { value: 'poor', label: 'Poor · significant intervention required' },
+/**
+ * Sedation rating as a chip row — short single-word tokens carry the
+ * grade; the descriptive subtitle that was the dropdown label is shown
+ * beneath the row via `show-caption` when active. Keeps the chip widths
+ * even regardless of the active rating's tail length.
+ */
+const sedationRatingChipOptions = [
+  { value: 'excellent', label: 'Excellent', caption: 'Pt cooperative, no movement' },
+  { value: 'good', label: 'Good', caption: 'Minor adjustments needed' },
+  { value: 'fair', label: 'Fair', caption: 'Required extra titration' },
+  { value: 'poor', label: 'Poor', caption: 'Significant intervention required' },
 ];
 
 const returnVisitOptions = [
@@ -545,28 +552,11 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
       <UiStack :gap="3" class="mt-2">
         <UiField label="Sedation quality rating">
-          <UiSelect
-            v-model="sedationRating"
-            :options="sedationRatingOptions"
-            placeholder="Rate the case…"
-            block
-          />
+          <UiChipGroup v-model="sedationRating" :options="sedationRatingChipOptions" show-caption />
         </UiField>
 
         <UiField label="Bathroom breaks">
-          <div class="bathroom-chips">
-            <button
-              v-for="opt in bathroomBreakOptions"
-              :key="opt.value"
-              type="button"
-              class="bathroom-chip"
-              :class="{ 'is-active': bathroomBreaks === opt.value }"
-              :aria-pressed="bathroomBreaks === opt.value"
-              @click="bathroomBreaks = opt.value"
-            >
-              {{ opt.label }}
-            </button>
-          </div>
+          <UiChipGroup v-model="bathroomBreaks" :options="bathroomBreakOptions" />
         </UiField>
 
         <UiField label="Sedation complications">
@@ -736,43 +726,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
   transform: scale(0.96);
   background: var(--color-surface-elevated);
   color: var(--color-text-primary);
-}
-
-/* Bathroom-break count — single-select chip row. Mono so 0/1/2/3+ align
-   like a tally; the active chip flips to the primary-text inverse so the
-   selected count reads at a glance without needing colour. */
-.bathroom-chips {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.bathroom-chip {
-  min-width: 40px;
-  padding: 7px 14px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: var(--type-footnote);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.2px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    background var(--dur-150) var(--ease-standard),
-    color var(--dur-150) var(--ease-standard),
-    border-color var(--dur-150) var(--ease-standard),
-    transform var(--dur-150) var(--ease-standard);
-}
-.bathroom-chip:active {
-  transform: scale(0.96);
-}
-.bathroom-chip.is-active {
-  background: var(--color-text-primary);
-  border-color: var(--color-text-primary);
-  color: var(--color-bg);
 }
 
 .blocker-list {

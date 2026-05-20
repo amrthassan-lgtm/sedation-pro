@@ -19,6 +19,7 @@ import {
   UiBpInput,
   UiButton,
   UiCard,
+  UiChipGroup,
   UiDrugButton,
   UiField,
   UiNumberInput,
@@ -32,7 +33,7 @@ import {
   UiTimerPill,
 } from '@sedation-pro/ui';
 import { DEFAULT_FORMULARY, premedWait } from '@sedation-pro/clinical';
-import type { ActionState, BpValue, SelectOption, TimerPillStatus } from '@sedation-pro/ui';
+import type { ActionState, BpValue, ChipOption, TimerPillStatus } from '@sedation-pro/ui';
 
 const iv = useIVStore();
 const local = useLocalAnestheticStore();
@@ -102,26 +103,23 @@ const {
   isOther: fluidIsOther,
   selectValue: fluidValue,
 } = useOtherableSelect(ivFluid, DEFAULT_FORMULARY.picklists.ivFluids);
-const {
-  options: gaugeOptions,
-  isOther: gaugeIsOther,
-  selectValue: gaugeValue,
-} = useOtherableSelect(ivCatheterGauge, DEFAULT_FORMULARY.picklists.catheterGauges);
+// Catheter gauge as a chip row — straight from the practice formulary
+// (default 18/20/22/24). No "Other" fall-back; the standard four cover
+// every dental sedation case and chips read at a glance vs a dropdown.
+const gaugeChipOptions = computed<ChipOption<string>[]>(() =>
+  DEFAULT_FORMULARY.picklists.catheterGauges.map((g) => ({ value: g, label: g })),
+);
 
-// Venipuncture attempts: a bounded count, not practice vocabulary, so a
-// plain 1–6 select (no formulary list, no "Other" — beyond ~4 sticks the
-// clinical answer is to stop, not to chart a 7th). UiSelect is string-only;
-// bridge the numeric store ref.
-const attemptsOptions: SelectOption[] = [1, 2, 3, 4, 5, 6].map((n) => ({
-  value: String(n),
-  label: String(n),
-}));
-const attemptsValue = computed<string>({
-  get: () => String(ivCatheterAttempts.value),
-  set: (v) => {
-    ivCatheterAttempts.value = Number(v);
-  },
-});
+// Venipuncture attempts: clinical reality says 1-3 is normal and 4+
+// triggers "stop and escalate" rather than a 5th/6th stick getting charted
+// individually. The chip row tops out at "4+" (stored as 4) to keep the
+// row tight and consistent with the bathroom-breaks "3+" cap idiom.
+const attemptsChipOptions: ChipOption<number>[] = [
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3' },
+  { value: 4, label: '4+' },
+];
 
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },
@@ -529,16 +527,10 @@ function onNaloxone() {
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="Catheter" hint="gauge">
-            <UiSelect v-model="gaugeValue" :options="gaugeOptions" block />
-            <UiTextInput
-              v-if="gaugeIsOther"
-              v-model="ivCatheterGauge"
-              inputmode="numeric"
-              class="mt-2"
-            />
+            <UiChipGroup v-model="ivCatheterGauge" :options="gaugeChipOptions" />
           </UiField>
           <UiField label="Attempts">
-            <UiSelect v-model="attemptsValue" :options="attemptsOptions" block />
+            <UiChipGroup v-model="ivCatheterAttempts" :options="attemptsChipOptions" />
           </UiField>
           <UiField label="Site">
             <UiSelect v-model="siteValue" :options="siteOptions" block />
