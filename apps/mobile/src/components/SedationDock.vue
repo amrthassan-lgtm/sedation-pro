@@ -336,12 +336,16 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   pointer-events: auto;
   z-index: 91;
   padding: 6px 12px calc(10px + env(safe-area-inset-bottom)) 12px;
-  background: rgba(13, 21, 39, 0.82);
+  /* Layered top-edge highlight over the themed frosted-bg (matches the
+     sticky bar). Two-layer upward shadow expresses depth instead of a
+     hairline border-top — same iOS pattern as the cards / modal. */
+  background: var(--surface-highlight), var(--color-frosted-bg);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-top: 1px solid var(--color-border);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
-  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 -1px 2px rgba(0, 0, 0, 0.1),
+    0 -8px 24px rgba(0, 0, 0, 0.24);
   transition: padding-bottom var(--dur-250) var(--ease-standard);
 }
 .is-expanded .dock {
@@ -437,7 +441,10 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   margin-top: 8px;
 }
 
-/* Shared button styling — used in both compact + expanded layouts. */
+/* Shared button styling — used in both compact + expanded layouts.
+   Mirrors UiButton: layered highlight over the elevated surface for the
+   iOS-polished glass look. Tone variants below add the drug-soft fill
+   underneath (highlight stays on top in every case). */
 .dock-btn {
   display: flex;
   flex-direction: column;
@@ -448,7 +455,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   min-height: 50px;
   border-radius: var(--r-md);
   border: 1px solid var(--color-border-strong);
-  background: var(--color-surface-elevated);
+  background: var(--surface-highlight), var(--color-surface-elevated);
   color: var(--color-text-primary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -475,28 +482,28 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
 }
 .dock-btn--versed {
   border-color: var(--color-orange);
-  background: var(--color-orange-soft);
+  background: var(--surface-highlight), var(--color-orange-soft);
 }
 .dock-btn--versed .dock-btn-dose {
   color: var(--color-orange);
 }
 .dock-btn--fentanyl {
   border-color: var(--color-blue);
-  background: var(--color-blue-soft);
+  background: var(--surface-highlight), var(--color-blue-soft);
 }
 .dock-btn--fentanyl .dock-btn-dose {
   color: var(--color-blue);
 }
 .dock-btn--zofran {
   border-color: var(--color-slate);
-  background: var(--color-slate-soft);
+  background: var(--surface-highlight), var(--color-slate-soft);
 }
 .dock-btn--zofran .dock-btn-dose {
   color: var(--color-slate);
 }
 .dock-btn--reversal {
-  border-color: rgba(239, 68, 68, 0.5);
-  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--color-crisis);
+  background: var(--surface-highlight), var(--color-crisis-soft);
 }
 .dock-btn--reversal .dock-btn-dose {
   color: var(--color-crisis);
