@@ -273,8 +273,6 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
             <span class="dock-btn-dose">0.4 mg</span>
           </button>
         </div>
-
-        <p class="dock-dismiss-hint">Tap the handle or backdrop to dismiss</p>
       </div>
     </section>
   </div>
@@ -546,14 +544,6 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
 .dock-grid--single {
   grid-template-columns: 1fr;
 }
-.dock-dismiss-hint {
-  margin: 6px 0 0;
-  font-size: 10px;
-  color: var(--color-text-disabled);
-  text-align: center;
-  letter-spacing: 0.4px;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .dock,
   .dock-expanded,
