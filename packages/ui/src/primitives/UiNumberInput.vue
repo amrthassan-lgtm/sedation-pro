@@ -74,7 +74,8 @@ function onInput(e: Event) {
 }
 .ui-number:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.6);
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
 }
 .ui-number:disabled {
   opacity: 0.5;

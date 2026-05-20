@@ -69,7 +69,7 @@
 
   --color-text-primary: rgba(255, 255, 255, 0.95);
   --color-text-secondary: rgba(255, 255, 255, 0.7);
-  --color-text-tertiary: rgba(255, 255, 255, 0.5);
+  --color-text-tertiary: rgba(255, 255, 255, 0.6);
   --color-text-disabled: rgba(255, 255, 255, 0.3);
 
   /* Status colors (match clinical-engine Severity buckets). */
@@ -99,6 +99,22 @@
   --color-gold-soft: rgba(250, 204, 21, 0.12);
   --color-tan: #d4a574;
   --color-tan-soft: rgba(212, 165, 116, 0.14);
+
+  /* -------- Elevation (two-layer, iOS-style) --------
+     Containers express depth via shadow + background contrast, not borders.
+     Borders are reserved for interactive controls (inputs, selects). */
+  --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.24);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.16), 0 24px 60px rgba(0, 0, 0, 0.5);
+
+  /* Faint top-edge highlight that gives flat surfaces an iOS-polished
+     curvature. Layered as the topmost background on cards / primary
+     buttons. Theme-aware via the light-block override below. */
+  --surface-highlight: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0));
+
+  /* Unified 3 px focus halo for inputs (a11y + iOS-grade polish).
+     Resolves via --color-accent-soft so it auto-themes. */
+  --focus-ring: 0 0 0 3px var(--color-accent-soft);
 
   /* Phase tints — drive sticky bar, nav drawer, card border-lefts, and the
      phase-progress rail. Collapsed to a single accent (was blue/purple/
@@ -153,8 +169,13 @@
 
   --color-text-primary: rgba(15, 23, 42, 0.95);
   --color-text-secondary: rgba(15, 23, 42, 0.65);
-  --color-text-tertiary: rgba(15, 23, 42, 0.5);
+  --color-text-tertiary: rgba(15, 23, 42, 0.6);
   --color-text-disabled: rgba(15, 23, 42, 0.3);
+
+  --shadow-sm: 0 1px 1px rgba(15, 23, 42, 0.05), 0 2px 6px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 4px 8px rgba(15, 23, 42, 0.08), 0 24px 60px rgba(15, 23, 42, 0.18);
+  --surface-highlight: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
 
   --color-accent: #1d4ed8;
   --color-accent-soft: rgba(29, 78, 216, 0.1);

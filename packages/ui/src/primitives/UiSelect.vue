@@ -71,7 +71,8 @@ function onChange(e: Event) {
 }
 .ui-select:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.6);
+  border-color: var(--color-accent);
+  box-shadow: var(--focus-ring);
 }
 .ui-select:disabled {
   opacity: 0.5;

@@ -31,7 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
   gap: var(--sp-3);
   padding: 14px 16px;
   border-radius: var(--r-md);
-  border: 1px solid var(--color-border);
+  /* The tinted variant fill carries the meaning — no border. */
   background: var(--color-surface);
 }
 .ui-banner-icon {
@@ -57,35 +57,30 @@ const props = withDefaults(defineProps<Props>(), {
 
 .ui-banner--info {
   background: var(--color-accent-soft);
-  border-color: rgba(59, 130, 246, 0.3);
 }
 .ui-banner--info .ui-banner-title {
   color: var(--color-accent);
 }
 .ui-banner--safe {
   background: var(--color-good-soft);
-  border-color: rgba(74, 222, 128, 0.3);
 }
 .ui-banner--safe .ui-banner-title {
   color: var(--color-good);
 }
 .ui-banner--caution {
   background: var(--color-warn-soft);
-  border-color: rgba(250, 204, 21, 0.3);
 }
 .ui-banner--caution .ui-banner-title {
   color: var(--color-warn);
 }
 .ui-banner--limit {
   background: var(--color-danger-soft);
-  border-color: rgba(251, 113, 133, 0.3);
 }
 .ui-banner--limit .ui-banner-title {
   color: var(--color-danger);
 }
 .ui-banner--crisis {
   background: var(--color-crisis-soft);
-  border-color: rgba(239, 68, 68, 0.5);
 }
 .ui-banner--crisis .ui-banner-title {
   color: var(--color-crisis);

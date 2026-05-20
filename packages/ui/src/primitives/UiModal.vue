@@ -115,13 +115,12 @@ onUnmounted(() => {
 }
 
 .ui-modal {
-  background: var(--color-card-bg);
-  border: 1px solid var(--color-border);
+  background: var(--surface-highlight), var(--color-card-bg);
   border-radius: var(--r-xl);
   padding: var(--sp-5);
   max-width: 360px;
   width: 100%;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-lg);
 }
 
 .ui-modal-header {

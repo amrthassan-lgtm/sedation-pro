@@ -46,10 +46,10 @@ withDefaults(defineProps<Props>(), {
   gap: 6px;
   padding: 14px 16px 16px;
   border-radius: var(--r-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--surface-highlight), var(--color-surface);
+  box-shadow: var(--shadow-sm);
   transition:
-    border-color var(--dur-250) var(--ease-standard),
+    box-shadow var(--dur-250) var(--ease-standard),
     background var(--dur-250) var(--ease-standard);
 }
 .ui-stat-header {
@@ -103,39 +103,36 @@ withDefaults(defineProps<Props>(), {
   line-height: 1.4;
 }
 
-/* Severity tints — the border + category pill carry the color. */
+/* Severity is carried by a soft tinted card fill + the category pill —
+   no border (containers don't carry borders any more). The category pill
+   keeps its currentColor outline so it still reads as a chip on the tint. */
 .ui-stat--safe {
-  border-color: rgba(74, 222, 128, 0.25);
+  background: var(--surface-highlight), var(--color-good-soft);
 }
 .ui-stat--safe .ui-stat-category {
   color: var(--color-good);
   background: var(--color-good-soft);
-  border-color: rgba(74, 222, 128, 0.3);
 }
 .ui-stat--caution {
-  border-color: rgba(250, 204, 21, 0.3);
+  background: var(--surface-highlight), var(--color-warn-soft);
 }
 .ui-stat--caution .ui-stat-category {
   color: var(--color-warn);
   background: var(--color-warn-soft);
-  border-color: rgba(250, 204, 21, 0.3);
 }
 .ui-stat--limit {
-  border-color: rgba(251, 113, 133, 0.35);
+  background: var(--surface-highlight), var(--color-danger-soft);
 }
 .ui-stat--limit .ui-stat-category {
   color: var(--color-danger);
   background: var(--color-danger-soft);
-  border-color: rgba(251, 113, 133, 0.35);
 }
 .ui-stat--crisis {
-  border-color: rgba(239, 68, 68, 0.45);
-  background: var(--color-crisis-soft);
+  background: var(--surface-highlight), var(--color-crisis-soft);
 }
 .ui-stat--crisis .ui-stat-category {
   color: var(--color-crisis);
   background: rgba(239, 68, 68, 0.18);
-  border-color: rgba(239, 68, 68, 0.5);
 }
 .ui-stat--empty .ui-stat-number {
   color: var(--color-text-disabled);

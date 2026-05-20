@@ -46,20 +46,22 @@ defineEmits<{
   display: block;
   width: 100%;
   text-align: inherit;
-  background: var(--color-card-bg);
-  border: 1px solid var(--color-border);
+  /* Layered background: faint top-edge highlight over the card body —
+     gives a flat surface an iOS-polished curvature without any hue. */
+  background: var(--surface-highlight), var(--color-card-bg);
   border-radius: var(--r-lg);
-  padding: var(--sp-5);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  padding: var(--sp-4);
+  /* Two-layer shadow expresses depth instead of a border. */
+  box-shadow: var(--shadow-md);
   transition:
-    border-color var(--dur-250) var(--ease-standard),
+    box-shadow var(--dur-250) var(--ease-standard),
     background var(--dur-250) var(--ease-standard),
     opacity var(--dur-250) var(--ease-standard);
 }
 
-/* Neutral emphasis only — phase colour no longer lives on cards. */
+/* Neutral emphasis only — stronger lift, no hue, no layout shift. */
 .ui-card.is-active {
-  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-lg);
 }
 
 button.ui-card {

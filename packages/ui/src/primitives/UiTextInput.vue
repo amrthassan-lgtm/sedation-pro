@@ -120,6 +120,7 @@ defineExpose({
   outline: none;
   border-color: var(--color-accent);
   background-color: var(--color-input-bg);
+  box-shadow: var(--focus-ring);
 }
 .ui-input:disabled {
   opacity: 0.5;

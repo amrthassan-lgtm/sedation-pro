@@ -101,6 +101,9 @@ function toggle() {
   cursor: not-allowed;
   opacity: 0.25;
 }
+.ui-check:focus-within {
+  box-shadow: var(--focus-ring);
+}
 .ui-check-input {
   position: absolute;
   width: 1px;
