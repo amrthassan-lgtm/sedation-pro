@@ -18,6 +18,12 @@ interface Props {
   /** Disable interactions (e.g. diazepam locked because OSA not selected yet). */
   disabled?: boolean;
   /**
+   * Compact size variant for the SedationDock. Same visual identity (accent
+   * stripe + name/dose stack + cooldown ✓ check) at a tighter min-height —
+   * the dock is "another version of the cockpit" at floating-sheet density.
+   */
+  compact?: boolean;
+  /**
    * Internal anti-double-tap cooldown. Flashes the check overlay and blocks
    * repeat clicks for this duration after every successful tap. Independent
    * of `state` — the parent's state machine still drives logged vs idle.
@@ -31,6 +37,7 @@ const props = withDefaults(defineProps<Props>(), {
   sub: undefined,
   loggedAt: undefined,
   disabled: false,
+  compact: false,
   cooldownMs: 1200,
 });
 
@@ -65,7 +72,7 @@ const renderState = computed<ActionState>(() => {
     :class="[
       `ui-drug-btn--${props.tone}`,
       `ui-drug-btn--${renderState}`,
-      { 'is-disabled': props.disabled },
+      { 'is-disabled': props.disabled, 'is-compact': props.compact },
     ]"
     :disabled="props.disabled || renderState === 'locked'"
     @click="onClick"
@@ -113,6 +120,19 @@ const renderState = computed<ActionState>(() => {
 .ui-drug-btn.is-disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+/* Compact variant — used by the SedationDock so the dock buttons match the
+   cockpit's UiDrugButton character (accent stripe + name/dose stack +
+   cooldown ✓ check) at floating-sheet density. */
+.ui-drug-btn.is-compact {
+  min-height: 50px;
+  padding: 12px 8px 8px;
+  background-size: 100% 6px;
+  gap: 1px;
+}
+.ui-drug-btn.is-compact .ui-drug-btn-dose {
+  font-size: var(--type-body);
 }
 .ui-drug-btn-name {
   font-size: 9px;

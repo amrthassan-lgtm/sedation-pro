@@ -6,7 +6,7 @@ import { useIVStore } from '@/stores/iv';
 import { useDockVisibility } from '@/composables/useDockVisibility';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
-import { UiPercentBar, UiTimerPill } from '@sedation-pro/ui';
+import { UiDrugButton, UiPercentBar, UiTimerPill } from '@sedation-pro/ui';
 import type { Severity, TimerPillStatus } from '@sedation-pro/ui';
 
 /**
@@ -175,24 +175,20 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
 
       <!-- Compact-mode quick buttons (hidden when expanded). -->
       <div v-if="!expanded" class="dock-quick-row">
-        <button
-          type="button"
-          class="dock-btn dock-btn--versed"
-          aria-label="Log Versed 1 mg IV"
+        <UiDrugButton
+          compact
+          tone="versed"
+          name="Versed"
+          dose="+1 mg"
           @click="dosing.logIvVersed(1, 'dock')"
-        >
-          <span class="dock-btn-label">Versed</span>
-          <span class="dock-btn-dose">+1 mg</span>
-        </button>
-        <button
-          type="button"
-          class="dock-btn dock-btn--fentanyl"
-          aria-label="Log Fentanyl 25 mcg IV"
+        />
+        <UiDrugButton
+          compact
+          tone="fentanyl"
+          name="Fent"
+          dose="+25 mcg"
           @click="dosing.logIvFentanyl(25, 'dock')"
-        >
-          <span class="dock-btn-label">Fent</span>
-          <span class="dock-btn-dose">+25 mcg</span>
-        </button>
+        />
       </div>
 
       <!-- Expanded-mode grid. Grouped by drug class so reversal is never -->
@@ -200,78 +196,77 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
       <div v-if="expanded" class="dock-expanded">
         <p class="dock-section-label">Sedation</p>
         <div class="dock-grid">
-          <button
-            type="button"
-            class="dock-btn dock-btn--versed"
+          <UiDrugButton
+            compact
+            tone="versed"
+            name="Versed"
+            dose="+0.5 mg"
             @click="dosing.logIvVersed(0.5, 'dock')"
-          >
-            <span class="dock-btn-label">Versed</span>
-            <span class="dock-btn-dose">+0.5 mg</span>
-          </button>
-          <button
-            type="button"
-            class="dock-btn dock-btn--versed"
+          />
+          <UiDrugButton
+            compact
+            tone="versed"
+            name="Versed"
+            dose="+1.0 mg"
             @click="dosing.logIvVersed(1, 'dock')"
-          >
-            <span class="dock-btn-label">Versed</span>
-            <span class="dock-btn-dose">+1.0 mg</span>
-          </button>
-          <button
-            type="button"
-            class="dock-btn dock-btn--versed"
+          />
+          <UiDrugButton
+            compact
+            tone="versed"
+            name="Versed"
+            dose="+2.0 mg"
             @click="dosing.logIvVersed(2, 'dock')"
-          >
-            <span class="dock-btn-label">Versed</span>
-            <span class="dock-btn-dose">+2.0 mg</span>
-          </button>
-          <button
-            type="button"
-            class="dock-btn dock-btn--fentanyl"
+          />
+          <UiDrugButton
+            compact
+            tone="fentanyl"
+            name="Fent"
+            dose="+25 mcg"
             @click="dosing.logIvFentanyl(25, 'dock')"
-          >
-            <span class="dock-btn-label">Fent</span>
-            <span class="dock-btn-dose">+25 mcg</span>
-          </button>
-          <button
-            type="button"
-            class="dock-btn dock-btn--fentanyl"
+          />
+          <UiDrugButton
+            compact
+            tone="fentanyl"
+            name="Fent"
+            dose="+50 mcg"
             @click="dosing.logIvFentanyl(50, 'dock')"
-          >
-            <span class="dock-btn-label">Fent</span>
-            <span class="dock-btn-dose">+50 mcg</span>
-          </button>
-          <button
-            type="button"
-            class="dock-btn dock-btn--fentanyl"
+          />
+          <UiDrugButton
+            compact
+            tone="fentanyl"
+            name="Fent"
+            dose="+100 mcg"
             @click="dosing.logIvFentanyl(100, 'dock')"
-          >
-            <span class="dock-btn-label">Fent</span>
-            <span class="dock-btn-dose">+100 mcg</span>
-          </button>
+          />
         </div>
 
         <p class="dock-section-label">Anti-emetic</p>
         <div class="dock-grid dock-grid--single">
-          <button type="button" class="dock-btn dock-btn--zofran" @click="dosing.logIvZofran(4)">
-            <span class="dock-btn-label">Zofran</span>
-            <span class="dock-btn-dose">+4 mg</span>
-          </button>
+          <UiDrugButton
+            compact
+            tone="zofran"
+            name="Zofran"
+            dose="+4 mg"
+            @click="dosing.logIvZofran(4)"
+          />
         </div>
 
         <p class="dock-section-label dock-section-label--danger">Reversal · emergency only</p>
         <div class="dock-grid">
-          <button
-            type="button"
-            class="dock-btn dock-btn--reversal"
+          <UiDrugButton
+            compact
+            tone="flumazenil"
+            name="Flumazenil"
+            dose="0.2 mg"
             @click="dosing.logIvFlumazenil()"
-          >
-            <span class="dock-btn-label">Flumazenil</span>
-            <span class="dock-btn-dose">0.2 mg</span>
-          </button>
-          <button type="button" class="dock-btn dock-btn--reversal" @click="dosing.logIvNaloxone()">
-            <span class="dock-btn-label">Naloxone</span>
-            <span class="dock-btn-dose">0.4 mg</span>
-          </button>
+          />
+          <UiDrugButton
+            compact
+            tone="naloxone"
+            name="Naloxone"
+            dose="0.4 mg"
+            @click="dosing.logIvNaloxone()"
+          />
         </div>
       </div>
     </section>
@@ -443,70 +438,6 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
    Mirrors UiButton: layered highlight over the elevated surface for the
    iOS-polished glass look. Tone variants below add the drug-soft fill
    underneath (highlight stays on top in every case). */
-.dock-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0;
-  padding: 8px 12px;
-  min-height: 50px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--color-border-strong);
-  background: var(--surface-highlight), var(--color-surface-elevated);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    background var(--dur-150) var(--ease-standard),
-    transform var(--dur-150) var(--ease-standard);
-}
-.dock-btn:active {
-  transform: scale(0.97);
-  background: var(--color-surface-overlay);
-}
-.dock-btn-label {
-  font-size: 10px;
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: var(--color-text-tertiary);
-}
-.dock-btn-dose {
-  font-family: var(--font-mono);
-  font-size: var(--type-body);
-  font-weight: var(--weight-bold);
-  color: var(--color-text-primary);
-}
-.dock-btn--versed {
-  border-color: var(--color-orange);
-  background: var(--surface-highlight), var(--color-orange-soft);
-}
-.dock-btn--versed .dock-btn-dose {
-  color: var(--color-orange);
-}
-.dock-btn--fentanyl {
-  border-color: var(--color-blue);
-  background: var(--surface-highlight), var(--color-blue-soft);
-}
-.dock-btn--fentanyl .dock-btn-dose {
-  color: var(--color-blue);
-}
-.dock-btn--zofran {
-  border-color: var(--color-slate);
-  background: var(--surface-highlight), var(--color-slate-soft);
-}
-.dock-btn--zofran .dock-btn-dose {
-  color: var(--color-slate);
-}
-.dock-btn--reversal {
-  border-color: var(--color-crisis);
-  background: var(--surface-highlight), var(--color-crisis-soft);
-}
-.dock-btn--reversal .dock-btn-dose {
-  color: var(--color-crisis);
-}
-
 /* Expanded grid. */
 .dock-expanded {
   margin-top: 10px;
