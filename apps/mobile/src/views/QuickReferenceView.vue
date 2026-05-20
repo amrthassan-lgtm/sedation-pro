@@ -242,7 +242,7 @@ onMounted(() => {
 
     <UiCard class="drug-ref-card">
       <header class="drug-ref-head">
-        <p class="heading">💉 IV Drug Reference</p>
+        <p class="heading">IV Drug Reference</p>
         <span class="drug-ref-count">{{ drugRefs.length }}</span>
       </header>
       <UiStack :gap="1">

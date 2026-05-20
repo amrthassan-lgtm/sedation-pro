@@ -326,7 +326,7 @@ const diazepamModalCopy = computed(() => {
     };
   }
   return {
-    title: '⚠️ OSA contraindication',
+    title: 'OSA contraindication',
     body: 'Documented OSA or CPAP. Diazepam carries significant airway risk at bedtime — prescribe only with explicit clinical justification.',
     tone: 'danger' as const,
     confirmLabel: 'Prescribe anyway',
