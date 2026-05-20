@@ -24,6 +24,7 @@ import {
   UiHeightInput,
   UiModal,
   UiNumberInput,
+  UiQuickAddChips,
   UiRow,
   UiSelect,
   UiStack,
@@ -222,6 +223,60 @@ const alcoholValue = computed<number>({
     alcoholPerWeek.value = v;
   },
 });
+
+// Same bucket idiom for cigarettes/day. Exact count above ~20/day stops
+// shifting nicotine-protocol math meaningfully, so 4 bands cover the
+// clinically useful range. Storage = bucket midpoint (or lower bound for
+// the open-ended top). Legacy exact stored values map to the right bucket.
+const cigaretteOptions = [
+  { value: 5, label: '<10' },
+  { value: 15, label: '10–20' },
+  { value: 30, label: '20–40' },
+  { value: 40, label: '40+' },
+];
+function cigaretteBucketValue(n: number | null): number {
+  if (n === null) return -1;
+  if (n < 10) return 5;
+  if (n <= 20) return 15;
+  if (n <= 40) return 30;
+  return 40;
+}
+function cigaretteBucketLabel(n: number | null): string {
+  const b = cigaretteBucketValue(n);
+  if (b === 5) return '<10';
+  if (b === 15) return '10–20';
+  if (b === 30) return '20–40';
+  if (b === 40) return '40+';
+  return '—';
+}
+const cigaretteValue = computed<number>({
+  get: () => cigaretteBucketValue(cigarettesPerDay.value),
+  set: (v) => {
+    cigarettesPerDay.value = v;
+  },
+});
+
+// Quick-add term lists for the medical-history textareas. Every patient
+// gets these fields charted; the chips let one tap drop the
+// overwhelmingly-most-common answer in without typing. Free-text in the
+// textarea below is still the source of truth — chips just append (with a
+// case-insensitive dedup so double-tapping is a no-op). Medication chips
+// cover the most-prescribed chronic drugs in US adults beyond a "None"
+// baseline (statin / hypothyroid / two antihypertensives / diabetes).
+const allergyTerms = ['NKDA', 'Penicillin', 'Sulfa', 'Latex'];
+const medicationTerms = [
+  'None',
+  'Metformin',
+  'Lisinopril',
+  'Atorvastatin',
+  'Levothyroxine',
+  'Amlodipine',
+];
+const hospitalisationTerms = ['None'];
+const surgeryTerms = ['None', 'Tonsillectomy', 'Wisdom teeth'];
+const anesthesiaHistoryTerms = ['Uneventful', 'None', 'Prior IV sedation'];
+const familyHistoryTerms = ['Non-contributory', 'MH (malignant hyperthermia)', 'Cardiac'];
+const recreationalDrugTerms = ['Denies', 'Cannabis'];
 
 // -------- Live derived UI bits ---------------------------------------------
 
@@ -506,21 +561,27 @@ const diazepamModalCopy = computed(() => {
         </UiField>
 
         <UiField label="Current medications">
+          <UiQuickAddChips v-model="medicationsList" :terms="medicationTerms" />
           <UiTextarea v-model="medicationsList" :rows="3" block />
         </UiField>
         <UiField label="Allergies">
+          <UiQuickAddChips v-model="allergiesList" :terms="allergyTerms" />
           <UiTextarea v-model="allergiesList" :rows="2" block />
         </UiField>
         <UiField label="Past hospitalisations">
+          <UiQuickAddChips v-model="hospitalisations" :terms="hospitalisationTerms" />
           <UiTextarea v-model="hospitalisations" :rows="2" block />
         </UiField>
         <UiField label="Past surgeries">
+          <UiQuickAddChips v-model="surgeries" :terms="surgeryTerms" />
           <UiTextarea v-model="surgeries" :rows="2" block />
         </UiField>
         <UiField label="Anesthesia history">
+          <UiQuickAddChips v-model="anesthesiaHistory" :terms="anesthesiaHistoryTerms" />
           <UiTextarea v-model="anesthesiaHistory" :rows="2" block />
         </UiField>
         <UiField label="Family history">
+          <UiQuickAddChips v-model="familyHistory" :terms="familyHistoryTerms" />
           <UiTextarea v-model="familyHistory" :rows="2" block />
         </UiField>
       </UiStack>
@@ -538,11 +599,11 @@ const diazepamModalCopy = computed(() => {
           <UiChipGroup v-model="smokingStatus" :options="smokingOptions" />
         </UiField>
         <UiField v-if="smokingStatus === 'current'" label="Cigarettes" hint="per day">
-          <UiNumberInput v-model="cigarettesPerDay" :min="0" :max="100" />
+          <UiChipGroup v-model="cigaretteValue" :options="cigaretteOptions" />
         </UiField>
         <UiBanner v-if="nicotineRec" tone="caution" title="Pre-op nicotine protocol">
           {{ nicotineRec.instruction }} ({{ nicotineRec.hoursBefore }} hr before appointment). Based
-          on <strong>{{ cigarettesPerDay ?? 20 }}</strong> cigs/day.
+          on <strong>{{ cigaretteBucketLabel(cigarettesPerDay) }}</strong> cigs/day.
         </UiBanner>
         <UiRow :gap="3" wrap>
           <UiField label="Alcohol" hint="drinks per week">
@@ -550,6 +611,7 @@ const diazepamModalCopy = computed(() => {
           </UiField>
         </UiRow>
         <UiField label="Recreational drugs">
+          <UiQuickAddChips v-model="recreationalDrugs" :terms="recreationalDrugTerms" />
           <UiTextarea v-model="recreationalDrugs" :rows="2" block />
         </UiField>
       </UiStack>

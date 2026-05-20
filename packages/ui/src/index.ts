@@ -23,6 +23,7 @@ export { default as UiChipGroup } from './primitives/UiChipGroup.vue';
 export { default as UiField } from './primitives/UiField.vue';
 export { default as UiHeightInput } from './primitives/UiHeightInput.vue';
 export { default as UiNumberInput } from './primitives/UiNumberInput.vue';
+export { default as UiQuickAddChips } from './primitives/UiQuickAddChips.vue';
 export { default as UiSelect } from './primitives/UiSelect.vue';
 export { default as UiSignaturePad } from './primitives/UiSignaturePad.vue';
 export { default as UiTextarea } from './primitives/UiTextarea.vue';

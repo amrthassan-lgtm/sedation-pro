@@ -25,6 +25,7 @@ import {
   UiField,
   UiNumberInput,
   UiPercentBar,
+  UiQuickAddChips,
   UiRow,
   UiSelect,
   UiSignaturePad,
@@ -148,15 +149,6 @@ const companionRelationOptions = DEFAULT_FORMULARY.picklists.companionRelations.
 // practice tunes it at setup without touching the UI.
 const sedationComplicationOptions = DEFAULT_FORMULARY.picklists.sedationComplications;
 const venipunctureComplicationOptions = DEFAULT_FORMULARY.picklists.venipunctureComplications;
-
-function addComplication(which: 'sedation' | 'venipuncture', term: string): void {
-  // Templates auto-unwrap refs, so take a key and mutate the ref here in
-  // script scope where it's still a Ref.
-  const field = which === 'sedation' ? sedationComplications : venipunctureComplications;
-  const cur = field.value.trim();
-  if (cur.toLowerCase().includes(term.toLowerCase())) return; // already noted
-  field.value = cur === '' ? term : `${cur}; ${term}`;
-}
 
 // The companion signs a separate paper consent (post-op instructions), so
 // the engine no longer carries a companion-signature gate. Only the provider
@@ -563,32 +555,15 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         </UiField>
 
         <UiField label="Sedation complications">
-          <div class="cx-chips">
-            <button
-              v-for="c in sedationComplicationOptions"
-              :key="c"
-              type="button"
-              class="cx-chip"
-              @click="addComplication('sedation', c)"
-            >
-              + {{ c }}
-            </button>
-          </div>
+          <UiQuickAddChips v-model="sedationComplications" :terms="sedationComplicationOptions" />
           <UiTextarea v-model="sedationComplications" :rows="2" block />
         </UiField>
 
         <UiField label="Venipuncture complications">
-          <div class="cx-chips">
-            <button
-              v-for="c in venipunctureComplicationOptions"
-              :key="c"
-              type="button"
-              class="cx-chip"
-              @click="addComplication('venipuncture', c)"
-            >
-              + {{ c }}
-            </button>
-          </div>
+          <UiQuickAddChips
+            v-model="venipunctureComplications"
+            :terms="venipunctureComplicationOptions"
+          />
           <UiTextarea v-model="venipunctureComplications" :rows="2" block />
         </UiField>
 
@@ -701,36 +676,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 </template>
 
 <style scoped>
-/* Quiet resting state for an "almost always none" field — reads as a calm
-   status line with a tap affordance, not a form control demanding input. */
-.cx-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 var(--sp-2);
-}
-.cx-chip {
-  font-size: var(--type-caption);
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.2px;
-  padding: 5px 10px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    background var(--dur-150) var(--ease-standard),
-    color var(--dur-150) var(--ease-standard),
-    transform var(--dur-150) var(--ease-standard);
-}
-.cx-chip:active {
-  transform: scale(0.96);
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
-}
-
 .blocker-list {
   margin: var(--sp-2) 0 0;
   padding-left: var(--sp-5);
