@@ -478,8 +478,10 @@ function onTouchEnd() {
   top: 0;
   width: 288px;
   height: 100%;
-  background: var(--color-card-bg);
-  border-right: 1px solid var(--color-border);
+  /* Layered highlight on the panel body; floating panel deserves the
+     dramatic two-layer lift, no right-edge hairline. */
+  background: var(--surface-highlight), var(--color-card-bg);
+  box-shadow: var(--shadow-lg);
   z-index: 9992;
   overflow-y: auto;
   transition: left var(--dur-250) var(--ease-standard);
@@ -520,8 +522,11 @@ function onTouchEnd() {
 }
 .nav-summary {
   padding: 16px 18px 12px;
+  /* Neutral highlight (was an accent-soft blue wash — a leftover from when
+     phases carried per-hue tint). Section divider kept as a thin
+     surface-elevated line for layout clarity. */
   border-bottom: 1px solid var(--color-surface-elevated);
-  background: linear-gradient(180deg, var(--color-accent-soft), transparent);
+  background: var(--surface-highlight);
 }
 .nav-summary-top {
   display: flex;
@@ -533,15 +538,17 @@ function onTouchEnd() {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-purple));
+  /* Neutral two-tone gradient (was accent → purple, a leftover from the
+     per-phase hue era). Subtle elevation via shadow-sm. */
+  background: linear-gradient(135deg, var(--color-surface-elevated), var(--color-surface-overlay));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--type-heading);
   font-weight: var(--weight-bold);
-  color: #fff;
+  color: var(--color-text-primary);
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  box-shadow: var(--shadow-sm);
   letter-spacing: -0.3px;
 }
 .nav-patient {

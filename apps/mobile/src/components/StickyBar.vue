@@ -205,10 +205,12 @@ function emergency() {
   display: flex;
   align-items: stretch;
   gap: 0;
-  background: var(--color-frosted-bg);
+  /* Layered highlight + frosted body; two-layer shadow replaces the
+     hairline border-bottom (iOS-grade lift, not a pixel line). */
+  background: var(--surface-highlight), var(--color-frosted-bg);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .sticky-bar-nav {
@@ -218,7 +220,6 @@ function emergency() {
   align-items: center;
   justify-content: center;
   border: none;
-  border-right: 1px solid var(--color-border);
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -298,7 +299,6 @@ function emergency() {
   text-transform: uppercase;
   padding: 2px 8px;
   border-radius: var(--r-pill);
-  border: 1px solid transparent;
   white-space: nowrap;
 }
 .sticky-bar-gas-dot {
@@ -310,12 +310,10 @@ function emergency() {
 .sticky-bar-gas--n2o {
   color: var(--color-warn);
   background: var(--color-warn-soft);
-  border-color: rgba(250, 204, 21, 0.3);
 }
 .sticky-bar-gas--o2 {
   color: var(--color-good);
   background: var(--color-good-soft);
-  border-color: rgba(74, 222, 128, 0.3);
 }
 .sticky-bar-clearance-label {
   color: var(--color-text-tertiary);
@@ -500,7 +498,6 @@ function emergency() {
   padding: 2px 8px;
   border-radius: var(--r-pill);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
   color: var(--color-text-tertiary);
   white-space: nowrap;
 }
@@ -511,7 +508,6 @@ function emergency() {
 }
 .sticky-bar-saved.is-saving {
   color: var(--color-warn);
-  border-color: rgba(250, 204, 21, 0.35);
   background: var(--color-warn-soft);
 }
 .sticky-bar-saved-dot {
