@@ -298,11 +298,19 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
         recovery.procedureNotes.trim() === '' ? '—' : recovery.procedureNotes.trim(),
       ],
       [
+        'Bathroom breaks',
+        recovery.bathroomBreaks === 0
+          ? '0'
+          : recovery.bathroomBreaks >= 3
+            ? '3 or more'
+            : String(recovery.bathroomBreaks),
+      ],
+      [
         'Return visit',
         recovery.returnVisitPlan === 'prn'
-          ? 'PRN — return as needed'
+          ? 'PRN · return as needed'
           : recovery.returnVisitPlan === 'scheduled'
-            ? `Scheduled — ${fmtDate(recovery.returnVisitDate)}`
+            ? `Scheduled · ${fmtDate(recovery.returnVisitDate)}`
             : '—',
       ],
       ['IV catheter removed', fmtClock(recovery.ivOutAt)],

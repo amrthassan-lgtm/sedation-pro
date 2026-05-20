@@ -101,6 +101,7 @@ const {
   sedationComplications,
   venipunctureComplications,
   procedureNotes,
+  bathroomBreaks,
   returnVisitPlan,
   returnVisitDate,
   ivOutAt,
@@ -119,6 +120,13 @@ const sedationRatingOptions = [
 const returnVisitOptions = [
   { value: 'prn', label: 'PRN · return as needed' },
   { value: 'scheduled', label: 'Scheduled · date below' },
+];
+
+const bathroomBreakOptions = [
+  { value: 0, label: '0' },
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3+' },
 ];
 
 const companionRelationOptions = DEFAULT_FORMULARY.picklists.companionRelations.map((r) => ({
@@ -545,6 +553,22 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           />
         </UiField>
 
+        <UiField label="Bathroom breaks">
+          <div class="bathroom-chips">
+            <button
+              v-for="opt in bathroomBreakOptions"
+              :key="opt.value"
+              type="button"
+              class="bathroom-chip"
+              :class="{ 'is-active': bathroomBreaks === opt.value }"
+              :aria-pressed="bathroomBreaks === opt.value"
+              @click="bathroomBreaks = opt.value"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </UiField>
+
         <UiField label="Sedation complications">
           <div class="cx-chips">
             <button
@@ -713,6 +737,44 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
   background: var(--color-surface-elevated);
   color: var(--color-text-primary);
 }
+
+/* Bathroom-break count — single-select chip row. Mono so 0/1/2/3+ align
+   like a tally; the active chip flips to the primary-text inverse so the
+   selected count reads at a glance without needing colour. */
+.bathroom-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.bathroom-chip {
+  min-width: 40px;
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-150) var(--ease-standard),
+    color var(--dur-150) var(--ease-standard),
+    border-color var(--dur-150) var(--ease-standard),
+    transform var(--dur-150) var(--ease-standard);
+}
+.bathroom-chip:active {
+  transform: scale(0.96);
+}
+.bathroom-chip.is-active {
+  background: var(--color-text-primary);
+  border-color: var(--color-text-primary);
+  color: var(--color-bg);
+}
+
 .blocker-list {
   margin: var(--sp-2) 0 0;
   padding-left: var(--sp-5);

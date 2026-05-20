@@ -70,6 +70,15 @@ export const useRecoveryStore = defineStore('recovery', () => {
   /** Free-text procedure note — anything the provider wants in the chart. */
   const procedureNotes = ref('');
 
+  /**
+   * Bathroom breaks taken during recovery. Just a count, not timestamped —
+   * the printed clinical note carries the number, no chronology row per
+   * break. `3` represents "3 or more"; the chip group caps there because
+   * finer granularity isn't clinically interesting and a free numeric
+   * input invites typos for a once-per-recovery field.
+   */
+  const bathroomBreaks = ref<number>(0);
+
   // ------- Return-visit plan ------------------------------------------------
   //
   // Legacy presents two mutually-exclusive options: PRN (return as needed) or
@@ -151,6 +160,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     sedationComplications.value = '';
     venipunctureComplications.value = '';
     procedureNotes.value = '';
+    bathroomBreaks.value = 0;
     returnVisitPlan.value = '';
     returnVisitDate.value = '';
     ivOutAt.value = null;
@@ -174,7 +184,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     { flush: 'sync' },
   );
 
-  persistRefs('sedation-pro:recovery:v5', {
+  persistRefs('sedation-pro:recovery:v6', {
     endHr,
     endBpSys,
     endBpDia,
@@ -196,6 +206,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     sedationComplications,
     venipunctureComplications,
     procedureNotes,
+    bathroomBreaks,
     returnVisitPlan,
     returnVisitDate,
     ivOutAt,
@@ -226,6 +237,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     sedationComplications,
     venipunctureComplications,
     procedureNotes,
+    bathroomBreaks,
     returnVisitPlan,
     returnVisitDate,
     ivOutAt,
