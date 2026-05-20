@@ -66,6 +66,13 @@ const props = withDefaults(defineProps<Props>(), {
   letter-spacing: 0.2px;
   opacity: 0.9;
 }
+/* Idle = no dose given yet. Neutral surface; the count + tone colours
+   below also fall back to a quiet grey so the pill doesn't pretend to
+   be in danger state before anything has happened. */
+.ui-timer-pill--idle {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
 .ui-timer-pill--cooling {
   border-color: rgba(251, 113, 133, 0.3);
   background: var(--color-danger-soft);
@@ -97,5 +104,10 @@ const props = withDefaults(defineProps<Props>(), {
 }
 .ui-timer-pill--ready .ui-timer-pill-count {
   color: var(--color-good);
+}
+/* Idle overrides the drug tone — the count is just '—' so render it
+   neutral rather than in the drug's saturated hue. */
+.ui-timer-pill--idle .ui-timer-pill-count {
+  color: var(--color-text-tertiary);
 }
 </style>

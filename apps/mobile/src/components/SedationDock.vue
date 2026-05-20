@@ -58,10 +58,10 @@ function fmtDuration(sec: number): string {
 
 const versedPill = computed(() => {
   if (lastVersedAt.value === null) {
-    return { count: '—', hint: 'No dose', status: 'cooling' as TimerPillStatus };
+    return { count: '—', hint: 'No dose', status: 'idle' as TimerPillStatus };
   }
   const t = iv.versedTimerAt(now.value);
-  if (!t) return { count: '—', hint: 'No dose', status: 'cooling' as TimerPillStatus };
+  if (!t) return { count: '—', hint: 'No dose', status: 'idle' as TimerPillStatus };
   // Mirror the in-card pill exactly. Deliberately NOT "redose ok" — the
   // timer only knows the safety wait elapsed, not whether the patient is
   // already at ceiling, so it must not imply a re-dose is clinically safe.
@@ -74,10 +74,10 @@ const versedPill = computed(() => {
 
 const fentanylPill = computed(() => {
   if (lastFentanylAt.value === null) {
-    return { count: '—', hint: 'No dose', status: 'cooling' as TimerPillStatus };
+    return { count: '—', hint: 'No dose', status: 'idle' as TimerPillStatus };
   }
   const t = iv.fentanylTimerAt(now.value);
-  if (!t) return { count: '—', hint: 'No dose', status: 'cooling' as TimerPillStatus };
+  if (!t) return { count: '—', hint: 'No dose', status: 'idle' as TimerPillStatus };
   return {
     count: fmtDuration(t.elapsedSec),
     hint: t.state === 'ready' ? 'Ready' : 'Waiting',

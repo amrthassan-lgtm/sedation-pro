@@ -294,10 +294,10 @@ function fmtDuration(sec: number): string {
 
 const versedTimerView = computed(() => {
   if (lastVersedAt.value === null) {
-    return { count: '—', hint: 'Awaiting first dose', status: 'cooling' as TimerPillStatus };
+    return { count: '—', hint: 'Awaiting first dose', status: 'idle' as TimerPillStatus };
   }
   const t = iv.versedTimerAt(now.value);
-  if (!t) return { count: '—', hint: 'Awaiting first dose', status: 'cooling' as TimerPillStatus };
+  if (!t) return { count: '—', hint: 'Awaiting first dose', status: 'idle' as TimerPillStatus };
   // Single timer only: the count-up elapsed time is the timer. The hint is
   // a plain status word — no second (count-down) clock, which read as a
   // competing timer and was distracting.
@@ -308,10 +308,10 @@ const versedTimerView = computed(() => {
 
 const fentanylTimerView = computed(() => {
   if (lastFentanylAt.value === null) {
-    return { count: '—', hint: 'Awaiting first dose', status: 'cooling' as TimerPillStatus };
+    return { count: '—', hint: 'Awaiting first dose', status: 'idle' as TimerPillStatus };
   }
   const t = iv.fentanylTimerAt(now.value);
-  if (!t) return { count: '—', hint: 'Awaiting first dose', status: 'cooling' as TimerPillStatus };
+  if (!t) return { count: '—', hint: 'Awaiting first dose', status: 'idle' as TimerPillStatus };
   const count = t.state === 'ready' ? '✓' : fmtDuration(t.elapsedSec);
   const hint = t.state === 'ready' ? 'Ready' : 'Waiting';
   return { count, hint, status: t.state };

@@ -11,8 +11,9 @@ import type { Severity } from './types';
 /** Severity-shaped tones for banners — adds `info` and `neutral`. */
 export type BannerTone = Severity | 'info' | 'neutral';
 
-/** Visual state of a drug timer pill. */
-export type TimerPillStatus = 'cooling' | 'ramping' | 'ready';
+/** Visual state of a drug timer pill. `idle` is the before-any-dose state —
+ *  neutral, no tone. The other three are timer-driven once a dose is logged. */
+export type TimerPillStatus = 'idle' | 'cooling' | 'ramping' | 'ready';
 
 /** Paired blood-pressure value used by `<UiBpInput>`. */
 export interface BpValue {
