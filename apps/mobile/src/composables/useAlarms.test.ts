@@ -171,6 +171,34 @@ describe('useAlarms', () => {
     scope.stop();
   });
 
+  it('does not chime when release-ready flips within the first tick of a cold mount', async () => {
+    // Cold-start scenario the user hit: a stale-day session restores an
+    // IV dose just under the 20-min release window. The deadline crosses
+    // within the first useNow tick after `useAlarms()` setup. The three
+    // existing freshness gates (time-delta, visibility, data-changed) all
+    // pass on this tick — only the first-tick suppression keeps the stale
+    // END chime from firing while the resume-gate modal is still showing.
+    const iv = useIVStore();
+    iv.logDose({ drug: 'versed', mg: 2 });
+    // Advance to ~500 ms before the 20-min release deadline so the next
+    // 1-s setInterval tick will cross it. The 4-min head-start also pushes
+    // Versed past its 3-min ready threshold so prevVersed captures as
+    // 'ready' and the redose chime can't muddle this test.
+    vi.advanceTimersByTime(19 * 60_000 + 59_500);
+
+    const scope = effectScope();
+    scope.run(() => useAlarms());
+    await nextTick();
+    expect(playCount).toBe(0);
+
+    // First tick after mount crosses the 20-min release deadline.
+    vi.advanceTimersByTime(1_000);
+    await nextTick();
+
+    expect(playCount).toBe(0);
+    scope.stop();
+  });
+
   it('does not chime when an undo flips release-eligibility false → true', async () => {
     // Scenario: a single Versed dose past the 20-min release window
     // (clinician already heard the END chime). They tap a redose by

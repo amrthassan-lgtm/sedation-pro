@@ -45,7 +45,7 @@ import { premedWait, releaseEligibility } from '@sedation-pro/clinical';
  *    only; haptics are a separate sensory channel.
  *  - First-run guard: initial transition state is captured at setup, so a
  *    hydrated store already in "ready" after reload does not beep on mount.
- *  - Stale-resume guard (two layers, belt-and-suspenders):
+ *  - Stale-resume guard (three layers, belt-and-suspenders):
  *      * Time delta: when the `now` jump exceeds the tick interval by a
  *        lot, the transition resolved during a background freeze and is
  *        stale.
@@ -53,6 +53,15 @@ import { premedWait, releaseEligibility } from '@sedation-pro/clinical';
  *        to `visible`, the *next* tick is treated as stale regardless of
  *        the delta — iOS standalone occasionally produces coalesced ticks
  *        on resume that the time delta alone doesn't catch.
+ *      * First-tick suppression: the very first watcher invocation after
+ *        mount never fires a chime, regardless of state. Cold-starts with
+ *        a stale-day session can carry a state transition that the other
+ *        two gates miss (e.g. a `releaseReady` that flips false→true
+ *        within the first second because the deadline crossed in the gap
+ *        between store-hydration and the first tick). Cost: a true
+ *        transition that lands exactly on the first tick after mount is
+ *        missed by ~1 s — acceptable because active cases mount long
+ *        before any redose-ready / release-ready transition is due.
  *  - Data-driven suppression: if any source timestamp (`lastVersedAt`,
  *    `lastFentanylAt`, `lastFlumazenilAt`, `lastOralPremedAt`) changed
  *    between ticks, the transition was caused by a dose log or an undo —
@@ -304,6 +313,11 @@ export function useAlarms(): void {
   let prevFentanyl = fentanylState.value;
   let prevPremed = premedReady.value;
   let prevRelease = releaseReady.value;
+  // First-tick suppression flag — see the "Stale-resume guard" notes at
+  // the top of this file. The very first watcher invocation is always
+  // treated as stale so a cold-start can't fire a chime even if a
+  // transition slips through the time-delta + visibility gates.
+  let firstTick = true;
   // Source timestamps that drive the four `*Ready` computeds. If any
   // changed between ticks, the transition was data-driven (a dose was
   // logged or undone) rather than time-driven — chimes should suppress.
@@ -331,7 +345,7 @@ export function useAlarms(): void {
         currFentanylAt !== prevFentanylAt ||
         currFlumazenilAt !== prevFlumazenilAt ||
         currPremedAt !== prevPremedAt;
-      const fresh = !pendingResume && curr - prev <= FRESH_WINDOW_MS && !dataChanged;
+      const fresh = !firstTick && !pendingResume && curr - prev <= FRESH_WINDOW_MS && !dataChanged;
       const v = versedState.value;
       const f = fentanylState.value;
       const pm = premedReady.value;
@@ -349,6 +363,7 @@ export function useAlarms(): void {
       prevFlumazenilAt = currFlumazenilAt;
       prevPremedAt = currPremedAt;
       pendingResume = false;
+      firstTick = false;
     },
     { flush: 'sync' },
   );
