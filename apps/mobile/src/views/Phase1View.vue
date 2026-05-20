@@ -28,6 +28,7 @@ import {
   UiStack,
   UiTextarea,
   UiTextInput,
+  type SelectOption,
 } from '@sedation-pro/ui';
 import {
   DEFAULT_FORMULARY,
@@ -195,6 +196,21 @@ const smokingOptions = [
   { value: 'current', label: 'Current smoker' },
   { value: 'former', label: 'Former smoker' },
 ];
+
+// Drinks per week: 0–21 covers the clinically meaningful range — above
+// ~21/wk is already "very heavy" and the exact number stops changing
+// management. Bridges the numeric store ref (null = unanswered) to the
+// string-only UiSelect; selecting the placeholder writes null back.
+const alcoholOptions: SelectOption[] = Array.from({ length: 22 }, (_, i) => ({
+  value: String(i),
+  label: String(i),
+}));
+const alcoholValue = computed<string>({
+  get: () => (alcoholPerWeek.value === null ? '' : String(alcoholPerWeek.value)),
+  set: (v) => {
+    alcoholPerWeek.value = v === '' ? null : Number(v);
+  },
+});
 
 // -------- Live derived UI bits ---------------------------------------------
 
@@ -555,7 +571,12 @@ const diazepamModalCopy = computed(() => {
         </UiBanner>
         <UiRow :gap="3" wrap>
           <UiField label="Alcohol" hint="drinks per week">
-            <UiNumberInput v-model="alcoholPerWeek" placeholder="drinks/wk" :min="0" />
+            <UiSelect
+              v-model="alcoholValue"
+              :options="alcoholOptions"
+              placeholder="drinks/wk"
+              block
+            />
           </UiField>
         </UiRow>
         <UiField label="Recreational drugs">

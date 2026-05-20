@@ -66,7 +66,9 @@ const props = withDefaults(defineProps<Props>(), {
   letter-spacing: 0;
 }
 .ui-field-required {
-  color: var(--color-accent);
+  /* Neutral required marker — was accent blue. Stays subtle until the
+     `.is-invalid` rule flips it to danger on a clearance attempt. */
+  color: var(--color-text-tertiary);
   opacity: 1;
   font-size: 18px;
   line-height: 1;
