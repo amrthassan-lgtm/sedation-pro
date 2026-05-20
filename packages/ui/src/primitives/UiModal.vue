@@ -181,9 +181,10 @@ onUnmounted(() => {
   color: var(--color-danger);
 }
 .ui-modal-btn--primary {
-  background: var(--color-text-primary);
-  border-color: transparent;
-  color: var(--color-bg);
+  /* Same surface as the cancel/neutral default — primary hierarchy is
+     conveyed by weight + copy, not a bright fill. */
+  color: var(--color-text-primary);
+  font-weight: var(--weight-bold);
 }
 .ui-modal-btn--neutral {
   background: var(--color-surface-overlay);

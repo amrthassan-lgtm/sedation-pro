@@ -346,17 +346,14 @@ function emergency() {
   text-transform: uppercase;
   padding: 2px 7px;
   border-radius: var(--r-sm);
-  border: 1px solid transparent;
 }
 .sticky-bar-alert--danger {
   color: var(--color-danger);
   background: var(--color-danger-soft);
-  border-color: rgba(251, 113, 133, 0.3);
 }
 .sticky-bar-alert--caution {
   color: var(--color-warn);
   background: var(--color-warn-soft);
-  border-color: rgba(250, 204, 21, 0.3);
 }
 
 .sticky-bar-actions {
@@ -372,7 +369,7 @@ function emergency() {
   font-weight: var(--weight-semibold);
   padding: 8px 12px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--color-border);
+  border: none;
   background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -391,7 +388,6 @@ function emergency() {
   cursor: not-allowed;
 }
 .sticky-bar-undo.has-action {
-  border-color: rgba(250, 204, 21, 0.35);
   background: var(--color-warn-soft);
   color: var(--color-warn);
 }
@@ -407,7 +403,6 @@ function emergency() {
   opacity: 0.75;
 }
 .sticky-bar-emerg {
-  border-color: rgba(251, 113, 133, 0.4);
   background: var(--color-danger-soft);
   color: var(--color-danger);
   font-weight: var(--weight-bold);

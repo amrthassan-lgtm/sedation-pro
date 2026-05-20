@@ -125,13 +125,12 @@ const renderState = computed<ActionState>(() => {
 }
 
 /* Tones */
-/* Primary CTA: iOS-style high-contrast neutral fill — the contrast IS
-   the affordance, no accent hue needed. Theme-aware via the text tokens
-   (near-white-on-navy in dark; near-black-on-white in light). */
+/* Primary CTA: same neutral surface as the default button, distinguished
+   by font-weight only (bold vs semibold). Hierarchy comes from weight +
+   copy, not a bright fill — the high-contrast white-on-navy pattern was
+   too loud next to the muted chrome. */
 .ui-btn--primary {
-  border-color: transparent;
-  background: var(--color-text-primary);
-  color: var(--color-bg);
+  font-weight: var(--weight-bold);
 }
 .ui-btn--danger {
   border-color: rgba(251, 113, 133, 0.4);
