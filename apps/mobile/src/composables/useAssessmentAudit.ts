@@ -6,7 +6,7 @@ import {
   useEventLogStore,
   type LogEvent,
 } from '@/stores/event-log';
-import { usePatientStore } from '@/stores/patient';
+import { formatAlcoholBucket, usePatientStore } from '@/stores/patient';
 import { useToastStore } from '@/stores/toast';
 
 const AMENDMENT_DEBOUNCE_MS = 3000;
@@ -121,7 +121,7 @@ export function useAssessmentAudit(): void {
       Glucose: glucoseStr,
       Smoking: norm(patient.smokingStatus),
       'Cigarettes/day': cigsStr,
-      'Alcohol/wk': norm(patient.alcoholPerWeek),
+      'Alcohol/wk': formatAlcoholBucket(patient.alcoholPerWeek),
       'Recreational drugs': norm(patient.recreationalDrugs),
       Medications: norm(patient.medicationsList),
       Allergies: norm(patient.allergiesList),

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 
-import { usePatientStore } from '@/stores/patient';
+import { alcoholBucketValue, usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { useGateFeedback } from '@/composables/useGateFeedback';
@@ -29,7 +29,6 @@ import {
   UiStack,
   UiTextarea,
   UiTextInput,
-  type SelectOption,
 } from '@sedation-pro/ui';
 import {
   DEFAULT_FORMULARY,
@@ -193,28 +192,34 @@ const mallampatiOptions = [
   { value: 'IV', label: 'IV' },
 ];
 const osaOptions = [
-  { value: 'none', label: 'No history' },
-  { value: 'osa-diagnosed', label: 'Yes · OSA diagnosed' },
-  { value: 'cpap-prescribed', label: 'Yes · CPAP prescribed' },
+  { value: 'none', label: 'None' },
+  { value: 'osa-diagnosed', label: 'OSA' },
+  { value: 'cpap-prescribed', label: 'CPAP' },
 ];
 const smokingOptions = [
-  { value: 'never', label: 'Non-smoker' },
-  { value: 'current', label: 'Current smoker' },
-  { value: 'former', label: 'Former smoker' },
+  { value: 'never', label: 'Never' },
+  { value: 'current', label: 'Current' },
+  { value: 'former', label: 'Former' },
 ];
 
-// Drinks per week: 0–21 covers the clinically meaningful range — above
-// ~21/wk is already "very heavy" and the exact number stops changing
-// management. Bridges the numeric store ref (null = unanswered) to the
-// string-only UiSelect; selecting the placeholder writes null back.
-const alcoholOptions: SelectOption[] = Array.from({ length: 22 }, (_, i) => ({
-  value: String(i),
-  label: String(i),
-}));
-const alcoholValue = computed<string>({
-  get: () => (alcoholPerWeek.value === null ? '' : String(alcoholPerWeek.value)),
+// Drinks per week as bucket chips. Above ~21/wk is already "very heavy"
+// and the exact number stops changing management, so 4 bands cover the
+// clinically meaningful range. The stored ref keeps the bucket midpoint
+// (or lower bound for the open-ended top bucket) so the printed note +
+// audit log can describe the patient's drinking band even though we no
+// longer collect an exact weekly count. Legacy stored exact values like
+// "9 drinks/wk" still highlight the correct chip on next load and get
+// saved as the bucket midpoint on the next edit.
+const alcoholOptions = [
+  { value: 0, label: '0' },
+  { value: 4, label: '1–7' },
+  { value: 11, label: '8–14' },
+  { value: 15, label: '15+' },
+];
+const alcoholValue = computed<number>({
+  get: () => alcoholBucketValue(alcoholPerWeek.value) ?? -1,
   set: (v) => {
-    alcoholPerWeek.value = v === '' ? null : Number(v);
+    alcoholPerWeek.value = v;
   },
 });
 
@@ -486,7 +491,7 @@ const diazepamModalCopy = computed(() => {
           required
           :invalid="isMissing('osa_history')"
         >
-          <UiSelect v-model="osaStatus" :options="osaOptions" placeholder="Select…" block />
+          <UiChipGroup v-model="osaStatus" :options="osaOptions" />
         </UiField>
         <UiCheckbox v-model="diabetic" label="Diabetic" />
         <UiField
@@ -530,7 +535,7 @@ const diazepamModalCopy = computed(() => {
           required
           :invalid="isMissing('smoking_status')"
         >
-          <UiSelect v-model="smokingStatus" :options="smokingOptions" placeholder="Select…" block />
+          <UiChipGroup v-model="smokingStatus" :options="smokingOptions" />
         </UiField>
         <UiField v-if="smokingStatus === 'current'" label="Cigarettes" hint="per day">
           <UiNumberInput v-model="cigarettesPerDay" :min="0" :max="100" />
@@ -541,7 +546,7 @@ const diazepamModalCopy = computed(() => {
         </UiBanner>
         <UiRow :gap="3" wrap>
           <UiField label="Alcohol" hint="drinks per week">
-            <UiSelect v-model="alcoholValue" :options="alcoholOptions" placeholder="—" block />
+            <UiChipGroup v-model="alcoholValue" :options="alcoholOptions" />
           </UiField>
         </UiRow>
         <UiField label="Recreational drugs">

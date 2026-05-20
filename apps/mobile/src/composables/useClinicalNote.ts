@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useEventLogStore, type LogEvent } from '@/stores/event-log';
 import { useIVStore } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
-import { usePatientStore } from '@/stores/patient';
+import { formatAlcoholBucket, usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 import {
   classifyEncounter,
@@ -164,10 +164,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
           ? `${patient.cigarettesPerDay}`
           : '—',
       ],
-      [
-        'Alcohol (drinks/week)',
-        patient.alcoholPerWeek !== null ? `${patient.alcoholPerWeek}` : '—',
-      ],
+      ['Alcohol (drinks/week)', formatAlcoholBucket(patient.alcoholPerWeek)],
       ['Recreational drugs', patient.recreationalDrugs.trim() || 'Denies'],
       ['EKG placed', patient.ekgPlaced ? 'Yes' : '—'],
       ['Emergency drugs accessible', patient.emergencyDrugsAvailable ? 'Yes' : '—'],

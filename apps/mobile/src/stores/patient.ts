@@ -21,6 +21,31 @@ import { persistRefs } from './persistence';
  * A live safety alert surfaced in the sticky bar. Computed from the patient
  * store so the alert pills can't drift from the rest of the UI.
  */
+/**
+ * Drinks-per-week buckets backing the alcohol chip group. Stored value is
+ * the bucket's midpoint (or lower bound for the open-ended top bucket) so
+ * the printed note + audit log can describe the patient's drinking band
+ * accurately even though we no longer collect an exact weekly count.
+ * Legacy stored values from the previous numeric dropdown still map
+ * correctly to their bucket.
+ */
+export function alcoholBucketValue(weekly: number | null): number | null {
+  if (weekly === null) return null;
+  if (weekly === 0) return 0;
+  if (weekly <= 7) return 4;
+  if (weekly <= 14) return 11;
+  return 15;
+}
+
+export function formatAlcoholBucket(weekly: number | null): string {
+  const b = alcoholBucketValue(weekly);
+  if (b === null) return '—';
+  if (b === 0) return '0';
+  if (b === 4) return '1–7';
+  if (b === 11) return '8–14';
+  return '15+';
+}
+
 export interface SafetyAlert {
   readonly code: 'asa' | 'osa' | 'mallampati' | 'bmi' | 'age';
   readonly label: string;
