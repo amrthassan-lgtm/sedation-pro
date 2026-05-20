@@ -175,10 +175,10 @@ function advanceOrShowMissing(): void {
 }
 
 const asaOptions = [
-  { value: 'I', label: 'ASA I — Healthy' },
-  { value: 'II', label: 'ASA II — Mild systemic disease' },
-  { value: 'III', label: 'ASA III — Severe systemic disease' },
-  { value: 'IV', label: 'ASA IV — Life-threatening' },
+  { value: 'I', label: 'ASA I · Healthy' },
+  { value: 'II', label: 'ASA II · Mild systemic disease' },
+  { value: 'III', label: 'ASA III · Severe systemic disease' },
+  { value: 'IV', label: 'ASA IV · Life-threatening' },
 ];
 const mallampatiOptions = [
   { value: 'I', label: 'Class I' },
@@ -188,8 +188,8 @@ const mallampatiOptions = [
 ];
 const osaOptions = [
   { value: 'none', label: 'No history' },
-  { value: 'osa-diagnosed', label: 'Yes — OSA diagnosed' },
-  { value: 'cpap-prescribed', label: 'Yes — CPAP prescribed' },
+  { value: 'osa-diagnosed', label: 'Yes · OSA diagnosed' },
+  { value: 'cpap-prescribed', label: 'Yes · CPAP prescribed' },
 ];
 const smokingOptions = [
   { value: 'never', label: 'Non-smoker' },
@@ -249,7 +249,7 @@ const diazepamAttributes = computed<ReadonlyArray<DrugAttribute>>(() => {
     ...base,
     {
       label: 'Caution',
-      value: 'Documented OSA / CPAP — airway risk; requires explicit override',
+      value: 'Documented OSA / CPAP · airway risk; requires explicit override',
       tone: 'limit',
     },
   ];
@@ -319,7 +319,7 @@ const diazepamModalCopy = computed(() => {
   if (decision === 'block-missing-osa') {
     return {
       title: 'OSA history required',
-      body: 'Select the patient’s OSA / CPAP status before prescribing bedtime diazepam — the gate exists because OSA changes the airway-risk math.',
+      body: 'Select the patient’s OSA / CPAP status before prescribing bedtime diazepam. OSA changes the airway-risk math.',
       tone: 'primary' as const,
       confirmLabel: 'Got it',
       hideCancel: true,
@@ -327,7 +327,7 @@ const diazepamModalCopy = computed(() => {
   }
   return {
     title: 'OSA contraindication',
-    body: 'Documented OSA or CPAP. Diazepam carries significant airway risk at bedtime — prescribe only with explicit clinical justification.',
+    body: 'Documented OSA or CPAP. Diazepam carries significant airway risk at bedtime. Prescribe only with explicit clinical justification.',
     tone: 'danger' as const,
     confirmLabel: 'Prescribe anyway',
     hideCancel: false,
@@ -458,7 +458,7 @@ const diazepamModalCopy = computed(() => {
         icon="⚠"
         class="mt-2"
       >
-        Patient is {{ age }} y/o — requires an exam within the last
+        Patient is {{ age }} y/o. Requires an exam within the last
         <strong>{{ lastExam.cutoffMonths }}</strong> months. Last exam recorded:
         {{ lastExam.elapsedMonths }} months ago. Update before sedation.
       </UiBanner>
@@ -587,7 +587,7 @@ const diazepamModalCopy = computed(() => {
           required
           :invalid="isMissing('ekg_placed')"
           label="EKG leads placed"
-          hint="3-lead — verify rhythm and waveform"
+          hint="3-lead · verify rhythm and waveform"
         />
         <UiCheckbox
           id="field-emergency_drugs_available"
@@ -595,7 +595,7 @@ const diazepamModalCopy = computed(() => {
           required
           :invalid="isMissing('emergency_drugs_available')"
           label="Emergency drugs accessible"
-          hint="Flumazenil · Naloxone · Epinephrine · Atropine · Albuterol · Nitroglycerin · Dextrose — all in reach"
+          hint="Flumazenil · Naloxone · Epinephrine · Atropine · Albuterol · Nitroglycerin · Dextrose · all in reach"
         />
         <UiCheckbox
           id="field-monitoring_equipment_checked"
@@ -617,7 +617,7 @@ const diazepamModalCopy = computed(() => {
         title="Heavier ASA I patient"
         class="mt-2"
       >
-        Over 200 lb and ASA I — consider <strong>10 mg</strong> at bedtime; 5 mg often underdoses.
+        Over 200 lb and ASA I. Consider <strong>10 mg</strong> at bedtime; 5 mg often underdoses.
       </UiBanner>
       <div class="drug-grid mt-2">
         <UiDrugButton
@@ -671,12 +671,12 @@ const diazepamModalCopy = computed(() => {
       >
         <template v-if="isPhase1Complete">
           <span class="phase-advance-icon" aria-hidden="true">→</span>
-          <span class="phase-advance-text">Continue to Phase 2 — Oral Sedation</span>
+          <span class="phase-advance-text">Continue to Phase 2 · Oral Sedation</span>
         </template>
         <template v-else>
           <span class="phase-advance-icon" aria-hidden="true">🔒</span>
           <span class="phase-advance-text">
-            {{ missingCount }} required field{{ missingCount === 1 ? '' : 's' }} missing — show me
+            {{ missingCount }} required field{{ missingCount === 1 ? '' : 's' }} missing · show me
           </span>
         </template>
       </button>

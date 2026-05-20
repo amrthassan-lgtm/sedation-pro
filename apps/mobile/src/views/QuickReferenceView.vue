@@ -74,7 +74,7 @@ const DRUG_REF_SEEDS: ReadonlyArray<DrugRefSeed> = [
     tapeColor: '#3b82f6',
     doses: [25, 50],
     doseUnit: 'mcg',
-    note: 'Titrate 25-50 mcg q5 min. Lowers BP slightly — use judiciously.',
+    note: 'Titrate 25-50 mcg q5 min. Lowers BP slightly; use judiciously.',
     warning: 'Allergy to codeine → no fentanyl.',
   },
   {
@@ -333,7 +333,7 @@ onMounted(() => {
         type="search"
         inputmode="search"
         leading-icon="🔍"
-        placeholder="Search — signs, drug, protocol name…"
+        placeholder="Search signs, drugs, protocols…"
         block
       />
       <button v-if="isSearching" type="button" class="search-clear" @click="clearSearch">

@@ -444,7 +444,7 @@ function onTouchEnd() {
     @confirm="confirmNewCase"
     @cancel="cancelNewCase"
   >
-    Current patient data, event log, and IV totals will be cleared. This can't be undone — make sure
+    Current patient data, event log, and IV totals will be cleared. This can't be undone. Make sure
     the clinical note has been generated or shared if you still need it.
   </UiModal>
 </template>

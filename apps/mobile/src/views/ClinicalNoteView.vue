@@ -14,10 +14,10 @@ const dispositionLabel = computed(() => {
   const d = note.value.disposition;
   if (d.kind === 'assessment') {
     return d.released
-      ? 'Final — pre-sedation assessment; sedation deferred'
-      : 'Preliminary — pre-sedation assessment (sedation deferred)';
+      ? 'Final · pre-sedation assessment; sedation deferred'
+      : 'Preliminary · pre-sedation assessment (sedation deferred)';
   }
-  return d.released ? `Final — patient released ${d.at}` : 'Preliminary — patient not yet released';
+  return d.released ? `Final · patient released ${d.at}` : 'Preliminary · patient not yet released';
 });
 // Single-source logo (same asset as the favicon / PWA icon). BASE_URL so it
 // resolves under the GitHub Pages subpath and a custom-domain root alike.

@@ -110,15 +110,15 @@ const {
 } = storeToRefs(recovery);
 
 const sedationRatingOptions = [
-  { value: 'excellent', label: 'Excellent — pt cooperative, no movement' },
-  { value: 'good', label: 'Good — minor adjustments needed' },
-  { value: 'fair', label: 'Fair — required extra titration' },
-  { value: 'poor', label: 'Poor — significant intervention required' },
+  { value: 'excellent', label: 'Excellent · pt cooperative, no movement' },
+  { value: 'good', label: 'Good · minor adjustments needed' },
+  { value: 'fair', label: 'Fair · required extra titration' },
+  { value: 'poor', label: 'Poor · significant intervention required' },
 ];
 
 const returnVisitOptions = [
-  { value: 'prn', label: 'PRN — return as needed' },
-  { value: 'scheduled', label: 'Scheduled — date below' },
+  { value: 'prn', label: 'PRN · return as needed' },
+  { value: 'scheduled', label: 'Scheduled · date below' },
 ];
 
 const companionRelationOptions = DEFAULT_FORMULARY.picklists.companionRelations.map((r) => ({
@@ -227,7 +227,7 @@ const ivOutChipTone = computed(() => {
 
 const ivOutChipHeadline = computed(() => {
   if (releaseStatus.value.reason === 'no-sedative-given') {
-    return 'No sedative given — observation not required.';
+    return 'No sedative given. Observation not required.';
   }
   if (releaseStatus.value.eligible) {
     return releaseStatus.value.reason === 'flumazenil-reversal'
@@ -235,7 +235,7 @@ const ivOutChipHeadline = computed(() => {
       : `${releaseStatus.value.waitMin}-minute observation complete.`;
   }
   return releaseStatus.value.reason === 'flumazenil-reversal'
-    ? `Post-flumazenil monitoring — ${releaseStatus.value.remainingMin} min remaining (120 min total).`
+    ? `Post-flumazenil monitoring · ${releaseStatus.value.remainingMin} min remaining (120 min total).`
     : `${releaseStatus.value.remainingMin} min remaining of the 20-min observation wait.`;
 });
 
@@ -304,7 +304,7 @@ function releasePatient() {
   haptic('success');
   recovery.stampReleased();
   undo.stamp({
-    event: isAssessment.value ? 'Assessment Completed — sedation deferred' : 'Patient Released',
+    event: isAssessment.value ? 'Assessment Completed · sedation deferred' : 'Patient Released',
     details: isAssessment.value
       ? {}
       : { Companion: `${companionName.value} (${companionRelation.value})` },
@@ -604,17 +604,17 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
       <template v-if="isAssessment">
         <UiBanner v-if="!providerSigned" tone="caution" class="mt-2">
-          Pre-sedation assessment — provider signature required. Sedation deferred to a later date.
+          Pre-sedation assessment · provider signature required. Sedation deferred to a later date.
         </UiBanner>
         <UiBanner v-else tone="info" class="mt-2">
-          Pre-sedation assessment complete — sedation deferred to a later date.
+          Pre-sedation assessment complete · sedation deferred to a later date.
         </UiBanner>
       </template>
 
       <template v-else>
         <UiBanner v-if="dismissal.blocked" tone="limit" class="mt-2">
           <strong
-            >Cannot release yet — {{ blockerCount }} item{{
+            >Cannot release yet · {{ blockerCount }} item{{
               blockerCount === 1 ? '' : 's'
             }}
             outstanding:</strong
@@ -623,14 +623,14 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             <li v-for="b in dismissal.blockers" :key="b.code">
               {{ b.label
               }}<span v-if="b.detail">
-                — <em>{{ b.detail }}</em></span
+                · <em>{{ b.detail }}</em></span
               >
             </li>
           </ul>
         </UiBanner>
 
         <UiBanner v-else-if="!releaseStatus.eligible" tone="caution" icon="⏱" class="mt-2">
-          Discharge checks complete — finishing the post-sedation observation window.
+          Discharge checks complete. Finishing the post-sedation observation window.
         </UiBanner>
 
         <UiBanner v-else tone="safe" icon="✓" class="mt-2"> All discharge criteria met. </UiBanner>

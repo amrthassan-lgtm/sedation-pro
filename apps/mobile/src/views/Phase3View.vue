@@ -550,7 +550,7 @@ function onNaloxone() {
           </UiField>
         </UiRow>
         <UiBanner v-if="premedChip" :tone="premedChip.eligible ? 'safe' : 'caution'" icon="⏱">
-          Pre-med wait —
+          Pre-med wait ·
           <template v-if="premedChip.eligible"> ready to start IV. </template>
           <template v-else>
             {{ premedChip.remainingMin }} min remaining (clinical cushion, not a hard block).
@@ -707,7 +707,7 @@ function onNaloxone() {
             </UiRow>
             <UiPercentBar :percent="combinedCard.percent" thickness="lg" class="mt-2" />
             <p v-if="versedCard.ceilingReducedByOpioid" class="synergy-note">
-              Synergy: Versed ceiling reduced 30% — Fentanyl on board
+              Synergy: Versed ceiling reduced 30% · Fentanyl on board
             </p>
           </UiCard>
         </UiStack>
@@ -889,7 +889,7 @@ function onNaloxone() {
           <li>If improving → <strong>stop.</strong> Do not give more.</li>
           <li>If no improvement → repeat 0.2 mg every 3 min, max 1.0 mg total (5 doses).</li>
           <li>
-            Continue to monitor for <strong>120 minutes</strong> — flumazenil half-life is shorter
+            Continue to monitor for <strong>120 minutes</strong>. Flumazenil half-life is shorter
             than the benzodiazepine it reverses; patient may re-sedate.
           </li>
         </ol>
@@ -918,7 +918,7 @@ function onNaloxone() {
             encephalopathy).
           </li>
           <li>
-            Monitor continuously for 1-2 hours after the last dose — patient may re-sedate as
+            Monitor continuously for 1-2 hours after the last dose. Patient may re-sedate as
             naloxone clears.
           </li>
         </ol>
