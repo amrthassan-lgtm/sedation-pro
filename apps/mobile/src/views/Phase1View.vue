@@ -278,6 +278,16 @@ const anesthesiaHistoryTerms = ['Uneventful', 'None', 'Prior IV sedation'];
 const familyHistoryTerms = ['Non-contributory', 'MH (malignant hyperthermia)', 'Cardiac'];
 const recreationalDrugTerms = ['Denies', 'Cannabis'];
 
+// Yes/No chips for binary clinical questions (Diabetic here; Phase 4 reuses
+// the same shape for Nausea / Bleeding observations). Boolean storage stays
+// the same as the previous UiCheckbox, so dependent fields (`v-if="diabetic"`,
+// dismissalSafety inputs) keep their semantics — the chip pattern is purely
+// a visual upgrade for clarity vs the implicit-default-false checkbox.
+const yesNoOptions = [
+  { value: false, label: 'No' },
+  { value: true, label: 'Yes' },
+];
+
 // -------- Live derived UI bits ---------------------------------------------
 
 const lastExam = computed(() => {
@@ -548,7 +558,9 @@ const diazepamModalCopy = computed(() => {
         >
           <UiChipGroup v-model="osaStatus" :options="osaOptions" />
         </UiField>
-        <UiCheckbox v-model="diabetic" label="Diabetic" />
+        <UiField label="Diabetic">
+          <UiChipGroup v-model="diabetic" :options="yesNoOptions" />
+        </UiField>
         <UiField
           v-if="diabetic"
           id="field-baseline_glucose"

@@ -36,7 +36,7 @@ const props = withDefaults(defineProps<Props>(), {
       {{ props.label }}
       <span v-if="props.hint" class="ui-field-hint">{{ props.hint }}</span>
       <span v-if="props.required" class="ui-field-required" aria-hidden="true">·</span>
-      <span v-if="props.invalid" class="ui-field-required-text">required</span>
+      <span v-if="props.invalid && props.required" class="ui-field-required-text">required</span>
     </label>
     <div class="ui-field-slot">
       <slot />

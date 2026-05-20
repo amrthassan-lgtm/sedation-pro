@@ -30,14 +30,15 @@ export interface SelectOption {
 
 /**
  * Option shape used by `<UiChipGroup>`. Generic over the value type so the
- * same primitive handles numeric chip rows (bathroom breaks, attempts) and
- * string chip rows (Roman-numeral classes, rating tokens).
+ * same primitive handles numeric chip rows (bathroom breaks, attempts),
+ * string chip rows (Roman-numeral classes, rating tokens), and Yes/No
+ * boolean chip rows (Diabetic, Nausea, Excessive bleeding).
  *
  * `caption` is surfaced beneath the chip row when the group is configured
  * with `show-caption` and this option is active — used for ASA's
  * "I → Healthy" subtitle without making the chips themselves wider.
  */
-export interface ChipOption<T extends string | number> {
+export interface ChipOption<T extends string | number | boolean> {
   readonly value: T;
   readonly label: string;
   readonly caption?: string;

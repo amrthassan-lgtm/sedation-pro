@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends string | number">
+<script setup lang="ts" generic="T extends string | number | boolean">
 import { computed } from 'vue';
 import type { ChipOption } from '../primitive-types';
 

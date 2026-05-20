@@ -137,6 +137,15 @@ const bathroomBreakOptions = [
   { value: 3, label: '3+' },
 ];
 
+// Yes/No chips for the negative-polarity discharge-observation fields
+// (nausea, bleeding). Replaces UiCheckbox+tone='danger' — chips force an
+// explicit answer instead of relying on "didn't tick the box ≈ no
+// problem" which was easy to misread under time pressure.
+const yesNoOptions = [
+  { value: false, label: 'No' },
+  { value: true, label: 'Yes' },
+];
+
 const companionRelationOptions = DEFAULT_FORMULARY.picklists.companionRelations.map((r) => ({
   value: r,
   label: r,
@@ -462,21 +471,26 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             :invalid="gate.isInvalid('gate-pulseox')"
             @update:model-value="(v) => recovery.setDischarge('pulseOxPrinted', v)"
           />
-          <UiCheckbox
+        </UiStack>
+
+        <p class="caption mt-1">Recovery observations</p>
+        <UiStack :gap="2">
+          <UiField
             id="gate-nausea"
-            v-model="nauseaOrVomiting"
-            tone="danger"
-            label="Nausea or vomiting noted"
-            hint="Defer discharge if checked"
+            label="Nausea or vomiting"
+            hint="Yes blocks discharge"
             :invalid="gate.isInvalid('gate-nausea')"
-          />
-          <UiCheckbox
+          >
+            <UiChipGroup v-model="nauseaOrVomiting" :options="yesNoOptions" />
+          </UiField>
+          <UiField
             id="gate-bleeding"
-            v-model="excessiveBleeding"
-            tone="danger"
-            label="Excessive bleeding observed"
+            label="Excessive bleeding"
+            hint="Yes blocks discharge"
             :invalid="gate.isInvalid('gate-bleeding')"
-          />
+          >
+            <UiChipGroup v-model="excessiveBleeding" :options="yesNoOptions" />
+          </UiField>
         </UiStack>
 
         <p class="caption mt-1">Companion</p>
