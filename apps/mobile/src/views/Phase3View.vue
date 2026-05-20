@@ -851,10 +851,9 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading"><span class="heading-step">10</span>Reversal Agents</p>
-      <UiBanner tone="limit" icon="🚨" class="mt-2">
-        <strong>Emergency use only.</strong> Tapping either button reveals the full administration
-        process below. Flumazenil also extends the IV-out / sign-note wait to 120 min per the DOCS
-        reversal monitoring protocol.
+      <UiBanner tone="limit" class="mt-2">
+        <strong>Emergency use only.</strong> Flumazenil extends the post-reversal monitoring wait to
+        120 min.
       </UiBanner>
       <div class="drug-grid mt-2">
         <UiDrugButton
