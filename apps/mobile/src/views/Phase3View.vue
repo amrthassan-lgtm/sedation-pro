@@ -474,19 +474,19 @@ function onNaloxone() {
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
-            <UiNumberInput v-model="preOpHr" placeholder="HR" />
+            <UiNumberInput v-model="preOpHr" />
           </UiField>
           <UiField label="BP" hint="mmHg">
             <UiBpInput v-model="preOpBp" />
           </UiField>
           <UiField label="SpO₂" hint="%">
-            <UiNumberInput v-model="preOpSpo2" :min="0" :max="100" placeholder="%" />
+            <UiNumberInput v-model="preOpSpo2" :min="0" :max="100" />
           </UiField>
           <UiField label="EtCO₂" hint="mmHg">
-            <UiNumberInput v-model="preOpEtco2" placeholder="EtCO₂" />
+            <UiNumberInput v-model="preOpEtco2" />
           </UiField>
           <UiField v-if="diabetic" label="Glucose" hint="mg/dL · diabetic">
-            <UiNumberInput v-model="preOpGlucose" placeholder="Glucose" :min="0" />
+            <UiNumberInput v-model="preOpGlucose" :min="0" />
           </UiField>
         </UiRow>
         <UiField label="Patient response">
@@ -534,7 +534,6 @@ function onNaloxone() {
               v-if="gaugeIsOther"
               v-model="ivCatheterGauge"
               inputmode="numeric"
-              placeholder="Gauge"
               class="mt-2"
             />
           </UiField>
@@ -543,21 +542,11 @@ function onNaloxone() {
           </UiField>
           <UiField label="Site">
             <UiSelect v-model="siteValue" :options="siteOptions" block />
-            <UiTextInput
-              v-if="siteIsOther"
-              v-model="ivSite"
-              placeholder="Specify site"
-              class="mt-2"
-            />
+            <UiTextInput v-if="siteIsOther" v-model="ivSite" class="mt-2" />
           </UiField>
           <UiField label="Fluid" hint="ml">
             <UiSelect v-model="fluidValue" :options="fluidOptions" block />
-            <UiTextInput
-              v-if="fluidIsOther"
-              v-model="ivFluid"
-              placeholder="Specify fluid"
-              class="mt-2"
-            />
+            <UiTextInput v-if="fluidIsOther" v-model="ivFluid" class="mt-2" />
           </UiField>
         </UiRow>
         <UiBanner v-if="premedChip" :tone="premedChip.eligible ? 'safe' : 'caution'" icon="⏱">
@@ -732,19 +721,19 @@ function onNaloxone() {
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
-            <UiNumberInput v-model="sedHr" placeholder="HR" />
+            <UiNumberInput v-model="sedHr" />
           </UiField>
           <UiField label="BP" hint="mmHg">
             <UiBpInput v-model="sedBp" />
           </UiField>
           <UiField label="SpO₂" hint="%">
-            <UiNumberInput v-model="sedSpo2" :min="0" :max="100" placeholder="%" />
+            <UiNumberInput v-model="sedSpo2" :min="0" :max="100" />
           </UiField>
           <UiField label="EtCO₂" hint="mmHg">
-            <UiNumberInput v-model="sedEtco2" placeholder="EtCO₂" />
+            <UiNumberInput v-model="sedEtco2" />
           </UiField>
           <UiField v-if="diabetic" label="Glucose" hint="mg/dL · diabetic">
-            <UiNumberInput v-model="sedGlucose" placeholder="Glucose" :min="0" />
+            <UiNumberInput v-model="sedGlucose" :min="0" />
           </UiField>
         </UiRow>
         <UiField label="Patient response">
