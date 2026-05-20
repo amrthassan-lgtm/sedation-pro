@@ -1,83 +1,111 @@
 import { computed, watch } from 'vue';
 
 import { useAudioStore } from '@/stores/audio';
+import { useEventLogStore } from '@/stores/event-log';
 import { useIVStore } from '@/stores/iv';
 import { useNow } from '@/composables/useNow';
 import { haptic } from '@/composables/useHaptics';
+import { premedWait, releaseEligibility } from '@sedation-pro/clinical';
 
 /**
- * Audio alerts — a synthesized "ready to redose" chime that fires when the
- * Versed or Fentanyl half-life timer transitions into the `ready` state
- * (cooling + ramping windows elapsed; the clinician may safely redose).
+ * Audio alerts — synthesized chimes that fire at the four "you may now…"
+ * transitions of a sedation case:
  *
- * Scope is deliberately narrow: only these two transitions. Phase 1 lock,
- * IV-out countdown, and crisis-vital alerts use the existing visual
- * channels (banner, sticky-bar pill, stat-card severity tint) — adding
- * audio for everything dilutes attention.
+ *  1. Pre-med wait cleared (oral pre-med given → 30 min elapsed) — patient
+ *     is ready for IV start.
+ *  2. Versed redose ready (cooling + ramping windows elapsed).
+ *  3. Fentanyl redose ready (cooling window elapsed).
+ *  4. IV-out / release wait cleared — the post-last-IV-med observation
+ *     window has elapsed (20 min standard / 120 min after flumazenil).
+ *
+ * Two distinct sounds, deliberately:
+ *  - Transitions 1–3 share the **ascending** "you may proceed" motif
+ *    (E5 → A5 → D6 → G6). They are all mid-case go-ahead cues — a single
+ *    motif means less to learn.
+ *  - Transition 4 uses a distinct **descending** resolution motif
+ *    (G5 → E5 → C5, a settled C-major cadence). The supervised window is
+ *    *done* — a qualitatively different "released / case complete" sound so
+ *    the clinician hears the end-of-case event without looking at the
+ *    screen. The visual IV-out chip is the always-on truth; the chime is
+ *    the audible cue.
  *
  * Why HTMLAudioElement and not the Web Audio API:
  *  - The chime *was* synthesized live with oscillators. That works on
  *    Android and desktop Chrome but never sounded on iOS at all — Safari
  *    tab *and* Home-Screen app alike. iOS gates audio hard on a real user
- *    gesture and the prior `AudioContext.resume()`-based unlock did not
- *    reliably take, so the timer-driven `tick()` produced silence on every
- *    iPhone (the "works on Samsung, dead on iPhone" symptom).
+ *    gesture and an `AudioContext.resume()`-based unlock did not reliably
+ *    take, so the timer-driven chime produced silence on every iPhone.
  *  - An `HTMLAudioElement` unlocked with a gesture-initiated muted
  *    play()/pause() is the proven cross-iOS path (Safari tab + standalone)
  *    and works on Android/desktop too, so it is the single portable path.
- *  - Still fully synthesized / no bundled asset: the same rising motif is
- *    rendered to an in-memory PCM WAV data-URI once, lazily, with plain
- *    math (no AudioContext at all — removes every Web Audio quirk).
- *  - iOS still gates playback on a user gesture, so the element is
- *    "unlocked" with a muted play()/pause() inside App.vue's pointerdown
- *    (see `unlockAudio`). After that, the timer-driven `tick()` may play it
- *    programmatically.
+ *  - Still fully synthesized / no bundled asset: each motif is rendered to
+ *    an in-memory PCM WAV data-URI once, lazily, with plain math (no
+ *    AudioContext at all — removes every Web Audio quirk).
  *  - Audio + haptic pair on every alert. The mute flag silences audio
  *    only; haptics are a separate sensory channel.
- *  - First-run guard: initial timer state is captured at setup, so a
- *    hydrated store already in `ready` after reload does not beep on mount.
+ *  - First-run guard: initial transition state is captured at setup, so a
+ *    hydrated store already in "ready" after reload does not beep on mount.
  *  - Stale-resume guard: `useNow`'s interval is frozen while the app is
- *    backgrounded (screen locked, app switched away — especially an iOS
- *    home-screen app). On return `now` jumps by the whole absence. A
- *    cooling→ready transition that resolved *during* that freeze is stale,
- *    so the chime is suppressed when the `now` jump is far larger than the
- *    tick interval — returning to the app must not replay a minutes-old
- *    ding. The visual timer pill (already correct on return) carries it.
+ *    backgrounded (especially an iOS home-screen app). On return `now`
+ *    jumps by the whole absence. A transition that resolved *during* that
+ *    freeze is stale, so the chime is suppressed when the `now` jump is
+ *    far larger than the tick interval — returning must not replay a
+ *    minutes-old ding.
  *
  * Note: this does not defeat the iPhone hardware Ring/Silent switch (iOS
  * routes web audio through the ringer channel; only a native AVAudioSession
  * can override that). With the ringer on, the chime now sounds.
  */
 
-// Rising four-note motif (E5→A5→D6→G6), triangle timbre, ~1.9 s total. The
-// ascending shape reads as "cleared / you may proceed", long enough to
-// recognise mid-task without being a crisis klaxon. Tune here.
 const SAMPLE_RATE = 22050;
-const PULSES: ReadonlyArray<number> = [659, 880, 1175, 1568];
-const PULSE_SEC = 0.38;
-const GAP_SEC = 0.1;
-const PEAK = 0.6;
-const ATTACK_SEC = 0.02;
-const RELEASE_SEC = 0.06;
 
-/** Render the motif to 16-bit mono PCM samples (pure math, no Web Audio). */
-function renderPcm(): Int16Array {
-  const slot = PULSE_SEC + GAP_SEC;
-  const total = Math.ceil(PULSES.length * slot * SAMPLE_RATE);
+interface Motif {
+  /** Pulse frequencies in Hz, played in order. */
+  readonly pulses: ReadonlyArray<number>;
+  readonly pulseSec: number;
+  readonly gapSec: number;
+  readonly peak: number;
+  readonly attackSec: number;
+  readonly releaseSec: number;
+}
+
+/** Ascending E5 → G6 — "you may proceed" (pre-med clear, redose ready). */
+const READY_MOTIF: Motif = {
+  pulses: [659, 880, 1175, 1568],
+  pulseSec: 0.38,
+  gapSec: 0.1,
+  peak: 0.6,
+  attackSec: 0.02,
+  releaseSec: 0.06,
+};
+
+/** Descending G5 → E5 → C5 — settled C-major cadence: "case complete". */
+const END_MOTIF: Motif = {
+  pulses: [784, 659, 523],
+  pulseSec: 0.5,
+  gapSec: 0.08,
+  peak: 0.55,
+  attackSec: 0.025,
+  releaseSec: 0.1,
+};
+
+/** Render a motif to 16-bit mono PCM samples (pure math, no Web Audio). */
+function renderMotif(m: Motif): Int16Array {
+  const slot = m.pulseSec + m.gapSec;
+  const total = Math.ceil(m.pulses.length * slot * SAMPLE_RATE);
   const pcm = new Int16Array(total);
-  PULSES.forEach((freq, i) => {
+  m.pulses.forEach((freq, i) => {
     const startSample = Math.floor(i * slot * SAMPLE_RATE);
-    const len = Math.floor(PULSE_SEC * SAMPLE_RATE);
+    const len = Math.floor(m.pulseSec * SAMPLE_RATE);
     for (let s = 0; s < len; s += 1) {
       const t = s / SAMPLE_RATE;
-      // Triangle wave in [-1, 1] from the fractional phase.
       const phase = (freq * t) % 1;
       const tri = 4 * Math.abs(phase - 0.5) - 1;
       let env = 1;
-      if (t < ATTACK_SEC) env = t / ATTACK_SEC;
-      else if (t > PULSE_SEC - RELEASE_SEC) env = Math.max(0, (PULSE_SEC - t) / RELEASE_SEC);
+      if (t < m.attackSec) env = t / m.attackSec;
+      else if (t > m.pulseSec - m.releaseSec) env = Math.max(0, (m.pulseSec - t) / m.releaseSec);
       const idx = startSample + s;
-      if (idx < total) pcm[idx] = Math.round(tri * env * PEAK * 0x7fff);
+      if (idx < total) pcm[idx] = Math.round(tri * env * m.peak * 0x7fff);
     }
   });
   return pcm;
@@ -99,9 +127,9 @@ function pcmToWavDataUri(pcm: Int16Array): string {
   dv.setUint16(20, 1, true); // PCM
   dv.setUint16(22, 1, true); // mono
   dv.setUint32(24, SAMPLE_RATE, true);
-  dv.setUint32(28, SAMPLE_RATE * 2, true); // byte rate
-  dv.setUint16(32, 2, true); // block align
-  dv.setUint16(34, 16, true); // bits/sample
+  dv.setUint32(28, SAMPLE_RATE * 2, true);
+  dv.setUint16(32, 2, true);
+  dv.setUint16(34, 16, true);
   ascii(36, 'data');
   dv.setUint32(40, dataLen, true);
   for (let i = 0; i < pcm.length; i += 1) dv.setInt16(44 + i * 2, pcm[i]!, true);
@@ -115,49 +143,57 @@ function pcmToWavDataUri(pcm: Int16Array): string {
   return `data:audio/wav;base64,${btoa(bin)}`;
 }
 
-let audioEl: HTMLAudioElement | null = null;
+let readyEl: HTMLAudioElement | null = null;
+let endEl: HTMLAudioElement | null = null;
 let unlocked = false;
 
-function getAudioEl(): HTMLAudioElement | null {
+function ensure(motif: Motif, slot: 'ready' | 'end'): HTMLAudioElement | null {
   if (typeof Audio === 'undefined') return null;
-  if (audioEl) return audioEl;
-  audioEl = new Audio(pcmToWavDataUri(renderPcm()));
-  audioEl.preload = 'auto';
-  return audioEl;
+  if (slot === 'ready' && readyEl) return readyEl;
+  if (slot === 'end' && endEl) return endEl;
+  const el = new Audio(pcmToWavDataUri(renderMotif(motif)));
+  el.preload = 'auto';
+  if (slot === 'ready') readyEl = el;
+  else endEl = el;
+  return el;
 }
 
 /**
- * Unlock the audio element on a user gesture (App.vue's pointerdown +
- * visibilitychange). iOS only allows later programmatic `play()` once the
+ * Unlock both audio elements on a user gesture (App.vue's pointerdown +
+ * visibilitychange). iOS only allows later programmatic `play()` once an
  * element has been played from within a gesture; a muted play()/pause()
- * satisfies that without an audible blip. Runs at most once successfully —
+ * satisfies that without an audible blip. Both elements are primed from
+ * the same gesture so either chime can fire later. Runs at most once —
  * re-running on every pointerdown would cut off a chime that is playing
  * when the clinician taps.
  */
 export function unlockAudio(): void {
   if (unlocked) return;
-  const el = getAudioEl();
-  if (!el) return;
-  el.muted = true;
-  const p = el.play();
-  if (p && typeof p.then === 'function') {
-    p.then(() => {
-      el.pause();
-      el.currentTime = 0;
-      el.muted = false;
-      unlocked = true;
-    }).catch(() => {
-      // No gesture yet / blocked — leave `unlocked` false so the next
-      // gesture retries.
-      el.muted = false;
-    });
-  }
+  const a = ensure(READY_MOTIF, 'ready');
+  const b = ensure(END_MOTIF, 'end');
+  if (!a || !b) return;
+  const prime = (el: HTMLAudioElement): Promise<void> => {
+    el.muted = true;
+    const p = el.play();
+    if (!p || typeof p.then !== 'function') return Promise.resolve();
+    return p
+      .then(() => {
+        el.pause();
+        el.currentTime = 0;
+        el.muted = false;
+      })
+      .catch(() => {
+        el.muted = false;
+      });
+  };
+  Promise.all([prime(a), prime(b)]).then(() => {
+    unlocked = true;
+  });
 }
 
-/** Play the chime from the start. No-op when muted or unavailable. */
-function tick(muted: boolean): void {
+function play(slot: 'ready' | 'end', motif: Motif, muted: boolean): void {
   if (muted) return;
-  const el = getAudioEl();
+  const el = ensure(motif, slot);
   if (!el) return;
   el.currentTime = 0;
   const p = el.play();
@@ -172,29 +208,80 @@ function tick(muted: boolean): void {
 const TICK_MS = 1000;
 const FRESH_WINDOW_MS = 5_000;
 
+const ORAL_PREMED_EVENT = 'Preoperative Oral Dose';
+
 /**
- * Install the Versed + Fentanyl "ready" chime. Call once from the app shell
+ * Install the four-transition alarm watcher. Call once from the app shell
  * (`App.vue`) so it lives for the app lifetime.
  *
  * A single `now` watcher owns the logic: it has the real elapsed time
- * (`curr - prev`) to gate staleness, and it tracks the previous timer
+ * (`curr - prev`) to gate staleness, and it tracks the previous transition
  * states itself, so there is no watcher-ordering dependency.
  */
 export function useAlarms(): void {
   const iv = useIVStore();
   const audio = useAudioStore();
+  const eventLog = useEventLogStore();
   const now = useNow(TICK_MS);
 
+  // ---- Versed / Fentanyl redose ready (existing) ----
   const versedState = computed(() => iv.versedTimerAt(now.value)?.state ?? null);
   const fentanylState = computed(() => iv.fentanylTimerAt(now.value)?.state ?? null);
 
-  function chime(): void {
-    tick(audio.muted);
+  // ---- Pre-med wait cleared (ready for IV start) ----
+  // Only meaningful if an oral pre-med was actually given; otherwise the
+  // engine returns `eligible: true` from the start (no-op transition, no
+  // chime). We surface null in that case so the prev/curr comparison can
+  // never fire.
+  const lastOralPremedAt = computed<number | null>(() => {
+    let latest: number | null = null;
+    for (const e of eventLog.events) {
+      if (e.event === ORAL_PREMED_EVENT && (latest === null || e.timestamp > latest)) {
+        latest = e.timestamp;
+      }
+    }
+    return latest;
+  });
+  const premedReady = computed<boolean | null>(() => {
+    const at = lastOralPremedAt.value;
+    if (at === null) return null;
+    return premedWait({ lastPremedAt: at, now: now.value }).eligible;
+  });
+
+  // ---- IV-out / release wait cleared (end of supervised window) ----
+  // Skip the `no-sedative-given` case — that branch is `eligible: true`
+  // from t=0 (no wait to clear), so it must never chime.
+  const lastSedativeAt = computed<number | null>(() => {
+    const oral = lastOralPremedAt.value;
+    const ivMed = iv.lastIvMedAt;
+    if (oral === null) return ivMed;
+    if (ivMed === null) return oral;
+    return Math.max(oral, ivMed);
+  });
+  const releaseReady = computed<boolean | null>(() => {
+    const r = releaseEligibility({
+      lastSedativeAt: lastSedativeAt.value,
+      lastFlumazenilAt: iv.lastFlumazenilAt,
+      now: now.value,
+    });
+    if (r.reason === 'no-sedative-given') return null;
+    return r.eligible;
+  });
+
+  function chimeReady(): void {
+    play('ready', READY_MOTIF, audio.muted);
     haptic('light');
+  }
+  function chimeEnd(): void {
+    play('end', END_MOTIF, audio.muted);
+    // Heavier haptic for the case-complete event — weightier moment.
+    haptic('medium');
   }
 
   let prevVersed = versedState.value;
   let prevFentanyl = fentanylState.value;
+  let prevPremed = premedReady.value;
+  let prevRelease = releaseReady.value;
 
   // `flush: 'sync'` so each 1 s tick is evaluated on its own — the default
   // batched flush would coalesce many ticks into a single huge delta and
@@ -206,10 +293,16 @@ export function useAlarms(): void {
       const fresh = curr - prev <= FRESH_WINDOW_MS;
       const v = versedState.value;
       const f = fentanylState.value;
-      if (fresh && v === 'ready' && prevVersed !== 'ready') chime();
-      if (fresh && f === 'ready' && prevFentanyl !== 'ready') chime();
+      const pm = premedReady.value;
+      const rl = releaseReady.value;
+      if (fresh && v === 'ready' && prevVersed !== 'ready') chimeReady();
+      if (fresh && f === 'ready' && prevFentanyl !== 'ready') chimeReady();
+      if (fresh && pm === true && prevPremed !== true) chimeReady();
+      if (fresh && rl === true && prevRelease !== true) chimeEnd();
       prevVersed = v;
       prevFentanyl = f;
+      prevPremed = pm;
+      prevRelease = rl;
     },
     { flush: 'sync' },
   );

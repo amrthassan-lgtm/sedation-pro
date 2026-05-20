@@ -4,6 +4,7 @@ import { effectScope, nextTick } from 'vue';
 
 import { useIVStore } from '@/stores/iv';
 import { useAudioStore } from '@/stores/audio';
+import { useEventLogStore } from '@/stores/event-log';
 import { useAlarms } from './useAlarms';
 
 /**
@@ -105,6 +106,65 @@ describe('useAlarms', () => {
     await nextTick();
 
     vi.advanceTimersByTime(10 * 60_000);
+    await nextTick();
+
+    expect(playCount).toBe(0);
+    scope.stop();
+  });
+
+  it('chimes when the pre-med wait clears (ready for IV start)', async () => {
+    const eventLog = useEventLogStore();
+    eventLog.append('Preoperative Oral Dose', { Drug: 'Triazolam', Dose: '0.25 mg' });
+
+    // Advance 25 min before mount so the parallel release-wait (which is
+    // anchored to the same oral pre-med via lastSedativeAt) is already
+    // cleared at setup — that way the watcher's prevs capture release as
+    // true and the only transition during the test window is premed.
+    vi.advanceTimersByTime(25 * 60_000);
+
+    const scope = effectScope();
+    scope.run(() => useAlarms());
+    await nextTick();
+    expect(playCount).toBe(0);
+
+    // Cross the 30-min pre-med threshold.
+    vi.advanceTimersByTime(6 * 60_000);
+    await nextTick();
+
+    expect(playCount).toBeGreaterThanOrEqual(1);
+    scope.stop();
+  });
+
+  it('chimes the resolution motif when the IV-out wait clears', async () => {
+    const iv = useIVStore();
+    iv.logDose({ drug: 'versed', mg: 2 });
+
+    // Advance past the 3-min Versed redose-ready window first; mounting
+    // *then* captures prevVersed='ready' so the redose chime can't fire
+    // during this test — only the 20-min release transition should chime.
+    vi.advanceTimersByTime(4 * 60_000);
+
+    const scope = effectScope();
+    scope.run(() => useAlarms());
+    await nextTick();
+    expect(playCount).toBe(0);
+
+    // Cross the 20-min standard release-wait threshold.
+    vi.advanceTimersByTime(17 * 60_000);
+    await nextTick();
+
+    expect(playCount).toBeGreaterThanOrEqual(1);
+    scope.stop();
+  });
+
+  it('does not chime release-ready on a no-sedative-given case', async () => {
+    // No dose, no pre-med — releaseEligibility starts eligible:true with
+    // reason 'no-sedative-given'. The watcher must never fire on this branch.
+    const scope = effectScope();
+    scope.run(() => useAlarms());
+    await nextTick();
+
+    vi.advanceTimersByTime(30 * 60_000);
     await nextTick();
 
     expect(playCount).toBe(0);
