@@ -357,7 +357,7 @@ const diazepamModalCopy = computed(() => {
             <UiTextInput v-if="providerIsOther" v-model="provider" class="mt-2" />
           </UiField>
         </UiRow>
-        <UiField label="Dental assistant(s)" hint="select one or more">
+        <UiField label="Dental assistant(s)">
           <UiStack :gap="2">
             <UiCheckbox
               v-for="a in assistantRoster"
@@ -473,7 +473,6 @@ const diazepamModalCopy = computed(() => {
           required
           :invalid="isMissing('meds_verified')"
           label="Drug interactions checked in Epocrates"
-          hint="Print + scan to chart before sedation"
         />
         <UiField
           id="field-osa_history"

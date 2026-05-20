@@ -485,7 +485,7 @@ function onNaloxone() {
           <UiField label="EtCO₂" hint="mmHg">
             <UiNumberInput v-model="preOpEtco2" />
           </UiField>
-          <UiField v-if="diabetic" label="Glucose" hint="mg/dL · diabetic">
+          <UiField v-if="diabetic" label="Glucose" hint="mg/dL">
             <UiNumberInput v-model="preOpGlucose" :min="0" />
           </UiField>
         </UiRow>
@@ -544,7 +544,7 @@ function onNaloxone() {
             <UiSelect v-model="siteValue" :options="siteOptions" block />
             <UiTextInput v-if="siteIsOther" v-model="ivSite" class="mt-2" />
           </UiField>
-          <UiField label="Fluid" hint="ml">
+          <UiField label="Fluid">
             <UiSelect v-model="fluidValue" :options="fluidOptions" block />
             <UiTextInput v-if="fluidIsOther" v-model="ivFluid" class="mt-2" />
           </UiField>
@@ -732,7 +732,7 @@ function onNaloxone() {
           <UiField label="EtCO₂" hint="mmHg">
             <UiNumberInput v-model="sedEtco2" />
           </UiField>
-          <UiField v-if="diabetic" label="Glucose" hint="mg/dL · diabetic">
+          <UiField v-if="diabetic" label="Glucose" hint="mg/dL">
             <UiNumberInput v-model="sedGlucose" :min="0" />
           </UiField>
         </UiRow>

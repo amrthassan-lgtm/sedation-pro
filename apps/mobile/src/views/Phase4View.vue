@@ -356,19 +356,19 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <p class="heading"><span class="heading-step">11</span>Recovery Vitals</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
-          <UiField label="HR">
+          <UiField label="HR" hint="bpm">
             <UiNumberInput v-model="endHr" />
           </UiField>
-          <UiField id="gate-bp" label="BP" :invalid="gate.isInvalid('gate-bp')">
+          <UiField id="gate-bp" label="BP" hint="mmHg" :invalid="gate.isInvalid('gate-bp')">
             <UiBpInput v-model="endBp" />
           </UiField>
-          <UiField id="gate-spo2" label="SpO₂" :invalid="gate.isInvalid('gate-spo2')">
+          <UiField id="gate-spo2" label="SpO₂" hint="%" :invalid="gate.isInvalid('gate-spo2')">
             <UiNumberInput v-model="endSpo2" :min="0" :max="100" />
           </UiField>
-          <UiField label="EtCO₂">
+          <UiField label="EtCO₂" hint="mmHg">
             <UiNumberInput v-model="endEtco2" />
           </UiField>
-          <UiField v-if="diabetic" label="Glucose">
+          <UiField v-if="diabetic" label="Glucose" hint="mg/dL">
             <UiNumberInput v-model="endGlucose" :min="0" />
           </UiField>
         </UiRow>
