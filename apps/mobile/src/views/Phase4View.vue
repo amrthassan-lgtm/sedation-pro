@@ -357,19 +357,19 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
-            <UiNumberInput v-model="endHr" placeholder="HR" />
+            <UiNumberInput v-model="endHr" />
           </UiField>
           <UiField id="gate-bp" label="BP" hint="mmHg" :invalid="gate.isInvalid('gate-bp')">
             <UiBpInput v-model="endBp" />
           </UiField>
           <UiField id="gate-spo2" label="SpO₂" hint="%" :invalid="gate.isInvalid('gate-spo2')">
-            <UiNumberInput v-model="endSpo2" :min="0" :max="100" placeholder="%" />
+            <UiNumberInput v-model="endSpo2" :min="0" :max="100" />
           </UiField>
           <UiField label="EtCO₂" hint="mmHg">
-            <UiNumberInput v-model="endEtco2" placeholder="EtCO₂" />
+            <UiNumberInput v-model="endEtco2" />
           </UiField>
           <UiField v-if="diabetic" label="Glucose" hint="mg/dL · diabetic">
-            <UiNumberInput v-model="endGlucose" placeholder="Glucose" :min="0" />
+            <UiNumberInput v-model="endGlucose" :min="0" />
           </UiField>
         </UiRow>
         <UiField label="Patient response">
@@ -480,7 +480,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             required
             :invalid="gate.isInvalid('gate-companion')"
           >
-            <UiTextInput v-model="companionName" placeholder="Accompanying adult" />
+            <UiTextInput v-model="companionName" />
           </UiField>
           <UiField label="Relation" required :invalid="gate.isInvalid('gate-companion')">
             <UiSelect
@@ -518,11 +518,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
         <p class="caption mt-1">Prescriptions given</p>
         <UiField label="Rx handed to patient" hint="e.g. Ibuprofen 600 mg #20 q6h prn pain">
-          <UiTextInput
-            v-model="prescriptions"
-            placeholder="None — or list drug, strength, count, sig"
-            block
-          />
+          <UiTextInput v-model="prescriptions" block />
         </UiField>
 
         <p class="caption mt-1">Provider signature</p>
@@ -564,12 +560,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
               + {{ c }}
             </button>
           </div>
-          <UiTextarea
-            v-model="sedationComplications"
-            placeholder="None — or describe and link to corrective action"
-            :rows="2"
-            block
-          />
+          <UiTextarea v-model="sedationComplications" :rows="2" block />
         </UiField>
 
         <UiField label="Venipuncture complications">
@@ -584,21 +575,11 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
               + {{ c }}
             </button>
           </div>
-          <UiTextarea
-            v-model="venipunctureComplications"
-            placeholder="None — or describe site / corrective action"
-            :rows="2"
-            block
-          />
+          <UiTextarea v-model="venipunctureComplications" :rows="2" block />
         </UiField>
 
         <UiField label="Procedure notes" hint="anything else worth charting">
-          <UiTextarea
-            v-model="procedureNotes"
-            placeholder="e.g. Local infiltration uneventful; pt tolerated extraction well."
-            :rows="3"
-            block
-          />
+          <UiTextarea v-model="procedureNotes" :rows="3" block />
         </UiField>
 
         <UiRow :gap="3" wrap>

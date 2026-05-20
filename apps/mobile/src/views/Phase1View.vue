@@ -346,20 +346,15 @@ const diazepamModalCopy = computed(() => {
       <p class="heading">Patient Identification</p>
       <UiStack :gap="3" class="mt-2">
         <UiField id="field-pt" label="Patient name" required :invalid="isMissing('pt')">
-          <UiTextInput v-model="name" placeholder="Patient name" block />
+          <UiTextInput v-model="name" block />
         </UiField>
         <UiRow :gap="3" wrap>
           <UiField id="field-mrn" label="MRN" required :invalid="isMissing('mrn')">
-            <UiTextInput v-model="mrn" placeholder="MRN" inputmode="numeric" />
+            <UiTextInput v-model="mrn" inputmode="numeric" />
           </UiField>
           <UiField id="field-prov" label="Provider" :invalid="isMissing('prov')">
             <UiSelect v-model="providerValue" :options="providerOptions" block />
-            <UiTextInput
-              v-if="providerIsOther"
-              v-model="provider"
-              placeholder="Provider name"
-              class="mt-2"
-            />
+            <UiTextInput v-if="providerIsOther" v-model="provider" class="mt-2" />
           </UiField>
         </UiRow>
         <UiField label="Dental assistant(s)" hint="select one or more">
@@ -374,7 +369,7 @@ const diazepamModalCopy = computed(() => {
           </UiStack>
         </UiField>
         <UiField label="Procedure">
-          <UiTextInput v-model="procedure" placeholder="e.g. EXT #19, root canal #14" />
+          <UiTextInput v-model="procedure" />
         </UiField>
       </UiStack>
     </UiCard>
@@ -388,7 +383,7 @@ const diazepamModalCopy = computed(() => {
           required
           :invalid="isMissing('care_name')"
         >
-          <UiTextInput v-model="careName" placeholder="Caregiver" />
+          <UiTextInput v-model="careName" />
         </UiField>
         <UiField
           id="field-care_phone"
@@ -396,7 +391,7 @@ const diazepamModalCopy = computed(() => {
           required
           :invalid="isMissing('care_phone')"
         >
-          <UiTextInput v-model="carePhone" placeholder="(###) ###-####" inputmode="tel" />
+          <UiTextInput v-model="carePhone" inputmode="tel" />
         </UiField>
       </UiRow>
     </UiCard>
@@ -412,7 +407,7 @@ const diazepamModalCopy = computed(() => {
             required
             :invalid="isMissing('weight')"
           >
-            <UiNumberInput v-model="weightLb" placeholder="lbs" />
+            <UiNumberInput v-model="weightLb" />
           </UiField>
           <UiField
             id="field-height"
@@ -430,7 +425,7 @@ const diazepamModalCopy = computed(() => {
             required
             :invalid="isMissing('patient_age')"
           >
-            <UiNumberInput v-model="age" placeholder="yrs" />
+            <UiNumberInput v-model="age" />
           </UiField>
         </UiRow>
         <UiRow :gap="3" wrap>
@@ -438,7 +433,7 @@ const diazepamModalCopy = computed(() => {
             <UiBpInput v-model="baselineBp" />
           </UiField>
           <UiField label="Baseline SpO₂" hint="%">
-            <UiNumberInput v-model="baselineSpo2" placeholder="%" :min="0" :max="100" />
+            <UiNumberInput v-model="baselineSpo2" :min="0" :max="100" />
           </UiField>
         </UiRow>
         <UiField
@@ -497,56 +492,26 @@ const diazepamModalCopy = computed(() => {
           required
           :invalid="isMissing('baseline_glucose')"
         >
-          <UiNumberInput v-model="baselineGlucose" placeholder="mg/dL" />
+          <UiNumberInput v-model="baselineGlucose" />
         </UiField>
 
         <UiField label="Current medications">
-          <UiTextarea
-            v-model="medicationsList"
-            placeholder="e.g. Lisinopril 10 mg qd, Metformin 500 mg bid"
-            :rows="3"
-            block
-          />
+          <UiTextarea v-model="medicationsList" :rows="3" block />
         </UiField>
         <UiField label="Allergies">
-          <UiTextarea
-            v-model="allergiesList"
-            placeholder="e.g. Penicillin → hives; Codeine → nausea"
-            :rows="2"
-            block
-          />
+          <UiTextarea v-model="allergiesList" :rows="2" block />
         </UiField>
         <UiField label="Past hospitalisations">
-          <UiTextarea
-            v-model="hospitalisations"
-            placeholder="e.g. 2022 — pneumonia; 2018 — MVA"
-            :rows="2"
-            block
-          />
+          <UiTextarea v-model="hospitalisations" :rows="2" block />
         </UiField>
         <UiField label="Past surgeries">
-          <UiTextarea
-            v-model="surgeries"
-            placeholder="e.g. 2021 — appendectomy; 2015 — wisdom teeth"
-            :rows="2"
-            block
-          />
+          <UiTextarea v-model="surgeries" :rows="2" block />
         </UiField>
         <UiField label="Anesthesia history">
-          <UiTextarea
-            v-model="anesthesiaHistory"
-            placeholder="e.g. PONV with general; uneventful with IV sedation 2023"
-            :rows="2"
-            block
-          />
+          <UiTextarea v-model="anesthesiaHistory" :rows="2" block />
         </UiField>
         <UiField label="Family history">
-          <UiTextarea
-            v-model="familyHistory"
-            placeholder="e.g. Father — MI age 58; no known MH"
-            :rows="2"
-            block
-          />
+          <UiTextarea v-model="familyHistory" :rows="2" block />
         </UiField>
       </UiStack>
     </UiCard>
@@ -563,7 +528,7 @@ const diazepamModalCopy = computed(() => {
           <UiSelect v-model="smokingStatus" :options="smokingOptions" placeholder="Select…" block />
         </UiField>
         <UiField v-if="smokingStatus === 'current'" label="Cigarettes per day">
-          <UiNumberInput v-model="cigarettesPerDay" placeholder="cigs/day" :min="0" :max="100" />
+          <UiNumberInput v-model="cigarettesPerDay" :min="0" :max="100" />
         </UiField>
         <UiBanner v-if="nicotineRec" tone="caution" title="Pre-op nicotine protocol" icon="🚬">
           {{ nicotineRec.instruction }} ({{ nicotineRec.hoursBefore }} hr before appointment). Based
@@ -580,12 +545,7 @@ const diazepamModalCopy = computed(() => {
           </UiField>
         </UiRow>
         <UiField label="Recreational drugs">
-          <UiTextarea
-            v-model="recreationalDrugs"
-            placeholder="e.g. Cannabis — weekends; cocaine — denies"
-            :rows="2"
-            block
-          />
+          <UiTextarea v-model="recreationalDrugs" :rows="2" block />
         </UiField>
       </UiStack>
     </UiCard>
