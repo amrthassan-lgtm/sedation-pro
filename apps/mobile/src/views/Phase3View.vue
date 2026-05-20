@@ -114,12 +114,21 @@ const gaugeChipOptions = computed<ChipOption<string>[]>(() =>
 // triggers "stop and escalate" rather than a 5th/6th stick getting charted
 // individually. The chip row tops out at "4+" (stored as 4) to keep the
 // row tight and consistent with the bathroom-breaks "3+" cap idiom.
+// A bucket-binding maps any legacy stored value ≥ 4 (from before the cap)
+// onto the "4+" chip so an existing chart re-opens with the right chip lit
+// instead of nothing — mirrors the alcohol-bucket pattern in Phase 1.
 const attemptsChipOptions: ChipOption<number>[] = [
   { value: 1, label: '1' },
   { value: 2, label: '2' },
   { value: 3, label: '3' },
   { value: 4, label: '4+' },
 ];
+const attemptsBucket = computed<number>({
+  get: () => (ivCatheterAttempts.value >= 4 ? 4 : ivCatheterAttempts.value),
+  set: (v) => {
+    ivCatheterAttempts.value = v;
+  },
+});
 
 // Response state — short chip labels, full clinical phrases stay as the
 // stored values so the printed note + audit log read clinically ("Responds
@@ -533,7 +542,7 @@ function onNaloxone() {
             <UiChipGroup v-model="ivCatheterGauge" :options="gaugeChipOptions" />
           </UiField>
           <UiField label="Attempts">
-            <UiChipGroup v-model="ivCatheterAttempts" :options="attemptsChipOptions" />
+            <UiChipGroup v-model="attemptsBucket" :options="attemptsChipOptions" />
           </UiField>
           <UiField label="Site">
             <UiSelect v-model="siteValue" :options="siteOptions" block />
