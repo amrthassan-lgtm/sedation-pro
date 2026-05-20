@@ -170,4 +170,49 @@ describe('useAlarms', () => {
     expect(playCount).toBe(0);
     scope.stop();
   });
+
+  it('does not chime when an undo flips release-eligibility false → true', async () => {
+    // Scenario: a single Versed dose past the 20-min release window
+    // (clinician already heard the END chime). They tap a redose by
+    // accident — eligibility flips back to false (silent, no chime). They
+    // realise the mistake and Undo the redose — `lastIvMedAt` drops back
+    // to the older dose, eligibility flips true again. The watcher must
+    // recognise this as a data-driven flip (not a time-driven one) and
+    // stay silent.
+    const iv = useIVStore();
+    iv.logDose({ drug: 'versed', mg: 2 });
+
+    // Advance past the Versed redose-ready window so we mount with
+    // prevVersed='ready' — the redose chime can't fire during this test.
+    vi.advanceTimersByTime(4 * 60_000);
+
+    const scope = effectScope();
+    scope.run(() => useAlarms());
+    await nextTick();
+    expect(playCount).toBe(0);
+
+    // Cross the 20-min release threshold — END chime should fire once.
+    vi.advanceTimersByTime(17 * 60_000);
+    await nextTick();
+    expect(playCount).toBeGreaterThanOrEqual(1);
+    const afterFirst = playCount;
+
+    // Accidental redose: eligibility flips back to false (no chime on
+    // true → false).
+    iv.logDose({ drug: 'versed', mg: 1 });
+    vi.advanceTimersByTime(2_000);
+    await nextTick();
+    expect(playCount).toBe(afterFirst);
+
+    // Undo the accidental redose. `lastIvMedAt` drops back to the original
+    // t=0 dose, eligibility flips true again — but it's a data-driven flip,
+    // not a time-driven one, so no chime.
+    const lastDose = iv.doses[iv.doses.length - 1];
+    if (lastDose) iv.removeDoseById(lastDose.id);
+    vi.advanceTimersByTime(2_000);
+    await nextTick();
+
+    expect(playCount).toBe(afterFirst);
+    scope.stop();
+  });
 });

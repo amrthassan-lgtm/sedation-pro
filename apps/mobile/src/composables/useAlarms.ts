@@ -45,12 +45,21 @@ import { premedWait, releaseEligibility } from '@sedation-pro/clinical';
  *    only; haptics are a separate sensory channel.
  *  - First-run guard: initial transition state is captured at setup, so a
  *    hydrated store already in "ready" after reload does not beep on mount.
- *  - Stale-resume guard: `useNow`'s interval is frozen while the app is
- *    backgrounded (especially an iOS home-screen app). On return `now`
- *    jumps by the whole absence. A transition that resolved *during* that
- *    freeze is stale, so the chime is suppressed when the `now` jump is
- *    far larger than the tick interval — returning must not replay a
- *    minutes-old ding.
+ *  - Stale-resume guard (two layers, belt-and-suspenders):
+ *      * Time delta: when the `now` jump exceeds the tick interval by a
+ *        lot, the transition resolved during a background freeze and is
+ *        stale.
+ *      * Visibility flag: when the page just transitioned from `hidden`
+ *        to `visible`, the *next* tick is treated as stale regardless of
+ *        the delta — iOS standalone occasionally produces coalesced ticks
+ *        on resume that the time delta alone doesn't catch.
+ *  - Data-driven suppression: if any source timestamp (`lastVersedAt`,
+ *    `lastFentanylAt`, `lastFlumazenilAt`, `lastOralPremedAt`) changed
+ *    between ticks, the transition was caused by a dose log or an undo —
+ *    not by time elapsing — so no chime fires that tick. Without this,
+ *    undoing a recent IV dose could drop `lastIvMedAt` back far enough
+ *    that release-eligibility flips false → true and fires a false
+ *    "case complete" ding.
  *
  * Note: this does not defeat the iPhone hardware Ring/Silent switch (iOS
  * routes web audio through the ringer channel; only a native AVAudioSession
@@ -210,6 +219,19 @@ const FRESH_WINDOW_MS = 5_000;
 
 const ORAL_PREMED_EVENT = 'Preoperative Oral Dose';
 
+// Belt-and-suspenders for the freshness gate: when the page just came back
+// from `hidden`, the *next* tick is treated as stale regardless of the
+// elapsed-time delta. iOS standalone PWAs occasionally produce coalesced
+// or oddly-timed ticks on resume; the visibility signal is more direct
+// than inferring "we just resumed" from time math alone. Module-scoped
+// so the listener is installed exactly once.
+let pendingResume = false;
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') pendingResume = true;
+  });
+}
+
 /**
  * Install the four-transition alarm watcher. Call once from the app shell
  * (`App.vue`) so it lives for the app lifetime.
@@ -282,6 +304,16 @@ export function useAlarms(): void {
   let prevFentanyl = fentanylState.value;
   let prevPremed = premedReady.value;
   let prevRelease = releaseReady.value;
+  // Source timestamps that drive the four `*Ready` computeds. If any
+  // changed between ticks, the transition was data-driven (a dose was
+  // logged or undone) rather than time-driven — chimes should suppress.
+  // Without this, undoing a recent IV dose can drop `lastIvMedAt` back
+  // far enough that releaseReady flips false → true and fires a false
+  // "case complete" ding.
+  let prevVersedAt = iv.lastVersedAt;
+  let prevFentanylAt = iv.lastFentanylAt;
+  let prevFlumazenilAt = iv.lastFlumazenilAt;
+  let prevPremedAt = lastOralPremedAt.value;
 
   // `flush: 'sync'` so each 1 s tick is evaluated on its own — the default
   // batched flush would coalesce many ticks into a single huge delta and
@@ -290,7 +322,16 @@ export function useAlarms(): void {
   watch(
     now,
     (curr, prev) => {
-      const fresh = curr - prev <= FRESH_WINDOW_MS;
+      const currVersedAt = iv.lastVersedAt;
+      const currFentanylAt = iv.lastFentanylAt;
+      const currFlumazenilAt = iv.lastFlumazenilAt;
+      const currPremedAt = lastOralPremedAt.value;
+      const dataChanged =
+        currVersedAt !== prevVersedAt ||
+        currFentanylAt !== prevFentanylAt ||
+        currFlumazenilAt !== prevFlumazenilAt ||
+        currPremedAt !== prevPremedAt;
+      const fresh = !pendingResume && curr - prev <= FRESH_WINDOW_MS && !dataChanged;
       const v = versedState.value;
       const f = fentanylState.value;
       const pm = premedReady.value;
@@ -303,6 +344,11 @@ export function useAlarms(): void {
       prevFentanyl = f;
       prevPremed = pm;
       prevRelease = rl;
+      prevVersedAt = currVersedAt;
+      prevFentanylAt = currFentanylAt;
+      prevFlumazenilAt = currFlumazenilAt;
+      prevPremedAt = currPremedAt;
+      pendingResume = false;
     },
     { flush: 'sync' },
   );
