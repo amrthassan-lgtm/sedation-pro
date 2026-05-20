@@ -30,6 +30,20 @@ body {
   padding-bottom: var(--safe-bottom);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
+  /* Block the iOS long-press text-select + magnifier on chrome — labels,
+     buttons, cards. Editable surfaces re-enable below so typing, copying,
+     and the OS spellcheck still work in inputs/textareas. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea,
+[contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 button {
