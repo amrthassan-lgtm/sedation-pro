@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { usePatientStore } from '@/stores/patient';
@@ -9,7 +8,7 @@ import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
 import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
-import { UiBanner, UiCard, UiDrugButton, UiRow, UiStatCard } from '@sedation-pro/ui';
+import { UiBanner, UiCard, UiDrugButton, UiRow } from '@sedation-pro/ui';
 import { lorazepamMax, triazolamMax } from '@sedation-pro/clinical';
 
 const patient = usePatientStore();
@@ -17,16 +16,14 @@ const undo = useUndoStore();
 
 const { weightLb } = storeToRefs(patient);
 
-const triazolam = computed(() => (weightLb.value ? triazolamMax(weightLb.value) : null));
-const lorazepam = computed(() => (weightLb.value ? lorazepamMax(weightLb.value) : null));
-
 /**
  * Weight-based ceiling for the drug, captured at the moment of
- * administration. Stamping it into the dose event (rather than recomputing
- * at note time) keeps the medicolegal record point-in-time accurate — it
- * documents the limit the clinician was actually working against, against
- * the weight on file then. Hydroxyzine is a fixed-dose antihistamine with
- * no weight ceiling, so it returns null and the row is simply omitted.
+ * administration. Stamped silently into each dose event's details — the
+ * chairside UI no longer renders a max-dose stat-grid (Apex protocols
+ * never approach these limits), but the medicolegal record continues to
+ * document the ceiling the clinician was working against at the
+ * weight-on-file then. Hydroxyzine is a fixed-dose antihistamine with no
+ * weight ceiling, so it returns null and the row is simply omitted.
  */
 function weightBasedMaxLabel(drug: string): string | null {
   const w = weightLb.value;
@@ -63,28 +60,9 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
       <h1 class="title-display">Pre-Op Anxiolytic</h1>
     </header>
 
-    <UiBanner v-if="!weightLb" tone="caution" title="Weight required" icon="⚖️">
+    <UiBanner v-if="!weightLb" tone="caution" title="Weight required">
       Enter patient weight in Phase 1.
     </UiBanner>
-
-    <div v-if="weightLb" class="stat-grid">
-      <UiStatCard
-        label="Triazolam max"
-        :value="triazolam ? triazolam.mg.toFixed(2) : '—'"
-        unit="mg PO"
-        category="weight/100"
-        severity="safe"
-        :detail="`Up to ${triazolam?.tablets ?? '—'} × 0.25 mg tabs`"
-      />
-      <UiStatCard
-        label="Lorazepam max"
-        :value="lorazepam ? lorazepam.mg.toFixed(1) : '—'"
-        unit="mg PO"
-        category="weight/25"
-        severity="safe"
-        :detail="`Up to ${lorazepam?.tablets ?? '—'} × 2 mg tabs`"
-      />
-    </div>
 
     <UiCard tint="ph2">
       <p class="heading">Triazolam · Halcion</p>
@@ -171,11 +149,3 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
     </template>
   </PhaseLayout>
 </template>
-
-<style scoped>
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--sp-2);
-}
-</style>
