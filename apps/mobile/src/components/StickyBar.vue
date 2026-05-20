@@ -212,6 +212,10 @@ function emergency() {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
+  /* Bottom padding lifts in-flow content above the absolute-positioned
+     spine rail at `bottom: 0` — without it the rail sat flush against
+     the action chips (esp. Emergency) on iPhone portrait. */
+  padding-bottom: 8px;
 }
 
 .sticky-bar-nav {
@@ -492,8 +496,10 @@ function emergency() {
 }
 @media (max-width: 480px) {
   .sticky-bar-info {
-    padding: 8px 12px 7px;
-    gap: 2px;
+    /* iPhone portrait still gets the full desktop info padding so the
+       phase label + sub line don't feel cramped against the chips. */
+    padding: 10px 12px 8px;
+    gap: 3px;
   }
   .sticky-bar-clearance-bar {
     max-width: 80px;
