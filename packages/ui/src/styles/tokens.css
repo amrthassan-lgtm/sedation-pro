@@ -112,9 +112,10 @@
      buttons. Theme-aware via the light-block override below. */
   --surface-highlight: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0));
 
-  /* Unified 3 px focus halo for inputs (a11y + iOS-grade polish).
-     Resolves via --color-accent-soft so it auto-themes. */
-  --focus-ring: 0 0 0 3px var(--color-accent-soft);
+  /* Focus is signalled in-place — inputs shift border to `--color-accent`,
+     the checkbox dot picks up the accent. No outer halo (`box-shadow`
+     gets clipped by some primitives' overflow:hidden, so the experience
+     was inconsistent — some glowy, some not). */
 
   /* Phase tints — drive sticky bar, nav drawer, card border-lefts, and the
      phase-progress rail. Collapsed to a single accent (was blue/purple/

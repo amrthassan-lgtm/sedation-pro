@@ -111,10 +111,6 @@ const renderState = computed<ActionState>(() => {
     box-shadow var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
 }
-.ui-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
 .ui-btn.is-block {
   width: 100%;
 }

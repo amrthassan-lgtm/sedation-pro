@@ -101,8 +101,10 @@ function toggle() {
   cursor: not-allowed;
   opacity: 0.25;
 }
-.ui-check:focus-within {
-  box-shadow: var(--focus-ring);
+/* Keyboard focus indication stays in-place on the dot (non-glowy) — no
+   outer halo, consistent with the inputs' border-color-only treatment. */
+.ui-check:focus-within .ui-check-dot {
+  border-color: var(--color-accent);
 }
 .ui-check-input {
   position: absolute;

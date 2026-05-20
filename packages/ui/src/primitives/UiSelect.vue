@@ -72,7 +72,6 @@ function onChange(e: Event) {
 .ui-select:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: var(--focus-ring);
 }
 .ui-select:disabled {
   opacity: 0.5;
