@@ -292,7 +292,7 @@ function logDiazepam(doseMg: number) {
     toast: {
       label: `✓ Diazepam ${doseMg} mg PO (bedtime)`,
       sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      tone: 'caution',
+      tone: 'safe',
     },
   });
   pendingDiazepamDose.value = null;

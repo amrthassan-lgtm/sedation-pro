@@ -28,7 +28,7 @@ export function useIvDosing() {
     undo.stamp({
       event: 'IV Dose',
       details: { Drug: 'Midazolam (Versed)', Dose: `${mg} mg`, Route: 'IV' },
-      toast: { label: `✓ Versed ${mg} mg IV (${sub})`, sub: nowClock(), tone: 'caution' },
+      toast: { label: `✓ Versed ${mg} mg IV (${sub})`, sub: nowClock(), tone: 'safe' },
       revert: () => {
         const last = iv.doses[iv.doses.length - 1];
         if (last && last.drug === 'versed' && last.mg === mg) iv.removeDoseById(last.id);
@@ -41,7 +41,7 @@ export function useIvDosing() {
     undo.stamp({
       event: 'IV Dose',
       details: { Drug: 'Fentanyl', Dose: `${mcg} mcg`, Route: 'IV' },
-      toast: { label: `✓ Fentanyl ${mcg} mcg IV (${sub})`, sub: nowClock(), tone: 'caution' },
+      toast: { label: `✓ Fentanyl ${mcg} mcg IV (${sub})`, sub: nowClock(), tone: 'safe' },
       revert: () => {
         const last = iv.doses[iv.doses.length - 1];
         if (last && last.drug === 'fentanyl' && last.mcg === mcg) iv.removeDoseById(last.id);

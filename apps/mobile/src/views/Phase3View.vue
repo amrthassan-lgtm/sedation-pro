@@ -128,7 +128,7 @@ const responseOptions = [
   { value: 'Relaxed', label: 'Relaxed' },
   { value: 'Responds to verbal', label: 'Responds to verbal' },
   { value: 'Responds to tactile', label: 'Responds to tactile' },
-  { value: 'Concern', label: '⚠️ Concern' },
+  { value: 'Concern', label: 'Concern' },
 ];
 
 // Pre-op + sedation BP adapters — `UiBpInput` v-models a {sbp, dbp} pair, but

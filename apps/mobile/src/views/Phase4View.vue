@@ -153,7 +153,7 @@ const responseOptions = [
   { value: 'Relaxed', label: 'Relaxed' },
   { value: 'Responds to verbal', label: 'Responds to verbal' },
   { value: 'Responds to tactile', label: 'Responds to tactile' },
-  { value: 'Concern', label: '⚠️ Concern' },
+  { value: 'Concern', label: 'Concern' },
 ];
 
 const endBp = computed<BpValue>({
@@ -603,16 +603,16 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       </p>
 
       <template v-if="isAssessment">
-        <UiBanner v-if="!providerSigned" tone="caution" icon="✍️" class="mt-2">
+        <UiBanner v-if="!providerSigned" tone="caution" class="mt-2">
           Pre-sedation assessment — provider signature required. Sedation deferred to a later date.
         </UiBanner>
-        <UiBanner v-else tone="info" icon="🗒" class="mt-2">
+        <UiBanner v-else tone="info" class="mt-2">
           Pre-sedation assessment complete — sedation deferred to a later date.
         </UiBanner>
       </template>
 
       <template v-else>
-        <UiBanner v-if="dismissal.blocked" tone="limit" icon="🚧" class="mt-2">
+        <UiBanner v-if="dismissal.blocked" tone="limit" class="mt-2">
           <strong
             >Cannot release yet — {{ blockerCount }} item{{
               blockerCount === 1 ? '' : 's'

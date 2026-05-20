@@ -93,7 +93,7 @@ describe('useAssessmentAudit', () => {
     await nextTick();
 
     expect(toast.current).not.toBeNull();
-    expect(toast.current!.label).toBe('✓ Phase 1 locked');
+    expect(toast.current!.label).toBe('✓ Phase 1 complete');
     expect(toast.current!.tone).toBe('safe');
   });
 

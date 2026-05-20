@@ -225,7 +225,7 @@ export function useAssessmentAudit(): void {
       baselineSnapshot.value = details;
       toast.show({
         id: entry.id,
-        label: '✓ Phase 1 locked',
+        label: '✓ Phase 1 complete',
         sub: new Date(entry.timestamp).toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit',
