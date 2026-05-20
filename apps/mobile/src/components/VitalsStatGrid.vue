@@ -40,6 +40,12 @@ const { bmiCard, bpCard, spo2Card } = useVitalCards();
 .vitals-stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  /* Equal-height rows: on iPhone portrait the grid wraps to 2 columns
+     (BMI + BP in row 1, SpO₂ alone in row 2). Without this, BMI's
+     `detail` line ("lb · ft′in″") makes row 1 taller than row 2 and SpO₂
+     ends up visibly shorter. `1fr` forces every row to the tallest row's
+     intrinsic height, so the three cards always read as one uniform grid. */
+  grid-auto-rows: 1fr;
   gap: var(--sp-2);
 }
 </style>
