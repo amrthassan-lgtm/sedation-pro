@@ -452,16 +452,20 @@ function onTouchEnd() {
 <style scoped>
 /* Thin invisible strip that catches an iOS-style edge swipe to open the
    drawer. z-index sits below the sticky bar (100) so the hamburger button
-   still receives taps when the user is targeting the top region. */
+   still receives taps when the user is targeting the top region.
+   touch-action: none claims the gesture from iOS Safari's built-in
+   edge-swipe-back so a drawer-open swipe doesn't get hijacked into a
+   browser-back navigation. The strip is narrow (28px) so accidental
+   scroll-up gestures landing on it are rare. */
 .nav-edge-sensor {
   position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
-  width: 24px;
+  width: 28px;
   z-index: 50;
   /* No background so it stays invisible to the user. */
-  touch-action: pan-y;
+  touch-action: none;
 }
 
 .nav-overlay {
