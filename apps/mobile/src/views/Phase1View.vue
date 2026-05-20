@@ -527,21 +527,16 @@ const diazepamModalCopy = computed(() => {
         >
           <UiSelect v-model="smokingStatus" :options="smokingOptions" placeholder="Select…" block />
         </UiField>
-        <UiField v-if="smokingStatus === 'current'" label="Cigarettes per day">
+        <UiField v-if="smokingStatus === 'current'" label="Cigarettes" hint="per day">
           <UiNumberInput v-model="cigarettesPerDay" :min="0" :max="100" />
         </UiField>
-        <UiBanner v-if="nicotineRec" tone="caution" title="Pre-op nicotine protocol" icon="🚬">
+        <UiBanner v-if="nicotineRec" tone="caution" title="Pre-op nicotine protocol">
           {{ nicotineRec.instruction }} ({{ nicotineRec.hoursBefore }} hr before appointment). Based
           on <strong>{{ cigarettesPerDay ?? 20 }}</strong> cigs/day.
         </UiBanner>
         <UiRow :gap="3" wrap>
           <UiField label="Alcohol" hint="drinks per week">
-            <UiSelect
-              v-model="alcoholValue"
-              :options="alcoholOptions"
-              placeholder="drinks/wk"
-              block
-            />
+            <UiSelect v-model="alcoholValue" :options="alcoholOptions" placeholder="—" block />
           </UiField>
         </UiRow>
         <UiField label="Recreational drugs">
@@ -621,7 +616,6 @@ const diazepamModalCopy = computed(() => {
         v-if="heavyAsa1DiazepamHint"
         tone="caution"
         title="Heavier ASA I patient"
-        icon="⚖"
         class="mt-2"
       >
         Over 200 lb and ASA I — consider <strong>10 mg</strong> at bedtime; 5 mg often underdoses.

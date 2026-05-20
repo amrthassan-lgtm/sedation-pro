@@ -183,7 +183,6 @@ function emergency() {
         aria-label="Open emergency protocols"
         @click="emergency"
       >
-        <span aria-hidden="true">🚨</span>
         <span class="sticky-bar-emerg-text">Emergency</span>
       </button>
     </div>

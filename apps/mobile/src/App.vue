@@ -147,10 +147,10 @@ if (typeof window !== 'undefined') {
     <strong>same patient</strong>?
     <ul class="resume-gate-list">
       <li>
-        👤 <strong>{{ resumePatientLine }}</strong>
+        <strong>{{ resumePatientLine }}</strong>
       </li>
-      <li>🦷 {{ resumeProcedure }}</li>
-      <li>🩺 {{ resumeProvider }}</li>
+      <li>{{ resumeProcedure }}</li>
+      <li>{{ resumeProvider }}</li>
     </ul>
     Choosing <strong>Start new case</strong> permanently clears the loaded chart.
   </UiModal>

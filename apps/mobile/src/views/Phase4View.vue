@@ -356,19 +356,19 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <p class="heading"><span class="heading-step">11</span>Recovery Vitals</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
-          <UiField label="HR" hint="bpm">
+          <UiField label="HR">
             <UiNumberInput v-model="endHr" />
           </UiField>
-          <UiField id="gate-bp" label="BP" hint="mmHg" :invalid="gate.isInvalid('gate-bp')">
+          <UiField id="gate-bp" label="BP" :invalid="gate.isInvalid('gate-bp')">
             <UiBpInput v-model="endBp" />
           </UiField>
-          <UiField id="gate-spo2" label="SpO₂" hint="%" :invalid="gate.isInvalid('gate-spo2')">
+          <UiField id="gate-spo2" label="SpO₂" :invalid="gate.isInvalid('gate-spo2')">
             <UiNumberInput v-model="endSpo2" :min="0" :max="100" />
           </UiField>
-          <UiField label="EtCO₂" hint="mmHg">
+          <UiField label="EtCO₂">
             <UiNumberInput v-model="endEtco2" />
           </UiField>
-          <UiField v-if="diabetic" label="Glucose" hint="mg/dL · diabetic">
+          <UiField v-if="diabetic" label="Glucose">
             <UiNumberInput v-model="endGlucose" :min="0" />
           </UiField>
         </UiRow>
@@ -434,7 +434,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             id="gate-ambulatory"
             v-model="ambulatory"
             label="Patient ambulatory at discharge"
-            hint="Steady walking, no support needed"
             required
             :invalid="gate.isInvalid('gate-ambulatory')"
           />
@@ -442,7 +441,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             id="gate-oriented"
             v-model="orientedX3"
             label="Oriented ×3"
-            hint="Person · place · time"
             required
             :invalid="gate.isInvalid('gate-oriented')"
           />
@@ -450,7 +448,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             id="gate-pulseox"
             :model-value="!!discharge.pulseOxPrinted"
             label="Pulse-ox printout filed"
-            hint="SpO₂ trend copied + stapled to the sedation visit document"
             required
             :invalid="gate.isInvalid('gate-pulseox')"
             @update:model-value="(v) => recovery.setDischarge('pulseOxPrinted', v)"
@@ -517,7 +514,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         </UiStack>
 
         <p class="caption mt-1">Prescriptions given</p>
-        <UiField label="Rx handed to patient" hint="e.g. Ibuprofen 600 mg #20 q6h prn pain">
+        <UiField label="Rx handed to patient">
           <UiTextInput v-model="prescriptions" block />
         </UiField>
 
@@ -539,7 +536,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <p class="heading"><span class="heading-step">13b</span>Provider Sign-off</p>
 
       <UiStack :gap="3" class="mt-2">
-        <UiField label="Sedation quality rating" hint="provider impression">
+        <UiField label="Sedation quality rating">
           <UiSelect
             v-model="sedationRating"
             :options="sedationRatingOptions"
@@ -578,12 +575,12 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           <UiTextarea v-model="venipunctureComplications" :rows="2" block />
         </UiField>
 
-        <UiField label="Procedure notes" hint="anything else worth charting">
+        <UiField label="Procedure notes">
           <UiTextarea v-model="procedureNotes" :rows="3" block />
         </UiField>
 
         <UiRow :gap="3" wrap>
-          <UiField label="Return visit" hint="plan for follow-up">
+          <UiField label="Return visit">
             <UiSelect
               v-model="returnVisitPlan"
               :options="returnVisitOptions"
