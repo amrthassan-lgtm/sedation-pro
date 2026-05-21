@@ -282,7 +282,12 @@ const medicationTerms = [
 const hospitalisationTerms = ['None'];
 const surgeryTerms = ['None', 'Tonsillectomy', 'Wisdom teeth'];
 const anesthesiaHistoryTerms = ['None', 'Uneventful', 'Prior IV sedation'];
-const familyHistoryTerms = ['Non-contributory', 'MH (malignant hyperthermia)', 'Cardiac'];
+const familyHistoryTerms = [
+  'Non-contributory',
+  'MH (malignant hyperthermia)',
+  'Cardiac',
+  'Respiratory',
+];
 const recreationalDrugTerms = ['Denies', 'Cannabis'];
 
 // Medical problems chip cloud — common chronic conditions for moderate IV
