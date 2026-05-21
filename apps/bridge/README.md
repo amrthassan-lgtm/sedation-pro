@@ -51,14 +51,25 @@ In the monitor's **Network** → **HL7** (or **EMR**) menu set:
 
 ## REST surface
 
-| Method | Path                 | Body      | Returns                            |
-| ------ | -------------------- | --------- | ---------------------------------- |
-| GET    | `/healthz`           | —         | `{ ok: true }`                     |
-| POST   | `/sessions`          | `{ mrn }` | session metadata (201)             |
-| POST   | `/sessions/:id/stop` | —         | final metadata                     |
-| GET    | `/sessions`          | —         | `{ sessions: [...] }` newest-first |
-| GET    | `/sessions/:id`      | —         | session metadata                   |
-| GET    | `/sessions/:id/raw`  | —         | raw MLLP `.hl7` bytes (download)   |
+| Method | Path                   | Body      | Returns                            |
+| ------ | ---------------------- | --------- | ---------------------------------- |
+| GET    | `/healthz`             | —         | `{ ok: true }`                     |
+| POST   | `/sessions`            | `{ mrn }` | session metadata (201)             |
+| POST   | `/sessions/:id/stop`   | —         | final metadata                     |
+| GET    | `/sessions`            | —         | `{ sessions: [...] }` newest-first |
+| GET    | `/sessions/:id`        | —         | session metadata                   |
+| GET    | `/sessions/:id/raw`    | —         | raw MLLP `.hl7` bytes (download)   |
+| GET    | `/sessions/:id/vitals` | —         | parsed time-series JSON            |
+| GET    | `/sessions/:id/codes`  | —         | unrecognised OBX-3 codes (debug)   |
+
+`/vitals` returns a normalised time-series of every recognised vital
+(HR, SpO₂, NIBP sys/dia/mean, RESP, TEMP, EtCO₂, FiCO₂, pulse) regardless
+of whether the monitor encoded OBX-3 as a manufacturer short code (`HR`,
+`SpO2`, `NIBP_SYS` …), a LOINC code (`8867-4`, `2708-6`, `8480-6` …), or
+an ISO/IEEE 11073 MDC code (`MDC_ECG_HEART_RATE`, `MDC_PULS_OXIM_SAT_O2`
+…). `/codes` lists any OBX-3 codes the dictionary in `parse.ts` did NOT
+recognise — point your monitor at the bridge for one test session, then
+hit `/codes` to see what to add.
 
 No authentication — the bridge is intended to run behind the practice
 firewall on the LAN. If exposing externally, terminate TLS + add a bearer

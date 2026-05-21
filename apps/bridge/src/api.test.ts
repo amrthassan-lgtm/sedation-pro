@@ -7,6 +7,11 @@ import type { Server } from 'node:http';
 import { SessionStore } from './sessions.js';
 import { createApi } from './api.js';
 
+const SEP = '\r';
+function buildOru(segments: ReadonlyArray<string>): Buffer {
+  return Buffer.from(segments.join(SEP), 'utf8');
+}
+
 async function fetchJson(
   url: string,
   init: RequestInit = {},
@@ -128,5 +133,60 @@ describe('bridge HTTP API', () => {
   it('returns 404 for an unknown path', async () => {
     const { status } = await fetchJson(`${base}/unknown`);
     expect(status).toBe(404);
+  });
+
+  it('GET /sessions/:id/vitals returns parsed time-series from stored HL7', async () => {
+    const start = await fetchJson(`${base}/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mrn: '12345' }),
+    });
+    const { id } = start.body as { id: string };
+
+    await store.append(
+      '12345',
+      buildOru([
+        'MSH|^~\\&|EDAN|FAC|BRIDGE|SEDPRO|20260521143205||ORU^R01|0001|P|2.5',
+        'OBX|1|NM|HR^Heart Rate^EDAN||72|/min||N|||F',
+        'OBX|2|NM|SpO2^Oxygen Saturation^EDAN||98|%||N|||F',
+      ]),
+    );
+    await store.append(
+      '12345',
+      buildOru([
+        'MSH|^~\\&|EDAN|FAC|BRIDGE|SEDPRO|20260521143235||ORU^R01|0002|P|2.5',
+        'OBX|1|NM|HR^Heart Rate^EDAN||74|/min||N|||F',
+      ]),
+    );
+    await store.stop(id);
+
+    const { status, body } = await fetchJson(`${base}/sessions/${id}/vitals`);
+    expect(status).toBe(200);
+    const points = (body as { vitals: Array<{ vital: string; value: number }> }).vitals;
+    expect(points.map((p) => p.vital)).toEqual(['hr', 'spo2', 'hr']);
+    expect(points.map((p) => p.value)).toEqual([72, 98, 74]);
+  });
+
+  it('GET /sessions/:id/codes surfaces unrecognised OBX-3 identifiers', async () => {
+    const start = await fetchJson(`${base}/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mrn: '99999' }),
+    });
+    const { id } = start.body as { id: string };
+    await store.append(
+      '99999',
+      buildOru([
+        'MSH|^~\\&|EDAN|FAC|BRIDGE|SEDPRO|20260521143205||ORU^R01|0001|P|2.5',
+        'OBX|1|NM|HR^Heart Rate^EDAN||72|/min||N|||F',
+        'OBX|2|NM|MYSTERY_X^Strange Vital^EDAN||10|x||N|||F',
+      ]),
+    );
+    await store.stop(id);
+
+    const { status, body } = await fetchJson(`${base}/sessions/${id}/codes`);
+    expect(status).toBe(200);
+    const unknown = (body as { unknown: Array<{ code: string }> }).unknown;
+    expect(unknown.map((u) => u.code)).toEqual(['MYSTERY_X']);
   });
 });

@@ -1,6 +1,7 @@
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { createWriteStream, type WriteStream } from 'node:fs';
 import { join } from 'node:path';
+import { MllpStreamParser } from './mllp.js';
 
 /**
  * Per-case recording session. The app POSTs an MRN at the first Phase 3
@@ -144,6 +145,27 @@ export class SessionStore {
   /** Absolute path of the raw HL7 file for a session id. */
   rawFilePath(id: string): string {
     return this.rawPath(id);
+  }
+
+  /**
+   * Read the stored MLLP stream for a session back into individual HL7
+   * v2 messages (each one a string, no MLLP framing). The bridge stores
+   * each appended message wrapped in its own MLLP envelope, so the file
+   * is itself a valid MLLP byte stream — the same parser used on the
+   * live TCP socket parses it.
+   *
+   * Returns an empty array when the session file doesn't exist.
+   */
+  async readMessages(id: string): Promise<ReadonlyArray<string>> {
+    let bytes: Buffer;
+    try {
+      bytes = await readFile(this.rawPath(id));
+    } catch {
+      return [];
+    }
+    const parser = new MllpStreamParser();
+    const messages = parser.push(bytes);
+    return messages.map((m) => m.toString('utf8'));
   }
 
   /** Check whether a session is currently recording (open file). */

@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { createReadStream } from 'node:fs';
 import type { SessionStore } from './sessions.js';
+import { extractUnknownCodes, extractVitals, type VitalPoint } from './parse.js';
 
 /**
  * Tiny REST surface the app calls to drive recording lifecycle.
@@ -88,6 +89,43 @@ async function handleRaw(ctx: RouteContext, id: string): Promise<void> {
   createReadStream(ctx.store.rawFilePath(id)).pipe(ctx.res);
 }
 
+/**
+ * Parsed vitals time-series for a recording. Returns one
+ * `VitalPoint` per OBX observation the parser recognised in the stored
+ * MLLP stream, in chronological order. The chart appendix renders this
+ * directly; consumers don't have to know HL7.
+ */
+async function handleVitals(ctx: RouteContext, id: string): Promise<void> {
+  const meta = await ctx.store.get(id);
+  if (!meta) {
+    json(ctx.res, 404, { error: 'session not found' });
+    return;
+  }
+  const messages = await ctx.store.readMessages(id);
+  const points: VitalPoint[] = [];
+  for (const m of messages) {
+    points.push(...extractVitals(m));
+  }
+  points.sort((a, b) => a.timestamp - b.timestamp);
+  json(ctx.res, 200, { sessionId: id, mrn: meta.mrn, vitals: points });
+}
+
+/**
+ * Debug view of every OBX-3 code seen in the recording that the
+ * parser dictionary did NOT recognise. Used when a new practice points
+ * a different monitor at the bridge — the unknown codes show up here so
+ * the dictionary can be extended in `parse.ts` without guessing.
+ */
+async function handleUnknownCodes(ctx: RouteContext, id: string): Promise<void> {
+  const meta = await ctx.store.get(id);
+  if (!meta) {
+    json(ctx.res, 404, { error: 'session not found' });
+    return;
+  }
+  const messages = await ctx.store.readMessages(id);
+  json(ctx.res, 200, { sessionId: id, unknown: extractUnknownCodes(messages) });
+}
+
 export function createApi(opts: ApiOptions): Server {
   const server = createServer(async (req, res) => {
     try {
@@ -114,6 +152,16 @@ export function createApi(opts: ApiOptions): Server {
       const rawMatch = url.pathname.match(/^\/sessions\/(.+)\/raw$/);
       if (req.method === 'GET' && rawMatch) {
         await handleRaw(ctx, decodeURIComponent(rawMatch[1]!));
+        return;
+      }
+      const vitalsMatch = url.pathname.match(/^\/sessions\/(.+)\/vitals$/);
+      if (req.method === 'GET' && vitalsMatch) {
+        await handleVitals(ctx, decodeURIComponent(vitalsMatch[1]!));
+        return;
+      }
+      const codesMatch = url.pathname.match(/^\/sessions\/(.+)\/codes$/);
+      if (req.method === 'GET' && codesMatch) {
+        await handleUnknownCodes(ctx, decodeURIComponent(codesMatch[1]!));
         return;
       }
       const getMatch = url.pathname.match(/^\/sessions\/([^/]+)$/);
