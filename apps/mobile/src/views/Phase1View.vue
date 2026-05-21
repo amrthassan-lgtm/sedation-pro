@@ -310,6 +310,37 @@ const diabetesStatusOptions = [
   { value: 'type-2', label: 'Type II' },
 ];
 
+/**
+ * Morning-of-sedation guidance keyed to the patient's diabetes type.
+ * Universal NPO line comes first; the remaining clauses tie to therapy
+ * patterns common for each type (orals for Type II, insulin for Type I).
+ * The provider still has to know what the patient is actually on — the
+ * banner is a reminder of the protocol, not a complete decision tree.
+ */
+const diabetesGuidance = computed(() => {
+  if (diabetesStatus.value === 'type-1') {
+    return {
+      title: 'Type I diabetic · morning of sedation',
+      lines: [
+        'NPO ≥ 6 h before appointment.',
+        'Hold the morning injected insulin dose.',
+        'Insulin pump: leave running on basal rate. Do NOT suspend — DKA risk while NPO.',
+      ],
+    };
+  }
+  if (diabetesStatus.value === 'type-2') {
+    return {
+      title: 'Type II diabetic · morning of sedation',
+      lines: [
+        'NPO ≥ 6 h before appointment.',
+        'Hold oral agents (Metformin, Januvia, etc.) — NPO + oral hypoglycemics risks low blood sugar.',
+        'If on basal insulin (Lantus, etc.): hold the morning injection.',
+      ],
+    };
+  }
+  return null;
+});
+
 // Caregiver relation — same picklist Phase 4's discharge companion uses.
 // Phase 4 auto-fills its companion fields from these caregiver entries on
 // mount so the responsible adult is typically only named once at intake.
@@ -599,6 +630,11 @@ const diazepamModalCopy = computed(() => {
         <UiField label="Diabetes status" inline>
           <UiChipGroup v-model="diabetesStatus" :options="diabetesStatusOptions" />
         </UiField>
+        <UiBanner v-if="diabetesGuidance" tone="caution" :title="diabetesGuidance.title">
+          <ul class="diabetes-guidance">
+            <li v-for="line in diabetesGuidance.lines" :key="line">{{ line }}</li>
+          </ul>
+        </UiBanner>
         <UiField
           v-if="diabetic"
           id="field-baseline_glucose"
@@ -830,6 +866,21 @@ const diazepamModalCopy = computed(() => {
 </template>
 
 <style scoped>
+/* Diabetes morning-of-sedation guidance — tight bullet list inside a
+   UiBanner. Matches the banner body's voice without forcing a heavier
+   `.body` paragraph treatment. */
+.diabetes-guidance {
+  margin: 0;
+  padding-left: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.diabetes-guidance li {
+  font-size: var(--type-footnote);
+  line-height: 1.45;
+}
+
 /* Inline copy of VitalsStatGrid inside Vitals & Metrics. The right rail
    takes ownership at iPad-landscape widths, so we hide the inline copy
    there to avoid a duplicate. */
