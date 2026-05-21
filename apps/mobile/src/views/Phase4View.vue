@@ -368,10 +368,9 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     </header>
 
     <!-- Cards 11–12 are sedation-recovery only — an assessment-only visit
-         was never sedated, so they don't apply. Cards 13 / 13b / 13c still
-         render — 13b carries the return-visit plan a deferred sedation
-         needs and 13c carries the provider signature the assessment note
-         needs. -->
+         was never sedated, so they don't apply. Cards 13–16 still render —
+         15 carries the return-visit plan a deferred sedation needs and 16
+         carries the provider signature the assessment note needs. -->
 
     <!-- Card 11 — Recovery Vitals -->
 
@@ -447,11 +446,12 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       </UiButton>
     </UiCard>
 
-    <!-- Card 13 — Discharge Checklist & Companion -->
+    <!-- Card 13 — Discharge Readiness (release-blocker gates + companion) -->
 
     <UiCard tint="ph4">
-      <p class="heading"><span class="heading-step">13</span>Discharge Checklist</p>
+      <p class="heading"><span class="heading-step">13</span>Discharge Readiness</p>
       <UiStack :gap="3" class="mt-2">
+        <p class="caption">Patient readiness</p>
         <UiStack :gap="1">
           <UiCheckbox
             id="gate-ambulatory"
@@ -518,8 +518,15 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             />
           </UiField>
         </UiRow>
+      </UiStack>
+    </UiCard>
 
-        <p class="caption mt-1">Post-op confirmations</p>
+    <!-- Card 14 — Discharge Handoff (post-op confirmations + prescriptions) -->
+
+    <UiCard tint="ph4">
+      <p class="heading"><span class="heading-step">14</span>Discharge Handoff</p>
+      <UiStack :gap="3" class="mt-2">
+        <p class="caption">Post-op confirmations</p>
         <UiStack :gap="1">
           <UiCheckbox
             :model-value="!!discharge.escortedToVehicle"
@@ -550,10 +557,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       </UiStack>
     </UiCard>
 
-    <!-- Card 13b — Provider Sign-off / Procedure Notes -->
+    <!-- Card 15 — Provider Sign-off / Procedure Notes -->
 
     <UiCard tint="ph4">
-      <p class="heading"><span class="heading-step">13b</span>Provider Sign-off</p>
+      <p class="heading"><span class="heading-step">15</span>Provider Sign-off</p>
 
       <UiStack :gap="3" class="mt-2">
         <p class="caption">Quality</p>
@@ -605,10 +612,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       </UiStack>
     </UiCard>
 
-    <!-- Card 13c — Provider Signature -->
+    <!-- Card 16 — Provider Signature -->
 
     <UiCard tint="ph4">
-      <p class="heading"><span class="heading-step">13c</span>Provider Signature</p>
+      <p class="heading"><span class="heading-step">16</span>Provider Signature</p>
       <UiStack :gap="3" class="mt-2">
         <UiField
           id="gate-signature"
@@ -621,11 +628,11 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       </UiStack>
     </UiCard>
 
-    <!-- Card 14 — Release Patient (gated) -->
+    <!-- Card 17 — Release Patient (gated) -->
 
     <UiCard tint="ph4">
       <p class="heading">
-        <span class="heading-step">14</span
+        <span class="heading-step">17</span
         >{{ isAssessment ? 'Complete Assessment' : 'Release Patient' }}
       </p>
 
