@@ -659,7 +659,13 @@ const diazepamModalCopy = computed(() => {
         >
           <UiChipGroup v-model="osaStatus" :options="osaOptions" />
         </UiField>
+      </UiStack>
+    </UiCard>
 
+    <UiCard tint="ph1">
+      <p class="heading">Patient History</p>
+      <UiStack :gap="3" class="mt-2">
+        <p class="caption">Current</p>
         <UiField label="Current medications">
           <UiQuickAddChips v-model="medicationsList" :terms="medicationTerms" />
           <UiTextarea v-model="medicationsList" :rows="3" block />
@@ -668,6 +674,8 @@ const diazepamModalCopy = computed(() => {
           <UiQuickAddChips v-model="allergiesList" :terms="allergyTerms" />
           <UiTextarea v-model="allergiesList" :rows="2" block />
         </UiField>
+
+        <p class="caption mt-1">Past</p>
         <UiField label="Past hospitalisations">
           <UiQuickAddChips v-model="hospitalisations" :terms="hospitalisationTerms" />
           <UiTextarea v-model="hospitalisations" :rows="2" block />
@@ -680,6 +688,8 @@ const diazepamModalCopy = computed(() => {
           <UiQuickAddChips v-model="anesthesiaHistory" :terms="anesthesiaHistoryTerms" />
           <UiTextarea v-model="anesthesiaHistory" :rows="2" block />
         </UiField>
+
+        <p class="caption mt-1">Family</p>
         <UiField label="Family history">
           <UiQuickAddChips v-model="familyHistory" :terms="familyHistoryTerms" />
           <UiTextarea v-model="familyHistory" :rows="2" block />

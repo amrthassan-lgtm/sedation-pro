@@ -368,9 +368,10 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     </header>
 
     <!-- Cards 11–12 are sedation-recovery only — an assessment-only visit
-         was never sedated, so they don't apply. Card 13 stays (it carries
-         the provider signature the assessment note needs) and 13b stays
-         (return-visit plan is how a deferred sedation is scheduled). -->
+         was never sedated, so they don't apply. Cards 13 / 13b / 13c still
+         render — 13b carries the return-visit plan a deferred sedation
+         needs and 13c carries the provider signature the assessment note
+         needs. -->
 
     <!-- Card 11 — Recovery Vitals -->
 
@@ -555,6 +556,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <p class="heading"><span class="heading-step">13b</span>Provider Sign-off</p>
 
       <UiStack :gap="3" class="mt-2">
+        <p class="caption">Quality</p>
         <UiField label="Sedation quality rating" inline>
           <UiChipGroup
             v-model="sedationRating"
@@ -569,6 +571,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           <UiChipGroup v-model="bathroomBreaks" :options="bathroomBreakOptions" />
         </UiField>
 
+        <p class="caption mt-1">Complications</p>
         <UiField label="Sedation complications">
           <UiQuickAddChips v-model="sedationComplications" :terms="sedationComplicationOptions" />
           <UiTextarea v-model="sedationComplications" :rows="2" block />
@@ -586,6 +589,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           <UiTextarea v-model="procedureNotes" :rows="3" block />
         </UiField>
 
+        <p class="caption mt-1">Follow-up</p>
         <UiRow :gap="3" wrap>
           <UiField label="Return visit">
             <UiSelect
@@ -598,8 +602,14 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             <UiTextInput v-model="returnVisitDate" type="date" />
           </UiField>
         </UiRow>
+      </UiStack>
+    </UiCard>
 
-        <p class="caption mt-1">Provider signature</p>
+    <!-- Card 13c — Provider Signature -->
+
+    <UiCard tint="ph4">
+      <p class="heading"><span class="heading-step">13c</span>Provider Signature</p>
+      <UiStack :gap="3" class="mt-2">
         <UiField
           id="gate-signature"
           label="Sign to complete the record"
