@@ -546,16 +546,6 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         <UiField label="Rx handed to patient">
           <UiTextInput v-model="prescriptions" block />
         </UiField>
-
-        <p class="caption mt-1">Provider signature</p>
-        <UiField
-          id="gate-signature"
-          label="Sign to complete the record"
-          required
-          :invalid="gate.isInvalid('gate-signature')"
-        >
-          <UiSignaturePad v-model="providerSignatureDataUrl" />
-        </UiField>
       </UiStack>
     </UiCard>
 
@@ -608,6 +598,16 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             <UiTextInput v-model="returnVisitDate" type="date" />
           </UiField>
         </UiRow>
+
+        <p class="caption mt-1">Provider signature</p>
+        <UiField
+          id="gate-signature"
+          label="Sign to complete the record"
+          required
+          :invalid="gate.isInvalid('gate-signature')"
+        >
+          <UiSignaturePad v-model="providerSignatureDataUrl" />
+        </UiField>
       </UiStack>
     </UiCard>
 
