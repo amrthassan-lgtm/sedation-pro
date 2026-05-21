@@ -77,6 +77,14 @@ export const usePatientStore = defineStore('patient', () => {
   const procedure = ref('');
   const careName = ref('');
   const carePhone = ref('');
+  /**
+   * Caregiver's relationship to the patient (Spouse / Parent / etc.). Same
+   * vocabulary as `recovery.companionRelation` — Phase 4 auto-fills its
+   * companion fields from these caregiver entries on mount when the
+   * companion fields are still empty, so the responsible adult typically
+   * only gets named once at intake.
+   */
+  const careRelation = ref('');
   const weightLb = ref<number | null>(null);
   const heightIn = ref<number | null>(null);
   const age = ref<number | null>(null);
@@ -277,7 +285,7 @@ export const usePatientStore = defineStore('patient', () => {
   // Persist the form so reloading the page (or relaunching from the iPhone
   // home screen) doesn't wipe progress. Schema migrations land in Phase 5
   // proper — for now we trust the snapshot.
-  persistRefs('sedation-pro:patient:v5', {
+  persistRefs('sedation-pro:patient:v6', {
     name,
     mrn,
     provider,
@@ -285,6 +293,7 @@ export const usePatientStore = defineStore('patient', () => {
     procedure,
     careName,
     carePhone,
+    careRelation,
     weightLb,
     heightIn,
     age,
@@ -323,6 +332,7 @@ export const usePatientStore = defineStore('patient', () => {
     procedure.value = '';
     careName.value = '';
     carePhone.value = '';
+    careRelation.value = '';
     weightLb.value = null;
     heightIn.value = null;
     age.value = null;
@@ -362,6 +372,7 @@ export const usePatientStore = defineStore('patient', () => {
     procedure,
     careName,
     carePhone,
+    careRelation,
     weightLb,
     heightIn,
     age,

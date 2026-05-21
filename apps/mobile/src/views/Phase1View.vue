@@ -54,6 +54,7 @@ const {
   procedure,
   careName,
   carePhone,
+  careRelation,
   weightLb,
   heightIn,
   age,
@@ -309,6 +310,14 @@ const diabetesStatusOptions = [
   { value: 'type-2', label: 'Type II' },
 ];
 
+// Caregiver relation — same picklist Phase 4's discharge companion uses.
+// Phase 4 auto-fills its companion fields from these caregiver entries on
+// mount so the responsible adult is typically only named once at intake.
+const careRelationOptions = DEFAULT_FORMULARY.picklists.companionRelations.map((r) => ({
+  value: r,
+  label: r,
+}));
+
 // -------- Live derived UI bits ---------------------------------------------
 
 const lastExam = computed(() => {
@@ -440,20 +449,12 @@ const diazepamModalCopy = computed(() => {
     </header>
 
     <UiCard tint="ph1">
-      <p class="heading">Patient Identification</p>
+      <p class="heading">Case Staff</p>
       <UiStack :gap="3" class="mt-2">
-        <UiField id="field-pt" label="Patient name" required :invalid="isMissing('pt')">
-          <UiTextInput v-model="name" block />
+        <UiField id="field-prov" label="Provider" :invalid="isMissing('prov')">
+          <UiSelect v-model="providerValue" :options="providerOptions" block />
+          <UiTextInput v-if="providerIsOther" v-model="provider" class="mt-2" />
         </UiField>
-        <UiRow :gap="3" wrap>
-          <UiField id="field-mrn" label="MRN" required :invalid="isMissing('mrn')">
-            <UiTextInput v-model="mrn" inputmode="numeric" />
-          </UiField>
-          <UiField id="field-prov" label="Provider" :invalid="isMissing('prov')">
-            <UiSelect v-model="providerValue" :options="providerOptions" block />
-            <UiTextInput v-if="providerIsOther" v-model="provider" class="mt-2" />
-          </UiField>
-        </UiRow>
         <UiField label="Dental assistant(s)">
           <UiStack :gap="2">
             <UiCheckbox
@@ -465,32 +466,37 @@ const diazepamModalCopy = computed(() => {
             />
           </UiStack>
         </UiField>
-        <UiField label="Procedure">
-          <UiTextInput v-model="procedure" />
-        </UiField>
       </UiStack>
     </UiCard>
 
     <UiCard tint="ph1">
-      <p class="heading">Caregiver</p>
-      <UiRow :gap="3" wrap class="mt-2">
-        <UiField
-          id="field-care_name"
-          label="Caregiver name"
-          required
-          :invalid="isMissing('care_name')"
-        >
-          <UiTextInput v-model="careName" />
+      <p class="heading">Patient Identification</p>
+      <UiStack :gap="3" class="mt-2">
+        <UiField id="field-pt" label="Patient name" required :invalid="isMissing('pt')">
+          <UiTextInput v-model="name" block />
         </UiField>
-        <UiField
-          id="field-care_phone"
-          label="Caregiver phone"
-          required
-          :invalid="isMissing('care_phone')"
-        >
-          <UiTextInput v-model="carePhone" inputmode="tel" />
-        </UiField>
-      </UiRow>
+        <UiRow :gap="3" wrap>
+          <UiField id="field-mrn" label="MRN" required :invalid="isMissing('mrn')">
+            <UiTextInput v-model="mrn" inputmode="numeric" />
+          </UiField>
+          <UiField label="Procedure">
+            <UiTextInput v-model="procedure" />
+          </UiField>
+        </UiRow>
+
+        <p class="caption mt-1">Caregiver</p>
+        <UiRow :gap="3" wrap>
+          <UiField id="field-care_name" label="Name" required :invalid="isMissing('care_name')">
+            <UiTextInput v-model="careName" />
+          </UiField>
+          <UiField label="Relation" inline>
+            <UiSelect v-model="careRelation" :options="careRelationOptions" placeholder="Select…" />
+          </UiField>
+          <UiField id="field-care_phone" label="Phone" required :invalid="isMissing('care_phone')">
+            <UiTextInput v-model="carePhone" inputmode="tel" />
+          </UiField>
+        </UiRow>
+      </UiStack>
     </UiCard>
 
     <UiCard tint="ph1">
@@ -564,6 +570,29 @@ const diazepamModalCopy = computed(() => {
     <UiCard tint="ph1">
       <p class="heading">Medical History</p>
       <UiStack :gap="3" class="mt-2">
+        <p class="caption">Airway assessment</p>
+        <UiRow :gap="3" wrap>
+          <UiField
+            id="field-mallampati"
+            label="Mallampati"
+            required
+            inline
+            :invalid="isMissing('mallampati')"
+          >
+            <UiChipGroup v-model="mallampati" :options="mallampatiOptions" />
+          </UiField>
+          <UiField
+            id="field-asa_class"
+            label="ASA class"
+            required
+            inline
+            :invalid="isMissing('asa_class')"
+          >
+            <UiChipGroup v-model="asaClass" :options="asaOptions" show-caption />
+          </UiField>
+        </UiRow>
+
+        <p class="caption mt-1">Conditions</p>
         <UiField label="Medical problems">
           <UiChipMultiSelect v-model="medicalProblems" :options="medicalProblemOptions" />
         </UiField>
@@ -662,26 +691,6 @@ const diazepamModalCopy = computed(() => {
     <UiCard tint="ph1">
       <p class="heading">Safety Checklist</p>
       <UiStack :gap="3" class="mt-2">
-        <UiRow :gap="3" wrap>
-          <UiField
-            id="field-mallampati"
-            label="Mallampati"
-            required
-            inline
-            :invalid="isMissing('mallampati')"
-          >
-            <UiChipGroup v-model="mallampati" :options="mallampatiOptions" />
-          </UiField>
-          <UiField
-            id="field-asa_class"
-            label="ASA class"
-            required
-            inline
-            :invalid="isMissing('asa_class')"
-          >
-            <UiChipGroup v-model="asaClass" :options="asaOptions" show-caption />
-          </UiField>
-        </UiRow>
         <UiCheckbox
           id="field-npo_confirmed"
           v-model="npoConfirmed"

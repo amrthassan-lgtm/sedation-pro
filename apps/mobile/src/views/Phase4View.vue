@@ -341,7 +341,7 @@ function goToClinicalNote() {
 
 // -------- Drug summary stats (for clinical-note teaser) --------------------
 
-const { name: patientName, weightLb, diabetic, careName } = storeToRefs(patient);
+const { name: patientName, weightLb, diabetic, careName, careRelation } = storeToRefs(patient);
 
 // Pre-fill the discharge companion with the caregiver the clinician
 // already named in Phase 1 — usually the same person; still fully
@@ -350,6 +350,9 @@ const { name: patientName, weightLb, diabetic, careName } = storeToRefs(patient)
 onMounted(() => {
   if (companionName.value.trim() === '' && careName.value.trim() !== '') {
     companionName.value = careName.value;
+  }
+  if (companionRelation.value.trim() === '' && careRelation.value.trim() !== '') {
+    companionRelation.value = careRelation.value;
   }
 });
 const { versedTotalMg, fentanylTotalMcg } = storeToRefs(iv);
