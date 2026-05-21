@@ -151,7 +151,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       ],
       ['Drug-interaction check (Epocrates)', patient.medsVerified ? 'Verified' : '—'],
       ['NPO confirmed', patient.npoConfirmed ? 'Yes (≥6h solids / ≥2h liquids)' : '—'],
-      ['Date of last physical exam', fmtDate(patient.lastExamDate)],
+      ['Date of last medical exam', fmtDate(patient.lastExamDate)],
       ['Current medications', patient.medicationsList.trim() || '—'],
       ['Known allergies', patient.allergiesList.trim() || 'NKDA'],
       ['Past hospitalisations', patient.hospitalisations.trim() || '—'],

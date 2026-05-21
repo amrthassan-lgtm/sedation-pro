@@ -528,7 +528,7 @@ const diazepamModalCopy = computed(() => {
         <p class="caption mt-1">Clearance</p>
         <UiField
           id="field-last_exam"
-          label="Date of last exam"
+          label="Date of last medical exam"
           required
           inline
           :invalid="isMissing('last_exam')"
@@ -538,7 +538,7 @@ const diazepamModalCopy = computed(() => {
         <UiBanner
           v-if="lastExam && !lastExam.valid"
           tone="caution"
-          title="Out-of-date physical exam"
+          title="Out-of-date medical exam"
           icon="⚠"
         >
           Patient is {{ age }} y/o. Requires an exam within the last
