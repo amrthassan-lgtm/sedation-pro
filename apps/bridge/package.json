@@ -1,0 +1,21 @@
+{
+  "name": "@sedation-pro/bridge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "HL7-to-REST bridge: receives the Edan X10 (or any HL7 v2 over MLLP) vitals stream from the office network and exposes per-case recordings via REST for the Sedation Pro app to attach to the chart.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node --enable-source-maps dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
