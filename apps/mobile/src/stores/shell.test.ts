@@ -235,6 +235,23 @@ describe('shell stores — single sources of truth', () => {
     expect(patient.diabetic).toBe(false);
   });
 
+  it('charting Metformin or Insulin auto-adds Diabetes to medical problems', () => {
+    const patient = usePatientStore();
+    expect(patient.medicalProblems).not.toContain('Diabetes');
+
+    patient.medicationsList = 'Metformin 500 mg BID';
+    expect(patient.medicalProblems).toContain('Diabetes');
+
+    // Sticky: a deliberate removal isn't undone unless the medication
+    // list itself changes again to re-trigger the watcher.
+    patient.medicalProblems = patient.medicalProblems.filter((p) => p !== 'Diabetes');
+    expect(patient.medicalProblems).not.toContain('Diabetes');
+
+    // Insulin substring re-adds.
+    patient.medicationsList = 'Metformin 500 mg BID; Insulin Lantus 20U QHS';
+    expect(patient.medicalProblems).toContain('Diabetes');
+  });
+
   it('patient.completeness adds baseline_glucose when diabetic is yes', () => {
     const patient = usePatientStore();
     patient.name = 'Jane';

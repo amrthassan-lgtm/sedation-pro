@@ -273,6 +273,7 @@ const allergyTerms = ['NKDA', 'Penicillin', 'Sulfa', 'Latex'];
 const medicationTerms = [
   'None',
   'Metformin',
+  'Insulin',
   'Lisinopril',
   'Atorvastatin',
   'Levothyroxine',
@@ -298,6 +299,9 @@ const medicalProblemOptions = [
   { value: 'Pregnancy', label: 'Pregnancy' },
   { value: 'Hypothyroidism', label: 'Hypothyroidism' },
   { value: 'GERD', label: 'GERD' },
+  { value: 'Liver disease', label: 'Liver disease' },
+  { value: 'Chronic pain', label: 'Chronic pain' },
+  { value: 'Restless Leg Syndrome', label: 'RLS' },
 ];
 
 // Diabetes detail — replaces the legacy diabetic checkbox. Picking Type I

@@ -282,6 +282,28 @@ export const usePatientStore = defineStore('patient', () => {
     { flush: 'sync' },
   );
 
+  // Add "Diabetes" to medical problems when the medications list mentions
+  // Metformin or Insulin. Picking one of those quick-add chips (or just
+  // typing the word) is a strong signal the patient is diabetic, so the
+  // chip cloud should reflect it without requiring a separate tap. The
+  // provider still has to pick Type I or Type II in the status row — we
+  // don't presume the type from the drug since both insulin-using
+  // populations exist for either type.
+  // Sticky behaviour: once added, the watcher doesn't re-fire on the same
+  // text, so a deliberate "remove Diabetes from medical problems" by the
+  // provider isn't undone unless the medication list itself changes again.
+  watch(
+    medicationsList,
+    (meds) => {
+      const lower = meds.toLowerCase();
+      const hasDiabetesMed = lower.includes('metformin') || lower.includes('insulin');
+      if (hasDiabetesMed && !medicalProblems.value.includes('Diabetes')) {
+        medicalProblems.value = [...medicalProblems.value, 'Diabetes'];
+      }
+    },
+    { flush: 'sync' },
+  );
+
   // Persist the form so reloading the page (or relaunching from the iPhone
   // home screen) doesn't wipe progress. Schema migrations land in Phase 5
   // proper — for now we trust the snapshot.
