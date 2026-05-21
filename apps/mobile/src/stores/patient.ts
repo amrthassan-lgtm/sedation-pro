@@ -47,7 +47,7 @@ export function formatAlcoholBucket(weekly: number | null): string {
 }
 
 export interface SafetyAlert {
-  readonly code: 'asa' | 'osa' | 'mallampati' | 'bmi' | 'age';
+  readonly code: 'asa' | 'osa' | 'mallampati' | 'bmi' | 'age' | 'diabetes';
   readonly label: string;
   readonly tone: 'caution' | 'danger';
 }
@@ -188,6 +188,13 @@ export const usePatientStore = defineStore('patient', () => {
         label: `Age ${age.value}`,
         tone: age.value >= 75 ? 'danger' : 'caution',
       });
+    }
+    if (diabetesStatus.value === 'type-1') {
+      // DM-1 carries DKA risk while NPO + the don't-suspend-pump rule;
+      // the reminder pill keeps that protocol visible after Phase 1.
+      alerts.push({ code: 'diabetes', label: 'DM-1', tone: 'caution' });
+    } else if (diabetesStatus.value === 'type-2') {
+      alerts.push({ code: 'diabetes', label: 'DM-2', tone: 'caution' });
     }
     return alerts;
   });
