@@ -1,3 +1,5 @@
+import { useMonitorRecording } from './useMonitorRecording';
+
 /**
  * Wipes every persisted store under the `sedation-pro:*` namespace and
  * hard-reloads onto Phase 1, so every Pinia setup-store re-initializes
@@ -9,10 +11,24 @@
  * don't get Pinia's free `$reset`, and adding one per store would duplicate
  * the initial-value defaults already encoded inline in each `defineStore`.
  * Clearing storage + reload sidesteps that whole maintenance burden.
+ *
+ * Side effect: before wiping, we close any in-flight monitor-bridge
+ * recording so the previous case's session ends cleanly on the server
+ * (with a final `stoppedAt` + byte/message counts) instead of being
+ * silently orphaned in an open state. No-op when no bridge is configured
+ * or when no session is open.
  */
 export function useCaseReset(): { reset: () => void } {
+  const monitorRecording = useMonitorRecording();
+
   function reset(): void {
     if (typeof window === 'undefined') return;
+
+    // Fire-and-forget — the page reload below races with the network
+    // request, but a fresh reload starts a fresh session so the worst
+    // case is the bridge sees a "lost connection" mid-stream which it
+    // already tolerates (the file is durable per-message).
+    void monitorRecording.stop();
 
     const keysToClear: string[] = [];
     for (let i = 0; i < window.localStorage.length; i++) {

@@ -6,6 +6,7 @@ import { useIVStore } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
+import { useMonitorRecording } from '@/composables/useMonitorRecording';
 import { useEventLogStore } from '@/stores/event-log';
 import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
 import { useIvDosing } from '@/composables/useIvDosing';
@@ -36,6 +37,7 @@ import { DEFAULT_FORMULARY, premedWait } from '@sedation-pro/clinical';
 import type { ActionState, BpValue, ChipOption, TimerPillStatus } from '@sedation-pro/ui';
 
 const iv = useIVStore();
+const monitorRecording = useMonitorRecording();
 const local = useLocalAnestheticStore();
 const patient = usePatientStore();
 const undo = useUndoStore();
@@ -194,6 +196,10 @@ function stampPreOpVitals() {
     response: preOpResponse.value,
     at: Date.now(),
   });
+  // First stamp in Phase 3 opens the bridge recording for this case so
+  // the continuous-monitoring data gets captured against the chart. No-op
+  // when no bridge is configured for the practice.
+  void monitorRecording.start(patient.mrn);
   undo.stamp({
     event: 'Pre-Op Vitals',
     details: {

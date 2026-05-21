@@ -183,4 +183,19 @@ export interface Formulary {
   readonly ceilings: IVCeilings;
   readonly timings: FormularyTimings;
   readonly picklists: PracticePicklists;
+  /**
+   * URL of this practice's `@sedation-pro/bridge` service — the HL7-to-REST
+   * recorder that captures the Edan X10 (or any HL7 v2 over MLLP) vitals
+   * stream and attaches it to the chart.
+   *
+   * `null` disables monitor recording entirely: the app behaves exactly
+   * as it did before the bridge existed, no requests, no error pills, no
+   * "Monitor record attached" row in the Discharge Handoff card. Practices
+   * without a monitor (or without the bridge installed) leave this null.
+   *
+   * When set, point at the bridge's HTTP endpoint on the office LAN, e.g.
+   * `http://192.168.1.100:8080`. The app POSTs `/sessions` at the first
+   * Phase 3 vitals stamp and POSTs `/sessions/:id/stop` at Phase 4 release.
+   */
+  readonly bridgeUrl: string | null;
 }

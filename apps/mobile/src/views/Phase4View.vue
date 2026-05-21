@@ -9,6 +9,8 @@ import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
+import { useMonitorStore } from '@/stores/monitor';
+import { useMonitorRecording } from '@/composables/useMonitorRecording';
 import { useNow } from '@/composables/useNow';
 import { useGateFeedback, type GateEntry } from '@/composables/useGateFeedback';
 import { haptic } from '@/composables/useHaptics';
@@ -48,6 +50,8 @@ const iv = useIVStore();
 const patient = usePatientStore();
 const recovery = useRecoveryStore();
 const undo = useUndoStore();
+const monitorStore = useMonitorStore();
+const monitorRecording = useMonitorRecording();
 const now = useNow(1000);
 
 const eventLog = useEventLogStore();
@@ -145,6 +149,50 @@ const yesNoOptions = [
   { value: false, label: 'No' },
   { value: true, label: 'Yes' },
 ];
+
+/** True iff this practice has the monitor bridge configured. When false,
+ *  the Card 14 Monitor-recording sub-section is hidden entirely. */
+const monitorBridgeConfigured = DEFAULT_FORMULARY.bridgeUrl !== null;
+
+/**
+ * Human-readable summary of the captured recording for the Discharge-
+ * Handoff "Monitor recording" row. Three states:
+ *   - waiting:   bridge configured but no session opened yet (pre-Phase 3)
+ *   - recording: session open, "rec · 38 min" with reachability tone
+ *   - attached:  session closed, "245 msgs · 38 min" + green check
+ */
+const monitorSummary = computed<{
+  label: string;
+  detail: string;
+  status: 'waiting' | 'recording' | 'attached';
+}>(() => {
+  if (monitorStore.isAttached) {
+    const startedAt = monitorStore.startedAt ?? 0;
+    const stoppedAt = monitorStore.stoppedAt ?? 0;
+    const minutes = Math.max(0, Math.floor((stoppedAt - startedAt) / 60_000));
+    const msgs = monitorStore.messageCount;
+    return {
+      label: 'Monitor record attached',
+      detail: `${msgs.toLocaleString()} message${msgs === 1 ? '' : 's'} over ${minutes} min`,
+      status: 'attached',
+    };
+  }
+  if (monitorStore.isRecording && monitorStore.startedAt !== null) {
+    const minutes = Math.max(0, Math.floor((now.value - monitorStore.startedAt) / 60_000));
+    return {
+      label: monitorStore.bridgeReachable
+        ? 'Recording in progress'
+        : 'Recording — bridge unreachable',
+      detail: `${minutes} min so far`,
+      status: 'recording',
+    };
+  }
+  return {
+    label: 'Awaiting Phase 3 vitals stamp',
+    detail: 'Recording opens when Phase 3 pre-op vitals are stamped',
+    status: 'waiting',
+  };
+});
 
 const companionRelationOptions = DEFAULT_FORMULARY.picklists.companionRelations.map((r) => ({
   value: r,
@@ -322,6 +370,11 @@ function releasePatient() {
   }
   haptic('success');
   recovery.stampReleased();
+  // Close the bridge recording so its file is finalised and the
+  // Discharge-Handoff "Monitor record attached" row picks up the final
+  // byteCount / messageCount. No-op when no bridge is configured or no
+  // session was opened in Phase 3.
+  void monitorRecording.stop();
   undo.stamp({
     event: isAssessment.value ? 'Assessment Completed · sedation deferred' : 'Patient Released',
     details: isAssessment.value
@@ -554,6 +607,21 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         <UiField label="Rx handed to patient">
           <UiTextInput v-model="prescriptions" block />
         </UiField>
+
+        <template v-if="monitorBridgeConfigured">
+          <p class="caption mt-1">Monitor recording</p>
+          <div class="monitor-row" :class="`monitor-row--${monitorSummary.status}`">
+            <span class="monitor-row-icon" aria-hidden="true">
+              <template v-if="monitorSummary.status === 'attached'">✓</template>
+              <template v-else-if="monitorSummary.status === 'recording'">●</template>
+              <template v-else>○</template>
+            </span>
+            <div class="monitor-row-body">
+              <div class="monitor-row-label">{{ monitorSummary.label }}</div>
+              <div class="monitor-row-detail">{{ monitorSummary.detail }}</div>
+            </div>
+          </div>
+        </template>
       </UiStack>
     </UiCard>
 
@@ -718,6 +786,57 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 </template>
 
 <style scoped>
+/* Monitor-recording row inside Card 14. Icon + two-line label/detail.
+   Status drives the icon colour: green check when the recording is
+   finalised and attached, caution for in-progress, neutral while
+   waiting for the Phase 3 stamp that opens the session. */
+.monitor-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.monitor-row-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-bold);
+  flex-shrink: 0;
+}
+.monitor-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.monitor-row-label {
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+.monitor-row-detail {
+  font-size: var(--type-caption);
+  color: var(--color-text-tertiary);
+}
+.monitor-row--attached .monitor-row-icon {
+  background: var(--color-good);
+  color: #000;
+}
+.monitor-row--recording .monitor-row-icon {
+  color: var(--color-warn);
+  background: var(--color-warn-soft);
+}
+.monitor-row--waiting .monitor-row-icon {
+  color: var(--color-text-tertiary);
+  background: var(--color-surface-elevated);
+}
+
 .blocker-list {
   margin: var(--sp-2) 0 0;
   padding-left: var(--sp-5);

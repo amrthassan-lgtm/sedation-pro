@@ -263,4 +263,9 @@ export const DEFAULT_FORMULARY: Formulary = {
   ceilings: DEFAULT_CEILINGS,
   timings: DEFAULT_TIMINGS,
   picklists: DEFAULT_PICKLISTS,
+  // No monitor bridge configured by default — practices opt in by setting
+  // this to their office bridge's HTTP endpoint (see @sedation-pro/bridge).
+  // When null, every monitor-recording code path no-ops and the UI stays
+  // identical to the pre-bridge layout.
+  bridgeUrl: null,
 };
