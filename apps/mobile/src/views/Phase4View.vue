@@ -391,7 +391,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             <UiNumberInput v-model="endGlucose" :min="0" />
           </UiField>
         </UiRow>
-        <UiField label="Patient response">
+        <UiField label="Patient response" inline>
           <UiChipGroup v-model="endResponse" :options="responseOptions" />
         </UiField>
         <UiButton
@@ -479,6 +479,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             id="gate-nausea"
             label="Nausea or vomiting"
             hint="Yes blocks discharge"
+            inline
             :invalid="gate.isInvalid('gate-nausea')"
           >
             <UiChipGroup v-model="nauseaOrVomiting" :options="yesNoOptions" />
@@ -487,6 +488,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             id="gate-bleeding"
             label="Excessive bleeding"
             hint="Yes blocks discharge"
+            inline
             :invalid="gate.isInvalid('gate-bleeding')"
           >
             <UiChipGroup v-model="excessiveBleeding" :options="yesNoOptions" />
@@ -560,11 +562,17 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <p class="heading"><span class="heading-step">13b</span>Provider Sign-off</p>
 
       <UiStack :gap="3" class="mt-2">
-        <UiField label="Sedation quality rating">
-          <UiChipGroup v-model="sedationRating" :options="sedationRatingChipOptions" show-caption />
+        <UiField label="Sedation quality rating" inline>
+          <UiChipGroup
+            v-model="sedationRating"
+            :options="sedationRatingChipOptions"
+            show-caption
+            allow-deselect
+            deselect-value=""
+          />
         </UiField>
 
-        <UiField label="Bathroom breaks">
+        <UiField label="Bathroom breaks" inline>
           <UiChipGroup v-model="bathroomBreaks" :options="bathroomBreakOptions" />
         </UiField>
 

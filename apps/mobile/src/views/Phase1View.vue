@@ -220,7 +220,9 @@ const alcoholOptions = [
 const alcoholValue = computed<number>({
   get: () => alcoholBucketValue(alcoholPerWeek.value) ?? -1,
   set: (v) => {
-    alcoholPerWeek.value = v;
+    // -1 is the chip-group's "deselect" sentinel — map it back to the
+    // store's "no answer" null so a re-render doesn't relight a stale chip.
+    alcoholPerWeek.value = v === -1 ? null : v;
   },
 });
 
@@ -252,7 +254,7 @@ function cigaretteBucketLabel(n: number | null): string {
 const cigaretteValue = computed<number>({
   get: () => cigaretteBucketValue(cigarettesPerDay.value),
   set: (v) => {
-    cigarettesPerDay.value = v;
+    cigarettesPerDay.value = v === -1 ? null : v;
   },
 });
 
@@ -544,6 +546,7 @@ const diazepamModalCopy = computed(() => {
           id="field-osa_history"
           label="OSA / CPAP history"
           required
+          inline
           :invalid="isMissing('osa_history')"
         >
           <UiChipGroup v-model="osaStatus" :options="osaOptions" />
@@ -594,20 +597,31 @@ const diazepamModalCopy = computed(() => {
           id="field-smoking_status"
           label="Smoking status"
           required
+          inline
           :invalid="isMissing('smoking_status')"
         >
           <UiChipGroup v-model="smokingStatus" :options="smokingOptions" />
         </UiField>
-        <UiField v-if="smokingStatus === 'current'" label="Cigarettes" hint="per day">
-          <UiChipGroup v-model="cigaretteValue" :options="cigaretteOptions" />
+        <UiField v-if="smokingStatus === 'current'" label="Cigarettes" hint="per day" inline>
+          <UiChipGroup
+            v-model="cigaretteValue"
+            :options="cigaretteOptions"
+            allow-deselect
+            :deselect-value="-1"
+          />
         </UiField>
         <UiBanner v-if="nicotineRec" tone="caution" title="Pre-op nicotine protocol">
           {{ nicotineRec.instruction }} ({{ nicotineRec.hoursBefore }} hr before appointment). Based
           on <strong>{{ cigaretteBucketLabel(cigarettesPerDay) }}</strong> cigs/day.
         </UiBanner>
         <UiRow :gap="3" wrap>
-          <UiField label="Alcohol" hint="drinks per week">
-            <UiChipGroup v-model="alcoholValue" :options="alcoholOptions" />
+          <UiField label="Alcohol" hint="drinks per week" inline>
+            <UiChipGroup
+              v-model="alcoholValue"
+              :options="alcoholOptions"
+              allow-deselect
+              :deselect-value="-1"
+            />
           </UiField>
         </UiRow>
         <UiField label="Recreational drugs">
@@ -625,6 +639,7 @@ const diazepamModalCopy = computed(() => {
             id="field-mallampati"
             label="Mallampati"
             required
+            inline
             :invalid="isMissing('mallampati')"
           >
             <UiChipGroup v-model="mallampati" :options="mallampatiOptions" />
@@ -633,6 +648,7 @@ const diazepamModalCopy = computed(() => {
             id="field-asa_class"
             label="ASA class"
             required
+            inline
             :invalid="isMissing('asa_class')"
           >
             <UiChipGroup v-model="asaClass" :options="asaOptions" show-caption />

@@ -14,6 +14,13 @@ interface Props {
    */
   invalid?: boolean;
   /**
+   * Size the slot to its content rather than the full label width. Use for
+   * fields whose input doesn't fill horizontally — chip groups, short
+   * numeric inputs — so the red "invalid" ring hugs the actual input
+   * rather than the full row.
+   */
+  inline?: boolean;
+  /**
    * HTML id applied to the wrapper. Lets callers `scrollIntoView` straight to
    * the field — e.g. jumping to the first missing entry on a failed clearance.
    */
@@ -26,12 +33,17 @@ const props = withDefaults(defineProps<Props>(), {
   required: false,
   error: undefined,
   invalid: false,
+  inline: false,
   id: undefined,
 });
 </script>
 
 <template>
-  <div :id="props.id" class="ui-field" :class="{ 'is-invalid': props.invalid }">
+  <div
+    :id="props.id"
+    class="ui-field"
+    :class="{ 'is-invalid': props.invalid, 'is-inline': props.inline }"
+  >
     <label v-if="props.label" class="ui-field-label">
       {{ props.label }}
       <span v-if="props.hint" class="ui-field-hint">{{ props.hint }}</span>
@@ -84,6 +96,15 @@ const props = withDefaults(defineProps<Props>(), {
 .ui-field-slot {
   border-radius: var(--r-sm);
   transition: box-shadow var(--dur-150) var(--ease-standard);
+}
+/* Inline slot — size to content rather than fill the label width. Used by
+   chip-group and short-numeric fields so the `is-invalid` red ring traces
+   the actual input instead of the full row. The outer `.ui-field` still
+   flexes block-level so multiple inline fields can sit beside each other
+   in a UiRow with their own widths. */
+.ui-field.is-inline .ui-field-slot {
+  width: fit-content;
+  max-width: 100%;
 }
 .ui-field.is-invalid .ui-field-label {
   color: var(--color-danger);

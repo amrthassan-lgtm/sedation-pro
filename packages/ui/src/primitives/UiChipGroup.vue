@@ -11,11 +11,28 @@ interface Props {
    * making the chips themselves wider.
    */
   showCaption?: boolean;
+  /**
+   * When true, tapping the currently-active chip emits `deselectValue`
+   * instead of staying selected — for non-required fields where the user
+   * might genuinely want to clear their answer (e.g. accidentally tapped
+   * a chip). Required fields leave this off so the chip row always shows
+   * a definite selection once answered.
+   */
+  allowDeselect?: boolean;
+  /**
+   * Value emitted when the user taps the already-active chip and
+   * `allowDeselect` is on. Caller picks the sentinel that matches "no
+   * answer" for their store: `''` for string-backed picks (sedation
+   * rating), `-1` for bucket-bound numerics (alcohol, cigarettes), etc.
+   * Ignored unless `allowDeselect` is true.
+   */
+  deselectValue?: T;
   disabled?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showCaption: false,
+  allowDeselect: false,
   disabled: false,
 });
 
@@ -25,6 +42,12 @@ const emit = defineEmits<{
 
 function select(value: T): void {
   if (props.disabled) return;
+  // Deselect: tap-while-active emits the deselectValue sentinel back so
+  // the parent ref can drop to its empty state. Caller opts in per-field.
+  if (props.allowDeselect && props.modelValue === value && props.deselectValue !== undefined) {
+    emit('update:modelValue', props.deselectValue);
+    return;
+  }
   emit('update:modelValue', value);
 }
 
