@@ -281,7 +281,7 @@ const medicationTerms = [
 ];
 const hospitalisationTerms = ['None'];
 const surgeryTerms = ['None', 'Tonsillectomy', 'Wisdom teeth'];
-const anesthesiaHistoryTerms = ['Uneventful', 'None', 'Prior IV sedation'];
+const anesthesiaHistoryTerms = ['None', 'Uneventful', 'Prior IV sedation'];
 const familyHistoryTerms = ['Non-contributory', 'MH (malignant hyperthermia)', 'Cardiac'];
 const recreationalDrugTerms = ['Denies', 'Cannabis'];
 
