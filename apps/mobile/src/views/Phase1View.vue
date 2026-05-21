@@ -512,6 +512,7 @@ const diazepamModalCopy = computed(() => {
     <UiCard tint="ph1">
       <p class="heading">Patient Identification</p>
       <UiStack :gap="3" class="mt-2">
+        <p class="caption">Patient</p>
         <UiField id="field-pt" label="Patient name" required :invalid="isMissing('pt')">
           <UiTextInput v-model="name" block />
         </UiField>
