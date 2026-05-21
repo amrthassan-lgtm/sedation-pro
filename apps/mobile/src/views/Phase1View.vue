@@ -525,6 +525,27 @@ const diazepamModalCopy = computed(() => {
           </UiField>
         </UiRow>
 
+        <p class="caption mt-1">Clearance</p>
+        <UiField
+          id="field-last_exam"
+          label="Date of last exam"
+          required
+          inline
+          :invalid="isMissing('last_exam')"
+        >
+          <UiTextInput v-model="lastExamDate" type="date" />
+        </UiField>
+        <UiBanner
+          v-if="lastExam && !lastExam.valid"
+          tone="caution"
+          title="Out-of-date physical exam"
+          icon="⚠"
+        >
+          Patient is {{ age }} y/o. Requires an exam within the last
+          <strong>{{ lastExam.cutoffMonths }}</strong> months. Last exam recorded:
+          {{ lastExam.elapsedMonths }} months ago. Update before sedation.
+        </UiBanner>
+
         <p class="caption mt-1">Caregiver</p>
         <UiRow :gap="3" wrap>
           <UiField id="field-care_name" label="Name" required :invalid="isMissing('care_name')">
@@ -580,32 +601,12 @@ const diazepamModalCopy = computed(() => {
             <UiNumberInput v-model="baselineSpo2" :min="0" :max="100" />
           </UiField>
         </UiRow>
-        <UiField
-          id="field-last_exam"
-          label="Date of last exam"
-          required
-          :invalid="isMissing('last_exam')"
-        >
-          <UiTextInput v-model="lastExamDate" type="date" />
-        </UiField>
       </UiStack>
 
       <!-- Live readouts — Apple Health-style stat cards. On iPad landscape
            these move to the right rail (see <template #rail> below) so the
            inline copy is hidden via .narrow-only. -->
       <VitalsStatGrid class="mt-2 narrow-only" />
-
-      <UiBanner
-        v-if="lastExam && !lastExam.valid"
-        tone="caution"
-        title="Out-of-date physical exam"
-        icon="⚠"
-        class="mt-2"
-      >
-        Patient is {{ age }} y/o. Requires an exam within the last
-        <strong>{{ lastExam.cutoffMonths }}</strong> months. Last exam recorded:
-        {{ lastExam.elapsedMonths }} months ago. Update before sedation.
-      </UiBanner>
     </UiCard>
 
     <UiCard tint="ph1">
