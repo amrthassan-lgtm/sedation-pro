@@ -205,14 +205,34 @@ describe('shell stores — single sources of truth', () => {
     expect(patient.phase1ValidationAttempted).toBe(false);
   });
 
-  it('flipping diabetic back to no wipes the baseline glucose', async () => {
+  it('flipping diabetes status to none wipes the baseline glucose', async () => {
     const patient = usePatientStore();
-    patient.diabetic = true;
+    patient.diabetesStatus = 'type-2';
     patient.baselineGlucose = 142;
+    expect(patient.diabetic).toBe(true);
     expect(patient.baselineGlucose).toBe(142);
-    patient.diabetic = false;
+    patient.diabetesStatus = 'none';
     await nextTick();
+    expect(patient.diabetic).toBe(false);
     expect(patient.baselineGlucose).toBeNull();
+  });
+
+  it('picking a diabetes type auto-adds Diabetes to medical problems and clears on none', () => {
+    const patient = usePatientStore();
+    expect(patient.medicalProblems).not.toContain('Diabetes');
+    patient.diabetesStatus = 'type-1';
+    expect(patient.medicalProblems).toContain('Diabetes');
+    patient.diabetesStatus = 'none';
+    expect(patient.medicalProblems).not.toContain('Diabetes');
+  });
+
+  it('removing Diabetes from medical problems clears the diabetes type', () => {
+    const patient = usePatientStore();
+    patient.diabetesStatus = 'type-2';
+    expect(patient.medicalProblems).toContain('Diabetes');
+    patient.medicalProblems = patient.medicalProblems.filter((p) => p !== 'Diabetes');
+    expect(patient.diabetesStatus).toBe('none');
+    expect(patient.diabetic).toBe(false);
   });
 
   it('patient.completeness adds baseline_glucose when diabetic is yes', () => {
@@ -240,7 +260,8 @@ describe('shell stores — single sources of truth', () => {
     expect(patient.isPhase1Complete).toBe(true);
     expect(patient.completeness.total).toBe(19);
 
-    patient.diabetic = true;
+    patient.diabetesStatus = 'type-2';
+    expect(patient.diabetic).toBe(true);
     expect(patient.completeness.total).toBe(20);
     expect(patient.isPhase1Complete).toBe(false);
 

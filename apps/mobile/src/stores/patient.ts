@@ -90,7 +90,24 @@ export const usePatientStore = defineStore('patient', () => {
   const asaClass = ref<AsaClass | ''>('');
   const npoConfirmed = ref(false);
   const consentObtained = ref(false);
-  const diabetic = ref(false);
+  /**
+   * Multi-select chip vocabulary for the patient's active medical problems
+   * (CVD, Hypertension, Diabetes, etc.). Optional — not part of the unlock
+   * gate. The chip "Diabetes" is bidirectionally bound with `diabetesStatus`
+   * below so picking Type I / II auto-adds Diabetes, and toggling Diabetes
+   * off clears the type back to none.
+   */
+  const medicalProblems = ref<string[]>([]);
+  /**
+   * Diabetes detail. Replaces the legacy `diabetic: boolean` flag with a
+   * three-way picker so the chart records *which* diabetes the patient
+   * carries. `diabetic` below is a computed derived from this — every
+   * existing consumer (conditional baseline-glucose field, recovery
+   * glucose, the per-store glucose-wipe watchers, completeness math) still
+   * reads `patient.diabetic` and gets a reactive boolean.
+   */
+  const diabetesStatus = ref<'none' | 'type-1' | 'type-2'>('none');
+  const diabetic = computed<boolean>(() => diabetesStatus.value !== 'none');
   const baselineGlucose = ref<number | null>(null);
 
   // -------- Expanded medical / social history -------------------------------
@@ -228,10 +245,39 @@ export const usePatientStore = defineStore('patient', () => {
     { flush: 'sync' },
   );
 
+  // Bidirectional sync between the Medical Problems chip cloud and the
+  // Diabetes status picker. Picking Type I / II auto-adds "Diabetes" to
+  // the cloud; toggling Diabetes off the cloud clears the type back to
+  // "none". The chart's "diabetic" boolean is the derived view so both
+  // controls keep a consistent representation no matter which the
+  // provider touched. flush: 'sync' so the auto-toggle is observable in
+  // the same tick the user-driven mutation happens.
+  watch(
+    diabetesStatus,
+    (status) => {
+      const has = medicalProblems.value.includes('Diabetes');
+      if (status === 'none' && has) {
+        medicalProblems.value = medicalProblems.value.filter((p) => p !== 'Diabetes');
+      } else if (status !== 'none' && !has) {
+        medicalProblems.value = [...medicalProblems.value, 'Diabetes'];
+      }
+    },
+    { flush: 'sync' },
+  );
+  watch(
+    () => medicalProblems.value.includes('Diabetes'),
+    (hasDiabetes) => {
+      if (!hasDiabetes && diabetesStatus.value !== 'none') {
+        diabetesStatus.value = 'none';
+      }
+    },
+    { flush: 'sync' },
+  );
+
   // Persist the form so reloading the page (or relaunching from the iPhone
   // home screen) doesn't wipe progress. Schema migrations land in Phase 5
   // proper — for now we trust the snapshot.
-  persistRefs('sedation-pro:patient:v4', {
+  persistRefs('sedation-pro:patient:v5', {
     name,
     mrn,
     provider,
@@ -252,7 +298,8 @@ export const usePatientStore = defineStore('patient', () => {
     asaClass,
     npoConfirmed,
     consentObtained,
-    diabetic,
+    medicalProblems,
+    diabetesStatus,
     baselineGlucose,
     medicationsList,
     allergiesList,
@@ -289,7 +336,8 @@ export const usePatientStore = defineStore('patient', () => {
     asaClass.value = '';
     npoConfirmed.value = false;
     consentObtained.value = false;
-    diabetic.value = false;
+    medicalProblems.value = [];
+    diabetesStatus.value = 'none';
     baselineGlucose.value = null;
     medicationsList.value = '';
     allergiesList.value = '';
@@ -327,6 +375,8 @@ export const usePatientStore = defineStore('patient', () => {
     asaClass,
     npoConfirmed,
     consentObtained,
+    medicalProblems,
+    diabetesStatus,
     diabetic,
     baselineGlucose,
     medicationsList,

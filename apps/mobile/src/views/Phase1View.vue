@@ -23,6 +23,7 @@ import {
   UiField,
   UiHeightInput,
   UiModal,
+  UiChipMultiSelect,
   UiNumberInput,
   UiQuickAddChips,
   UiRow,
@@ -66,6 +67,8 @@ const {
   asaClass,
   npoConfirmed,
   consentObtained,
+  medicalProblems,
+  diabetesStatus,
   diabetic,
   baselineGlucose,
   medicationsList,
@@ -279,6 +282,32 @@ const surgeryTerms = ['None', 'Tonsillectomy', 'Wisdom teeth'];
 const anesthesiaHistoryTerms = ['Uneventful', 'None', 'Prior IV sedation'];
 const familyHistoryTerms = ['Non-contributory', 'MH (malignant hyperthermia)', 'Cardiac'];
 const recreationalDrugTerms = ['Denies', 'Cannabis'];
+
+// Medical problems chip cloud — common chronic conditions for moderate IV
+// sedation pre-assessment. Multi-select; tap toggles. Picking "Diabetes"
+// here is bidirectionally synced with the `diabetesStatus` chip group so
+// the chart stays consistent regardless of which control the provider
+// touched (store watchers handle the sync).
+const medicalProblemOptions = [
+  { value: 'CVD', label: 'CVD' },
+  { value: 'Hypertension', label: 'Hypertension' },
+  { value: 'Diabetes', label: 'Diabetes' },
+  { value: 'Asthma', label: 'Asthma' },
+  { value: 'Psychological', label: 'Psychological' },
+  { value: 'Pregnancy', label: 'Pregnancy' },
+  { value: 'Hypothyroidism', label: 'Hypothyroidism' },
+  { value: 'GERD', label: 'GERD' },
+];
+
+// Diabetes detail — replaces the legacy diabetic checkbox. Picking Type I
+// or Type II auto-adds Diabetes to the medical-problems cloud above; the
+// derived `patient.diabetic` boolean still drives the conditional
+// baseline-glucose field and the cross-store glucose-wipe watchers.
+const diabetesStatusOptions = [
+  { value: 'none', label: 'None' },
+  { value: 'type-1', label: 'Type I' },
+  { value: 'type-2', label: 'Type II' },
+];
 
 // -------- Live derived UI bits ---------------------------------------------
 
@@ -535,13 +564,23 @@ const diazepamModalCopy = computed(() => {
     <UiCard tint="ph1">
       <p class="heading">Medical History</p>
       <UiStack :gap="3" class="mt-2">
-        <UiCheckbox
-          id="field-meds_verified"
-          v-model="medsVerified"
+        <UiField label="Medical problems">
+          <UiChipMultiSelect v-model="medicalProblems" :options="medicalProblemOptions" />
+        </UiField>
+        <UiField label="Diabetes status" inline>
+          <UiChipGroup v-model="diabetesStatus" :options="diabetesStatusOptions" />
+        </UiField>
+        <UiField
+          v-if="diabetic"
+          id="field-baseline_glucose"
+          label="Baseline glucose"
+          hint="mg/dL"
           required
-          :invalid="isMissing('meds_verified')"
-          label="Drug interactions checked in Epocrates"
-        />
+          inline
+          :invalid="isMissing('baseline_glucose')"
+        >
+          <UiNumberInput v-model="baselineGlucose" />
+        </UiField>
         <UiField
           id="field-osa_history"
           label="OSA / CPAP history"
@@ -550,17 +589,6 @@ const diazepamModalCopy = computed(() => {
           :invalid="isMissing('osa_history')"
         >
           <UiChipGroup v-model="osaStatus" :options="osaOptions" />
-        </UiField>
-        <UiCheckbox v-model="diabetic" label="Diabetic" />
-        <UiField
-          v-if="diabetic"
-          id="field-baseline_glucose"
-          label="Baseline glucose"
-          hint="mg/dL"
-          required
-          :invalid="isMissing('baseline_glucose')"
-        >
-          <UiNumberInput v-model="baselineGlucose" />
         </UiField>
 
         <UiField label="Current medications">
@@ -661,6 +689,13 @@ const diazepamModalCopy = computed(() => {
           :invalid="isMissing('npo_confirmed')"
           label="NPO confirmed"
           hint="Solids ≥6h · clear liquids ≥2h"
+        />
+        <UiCheckbox
+          id="field-meds_verified"
+          v-model="medsVerified"
+          required
+          :invalid="isMissing('meds_verified')"
+          label="Drug interactions checked in Epocrates"
         />
         <UiCheckbox
           id="field-consent_obtained"
