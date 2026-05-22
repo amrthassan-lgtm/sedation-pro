@@ -1,24 +1,93 @@
 Sedation Pro — Proprietary License
-Copyright (c) 2026 Sedation Pro. All rights reserved.
+Copyright (c) 2026 Amr Hassan. All rights reserved.
 
-This software, including its source code, documentation, design assets, and
-any associated materials (the "Software"), is the proprietary and
-confidential property of the copyright holder.
 
-No license, express or implied, is granted to any person or entity to use,
-copy, modify, merge, publish, distribute, sublicense, sell, or otherwise
-exploit the Software, in whole or in part, without the prior written consent
-of the copyright holder.
+SCOPE
 
-Unauthorized use of the Software is strictly prohibited and may violate
-copyright, trademark, and other applicable laws.
+This license covers the software in this repository, including all source
+code, build configuration, design assets, documentation, formulary data,
+clinical engine logic, and any associated materials (collectively, the
+"Software"). The Software is the proprietary and confidential work of
+Amr Hassan ("Owner").
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+
+NO LICENSE GRANTED
+
+No license, express or implied, is granted to any person or entity to
+use, copy, modify, merge, publish, distribute, sublicense, sell, or
+otherwise exploit the Software, in whole or in part, without the prior
+written consent of the Owner.
+
+Viewing the Software's source code through a web browser, a repository
+clone, decompilation, reverse engineering, or any other technical means
+does not grant any right to use, copy, redistribute, or otherwise
+exploit the Software.
+
+
+SPECIFICALLY PROHIBITED
+
+Without limiting the foregoing, the following are expressly prohibited
+without prior written permission from the Owner:
+
+  - Copying or redistributing the Software in source or binary form,
+    including hosting modified or unmodified copies on any public or
+    private server, app store, or distribution channel.
+  - Creating derivative works based on, or substantially similar to,
+    the Software, including reimplementations that copy the Software's
+    user interface, clinical workflows, formulary structure, or other
+    proprietary patterns.
+  - Hosting, deploying, or operating the Software for any commercial,
+    clinical, educational, or other purpose.
+  - Removing or altering this notice or any copyright, license, or
+    attribution headers in the Software.
+  - Using the name "Sedation Pro" or any confusingly similar mark for
+    any other software, service, or product.
+
+
+THIRD-PARTY COMPONENTS
+
+The Software incorporates open-source components (such as Vue, Vite,
+Pinia, Capacitor, TypeScript, and others listed in the project's
+package manifests). Each such component is governed by its own license,
+which is unaffected by this notice and continues to apply to that
+component's source code only.
+
+
+NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+THE SOFTWARE IS NOT A SUBSTITUTE FOR PROFESSIONAL CLINICAL JUDGMENT.
+THE OWNER MAKES NO REPRESENTATION OR WARRANTY THAT THE SOFTWARE IS
+SUITABLE FOR ANY PARTICULAR CLINICAL USE OR PATIENT.
+
+
+LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL THE OWNER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
 FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
+DEALINGS IN THE SOFTWARE, INCLUDING BUT NOT LIMITED TO ANY CLINICAL,
+PATIENT-SAFETY, OR MEDICOLEGAL OUTCOMES.
 
-This is a placeholder license to be replaced before public release.
+
+GOVERNING LAW
+
+This notice and any dispute arising from or relating to the Software
+shall be governed by the laws of the State in which the Owner resides,
+without regard to its conflict of laws principles.
+
+
+LICENSING INQUIRIES
+
+For commercial licensing, deployment in additional practices, or other
+permissions, contact:
+
+    Amr Hassan
+    amrthassan@gmail.com
+
+
+This notice constitutes the entire agreement regarding the Software and
+supersedes any prior representations.
