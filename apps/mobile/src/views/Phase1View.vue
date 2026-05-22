@@ -509,10 +509,9 @@ const diazepamModalCopy = computed(() => {
           id="field-last_exam"
           label="Date of last medical exam"
           required
-          inline
           :invalid="isMissing('last_exam')"
         >
-          <UiTextInput v-model="lastExamDate" type="date" />
+          <UiTextInput v-model="lastExamDate" type="date" block />
         </UiField>
         <UiBanner
           v-if="lastExam && !lastExam.valid"
@@ -530,8 +529,13 @@ const diazepamModalCopy = computed(() => {
           <UiField id="field-care_name" label="Name" required :invalid="isMissing('care_name')">
             <UiTextInput v-model="careName" />
           </UiField>
-          <UiField label="Relation" inline>
-            <UiSelect v-model="careRelation" :options="careRelationOptions" placeholder="Select…" />
+          <UiField label="Relation">
+            <UiSelect
+              v-model="careRelation"
+              :options="careRelationOptions"
+              placeholder="Select…"
+              block
+            />
           </UiField>
           <UiField id="field-care_phone" label="Phone" required :invalid="isMissing('care_phone')">
             <UiTextInput v-model="carePhone" inputmode="tel" />
@@ -628,7 +632,6 @@ const diazepamModalCopy = computed(() => {
           label="Baseline glucose"
           hint="mg/dL"
           required
-          inline
           :invalid="isMissing('baseline_glucose')"
         >
           <UiNumberInput v-model="baselineGlucose" />
