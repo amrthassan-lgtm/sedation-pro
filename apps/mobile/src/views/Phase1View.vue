@@ -320,34 +320,24 @@ const diabetesStatusOptions = [
 ];
 
 /**
- * Morning-of-sedation guidance keyed to the patient's diabetes type.
- * Universal NPO line comes first; the remaining clauses tie to therapy
- * patterns common for each type (orals for Type II, insulin for Type I).
- * The provider still has to know what the patient is actually on — the
- * banner is a reminder of the protocol, not a complete decision tree.
+ * Morning-of-sedation guidance for diabetic patients. Same rule for both
+ * Type I and Type II — hold whatever the patient takes the morning of
+ * (oral agents + injected insulin alike, since NPO removes the meal the
+ * dose anticipates). Insulin pump is the lone exception: leave it
+ * running on basal rate because suspending it during NPO is the path
+ * to ketoacidosis. The shorter unified message reads faster at the chair
+ * than two type-specific variants that say almost the same thing.
  */
 const diabetesGuidance = computed(() => {
-  if (diabetesStatus.value === 'type-1') {
-    return {
-      title: 'Type I diabetic · morning of sedation',
-      lines: [
-        'NPO ≥ 6 h before appointment.',
-        'Hold the morning injected insulin dose.',
-        'Insulin pump: leave running on basal rate. Do NOT suspend — DKA risk while NPO.',
-      ],
-    };
-  }
-  if (diabetesStatus.value === 'type-2') {
-    return {
-      title: 'Type II diabetic · morning of sedation',
-      lines: [
-        'NPO ≥ 6 h before appointment.',
-        'Hold oral agents (Metformin, Januvia, etc.) — NPO + oral hypoglycemics risks low blood sugar.',
-        'If on basal insulin (Lantus, etc.): hold the morning injection.',
-      ],
-    };
-  }
-  return null;
+  if (diabetesStatus.value === 'none') return null;
+  return {
+    title: 'Diabetic · morning of sedation',
+    lines: [
+      'NPO ≥ 6 h before appointment.',
+      'Hold morning diabetes meds — oral agents (Metformin, Januvia, etc.) and any injected insulin.',
+      'Insulin pump: leave running on basal rate. Do NOT suspend — DKA risk while NPO.',
+    ],
+  };
 });
 
 // Caregiver relation — same picklist Phase 4's discharge companion uses.
