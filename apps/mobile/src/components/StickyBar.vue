@@ -6,7 +6,6 @@ import { storeToRefs } from 'pinia';
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
-import { useMonitorStore } from '@/stores/monitor';
 import { lastSavedAt } from '@/stores/persistence';
 import { useNow } from '@/composables/useNow';
 
@@ -16,30 +15,9 @@ const patient = usePatientStore();
 const undo = useUndoStore();
 const now = useNow(15_000);
 
-const monitor = useMonitorStore();
 const { currentPhase } = storeToRefs(session);
 const { canUndo, count: undoCount } = storeToRefs(undo);
 const { completeness, isPhase1Complete, safetyAlerts } = storeToRefs(patient);
-const {
-  isRecording: monitorIsRecording,
-  bridgeReachable: monitorBridgeReachable,
-  startedAt: monitorStartedAt,
-} = storeToRefs(monitor);
-
-/**
- * "Recording · 38 min" pill shown only while the bridge is capturing a
- * session for the current case. Flips to caution-red when the bridge
- * stops responding so the provider sees the attach is failing before
- * the case ends with a missing recording.
- */
-const monitorPill = computed<{ label: string; tone: 'recording' | 'unreachable' } | null>(() => {
-  if (!monitorIsRecording.value || monitorStartedAt.value === null) return null;
-  const minutes = Math.max(0, Math.floor((now.value - monitorStartedAt.value) / 60_000));
-  if (!monitorBridgeReachable.value) {
-    return { label: 'Monitor · bridge unreachable', tone: 'unreachable' };
-  }
-  return { label: `Monitor · rec · ${minutes} min`, tone: 'recording' };
-});
 
 /**
  * "Saved · HH:MM" pill text. Hides itself until the first autosave fires so
@@ -145,7 +123,7 @@ function emergency() {
           <span class="sticky-bar-phase-sub">{{ meta.sub }}</span>
         </template>
       </div>
-      <div v-if="safetyAlerts.length || monitorPill" class="sticky-bar-alerts">
+      <div v-if="safetyAlerts.length" class="sticky-bar-alerts">
         <span
           v-for="alert in safetyAlerts"
           :key="alert.code"
@@ -153,13 +131,6 @@ function emergency() {
           :class="`sticky-bar-alert--${alert.tone}`"
         >
           {{ alert.label }}
-        </span>
-        <span
-          v-if="monitorPill"
-          class="sticky-bar-alert"
-          :class="`sticky-bar-alert--${monitorPill.tone === 'unreachable' ? 'danger' : 'caution'}`"
-        >
-          {{ monitorPill.label }}
         </span>
       </div>
     </div>

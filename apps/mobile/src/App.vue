@@ -9,7 +9,6 @@ import NavDrawer from '@/components/NavDrawer.vue';
 import UndoToast from '@/components/UndoToast.vue';
 import { useAlarms, unlockAudio } from '@/composables/useAlarms';
 import { useDockVisibility } from '@/composables/useDockVisibility';
-import { useMonitorRecording } from '@/composables/useMonitorRecording';
 import { useWakeLock } from '@/composables/useWakeLock';
 import { useCaseReset } from '@/composables/useCaseReset';
 import { usePatientStore } from '@/stores/patient';
@@ -109,15 +108,6 @@ void wakeLock.request();
  * resumes the context when the app returns to the foreground.
  */
 useAlarms();
-
-/**
- * Monitor bridge health-poll. No-op when no `formulary.bridgeUrl` is
- * configured for the practice. Sets `monitor.bridgeReachable` so the
- * sticky-bar recording pill can render its "rec · 38 min" vs "rec ·
- * bridge unreachable" treatment.
- */
-const monitorRecording = useMonitorRecording();
-monitorRecording.beginHealthPolling();
 if (typeof window !== 'undefined') {
   window.addEventListener('pointerdown', () => unlockAudio(), { passive: true });
   document.addEventListener('visibilitychange', () => {
