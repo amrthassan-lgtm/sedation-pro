@@ -101,21 +101,21 @@ export const usePatientStore = defineStore('patient', () => {
   /**
    * Multi-select chip vocabulary for the patient's active medical problems
    * (CVD, Hypertension, Diabetes, etc.). Optional — not part of the unlock
-   * gate. The chip "Diabetes" is bidirectionally bound with `diabetesStatus`
-   * below so picking Type I / II auto-adds Diabetes, and toggling Diabetes
-   * off clears the type back to none.
+   * gate. The chip "Diabetes" is bidirectionally bound with the `diabetic`
+   * boolean below so ticking Diabetic auto-adds Diabetes to the chip
+   * cloud, and toggling Diabetes off the cloud unticks the checkbox.
    */
   const medicalProblems = ref<string[]>([]);
   /**
-   * Diabetes detail. Replaces the legacy `diabetic: boolean` flag with a
-   * three-way picker so the chart records *which* diabetes the patient
-   * carries. `diabetic` below is a computed derived from this — every
-   * existing consumer (conditional baseline-glucose field, recovery
-   * glucose, the per-store glucose-wipe watchers, completeness math) still
-   * reads `patient.diabetic` and gets a reactive boolean.
+   * Diabetic flag. Earlier iterations split this into Type I / Type II
+   * but the morning-of sedation protocol is the same for both — hold the
+   * morning meds, keep the insulin pump on basal rate — and the type
+   * distinction wasn't actionable inside the app workflow. The
+   * medications list still records the specific drugs (Metformin,
+   * Insulin, etc.) so the chart carries the clinically actionable detail
+   * without a parallel typed enum.
    */
-  const diabetesStatus = ref<'none' | 'type-1' | 'type-2'>('none');
-  const diabetic = computed<boolean>(() => diabetesStatus.value !== 'none');
+  const diabetic = ref(false);
   const baselineGlucose = ref<number | null>(null);
 
   // -------- Expanded medical / social history -------------------------------
@@ -189,12 +189,11 @@ export const usePatientStore = defineStore('patient', () => {
         tone: age.value >= 75 ? 'danger' : 'caution',
       });
     }
-    if (diabetesStatus.value === 'type-1') {
-      // DM-1 carries DKA risk while NPO + the don't-suspend-pump rule;
-      // the reminder pill keeps that protocol visible after Phase 1.
-      alerts.push({ code: 'diabetes', label: 'DM-1', tone: 'caution' });
-    } else if (diabetesStatus.value === 'type-2') {
-      alerts.push({ code: 'diabetes', label: 'DM-2', tone: 'caution' });
+    if (diabetic.value) {
+      // The morning-of protocol applies to every diabetic regardless of
+      // type — hold the morning meds, keep the pump on basal rate. Pill
+      // keeps that reminder visible after Phase 1.
+      alerts.push({ code: 'diabetes', label: 'DM', tone: 'caution' });
     }
     return alerts;
   });
@@ -261,20 +260,20 @@ export const usePatientStore = defineStore('patient', () => {
   );
 
   // Bidirectional sync between the Medical Problems chip cloud and the
-  // Diabetes status picker. Picking Type I / II auto-adds "Diabetes" to
-  // the cloud; toggling Diabetes off the cloud clears the type back to
-  // "none". The chart's "diabetic" boolean is the derived view so both
-  // controls keep a consistent representation no matter which the
-  // provider touched. flush: 'sync' so the auto-toggle is observable in
-  // the same tick the user-driven mutation happens.
+  // Diabetic flag. Ticking the checkbox auto-adds "Diabetes" to the
+  // cloud; toggling Diabetes off the cloud unticks the checkbox. Both
+  // controls represent the same fact and the provider can touch either
+  // without driving the chart out of sync. flush: 'sync' so the
+  // auto-toggle is observable in the same tick the user-driven
+  // mutation happens.
   watch(
-    diabetesStatus,
-    (status) => {
+    diabetic,
+    (isDiabetic) => {
       const has = medicalProblems.value.includes('Diabetes');
-      if (status === 'none' && has) {
-        medicalProblems.value = medicalProblems.value.filter((p) => p !== 'Diabetes');
-      } else if (status !== 'none' && !has) {
+      if (isDiabetic && !has) {
         medicalProblems.value = [...medicalProblems.value, 'Diabetes'];
+      } else if (!isDiabetic && has) {
+        medicalProblems.value = medicalProblems.value.filter((p) => p !== 'Diabetes');
       }
     },
     { flush: 'sync' },
@@ -282,8 +281,10 @@ export const usePatientStore = defineStore('patient', () => {
   watch(
     () => medicalProblems.value.includes('Diabetes'),
     (hasDiabetes) => {
-      if (!hasDiabetes && diabetesStatus.value !== 'none') {
-        diabetesStatus.value = 'none';
+      if (!hasDiabetes && diabetic.value) {
+        diabetic.value = false;
+      } else if (hasDiabetes && !diabetic.value) {
+        diabetic.value = true;
       }
     },
     { flush: 'sync' },
@@ -292,10 +293,9 @@ export const usePatientStore = defineStore('patient', () => {
   // Add "Diabetes" to medical problems when the medications list mentions
   // Metformin or Insulin. Picking one of those quick-add chips (or just
   // typing the word) is a strong signal the patient is diabetic, so the
-  // chip cloud should reflect it without requiring a separate tap. The
-  // provider still has to pick Type I or Type II in the status row — we
-  // don't presume the type from the drug since both insulin-using
-  // populations exist for either type.
+  // chip cloud and Diabetic checkbox reflect it without requiring a
+  // separate tap. Already-ticked state is left alone — this watcher
+  // never un-adds the chip.
   // Sticky behaviour: once added, the watcher doesn't re-fire on the same
   // text, so a deliberate "remove Diabetes from medical problems" by the
   // provider isn't undone unless the medication list itself changes again.
@@ -314,7 +314,7 @@ export const usePatientStore = defineStore('patient', () => {
   // Persist the form so reloading the page (or relaunching from the iPhone
   // home screen) doesn't wipe progress. Schema migrations land in Phase 5
   // proper — for now we trust the snapshot.
-  persistRefs('sedation-pro:patient:v6', {
+  persistRefs('sedation-pro:patient:v7', {
     name,
     mrn,
     provider,
@@ -337,7 +337,7 @@ export const usePatientStore = defineStore('patient', () => {
     npoConfirmed,
     consentObtained,
     medicalProblems,
-    diabetesStatus,
+    diabetic,
     baselineGlucose,
     medicationsList,
     allergiesList,
@@ -376,7 +376,7 @@ export const usePatientStore = defineStore('patient', () => {
     npoConfirmed.value = false;
     consentObtained.value = false;
     medicalProblems.value = [];
-    diabetesStatus.value = 'none';
+    diabetic.value = false;
     baselineGlucose.value = null;
     medicationsList.value = '';
     allergiesList.value = '';
@@ -416,7 +416,6 @@ export const usePatientStore = defineStore('patient', () => {
     npoConfirmed,
     consentObtained,
     medicalProblems,
-    diabetesStatus,
     diabetic,
     baselineGlucose,
     medicationsList,

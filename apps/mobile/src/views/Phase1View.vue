@@ -69,7 +69,6 @@ const {
   npoConfirmed,
   consentObtained,
   medicalProblems,
-  diabetesStatus,
   diabetic,
   baselineGlucose,
   medicationsList,
@@ -292,7 +291,7 @@ const recreationalDrugTerms = ['Denies', 'Cannabis'];
 
 // Medical problems chip cloud — common chronic conditions for moderate IV
 // sedation pre-assessment. Multi-select; tap toggles. Picking "Diabetes"
-// here is bidirectionally synced with the `diabetesStatus` chip group so
+// here is bidirectionally synced with the `Diabetic` checkbox below so
 // the chart stays consistent regardless of which control the provider
 // touched (store watchers handle the sync).
 const medicalProblemOptions = [
@@ -309,33 +308,23 @@ const medicalProblemOptions = [
   { value: 'Restless Leg Syndrome', label: 'RLS' },
 ];
 
-// Diabetes detail — replaces the legacy diabetic checkbox. Picking Type I
-// or Type II auto-adds Diabetes to the medical-problems cloud above; the
-// derived `patient.diabetic` boolean still drives the conditional
-// baseline-glucose field and the cross-store glucose-wipe watchers.
-const diabetesStatusOptions = [
-  { value: 'none', label: 'None' },
-  { value: 'type-1', label: 'Type I' },
-  { value: 'type-2', label: 'Type II' },
-];
-
 /**
- * Morning-of-sedation guidance for diabetic patients. Same rule for both
- * Type I and Type II — hold whatever the patient takes the morning of
- * (oral agents + injected insulin alike, since NPO removes the meal the
- * dose anticipates). Insulin pump is the lone exception: leave it
- * running on basal rate because suspending it during NPO is the path
- * to ketoacidosis. The shorter unified message reads faster at the chair
- * than two type-specific variants that say almost the same thing.
+ * Morning-of-sedation guidance for diabetic patients. NPO removes the
+ * meal the morning doses anticipate, so we hold whatever the patient
+ * takes (orals and injected insulin alike). Insulin pump is the lone
+ * exception: leave it running on basal rate because suspending it
+ * during NPO is the path to ketoacidosis. Three short rules read
+ * faster at the chair than a typed split that said almost the same
+ * thing for both types.
  */
 const diabetesGuidance = computed(() => {
-  if (diabetesStatus.value === 'none') return null;
+  if (!diabetic.value) return null;
   return {
     title: 'Diabetic · morning of sedation',
     lines: [
       'NPO ≥ 6 h before appointment.',
-      'Hold morning diabetes meds — oral agents (Metformin, Januvia, etc.) and any injected insulin.',
-      'Insulin pump: leave running on basal rate. Do NOT suspend — DKA risk while NPO.',
+      'Hold morning diabetes meds: oral agents (Metformin, Januvia, etc.) and any injected insulin.',
+      'Insulin pump: leave on basal rate. Suspending while NPO risks DKA.',
     ],
   };
 });
@@ -628,9 +617,7 @@ const diazepamModalCopy = computed(() => {
         <UiField label="Medical problems">
           <UiChipMultiSelect v-model="medicalProblems" :options="medicalProblemOptions" />
         </UiField>
-        <UiField label="Diabetes status" inline>
-          <UiChipGroup v-model="diabetesStatus" :options="diabetesStatusOptions" />
-        </UiField>
+        <UiCheckbox v-model="diabetic" label="Diabetic" />
         <UiBanner v-if="diabetesGuidance" tone="caution" :title="diabetesGuidance.title">
           <ul class="diabetes-guidance">
             <li v-for="line in diabetesGuidance.lines" :key="line">{{ line }}</li>

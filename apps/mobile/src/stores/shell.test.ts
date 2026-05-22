@@ -205,33 +205,30 @@ describe('shell stores — single sources of truth', () => {
     expect(patient.phase1ValidationAttempted).toBe(false);
   });
 
-  it('flipping diabetes status to none wipes the baseline glucose', async () => {
+  it('unticking Diabetic wipes the baseline glucose', async () => {
     const patient = usePatientStore();
-    patient.diabetesStatus = 'type-2';
+    patient.diabetic = true;
     patient.baselineGlucose = 142;
-    expect(patient.diabetic).toBe(true);
     expect(patient.baselineGlucose).toBe(142);
-    patient.diabetesStatus = 'none';
+    patient.diabetic = false;
     await nextTick();
-    expect(patient.diabetic).toBe(false);
     expect(patient.baselineGlucose).toBeNull();
   });
 
-  it('picking a diabetes type auto-adds Diabetes to medical problems and clears on none', () => {
+  it('ticking Diabetic auto-adds Diabetes to medical problems and clears on untick', () => {
     const patient = usePatientStore();
     expect(patient.medicalProblems).not.toContain('Diabetes');
-    patient.diabetesStatus = 'type-1';
+    patient.diabetic = true;
     expect(patient.medicalProblems).toContain('Diabetes');
-    patient.diabetesStatus = 'none';
+    patient.diabetic = false;
     expect(patient.medicalProblems).not.toContain('Diabetes');
   });
 
-  it('removing Diabetes from medical problems clears the diabetes type', () => {
+  it('toggling Diabetes off medical problems unticks the Diabetic checkbox', () => {
     const patient = usePatientStore();
-    patient.diabetesStatus = 'type-2';
+    patient.diabetic = true;
     expect(patient.medicalProblems).toContain('Diabetes');
     patient.medicalProblems = patient.medicalProblems.filter((p) => p !== 'Diabetes');
-    expect(patient.diabetesStatus).toBe('none');
     expect(patient.diabetic).toBe(false);
   });
 
@@ -277,8 +274,7 @@ describe('shell stores — single sources of truth', () => {
     expect(patient.isPhase1Complete).toBe(true);
     expect(patient.completeness.total).toBe(19);
 
-    patient.diabetesStatus = 'type-2';
-    expect(patient.diabetic).toBe(true);
+    patient.diabetic = true;
     expect(patient.completeness.total).toBe(20);
     expect(patient.isPhase1Complete).toBe(false);
 
