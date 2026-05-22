@@ -231,7 +231,7 @@ const DEFAULT_PICKLISTS: PracticePicklists = {
     "Lactated Ringer's 250 mL",
     'Saline lock (no infusion)',
   ],
-  catheterGauges: ['18', '20', '22', '24'],
+  catheterGauges: ['20', '22'],
   // Apex Dental's EFDA roster (carried over from the legacy app's staff
   // checkbox group). A different practice replaces this list at setup.
   dentalAssistants: ['Raycha Dobbins, EFDA', 'Yvette Vega, EFDA', 'Arlet Torres, EFDA'],
