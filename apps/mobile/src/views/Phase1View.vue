@@ -617,7 +617,6 @@ const diazepamModalCopy = computed(() => {
         <UiField label="Medical problems">
           <UiChipMultiSelect v-model="medicalProblems" :options="medicalProblemOptions" />
         </UiField>
-        <UiCheckbox v-model="diabetic" label="Diabetic" />
         <UiBanner v-if="diabetesGuidance" tone="caution" :title="diabetesGuidance.title">
           <ul class="diabetes-guidance">
             <li v-for="line in diabetesGuidance.lines" :key="line">{{ line }}</li>
