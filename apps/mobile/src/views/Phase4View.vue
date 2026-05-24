@@ -165,13 +165,13 @@ const venipunctureComplicationOptions = DEFAULT_FORMULARY.picklists.venipuncture
 const providerSigned = computed(() => providerSignatureDataUrl.value !== null);
 
 // Response state — short chip labels, full clinical phrases stay as the
-// stored values so the printed note + audit log read clinically ("Responds
-// to verbal" not "Verbal") regardless of how compact the input control is.
+// stored values so the printed note + audit log read clinically. Verbal
+// and Tactile dropped from the picker (matches Phase 3 — three states
+// cover the at-the-chair scoring the provider actually uses); legacy
+// records that stored those longer values still display correctly.
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },
   { value: 'Relaxed', label: 'Relaxed' },
-  { value: 'Responds to verbal', label: 'Verbal' },
-  { value: 'Responds to tactile', label: 'Tactile' },
   { value: 'Concern', label: 'Concern' },
 ];
 

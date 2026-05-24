@@ -131,13 +131,17 @@ const attemptsBucket = computed<number>({
 });
 
 // Response state — short chip labels, full clinical phrases stay as the
-// stored values so the printed note + audit log read clinically ("Responds
-// to verbal" not "Verbal") regardless of how compact the input control is.
+// stored values so the printed note + audit log read clinically. Verbal
+// and Tactile dropped from the picker because (a) they made the row a
+// 5-chip width that didn't divide cleanly on the tap-target segmented
+// control, and (b) clinically the provider's at-the-chair scoring
+// collapses into the three states retained — Alert, Relaxed, or
+// Concern. The stored value type is still a free string so any legacy
+// record carrying "Responds to verbal" / "Responds to tactile" still
+// reads back correctly in the chart, just can't be re-picked.
 const responseOptions = [
   { value: 'Alert', label: 'Alert' },
   { value: 'Relaxed', label: 'Relaxed' },
-  { value: 'Responds to verbal', label: 'Verbal' },
-  { value: 'Responds to tactile', label: 'Tactile' },
   { value: 'Concern', label: 'Concern' },
 ];
 
@@ -537,17 +541,13 @@ function onNaloxone() {
     <UiCard tint="ph3">
       <p class="heading"><span class="heading-step">3</span>IV Start</p>
       <UiStack :gap="3" class="mt-2">
+        <UiField label="Catheter" hint="gauge">
+          <UiChipGroup v-model="ivCatheterGauge" :options="gaugeChipOptions" size="tap-target" />
+        </UiField>
+        <UiField label="Attempts">
+          <UiChipGroup v-model="attemptsBucket" :options="attemptsChipOptions" size="tap-target" />
+        </UiField>
         <UiRow :gap="3" wrap>
-          <UiField label="Catheter" hint="gauge">
-            <UiChipGroup v-model="ivCatheterGauge" :options="gaugeChipOptions" size="tap-target" />
-          </UiField>
-          <UiField label="Attempts">
-            <UiChipGroup
-              v-model="attemptsBucket"
-              :options="attemptsChipOptions"
-              size="tap-target"
-            />
-          </UiField>
           <UiField label="Site">
             <UiSelect v-model="siteValue" :options="siteOptions" block />
             <UiTextInput v-if="siteIsOther" v-model="ivSite" class="mt-2" />
