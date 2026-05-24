@@ -596,26 +596,17 @@ const diazepamModalCopy = computed(() => {
       <p class="heading">Medical History</p>
       <UiStack :gap="3" class="mt-2">
         <p class="caption">Airway assessment</p>
-        <UiRow :gap="3" wrap>
-          <UiField
-            id="field-mallampati"
-            label="Mallampati"
-            required
-            inline
-            :invalid="isMissing('mallampati')"
-          >
-            <UiChipGroup v-model="mallampati" :options="mallampatiOptions" />
-          </UiField>
-          <UiField
-            id="field-asa_class"
-            label="ASA class"
-            required
-            inline
-            :invalid="isMissing('asa_class')"
-          >
-            <UiChipGroup v-model="asaClass" :options="asaOptions" show-caption />
-          </UiField>
-        </UiRow>
+        <UiField
+          id="field-mallampati"
+          label="Mallampati"
+          required
+          :invalid="isMissing('mallampati')"
+        >
+          <UiChipGroup v-model="mallampati" :options="mallampatiOptions" size="tap-target" />
+        </UiField>
+        <UiField id="field-asa_class" label="ASA class" required :invalid="isMissing('asa_class')">
+          <UiChipGroup v-model="asaClass" :options="asaOptions" show-caption size="tap-target" />
+        </UiField>
 
         <p class="caption mt-1">Conditions</p>
         <UiField label="Medical problems">
@@ -640,10 +631,9 @@ const diazepamModalCopy = computed(() => {
           id="field-osa_history"
           label="OSA / CPAP history"
           required
-          inline
           :invalid="isMissing('osa_history')"
         >
-          <UiChipGroup v-model="osaStatus" :options="osaOptions" />
+          <UiChipGroup v-model="osaStatus" :options="osaOptions" size="tap-target" />
         </UiField>
       </UiStack>
     </UiCard>

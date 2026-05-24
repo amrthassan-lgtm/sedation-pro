@@ -394,8 +394,8 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             <UiNumberInput v-model="endGlucose" :min="0" />
           </UiField>
         </UiRow>
-        <UiField label="Patient response" inline>
-          <UiChipGroup v-model="endResponse" :options="responseOptions" />
+        <UiField label="Patient response">
+          <UiChipGroup v-model="endResponse" :options="responseOptions" size="tap-target" />
         </UiField>
         <UiButton
           tone="primary"
@@ -483,19 +483,17 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             id="gate-nausea"
             label="Nausea or vomiting"
             hint="Yes blocks discharge"
-            inline
             :invalid="gate.isInvalid('gate-nausea')"
           >
-            <UiChipGroup v-model="nauseaOrVomiting" :options="yesNoOptions" />
+            <UiChipGroup v-model="nauseaOrVomiting" :options="yesNoOptions" size="tap-target" />
           </UiField>
           <UiField
             id="gate-bleeding"
             label="Excessive bleeding"
             hint="Yes blocks discharge"
-            inline
             :invalid="gate.isInvalid('gate-bleeding')"
           >
-            <UiChipGroup v-model="excessiveBleeding" :options="yesNoOptions" />
+            <UiChipGroup v-model="excessiveBleeding" :options="yesNoOptions" size="tap-target" />
           </UiField>
         </UiStack>
 
@@ -564,13 +562,14 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
       <UiStack :gap="3" class="mt-2">
         <p class="caption">Quality</p>
-        <UiField label="Sedation quality rating" inline>
+        <UiField label="Sedation quality rating">
           <UiChipGroup
             v-model="sedationRating"
             :options="sedationRatingChipOptions"
             show-caption
             allow-deselect
             deselect-value=""
+            size="tap-target"
           />
         </UiField>
 

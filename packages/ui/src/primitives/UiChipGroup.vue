@@ -27,12 +27,25 @@ interface Props {
    * Ignored unless `allowDeselect` is true.
    */
   deselectValue?: T;
+  /**
+   * Sizing variant. `compact` is the default pill-style chip row that
+   * sits packed at the left — used for buckets and dense intake fields.
+   * `tap-target` upgrades each chip to a row-filling, ~56 px-tall
+   * segmented-control button — used for chairside / clinical-headline
+   * picks (Mallampati, ASA, OSA, vitals response, Nausea / Bleeding,
+   * sedation rating, IV gauge / attempts) where a gloved finger needs
+   * an unambiguous tap target. Callers should drop `inline` from the
+   * surrounding `<UiField>` for tap-target groups so the chips fill the
+   * row instead of being trapped inside a content-sized slot.
+   */
+  size?: 'compact' | 'tap-target';
   disabled?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showCaption: false,
   allowDeselect: false,
+  size: 'compact',
   disabled: false,
 });
 
@@ -58,7 +71,10 @@ const activeCaption = computed<string | undefined>(() => {
 </script>
 
 <template>
-  <div class="ui-chip-group" :class="{ 'is-disabled': props.disabled }">
+  <div
+    class="ui-chip-group"
+    :class="[`ui-chip-group--${props.size}`, { 'is-disabled': props.disabled }]"
+  >
     <div class="ui-chip-row" role="radiogroup">
       <button
         v-for="opt in props.options"
@@ -109,6 +125,33 @@ const activeCaption = computed<string | undefined>(() => {
     border-color var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
 }
+
+/* Tap-target variant — segmented-control style. Each chip flexes to
+   share the row width evenly so a gloved finger lands on the right one
+   without aiming; height clears the iOS 44 pt / Android 48 dp minimum
+   with generous margin. Squared corners (md radius vs pill) read as
+   "decisive button" rather than "tag." */
+.ui-chip-group--tap-target .ui-chip-row {
+  gap: 8px;
+}
+.ui-chip-group--tap-target .ui-chip {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 56px;
+  padding: 14px 12px;
+  border-radius: var(--r-md);
+  font-size: var(--type-body);
+  font-weight: var(--weight-semibold);
+}
+/* Phone portrait: a row of 5 chips at 5 × ~70 px doesn't fit a 360 px
+   viewport; let them wrap to two lines but keep the per-chip height
+   so the tap target stays generous. */
+@media (max-width: 480px) {
+  .ui-chip-group--tap-target .ui-chip {
+    flex-basis: calc(50% - 4px);
+  }
+}
+
 .ui-chip:active:not(:disabled) {
   transform: scale(0.96);
 }

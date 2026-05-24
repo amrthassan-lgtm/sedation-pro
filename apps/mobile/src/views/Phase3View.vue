@@ -499,8 +499,8 @@ function onNaloxone() {
             <UiNumberInput v-model="preOpGlucose" :min="0" />
           </UiField>
         </UiRow>
-        <UiField label="Patient response" inline>
-          <UiChipGroup v-model="preOpResponse" :options="responseOptions" />
+        <UiField label="Patient response">
+          <UiChipGroup v-model="preOpResponse" :options="responseOptions" size="tap-target" />
         </UiField>
         <UiButton
           tone="primary"
@@ -538,11 +538,15 @@ function onNaloxone() {
       <p class="heading"><span class="heading-step">3</span>IV Start</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
-          <UiField label="Catheter" hint="gauge" inline>
-            <UiChipGroup v-model="ivCatheterGauge" :options="gaugeChipOptions" />
+          <UiField label="Catheter" hint="gauge">
+            <UiChipGroup v-model="ivCatheterGauge" :options="gaugeChipOptions" size="tap-target" />
           </UiField>
-          <UiField label="Attempts" inline>
-            <UiChipGroup v-model="attemptsBucket" :options="attemptsChipOptions" />
+          <UiField label="Attempts">
+            <UiChipGroup
+              v-model="attemptsBucket"
+              :options="attemptsChipOptions"
+              size="tap-target"
+            />
           </UiField>
           <UiField label="Site">
             <UiSelect v-model="siteValue" :options="siteOptions" block />
@@ -740,8 +744,8 @@ function onNaloxone() {
             <UiNumberInput v-model="sedGlucose" :min="0" />
           </UiField>
         </UiRow>
-        <UiField label="Patient response" inline>
-          <UiChipGroup v-model="sedResponse" :options="responseOptions" />
+        <UiField label="Patient response">
+          <UiChipGroup v-model="sedResponse" :options="responseOptions" size="tap-target" />
         </UiField>
         <UiButton
           tone="primary"
