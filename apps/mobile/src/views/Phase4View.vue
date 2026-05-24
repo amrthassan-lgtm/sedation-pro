@@ -573,8 +573,8 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           />
         </UiField>
 
-        <UiField label="Bathroom breaks" inline>
-          <UiChipGroup v-model="bathroomBreaks" :options="bathroomBreakOptions" />
+        <UiField label="Bathroom breaks">
+          <UiChipGroup v-model="bathroomBreaks" :options="bathroomBreakOptions" size="tap-target" />
         </UiField>
 
         <p class="caption mt-1">Complications</p>
