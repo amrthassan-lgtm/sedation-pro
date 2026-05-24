@@ -16,6 +16,15 @@ interface Props {
    */
   invalid?: boolean;
   /**
+   * Sizing variant. `compact` (default) is the existing tight row used for
+   * intake-time / admin checklists where many items stack densely. `tap-target`
+   * upgrades the clickable row to ~56 px tall with a larger dot — matches
+   * the UiButton / UiChipGroup tap-target standard for chairside confirmation
+   * gates where a gloved finger needs a generous target (e.g. Phase 4 Card 13
+   * discharge-readiness gates that sit next to tap-target Yes/No chips).
+   */
+  size?: 'compact' | 'tap-target';
+  /**
    * HTML id applied to the wrapper. Lets callers `scrollIntoView` straight to
    * the checkbox — same affordance as UiField.
    */
@@ -29,6 +38,7 @@ const props = withDefaults(defineProps<Props>(), {
   tone: 'neutral',
   disabled: false,
   invalid: false,
+  size: 'compact',
   id: undefined,
 });
 
@@ -48,6 +58,7 @@ function toggle() {
     class="ui-check"
     :class="[
       `ui-check--${props.tone}`,
+      `ui-check--${props.size}`,
       {
         'is-checked': props.modelValue,
         'is-disabled': props.disabled,
@@ -92,6 +103,30 @@ function toggle() {
     opacity var(--dur-250) var(--ease-standard),
     background var(--dur-250) var(--ease-standard);
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Tap-target row — for chairside confirmation gates (Phase 4 Card 13
+   discharge readiness) that sit alongside tap-target chips and need to
+   match the 56 px touch standard. Bumps clickable height + dot size +
+   label weight so the row feels like a deliberate "I confirm" surface
+   rather than a quiet intake checkbox. */
+.ui-check.ui-check--tap-target {
+  padding: 14px 14px;
+  min-height: 56px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  opacity: 1;
+}
+.ui-check.ui-check--tap-target.is-checked {
+  background: var(--color-surface-subtle);
+}
+.ui-check.ui-check--tap-target .ui-check-dot {
+  width: 26px;
+  height: 26px;
+}
+.ui-check.ui-check--tap-target .ui-check-label {
+  font-size: var(--type-body);
+  font-weight: var(--weight-semibold);
 }
 .ui-check.is-checked {
   opacity: 1;

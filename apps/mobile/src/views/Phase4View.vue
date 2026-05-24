@@ -452,12 +452,13 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <p class="heading"><span class="heading-step">13</span>Discharge Readiness</p>
       <UiStack :gap="3" class="mt-2">
         <p class="caption">Patient readiness</p>
-        <UiStack :gap="1">
+        <UiStack :gap="2">
           <UiCheckbox
             id="gate-ambulatory"
             v-model="ambulatory"
             label="Patient ambulatory at discharge"
             required
+            size="tap-target"
             :invalid="gate.isInvalid('gate-ambulatory')"
           />
           <UiCheckbox
@@ -465,6 +466,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             v-model="orientedX3"
             label="Oriented ×3"
             required
+            size="tap-target"
             :invalid="gate.isInvalid('gate-oriented')"
           />
           <UiCheckbox
@@ -472,6 +474,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
             :model-value="!!discharge.pulseOxPrinted"
             label="Pulse-ox printout filed"
             required
+            size="tap-target"
             :invalid="gate.isInvalid('gate-pulseox')"
             @update:model-value="(v) => recovery.setDischarge('pulseOxPrinted', v)"
           />

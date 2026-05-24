@@ -124,10 +124,12 @@ const renderState = computed<ActionState>(() => {
 
 /* Compact variant — used by the SedationDock so the dock buttons match the
    cockpit's UiDrugButton character (accent stripe + name/dose stack +
-   cooldown ✓ check) at floating-sheet density. */
+   cooldown ✓ check) at floating-sheet density. Min-height clears the
+   UiButton + tap-target chip standard (56 px) so a gloved finger gets the
+   same target inside the dock as on the cockpit cards. */
 .ui-drug-btn.is-compact {
-  min-height: 50px;
-  padding: 12px 8px 8px;
+  min-height: 56px;
+  padding: 14px 8px 10px;
   background-size: 100% 6px;
   gap: 1px;
 }
