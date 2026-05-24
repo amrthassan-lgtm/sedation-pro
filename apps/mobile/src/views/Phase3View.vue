@@ -560,7 +560,9 @@ function onNaloxone() {
         <UiBanner v-if="premedChip" :tone="premedChip.eligible ? 'safe' : 'caution'" icon="⏱">
           Pre-med wait ·
           <template v-if="premedChip.eligible"> ready to start IV. </template>
-          <template v-else> {{ premedChip.remainingMin }} min remaining. </template>
+          <template v-else>
+            {{ premedChip.remainingMin }} min remaining (clinical cushion, not a hard block).
+          </template>
         </UiBanner>
         <UiButton
           tone="primary"
@@ -781,7 +783,7 @@ function onNaloxone() {
       <p class="heading"><span class="heading-step">9</span>Local Anesthesia</p>
 
       <UiBanner v-if="!weightLb" tone="caution" icon="⚖️" class="mt-2">
-        Patient weight required. Fill in Phase 1.
+        Patient weight is required for the per-drug max-dose math. Fill weight in Phase 1.
       </UiBanner>
 
       <div class="drug-grid mt-2">

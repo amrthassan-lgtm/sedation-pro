@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useAudioStore } from '@/stores/audio';
-import { useModeStore } from '@/stores/mode';
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
@@ -116,16 +115,6 @@ const { muted: audioMuted } = storeToRefs(audio);
 function toggleMute(): void {
   audioMuted.value = !audioMuted.value;
 }
-
-// -------- Training / Clinical mode toggle --------------------------------
-//
-// Clinical (default) renders the lean cockpit; Training reveals teaching /
-// rationale prose wrapped in <TrainingNote>. Safety/contraindication lines
-// are KEEP-always and unaffected by the toggle. Persisted in its own store
-// so the flag survives reloads but resets to Clinical on Start-new-case.
-
-const mode = useModeStore();
-const { training } = storeToRefs(mode);
 
 // -------- Theme toggle ----------------------------------------------------
 //
@@ -433,16 +422,6 @@ function onTouchEnd() {
       >
         <span class="nav-utility-icon" aria-hidden="true">{{ themeMeta[themeChoice].icon }}</span>
         <span class="nav-utility-label">{{ themeMeta[themeChoice].label }}</span>
-      </button>
-
-      <!-- Training ⇄ Clinical mode. Clinical (default) hides the teaching
-           prose for a lean cockpit; Training reveals the <TrainingNote>
-           wrappers for onboarding/audit. Safety lines render in both. -->
-      <button type="button" class="nav-utility" :aria-pressed="training" @click="mode.toggle()">
-        <span class="nav-utility-icon" aria-hidden="true">{{ training ? '🎓' : '🩺' }}</span>
-        <span class="nav-utility-label">
-          {{ training ? 'Training mode' : 'Clinical mode' }}
-        </span>
       </button>
 
       <!-- Destructive action — start a fresh case. Sits below the nav and is
