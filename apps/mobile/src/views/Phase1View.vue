@@ -12,6 +12,7 @@ import { haptic } from '@/composables/useHaptics';
 import DrugAttributes from '@/components/DrugAttributes.vue';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
+import TrainingNote from '@/components/TrainingNote.vue';
 import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
 import {
   UiBanner,
@@ -444,7 +445,7 @@ const diazepamModalCopy = computed(() => {
   if (decision === 'block-missing-osa') {
     return {
       title: 'OSA history required',
-      body: 'Select the patient’s OSA / CPAP status before prescribing bedtime diazepam. OSA changes the airway-risk math.',
+      body: 'Select the patient’s OSA / CPAP status before prescribing bedtime diazepam.',
       tone: 'primary' as const,
       confirmLabel: 'Got it',
       hideCancel: true,
@@ -770,14 +771,16 @@ const diazepamModalCopy = computed(() => {
     <UiCard tint="ph1">
       <p class="heading">Bedtime Premedication <span class="muted body">· optional</span></p>
       <DrugAttributes :attributes="diazepamAttributes" />
-      <UiBanner
-        v-if="heavyAsa1DiazepamHint"
-        tone="caution"
-        title="Heavier ASA I patient"
-        class="mt-2"
-      >
-        Over 200 lb and ASA I. Consider <strong>10 mg</strong> at bedtime; 5 mg often underdoses.
-      </UiBanner>
+      <TrainingNote>
+        <UiBanner
+          v-if="heavyAsa1DiazepamHint"
+          tone="caution"
+          title="Heavier ASA I patient"
+          class="mt-2"
+        >
+          Over 200 lb and ASA I. Consider <strong>10 mg</strong> at bedtime; 5 mg often underdoses.
+        </UiBanner>
+      </TrainingNote>
       <div class="drug-grid mt-2">
         <UiDrugButton
           tone="bedtime"
