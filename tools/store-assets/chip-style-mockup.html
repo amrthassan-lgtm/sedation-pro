@@ -262,6 +262,13 @@
 
       /* ============================================================
          Shared chip base — matches UiChipGroup.vue base + compact
+
+         Heights are load-bearing. Compact = 8/14 padding + 1 px border
+         + footnote/bold. Tap-target = 56 px min-height + 14/12 padding
+         + 1 px border + body/semibold + r-md radius. No variant below
+         is allowed to change min-height, padding, border-width, font
+         size, font weight, or border-radius — they only restyle the
+         `.is-active` colors / surface.
          ============================================================ */
       .ui-chip-group {
         display: flex;
@@ -362,15 +369,16 @@
 
       /* ============================================================
          Variant C — accent border + soft accent fill
+
+         Border stays 1 px in every size and state so chip dimensions
+         match the shipped UiChipGroup tap-target (56 px) and compact
+         heights exactly. Earlier draft bumped tap-target border to
+         2 px — removed to keep heights frame-perfect.
          ============================================================ */
       .v-accent-outline .ui-chip.is-active {
         background: var(--color-accent-soft);
         border: 1px solid var(--color-accent);
         color: var(--color-accent);
-      }
-      .v-accent-outline.ui-chip-group--tap-target .ui-chip.is-active {
-        border-width: 2px;
-        padding: 13px 11px;
       }
 
       footer {
