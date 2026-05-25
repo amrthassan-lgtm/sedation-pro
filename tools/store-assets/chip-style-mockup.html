@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sedation Pro — Chip style mockups</title>
+    <style>
+      /* ============================================================
+         Real tokens lifted from packages/ui/src/styles/tokens.css
+         so the mockup looks identical to the running app.
+         ============================================================ */
+      :root {
+        --type-title: 1.25rem;
+        --type-heading: 1.0625rem;
+        --type-body: 0.9375rem;
+        --type-footnote: 0.8125rem;
+        --type-caption: 0.6875rem;
+
+        --weight-regular: 400;
+        --weight-semibold: 600;
+        --weight-bold: 700;
+
+        --sp-1: 0.25rem;
+        --sp-2: 0.5rem;
+        --sp-3: 0.75rem;
+        --sp-4: 1rem;
+        --sp-5: 1.5rem;
+
+        --r-sm: 10px;
+        --r-md: 14px;
+        --r-lg: 18px;
+        --r-pill: 999px;
+
+        --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+        --dur-150: 150ms;
+
+        --color-bg: #0b1220;
+        --color-surface-subtle: rgba(255, 255, 255, 0.03);
+        --color-surface: rgba(255, 255, 255, 0.04);
+        --color-surface-elevated: rgba(255, 255, 255, 0.08);
+        --color-surface-overlay: rgba(255, 255, 255, 0.12);
+        --color-border: rgba(255, 255, 255, 0.12);
+        --color-border-strong: rgba(255, 255, 255, 0.24);
+
+        --color-card-bg: rgba(18, 27, 46, 0.95);
+
+        --color-text-primary: rgba(255, 255, 255, 0.95);
+        --color-text-secondary: rgba(255, 255, 255, 0.7);
+        --color-text-tertiary: rgba(255, 255, 255, 0.6);
+
+        --color-accent: #3b82f6;
+        --color-accent-soft: rgba(59, 130, 246, 0.18);
+
+        --shadow-md:
+          0 1px 2px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.24);
+
+        --surface-highlight: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.045),
+          rgba(255, 255, 255, 0)
+        );
+
+        --font-system:
+          -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
+          system-ui, sans-serif;
+      }
+
+      :root[data-theme='light'] {
+        --color-bg: #f8fafc;
+        --color-surface-subtle: rgba(15, 23, 42, 0.025);
+        --color-surface: rgba(15, 23, 42, 0.04);
+        --color-surface-elevated: rgba(15, 23, 42, 0.06);
+        --color-surface-overlay: rgba(15, 23, 42, 0.09);
+        --color-border: rgba(15, 23, 42, 0.1);
+        --color-border-strong: rgba(15, 23, 42, 0.2);
+
+        --color-card-bg: #ffffff;
+
+        --color-text-primary: rgba(15, 23, 42, 0.95);
+        --color-text-secondary: rgba(15, 23, 42, 0.65);
+        --color-text-tertiary: rgba(15, 23, 42, 0.6);
+
+        --color-accent: #1d4ed8;
+        --color-accent-soft: rgba(29, 78, 216, 0.1);
+
+        --shadow-md:
+          0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.1);
+        --surface-highlight: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.55),
+          rgba(255, 255, 255, 0)
+        );
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--color-bg);
+        color: var(--color-text-primary);
+        font-family: var(--font-system);
+        font-size: 16px;
+        line-height: 1.4;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-3);
+        padding: var(--sp-3) var(--sp-4);
+        background: var(--color-bg);
+        border-bottom: 1px solid var(--color-border);
+      }
+      header h1 {
+        margin: 0;
+        font-size: var(--type-heading);
+        font-weight: var(--weight-bold);
+      }
+      header p {
+        margin: 2px 0 0;
+        font-size: var(--type-caption);
+        color: var(--color-text-secondary);
+      }
+      .toggle {
+        appearance: none;
+        background: var(--color-surface-elevated);
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--r-pill);
+        padding: 6px 14px;
+        font: inherit;
+        font-size: var(--type-footnote);
+        font-weight: var(--weight-semibold);
+        cursor: pointer;
+      }
+
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--sp-4);
+        display: grid;
+        gap: var(--sp-4);
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      }
+
+      /* Mock app card — mirrors UiCard look */
+      .card {
+        background: var(--color-card-bg);
+        background-image: var(--surface-highlight);
+        border: 1px solid var(--color-border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-md);
+        padding: var(--sp-4);
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-4);
+      }
+      .card h2 {
+        margin: 0;
+        font-size: var(--type-title);
+        font-weight: var(--weight-bold);
+      }
+      .card h2 .tag {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 8px;
+        border-radius: var(--r-pill);
+        background: var(--color-surface-elevated);
+        font-size: var(--type-caption);
+        font-weight: var(--weight-semibold);
+        color: var(--color-text-secondary);
+        vertical-align: 2px;
+      }
+      .card .notes {
+        margin: -8px 0 0;
+        font-size: var(--type-footnote);
+        color: var(--color-text-secondary);
+      }
+      .field-label {
+        font-size: var(--type-footnote);
+        font-weight: var(--weight-semibold);
+        color: var(--color-text-secondary);
+        margin: 0 0 6px;
+        letter-spacing: 0.2px;
+      }
+      .caption {
+        margin: 6px 0 0;
+        font-size: var(--type-caption);
+        color: var(--color-text-tertiary);
+        letter-spacing: 0.2px;
+      }
+      hr.sep {
+        border: 0;
+        height: 1px;
+        background: var(--color-border);
+        margin: 4px 0;
+      }
+
+      /* ============================================================
+         Shared chip base — matches UiChipGroup.vue base + compact
+         ============================================================ */
+      .ui-chip-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .ui-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .ui-chip {
+        appearance: none;
+        min-width: 44px;
+        padding: 8px 14px;
+        border-radius: var(--r-pill);
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text-secondary);
+        font-family: inherit;
+        font-variant-numeric: tabular-nums;
+        font-size: var(--type-footnote);
+        font-weight: var(--weight-bold);
+        letter-spacing: 0.2px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition:
+          background var(--dur-150) var(--ease-standard),
+          color var(--dur-150) var(--ease-standard),
+          border-color var(--dur-150) var(--ease-standard),
+          box-shadow var(--dur-150) var(--ease-standard);
+      }
+      .ui-chip:active {
+        transform: scale(0.96);
+      }
+
+      /* Tap-target size — segmented control button */
+      .ui-chip-group--tap-target .ui-chip-row {
+        gap: 8px;
+      }
+      .ui-chip-group--tap-target .ui-chip {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 56px;
+        padding: 14px 12px;
+        border-radius: var(--r-md);
+        font-size: var(--type-body);
+        font-weight: var(--weight-semibold);
+      }
+
+      /* ============================================================
+         Variant: CURRENT — monochrome inversion
+         ============================================================ */
+      .v-current .ui-chip.is-active {
+        background: var(--color-text-primary);
+        border-color: var(--color-text-primary);
+        color: var(--color-bg);
+      }
+
+      /* ============================================================
+         Variant A — accent-blue fill
+         ============================================================ */
+      .v-accent-fill .ui-chip.is-active {
+        background: var(--color-accent);
+        border-color: var(--color-accent);
+        color: #ffffff;
+      }
+
+      /* ============================================================
+         Variant B — iOS segmented control (elevated surface lift)
+         ============================================================ */
+      .v-segmented .ui-chip-row {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--r-pill);
+        padding: 4px;
+        gap: 4px;
+      }
+      .v-segmented.ui-chip-group--tap-target .ui-chip-row {
+        border-radius: var(--r-md);
+      }
+      .v-segmented .ui-chip {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--color-text-secondary);
+      }
+      .v-segmented .ui-chip.is-active {
+        background: var(--color-surface-overlay);
+        border: 1px solid var(--color-border);
+        color: var(--color-text-primary);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      }
+      :root[data-theme='light'] .v-segmented .ui-chip.is-active {
+        background: #ffffff;
+        border-color: var(--color-border);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      }
+
+      /* ============================================================
+         Variant C — accent border + soft accent fill
+         ============================================================ */
+      .v-accent-outline .ui-chip.is-active {
+        background: var(--color-accent-soft);
+        border: 1px solid var(--color-accent);
+        color: var(--color-accent);
+      }
+      :root[data-theme='light'] .v-accent-outline .ui-chip.is-active {
+        color: var(--color-accent);
+      }
+      /* Outline weight grows on tap-target so the accent reads from a meter away */
+      .v-accent-outline.ui-chip-group--tap-target .ui-chip.is-active {
+        border-width: 2px;
+        padding: 13px 11px; /* keep height after border bump */
+      }
+
+      footer {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 var(--sp-4) var(--sp-5);
+        color: var(--color-text-tertiary);
+        font-size: var(--type-caption);
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div>
+        <h1>Chip style mockups</h1>
+        <p>
+          Same chip groups, four active-state treatments. Click any chip to
+          select. Toggle the theme to compare dark vs light.
+        </p>
+      </div>
+      <button class="toggle" id="theme-toggle" type="button">Light mode</button>
+    </header>
+
+    <main id="main">
+      <!-- Cards are generated by JS to keep the four variants in sync -->
+    </main>
+
+    <footer>
+      Tokens lifted from <code>packages/ui/src/styles/tokens.css</code>. Chip
+      base + sizing matches <code>UiChipGroup.vue</code>; only the
+      <code>.is-active</code> state changes between variants.
+    </footer>
+
+    <script>
+      const variants = [
+        {
+          key: 'current',
+          title: 'Current',
+          tag: 'shipped',
+          notes: 'Monochrome inversion — active chip flips to text-on-bg. Decisive, high contrast, may feel "wall of white" when several picks are active in one card.',
+          cls: 'v-current',
+        },
+        {
+          key: 'accent-fill',
+          title: 'Option A · Accent fill',
+          tag: 'bold',
+          notes: 'Active chip uses brand accent (blue). iOS "selected button" feel; ties chips to the app primary action color. Risk: blue already appears on info banners and pre-med chips.',
+          cls: 'v-accent-fill',
+        },
+        {
+          key: 'segmented',
+          title: 'Option B · iOS segmented',
+          tag: 'quiet',
+          notes: 'Active chip lifts on an elevated surface inside a unified track. Quietest, most "iOS-glass", matches the rest of the app aesthetic. Lower at-a-glance contrast than A.',
+          cls: 'v-segmented',
+        },
+        {
+          key: 'accent-outline',
+          title: 'Option C · Accent outline',
+          tag: 'mid',
+          notes: 'Soft accent fill + 2 px accent border + accent text on active. Quieter than A, more visible than B. Risk: outline-only at chairside speed is harder to scan than a filled state.',
+          cls: 'v-accent-outline',
+        },
+      ];
+
+      const mallampati = [
+        { value: 1, label: 'I' },
+        { value: 2, label: 'II' },
+        { value: 3, label: 'III' },
+        { value: 4, label: 'IV' },
+      ];
+      const asa = [
+        { value: 1, label: 'I', caption: 'Healthy patient' },
+        { value: 2, label: 'II', caption: 'Mild systemic disease' },
+        { value: 3, label: 'III', caption: 'Severe systemic disease' },
+        { value: 4, label: 'IV', caption: 'Constant threat to life' },
+      ];
+      const yesNo = [
+        { value: 'no', label: 'No' },
+        { value: 'yes', label: 'Yes' },
+      ];
+      const cigsPerDay = [
+        { value: 0, label: '0' },
+        { value: 5, label: '<10' },
+        { value: 15, label: '10–19' },
+        { value: 25, label: '20+' },
+      ];
+
+      // Initial selections (per variant, per field) — independent so the
+      // four cards can be played with side-by-side.
+      const state = {};
+      for (const v of variants) {
+        state[v.key] = {
+          mallampati: 2,
+          asa: 2,
+          nausea: 'no',
+          cigs: 5,
+        };
+      }
+
+      function chipGroup(variantKey, field, size, options, opts = {}) {
+        const variant = variants.find((v) => v.key === variantKey);
+        const wrapper = document.createElement('div');
+        wrapper.className = `ui-chip-group ${variant.cls} ui-chip-group--${size}`;
+        const row = document.createElement('div');
+        row.className = 'ui-chip-row';
+        row.setAttribute('role', 'radiogroup');
+        wrapper.appendChild(row);
+
+        const captionEl = document.createElement('p');
+        captionEl.className = 'caption';
+
+        function render() {
+          row.innerHTML = '';
+          const active = options.find(
+            (o) => o.value === state[variantKey][field],
+          );
+          for (const opt of options) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'ui-chip';
+            if (opt.value === state[variantKey][field]) b.classList.add('is-active');
+            b.setAttribute('aria-pressed', String(opt.value === state[variantKey][field]));
+            b.textContent = opt.label;
+            b.addEventListener('click', () => {
+              state[variantKey][field] = opt.value;
+              render();
+            });
+            row.appendChild(b);
+          }
+          if (opts.showCaption) {
+            captionEl.textContent = active && active.caption ? active.caption : '';
+          }
+        }
+        render();
+        if (opts.showCaption) wrapper.appendChild(captionEl);
+        return wrapper;
+      }
+
+      function buildCard(variantKey) {
+        const variant = variants.find((v) => v.key === variantKey);
+        const card = document.createElement('section');
+        card.className = 'card';
+
+        card.innerHTML = `
+          <h2>${variant.title}<span class="tag">${variant.tag}</span></h2>
+          <p class="notes">${variant.notes}</p>
+          <hr class="sep" />
+        `;
+
+        // Tap-target Mallampati
+        const f1 = document.createElement('div');
+        f1.innerHTML = `<p class="field-label">Mallampati class · tap-target</p>`;
+        f1.appendChild(chipGroup(variantKey, 'mallampati', 'tap-target', mallampati));
+        card.appendChild(f1);
+
+        // Tap-target ASA with caption
+        const f2 = document.createElement('div');
+        f2.innerHTML = `<p class="field-label">ASA class · tap-target with caption</p>`;
+        f2.appendChild(
+          chipGroup(variantKey, 'asa', 'tap-target', asa, { showCaption: true }),
+        );
+        card.appendChild(f2);
+
+        // Tap-target Yes/No
+        const f3 = document.createElement('div');
+        f3.innerHTML = `<p class="field-label">Nausea / vomiting · tap-target</p>`;
+        f3.appendChild(chipGroup(variantKey, 'nausea', 'tap-target', yesNo));
+        card.appendChild(f3);
+
+        // Compact bucket
+        const f4 = document.createElement('div');
+        f4.innerHTML = `<p class="field-label">Cigarettes / day · compact bucket</p>`;
+        f4.appendChild(chipGroup(variantKey, 'cigs', 'compact', cigsPerDay));
+        card.appendChild(f4);
+
+        return card;
+      }
+
+      const main = document.getElementById('main');
+      for (const v of variants) main.appendChild(buildCard(v.key));
+
+      // Theme toggle
+      const toggle = document.getElementById('theme-toggle');
+      function syncToggleLabel() {
+        const theme = document.documentElement.dataset.theme;
+        toggle.textContent = theme === 'light' ? 'Dark mode' : 'Light mode';
+      }
+      syncToggleLabel();
+      toggle.addEventListener('click', () => {
+        const next =
+          document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+        document.documentElement.dataset.theme = next;
+        syncToggleLabel();
+      });
+    </script>
+  </body>
+</html>
