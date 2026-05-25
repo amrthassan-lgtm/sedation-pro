@@ -43,6 +43,7 @@
         --color-border-strong: rgba(255, 255, 255, 0.24);
 
         --color-card-bg: rgba(18, 27, 46, 0.95);
+        --color-frosted-bg: rgba(11, 20, 34, 0.85);
 
         --color-text-primary: rgba(255, 255, 255, 0.95);
         --color-text-secondary: rgba(255, 255, 255, 0.7);
@@ -75,6 +76,7 @@
         --color-border-strong: rgba(15, 23, 42, 0.2);
 
         --color-card-bg: #ffffff;
+        --color-frosted-bg: rgba(248, 250, 252, 0.85);
 
         --color-text-primary: rgba(15, 23, 42, 0.95);
         --color-text-secondary: rgba(15, 23, 42, 0.65);
@@ -107,24 +109,39 @@
         -webkit-font-smoothing: antialiased;
       }
 
+      /* ============================================================
+         Sticky header — title row + variant switcher segmented control
+         ============================================================ */
       header {
         position: sticky;
         top: 0;
         z-index: 10;
+        background: var(--color-frosted-bg);
+        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        border-bottom: 1px solid var(--color-border);
+      }
+      .header-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--sp-3) var(--sp-4);
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-3);
+      }
+      .title-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: var(--sp-3);
-        padding: var(--sp-3) var(--sp-4);
-        background: var(--color-bg);
-        border-bottom: 1px solid var(--color-border);
+        flex-wrap: wrap;
       }
-      header h1 {
+      .title-row h1 {
         margin: 0;
         font-size: var(--type-heading);
         font-weight: var(--weight-bold);
       }
-      header p {
+      .title-row .sub {
         margin: 2px 0 0;
         font-size: var(--type-caption);
         color: var(--color-text-secondary);
@@ -142,13 +159,52 @@
         cursor: pointer;
       }
 
+      /* Switcher — segmented control across 4 variants */
+      .switcher {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--r-md);
+        padding: 4px;
+      }
+      .switcher button {
+        appearance: none;
+        background: transparent;
+        color: var(--color-text-secondary);
+        border: 1px solid transparent;
+        border-radius: var(--r-sm);
+        padding: 10px 8px;
+        font: inherit;
+        font-size: var(--type-footnote);
+        font-weight: var(--weight-semibold);
+        cursor: pointer;
+        text-align: center;
+        line-height: 1.15;
+      }
+      .switcher button .idx {
+        display: block;
+        font-size: var(--type-caption);
+        font-weight: var(--weight-regular);
+        color: var(--color-text-tertiary);
+        margin-bottom: 2px;
+      }
+      .switcher button.is-active {
+        background: var(--color-surface-overlay);
+        border-color: var(--color-border);
+        color: var(--color-text-primary);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      }
+      :root[data-theme='light'] .switcher button.is-active {
+        background: #ffffff;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      }
+
       main {
         max-width: 1200px;
         margin: 0 auto;
         padding: var(--sp-4);
-        display: grid;
-        gap: var(--sp-4);
-        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
       }
 
       /* Mock app card — mirrors UiCard look */
@@ -163,12 +219,12 @@
         flex-direction: column;
         gap: var(--sp-4);
       }
-      .card h2 {
+      .card-head h2 {
         margin: 0;
         font-size: var(--type-title);
         font-weight: var(--weight-bold);
       }
-      .card h2 .tag {
+      .card-head h2 .tag {
         display: inline-block;
         margin-left: 8px;
         padding: 2px 8px;
@@ -179,8 +235,8 @@
         color: var(--color-text-secondary);
         vertical-align: 2px;
       }
-      .card .notes {
-        margin: -8px 0 0;
+      .card-head .notes {
+        margin: 4px 0 0;
         font-size: var(--type-footnote);
         color: var(--color-text-secondary);
       }
@@ -312,13 +368,9 @@
         border: 1px solid var(--color-accent);
         color: var(--color-accent);
       }
-      :root[data-theme='light'] .v-accent-outline .ui-chip.is-active {
-        color: var(--color-accent);
-      }
-      /* Outline weight grows on tap-target so the accent reads from a meter away */
       .v-accent-outline.ui-chip-group--tap-target .ui-chip.is-active {
         border-width: 2px;
-        padding: 13px 11px; /* keep height after border bump */
+        padding: 13px 11px;
       }
 
       footer {
@@ -333,18 +385,23 @@
 
   <body>
     <header>
-      <div>
-        <h1>Chip style mockups</h1>
-        <p>
-          Same chip groups, four active-state treatments. Click any chip to
-          select. Toggle the theme to compare dark vs light.
-        </p>
+      <div class="header-inner">
+        <div class="title-row">
+          <div>
+            <h1>Chip style mockups</h1>
+            <p class="sub">
+              Four active-state treatments. Tap a variant to switch the card
+              below. Same selections are preserved across variants.
+            </p>
+          </div>
+          <button class="toggle" id="theme-toggle" type="button">Light mode</button>
+        </div>
+        <nav class="switcher" id="switcher" aria-label="Variant"></nav>
       </div>
-      <button class="toggle" id="theme-toggle" type="button">Light mode</button>
     </header>
 
-    <main id="main">
-      <!-- Cards are generated by JS to keep the four variants in sync -->
+    <main>
+      <section class="card" id="stage" aria-live="polite"></section>
     </main>
 
     <footer>
@@ -380,7 +437,7 @@
           key: 'accent-outline',
           title: 'Option C · Accent outline',
           tag: 'mid',
-          notes: 'Soft accent fill + 2 px accent border + accent text on active. Quieter than A, more visible than B. Risk: outline-only at chairside speed is harder to scan than a filled state.',
+          notes: 'Soft accent fill + accent border + accent text on active. Quieter than A, more visible than B. Risk: outline-only at chairside speed is harder to scan than a filled state.',
           cls: 'v-accent-outline',
         },
       ];
@@ -408,17 +465,16 @@
         { value: 25, label: '20+' },
       ];
 
-      // Initial selections (per variant, per field) — independent so the
-      // four cards can be played with side-by-side.
-      const state = {};
-      for (const v of variants) {
-        state[v.key] = {
-          mallampati: 2,
-          asa: 2,
-          nausea: 'no',
-          cigs: 5,
-        };
-      }
+      // Selections are shared across variants so you can compare the same
+      // chosen state under each treatment without re-tapping.
+      const state = {
+        mallampati: 2,
+        asa: 2,
+        nausea: 'no',
+        cigs: 5,
+      };
+
+      let activeVariant = variants[0].key;
 
       function chipGroup(variantKey, field, size, options, opts = {}) {
         const variant = variants.find((v) => v.key === variantKey);
@@ -434,18 +490,16 @@
 
         function render() {
           row.innerHTML = '';
-          const active = options.find(
-            (o) => o.value === state[variantKey][field],
-          );
+          const active = options.find((o) => o.value === state[field]);
           for (const opt of options) {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'ui-chip';
-            if (opt.value === state[variantKey][field]) b.classList.add('is-active');
-            b.setAttribute('aria-pressed', String(opt.value === state[variantKey][field]));
+            if (opt.value === state[field]) b.classList.add('is-active');
+            b.setAttribute('aria-pressed', String(opt.value === state[field]));
             b.textContent = opt.label;
             b.addEventListener('click', () => {
-              state[variantKey][field] = opt.value;
+              state[field] = opt.value;
               render();
             });
             row.appendChild(b);
@@ -459,48 +513,66 @@
         return wrapper;
       }
 
-      function buildCard(variantKey) {
-        const variant = variants.find((v) => v.key === variantKey);
-        const card = document.createElement('section');
-        card.className = 'card';
+      function renderStage() {
+        const variant = variants.find((v) => v.key === activeVariant);
+        const stage = document.getElementById('stage');
+        stage.innerHTML = '';
 
-        card.innerHTML = `
+        const head = document.createElement('div');
+        head.className = 'card-head';
+        head.innerHTML = `
           <h2>${variant.title}<span class="tag">${variant.tag}</span></h2>
           <p class="notes">${variant.notes}</p>
-          <hr class="sep" />
         `;
+        stage.appendChild(head);
 
-        // Tap-target Mallampati
+        const sep = document.createElement('hr');
+        sep.className = 'sep';
+        stage.appendChild(sep);
+
         const f1 = document.createElement('div');
         f1.innerHTML = `<p class="field-label">Mallampati class · tap-target</p>`;
-        f1.appendChild(chipGroup(variantKey, 'mallampati', 'tap-target', mallampati));
-        card.appendChild(f1);
+        f1.appendChild(chipGroup(activeVariant, 'mallampati', 'tap-target', mallampati));
+        stage.appendChild(f1);
 
-        // Tap-target ASA with caption
         const f2 = document.createElement('div');
         f2.innerHTML = `<p class="field-label">ASA class · tap-target with caption</p>`;
         f2.appendChild(
-          chipGroup(variantKey, 'asa', 'tap-target', asa, { showCaption: true }),
+          chipGroup(activeVariant, 'asa', 'tap-target', asa, { showCaption: true }),
         );
-        card.appendChild(f2);
+        stage.appendChild(f2);
 
-        // Tap-target Yes/No
         const f3 = document.createElement('div');
         f3.innerHTML = `<p class="field-label">Nausea / vomiting · tap-target</p>`;
-        f3.appendChild(chipGroup(variantKey, 'nausea', 'tap-target', yesNo));
-        card.appendChild(f3);
+        f3.appendChild(chipGroup(activeVariant, 'nausea', 'tap-target', yesNo));
+        stage.appendChild(f3);
 
-        // Compact bucket
         const f4 = document.createElement('div');
         f4.innerHTML = `<p class="field-label">Cigarettes / day · compact bucket</p>`;
-        f4.appendChild(chipGroup(variantKey, 'cigs', 'compact', cigsPerDay));
-        card.appendChild(f4);
-
-        return card;
+        f4.appendChild(chipGroup(activeVariant, 'cigs', 'compact', cigsPerDay));
+        stage.appendChild(f4);
       }
 
-      const main = document.getElementById('main');
-      for (const v of variants) main.appendChild(buildCard(v.key));
+      function renderSwitcher() {
+        const sw = document.getElementById('switcher');
+        sw.innerHTML = '';
+        variants.forEach((v, i) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          if (v.key === activeVariant) b.classList.add('is-active');
+          b.setAttribute('aria-pressed', String(v.key === activeVariant));
+          b.innerHTML = `<span class="idx">${i + 1} of 4</span>${v.title}`;
+          b.addEventListener('click', () => {
+            activeVariant = v.key;
+            renderSwitcher();
+            renderStage();
+          });
+          sw.appendChild(b);
+        });
+      }
+
+      renderSwitcher();
+      renderStage();
 
       // Theme toggle
       const toggle = document.getElementById('theme-toggle');
