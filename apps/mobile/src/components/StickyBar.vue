@@ -33,12 +33,12 @@ const savedLabel = computed<string | null>(() => {
   return `Saved · ${new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 });
 
-const phaseMeta: Record<Phase, { label: string; sub: string; tint: string }> = {
-  quickref: { label: 'Quick Reference', sub: 'Emergency protocols + drug doses', tint: 'qr' },
-  phase1: { label: 'Phase 1 · Assessment', sub: 'Pre-sedation clearance', tint: 'ph1' },
-  phase2: { label: 'Phase 2 · Oral Meds', sub: 'Pre-op anxiolytic', tint: 'ph2' },
-  phase3: { label: 'Phase 3 · IV Sedation', sub: 'Drug administration', tint: 'ph3' },
-  phase4: { label: 'Phase 4 · Recovery', sub: 'Discharge & note', tint: 'ph4' },
+const phaseMeta: Record<Phase, { label: string; sub: string }> = {
+  quickref: { label: 'Quick Reference', sub: 'Emergency protocols + drug doses' },
+  phase1: { label: 'Phase 1 · Assessment', sub: 'Pre-sedation clearance' },
+  phase2: { label: 'Phase 2 · Oral Meds', sub: 'Pre-op anxiolytic' },
+  phase3: { label: 'Phase 3 · IV Sedation', sub: 'Drug administration' },
+  phase4: { label: 'Phase 4 · Recovery', sub: 'Discharge & note' },
 };
 
 const meta = computed(() => phaseMeta[currentPhase.value]);
@@ -192,6 +192,17 @@ function emergency() {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
+  /* Top inset is owned by the bar, not the body. The body still applies
+     `padding-top: var(--safe-top)` globally; the negative margin here
+     cancels that for the bar itself (so the frosted background extends to
+     the very top of the screen, sliding under the notch), and the matching
+     padding pushes the bar's content back below the status bar. Net: at
+     any scroll position the clock / signal / battery sit on the bar's
+     frosted glass, never on top of the phase label or Emergency button.
+     On devices without a notch (`safe-area-inset-top = 0`) both terms
+     collapse to 0 and the bar behaves as before. */
+  margin-top: calc(-1 * env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
   /* Bottom padding lifts in-flow content above the absolute-positioned
      spine rail at `bottom: 0` — without it the rail sat flush against
      the action chips (esp. Emergency) on iPhone portrait. */

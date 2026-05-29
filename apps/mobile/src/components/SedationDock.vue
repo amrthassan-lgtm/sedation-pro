@@ -17,14 +17,19 @@ import type { Severity, TimerPillStatus } from '@sedation-pro/ui';
  *  - **compact** — drug status row (mg given / ceiling, live half-life timer,
  *    redose-window status) plus two "next-dose" buttons (Versed +1 mg,
  *    Fentanyl +25). One tap = log.
- *  - **expanded** — full per-class dose grid (sedation, anti-emetic, reversal)
- *    with cooldown overlays on every button. Reversal is visually demoted
- *    (red border + heading) so muscle memory doesn't mis-tap it.
+ *  - **expanded** — full per-class dose grid (sedation, anti-emetic, reversal).
+ *    Reversal is visually demoted (red section heading, separated grid) so
+ *    muscle memory doesn't mis-tap it.
  *
- * The in-card buttons in Phase 3 stay as the "first encounter with this
- * drug" surface (max-dose math, weight calc, drug-specific explanations).
- * The dock is the "I'm titrating right now" fast lane — both call into
- * `useIvDosing` so toasts / undo / haptics behave identically.
+ * Safety model: every tap commits immediately via `useIvDosing`. There is no
+ * per-button cooldown — the safety net is the undo toast (5 s window) plus
+ * the in-store dose log a clinician can review. Anything stricter (mandatory
+ * confirmation on reversal, debounce on rapid double-taps) would belong here.
+ *
+ * The in-card buttons in Phase 3 stay as the "first encounter with this drug"
+ * surface (max-dose math, weight calc, drug-specific explanations). The dock
+ * is the "I'm titrating right now" fast lane — both call into `useIvDosing`
+ * so toasts / undo / haptics behave identically.
  */
 
 const iv = useIVStore();

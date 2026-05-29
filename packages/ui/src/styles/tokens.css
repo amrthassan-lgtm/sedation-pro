@@ -93,7 +93,16 @@
   --color-crisis: #ef4444;
   --color-crisis-soft: rgba(239, 68, 68, 0.14);
 
-  /* Drug-tone palette — fixed identities used by buttons, pills, swatches. */
+  /* Drug-tone palette — fixed identities used by buttons, pills, swatches.
+   *
+   * `--color-blue` and `--color-red` share their hex with `--color-accent`
+   * and `--color-crisis` respectively. That's intentional, not a dedupe
+   * target: the drug tones are identities ("Fentanyl is blue tape",
+   * "Lidocaine is red tape") tied to real syringe-tape conventions, and
+   * they're only ever rendered as small swatches/pills that carry a label,
+   * so a clinician never has to disambiguate by hue alone. Keeping the
+   * tokens distinct lets the drug tone shift independently of the status /
+   * accent semantics later without a global find-and-replace. */
   --color-orange: #f97316;
   --color-orange-soft: rgba(249, 115, 22, 0.12);
   --color-blue: #3b82f6;

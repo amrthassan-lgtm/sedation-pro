@@ -57,11 +57,18 @@ export const router = createRouter({
       name: 'clinical-note',
       component: () => import('@/views/ClinicalNoteView.vue'),
     },
-    {
-      path: '/ui-demo',
-      name: 'ui-demo',
-      component: () => import('@/views/UiDemoView.vue'),
-    },
+    // UiDemoView is the developer-only primitives gallery — ships only in
+    // `pnpm dev`. Excluded from production / store builds so a deep link can't
+    // land a clinician on the demo screen.
+    ...(import.meta.env.DEV
+      ? [
+          {
+            path: '/ui-demo',
+            name: 'ui-demo',
+            component: () => import('@/views/UiDemoView.vue'),
+          },
+        ]
+      : []),
     { path: '/:pathMatch(.*)*', redirect: '/phase/1' },
   ],
 });
