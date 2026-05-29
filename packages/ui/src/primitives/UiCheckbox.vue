@@ -117,8 +117,13 @@ function toggle() {
   background: var(--color-surface);
   opacity: 1;
 }
+/* Checked tap-target row lifts off the card — same brighter surface +
+   shadow as a segmented chip's active thumb — so the confirmation gate
+   reads as "raised / done" rather than the dimmer surface-subtle it used
+   to drop to. The green dot stays the semantic confirm marker. */
 .ui-check.ui-check--tap-target.is-checked {
-  background: var(--color-surface-subtle);
+  background: var(--color-segment-active);
+  box-shadow: var(--shadow-sm);
 }
 .ui-check.ui-check--tap-target .ui-check-dot {
   width: 26px;
