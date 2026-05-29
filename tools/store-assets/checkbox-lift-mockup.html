@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sedation Pro — checkbox lift (current vs proposed)</title>
+    <style>
+      /* ============================================================
+         Static current-vs-proposed for UiCheckbox.vue tap-target rows.
+         Token values + checkbox CSS copied verbatim from packages/ui
+         (dark theme). The only thing the "proposed" column changes is
+         the CHECKED tap-target row: it lifts (segment-active surface +
+         shadow) to match the segmented chips, instead of going dimmer.
+         ============================================================ */
+      :root {
+        --type-body: 0.9375rem;
+        --type-footnote: 0.8125rem;
+        --type-caption: 0.6875rem;
+        --type-heading: 1.0625rem;
+
+        --weight-regular: 400;
+        --weight-medium: 500;
+        --weight-semibold: 600;
+        --weight-bold: 700;
+
+        --sp-2: 0.5rem;
+        --sp-3: 0.75rem;
+        --sp-4: 1rem;
+        --sp-5: 1.5rem;
+
+        --r-sm: 10px;
+        --r-md: 14px;
+        --r-lg: 18px;
+
+        --dur-250: 250ms;
+        --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+        --color-bg: #0b1220;
+        --color-surface-subtle: rgba(255, 255, 255, 0.03);
+        --color-surface: rgba(255, 255, 255, 0.04);
+        --color-surface-elevated: rgba(255, 255, 255, 0.08);
+        --color-surface-overlay: rgba(255, 255, 255, 0.12);
+        --color-border: rgba(255, 255, 255, 0.12);
+        --color-border-strong: rgba(255, 255, 255, 0.24);
+
+        --color-card-bg: rgba(18, 27, 46, 0.95);
+
+        --color-text-primary: rgba(255, 255, 255, 0.95);
+        --color-text-secondary: rgba(255, 255, 255, 0.7);
+        --color-text-tertiary: rgba(255, 255, 255, 0.6);
+
+        --color-segment-active: rgba(255, 255, 255, 0.12);
+        --color-good: #4ade80;
+        --color-accent: #3b82f6;
+
+        --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.12);
+        --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.24);
+        --surface-highlight: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.045),
+          rgba(255, 255, 255, 0)
+        );
+
+        --font-system:
+          -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui,
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--color-bg);
+        color: var(--color-text-primary);
+        font-family: var(--font-system);
+        font-size: 16px;
+        line-height: 1.4;
+        -webkit-font-smoothing: antialiased;
+      }
+      header {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: var(--sp-4) var(--sp-4) 0;
+      }
+      header h1 {
+        margin: 0;
+        font-size: var(--type-heading);
+        font-weight: var(--weight-bold);
+      }
+      header p {
+        margin: 4px 0 0;
+        font-size: var(--type-footnote);
+        color: var(--color-text-secondary);
+      }
+      main {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: var(--sp-4);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: var(--sp-4);
+      }
+      .col h2 {
+        margin: 0 0 var(--sp-3);
+        font-size: var(--type-body);
+        font-weight: var(--weight-bold);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .col h2 .tag {
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: var(--type-caption);
+        font-weight: var(--weight-semibold);
+        background: var(--color-surface-elevated);
+        color: var(--color-text-secondary);
+      }
+      .card {
+        background: var(--color-card-bg);
+        background-image: var(--surface-highlight);
+        border: 1px solid var(--color-border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-md);
+        padding: var(--sp-4);
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-4);
+      }
+      .group-label {
+        font-size: 10px;
+        font-weight: var(--weight-semibold);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: var(--color-text-tertiary);
+        margin: 0 0 8px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* ===== UiCheckbox.vue — verbatim ===== */
+      .ui-check {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: var(--r-md);
+        cursor: pointer;
+        opacity: 0.4;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .ui-check.ui-check--tap-target {
+        padding: 14px 14px;
+        min-height: 56px;
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        opacity: 1;
+      }
+      .ui-check.ui-check--tap-target.is-checked {
+        background: var(--color-surface-subtle);
+      }
+      .ui-check.ui-check--tap-target .ui-check-dot {
+        width: 26px;
+        height: 26px;
+      }
+      .ui-check.ui-check--tap-target .ui-check-label {
+        font-size: var(--type-body);
+        font-weight: var(--weight-semibold);
+      }
+      .ui-check.is-checked {
+        opacity: 1;
+        background: var(--color-surface-subtle);
+      }
+      .ui-check-dot {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        border: 1px solid var(--color-border-strong);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--type-footnote);
+        font-weight: var(--weight-bold);
+        color: transparent;
+        background: transparent;
+      }
+      .ui-check.is-checked .ui-check-dot {
+        background: var(--color-good);
+        border-color: var(--color-good);
+        color: #000;
+      }
+      .ui-check-body {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        line-height: 1.2;
+      }
+      .ui-check-label {
+        font-size: var(--type-footnote);
+        font-weight: var(--weight-medium);
+        color: var(--color-text-primary);
+      }
+      .ui-check-hint {
+        font-size: var(--type-footnote);
+        color: var(--color-text-tertiary);
+        line-height: 1.4;
+      }
+
+      /* ===== PROPOSED — only this block differs ===== */
+      .proposed .ui-check.ui-check--tap-target.is-checked {
+        background: var(--color-segment-active);
+        border-color: var(--color-border);
+        box-shadow: var(--shadow-sm);
+      }
+
+      footer {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 0 var(--sp-4) var(--sp-5);
+        color: var(--color-text-tertiary);
+        font-size: var(--type-caption);
+      }
+      code {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 0.95em;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>Checkbox lift — current vs proposed</h1>
+      <p>
+        Phase 4 Card 13 discharge-readiness gates (tap-target checkboxes). The only change is the
+        <strong>checked</strong> row: today it goes slightly dimmer; proposed, it lifts with the
+        same surface + shadow as a segmented chip. The green confirm-dot is unchanged.
+      </p>
+    </header>
+
+    <main>
+      <!-- CURRENT -->
+      <section class="col">
+        <h2>Current <span class="tag">shipped</span></h2>
+        <div class="card">
+          <div>
+            <p class="group-label">Discharge readiness · tap-target</p>
+            <div class="stack">
+              <label class="ui-check ui-check--neutral ui-check--tap-target is-checked">
+                <span class="ui-check-dot"><span class="ui-check-tick">✓</span></span>
+                <span class="ui-check-body">
+                  <span class="ui-check-label">Ambulatory with minimal assistance</span>
+                </span>
+              </label>
+              <label class="ui-check ui-check--neutral ui-check--tap-target is-checked">
+                <span class="ui-check-dot"><span class="ui-check-tick">✓</span></span>
+                <span class="ui-check-body">
+                  <span class="ui-check-label">Oriented ×3 (person, place, time)</span>
+                </span>
+              </label>
+              <label class="ui-check ui-check--neutral ui-check--tap-target">
+                <span class="ui-check-dot"></span>
+                <span class="ui-check-body">
+                  <span class="ui-check-label">Pulse-ox trace filed to chart</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROPOSED -->
+      <section class="col proposed">
+        <h2>Proposed · lift <span class="tag">aligns w/ chips</span></h2>
+        <div class="card">
+          <div>
+            <p class="group-label">Discharge readiness · tap-target</p>
+            <div class="stack">
+              <label class="ui-check ui-check--neutral ui-check--tap-target is-checked">
+                <span class="ui-check-dot"><span class="ui-check-tick">✓</span></span>
+                <span class="ui-check-body">
+                  <span class="ui-check-label">Ambulatory with minimal assistance</span>
+                </span>
+              </label>
+              <label class="ui-check ui-check--neutral ui-check--tap-target is-checked">
+                <span class="ui-check-dot"><span class="ui-check-tick">✓</span></span>
+                <span class="ui-check-body">
+                  <span class="ui-check-label">Oriented ×3 (person, place, time)</span>
+                </span>
+              </label>
+              <label class="ui-check ui-check--neutral ui-check--tap-target">
+                <span class="ui-check-dot"></span>
+                <span class="ui-check-body">
+                  <span class="ui-check-label">Pulse-ox trace filed to chart</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Checkbox CSS copied verbatim from <code>UiCheckbox.vue</code>. Proposed column overrides one
+      rule: <code>.ui-check--tap-target.is-checked</code> → <code>--color-segment-active</code> +
+      <code>--shadow-sm</code>. Compact intake checkboxes (safety checklist, discharge handoff) are
+      unchanged — they're meant to stay quiet.
+    </footer>
+  </body>
+</html>
