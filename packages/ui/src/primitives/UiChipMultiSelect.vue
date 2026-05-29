@@ -50,11 +50,15 @@ function toggle(value: T): void {
 </template>
 
 <style scoped>
-/* Visual identity matches UiChipGroup — same segmented-control track, same
-   raised active segment — so the user perceives "selection chip" whether
-   the group is single- or multi-select. Behaviour differs (toggle vs
-   replace), which `aria-pressed` per chip surfaces semantically; here
-   multiple segments can be raised at once. */
+/* Multi-select is a filter-chip set, not a segmented control: chips are
+   standalone pills (no shared track) that toggle independently, and any
+   number can be raised at once — so the segmented track of UiChipGroup
+   would be wrong here (it wraps to several rows, and multiple thumbs in
+   one track isn't a real control). Inactive chips carry their own subtle
+   surface + border so they read as tappable; the active state reuses the
+   same lifted surface + shadow as a UiChipGroup thumb so selection feels
+   consistent across the two. `aria-pressed` per chip surfaces the toggle
+   semantics. */
 .ui-chip-group {
   display: flex;
   flex-direction: column;
@@ -63,18 +67,14 @@ function toggle(value: T): void {
 .ui-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--r-pill);
+  gap: 6px;
 }
 .ui-chip {
   min-width: 44px;
   padding: 8px 14px;
   border-radius: var(--r-pill);
-  border: 1px solid transparent;
-  background: transparent;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
   font-size: var(--type-footnote);
@@ -92,9 +92,12 @@ function toggle(value: T): void {
 .ui-chip:active:not(:disabled) {
   transform: scale(0.96);
 }
+/* Active filter chip lifts: brighter fill (surface-overlay reads in both
+   themes — there's no track behind it to lift off of), stronger border,
+   shadow. */
 .ui-chip.is-active {
-  background: var(--color-segment-active);
-  border-color: var(--color-border);
+  background: var(--color-surface-overlay);
+  border-color: var(--color-border-strong);
   color: var(--color-text-primary);
   box-shadow: var(--shadow-sm);
 }

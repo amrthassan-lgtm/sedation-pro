@@ -100,21 +100,30 @@ const activeCaption = computed<string | undefined>(() => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* Compact buckets: the track shrink-wraps its segments so there's no
+     empty rail to the right. Tap-target overrides to stretch (below) so
+     the segments fill the row evenly. */
+  align-items: flex-start;
 }
-/* iOS segmented-control track — the row is a single rounded container;
-   chips sit transparent inside it and the active one lifts off the
-   track. Compact buckets keep the pill radius; the tap-target override
-   below squares the track to md. */
+.ui-chip-group--tap-target {
+  align-items: stretch;
+}
+/* iOS segmented-control track — one rounded container; segments sit flush
+   inside it, separated by hairline dividers, and the active one lifts as
+   an inset thumb. nowrap keeps it a single strip: every tap-target group
+   is ≤4 short options by design, so segments shrink to share width rather
+   than wrapping into a button grid. */
 .ui-chip-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px;
+  flex-wrap: nowrap;
+  gap: 0;
+  padding: 3px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--r-pill);
 }
 .ui-chip {
+  position: relative;
   min-width: 44px;
   padding: 8px 14px;
   border-radius: var(--r-pill);
@@ -134,12 +143,30 @@ const activeCaption = computed<string | undefined>(() => {
     box-shadow var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
 }
+/* Hairline divider between adjacent inactive segments. Both the divider on
+   the active segment and the one on the segment right after it fade out, so
+   the active thumb reads as a lifted, gap-flanked pill (the iOS
+   UISegmentedControl idiom). */
+.ui-chip + .ui-chip::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 1px;
+  background: var(--color-border);
+  transition: opacity var(--dur-150) var(--ease-standard);
+}
+.ui-chip.is-active::before,
+.ui-chip.is-active + .ui-chip::before {
+  opacity: 0;
+}
 
-/* Tap-target variant — each chip flexes to share the row width evenly so
-   a gloved finger lands on the right one without aiming; height clears
+/* Tap-target variant — each segment flexes to share the row width evenly
+   so a gloved finger lands on the right one without aiming; height clears
    the iOS 44 pt / Android 48 dp minimum with generous margin. The track
-   squares to md radius (vs the pill of compact buckets) so it reads as a
-   decisive control rather than a tag. */
+   squares to md radius (vs the pill of compact buckets); the thumb takes
+   the smaller sm radius so it nests cleanly inside the track padding. */
 .ui-chip-group--tap-target .ui-chip-row {
   border-radius: var(--r-md);
 }
@@ -148,17 +175,9 @@ const activeCaption = computed<string | undefined>(() => {
   min-width: 0;
   min-height: 56px;
   padding: 14px 12px;
-  border-radius: var(--r-md);
+  border-radius: var(--r-sm);
   font-size: var(--type-body);
   font-weight: var(--weight-semibold);
-}
-/* Phone portrait: a row of 5 chips at 5 × ~70 px doesn't fit a 360 px
-   viewport; let them wrap to two lines but keep the per-chip height
-   so the tap target stays generous. */
-@media (max-width: 480px) {
-  .ui-chip-group--tap-target .ui-chip {
-    flex-basis: calc(50% - 4px);
-  }
 }
 
 .ui-chip:active:not(:disabled) {
