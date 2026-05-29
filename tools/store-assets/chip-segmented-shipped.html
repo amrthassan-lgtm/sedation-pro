@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sedation Pro — iOS segmented chips (shipped)</title>
+    <style>
+      /* ============================================================
+         Faithful static render of what shipped in UiChipGroup.vue /
+         UiChipMultiSelect.vue. Token values + chip CSS copied verbatim
+         from packages/ui (dark theme). No JS — active chips are marked
+         in markup so this renders in any viewer.
+         ============================================================ */
+      :root {
+        --type-title: 1.25rem;
+        --type-heading: 1.0625rem;
+        --type-body: 0.9375rem;
+        --type-footnote: 0.8125rem;
+        --type-caption: 0.6875rem;
+
+        --weight-regular: 400;
+        --weight-semibold: 600;
+        --weight-bold: 700;
+
+        --sp-2: 0.5rem;
+        --sp-3: 0.75rem;
+        --sp-4: 1rem;
+        --sp-5: 1.5rem;
+
+        --r-md: 14px;
+        --r-lg: 18px;
+        --r-pill: 999px;
+
+        --dur-150: 150ms;
+        --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+        --color-bg: #0b1220;
+        --color-surface: rgba(255, 255, 255, 0.04);
+        --color-surface-elevated: rgba(255, 255, 255, 0.08);
+        --color-border: rgba(255, 255, 255, 0.12);
+
+        --color-card-bg: rgba(18, 27, 46, 0.95);
+
+        --color-text-primary: rgba(255, 255, 255, 0.95);
+        --color-text-secondary: rgba(255, 255, 255, 0.7);
+        --color-text-tertiary: rgba(255, 255, 255, 0.6);
+
+        /* the new theme-aware token (dark value) */
+        --color-segment-active: rgba(255, 255, 255, 0.12);
+
+        --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.12);
+        --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.24);
+        --surface-highlight: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.045),
+          rgba(255, 255, 255, 0)
+        );
+
+        --font-system:
+          -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
+          system-ui, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--color-bg);
+        color: var(--color-text-primary);
+        font-family: var(--font-system);
+        font-size: 16px;
+        line-height: 1.4;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      header {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: var(--sp-4) var(--sp-4) 0;
+      }
+      header h1 {
+        margin: 0;
+        font-size: var(--type-heading);
+        font-weight: var(--weight-bold);
+      }
+      header p {
+        margin: 4px 0 0;
+        font-size: var(--type-footnote);
+        color: var(--color-text-secondary);
+      }
+
+      main {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: var(--sp-4);
+      }
+      .card {
+        background: var(--color-card-bg);
+        background-image: var(--surface-highlight);
+        border: 1px solid var(--color-border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-md);
+        padding: var(--sp-4);
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-4);
+      }
+      .field-label {
+        font-size: var(--type-footnote);
+        font-weight: var(--weight-semibold);
+        color: var(--color-text-secondary);
+        margin: 0 0 6px;
+        letter-spacing: 0.2px;
+      }
+
+      /* ===== chip styles — verbatim from UiChipGroup.vue ===== */
+      .ui-chip-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .ui-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 4px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--r-pill);
+      }
+      .ui-chip {
+        min-width: 44px;
+        padding: 8px 14px;
+        border-radius: var(--r-pill);
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--color-text-secondary);
+        font-family: inherit;
+        font-variant-numeric: tabular-nums;
+        font-size: var(--type-footnote);
+        font-weight: var(--weight-bold);
+        letter-spacing: 0.2px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          background var(--dur-150) var(--ease-standard),
+          color var(--dur-150) var(--ease-standard),
+          border-color var(--dur-150) var(--ease-standard),
+          box-shadow var(--dur-150) var(--ease-standard),
+          transform var(--dur-150) var(--ease-standard);
+      }
+      .ui-chip-group--tap-target .ui-chip-row {
+        border-radius: var(--r-md);
+      }
+      .ui-chip-group--tap-target .ui-chip {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 56px;
+        padding: 14px 12px;
+        border-radius: var(--r-md);
+        font-size: var(--type-body);
+        font-weight: var(--weight-semibold);
+      }
+      .ui-chip.is-active {
+        background: var(--color-segment-active);
+        border-color: var(--color-border);
+        color: var(--color-text-primary);
+        box-shadow: var(--shadow-sm);
+      }
+      .ui-chip-caption {
+        margin: 6px 0 0;
+        font-size: var(--type-caption);
+        color: var(--color-text-tertiary);
+        letter-spacing: 0.2px;
+        font-weight: var(--weight-regular);
+      }
+
+      footer {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 0 var(--sp-4) var(--sp-5);
+        color: var(--color-text-tertiary);
+        font-size: var(--type-caption);
+      }
+      code {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 0.95em;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>iOS segmented chips — shipped</h1>
+      <p>
+        Exactly what landed in <code>UiChipGroup.vue</code> /
+        <code>UiChipMultiSelect.vue</code>: the row is a track, chips sit
+        transparent inside it, and the selected one lifts off the track. Dark
+        theme.
+      </p>
+    </header>
+
+    <main>
+      <div class="card">
+        <!-- Tap-target single-select -->
+        <div>
+          <p class="field-label">Mallampati class · tap-target</p>
+          <div class="ui-chip-group ui-chip-group--tap-target">
+            <div class="ui-chip-row">
+              <span class="ui-chip">I</span>
+              <span class="ui-chip is-active">II</span>
+              <span class="ui-chip">III</span>
+              <span class="ui-chip">IV</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="field-label">ASA class · tap-target with caption</p>
+          <div class="ui-chip-group ui-chip-group--tap-target">
+            <div class="ui-chip-row">
+              <span class="ui-chip">I</span>
+              <span class="ui-chip is-active">II</span>
+              <span class="ui-chip">III</span>
+              <span class="ui-chip">IV</span>
+            </div>
+            <p class="ui-chip-caption">Mild systemic disease</p>
+          </div>
+        </div>
+
+        <div>
+          <p class="field-label">Nausea / vomiting · tap-target (2-up)</p>
+          <div class="ui-chip-group ui-chip-group--tap-target">
+            <div class="ui-chip-row">
+              <span class="ui-chip is-active">No</span>
+              <span class="ui-chip">Yes</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compact bucket single-select -->
+        <div>
+          <p class="field-label">Cigarettes / day · compact bucket</p>
+          <div class="ui-chip-group">
+            <div class="ui-chip-row">
+              <span class="ui-chip">0</span>
+              <span class="ui-chip is-active">&lt;10</span>
+              <span class="ui-chip">10–19</span>
+              <span class="ui-chip">20+</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-select — multiple raised segments at once -->
+        <div>
+          <p class="field-label">
+            Medical problems · multi-select (several active)
+          </p>
+          <div class="ui-chip-group">
+            <div class="ui-chip-row">
+              <span class="ui-chip is-active">Hypertension</span>
+              <span class="ui-chip">Diabetes</span>
+              <span class="ui-chip is-active">Asthma</span>
+              <span class="ui-chip">GERD</span>
+              <span class="ui-chip">Thyroid</span>
+              <span class="ui-chip is-active">Anxiety</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      Token values + chip CSS copied verbatim from
+      <code>packages/ui/src/styles/tokens.css</code> and the two chip
+      primitives. Active segment uses <code>--color-segment-active</code> +
+      <code>--shadow-sm</code>; chip box size is identical active vs inactive.
+    </footer>
+  </body>
+</html>
