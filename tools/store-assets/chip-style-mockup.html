@@ -1,13 +1,15 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sedation Pro — Chip style mockups</title>
+    <title>Sedation Pro — Chip style variants</title>
     <style>
       /* ============================================================
          Real tokens lifted from packages/ui/src/styles/tokens.css
-         so the mockup looks identical to the running app.
+         (dark theme only — light deferred per request). No JS: every
+         variant is static markup so this renders in any viewer,
+         including GitHub's script-stripped file preview.
          ============================================================ */
       :root {
         --type-title: 1.25rem;
@@ -20,7 +22,6 @@
         --weight-semibold: 600;
         --weight-bold: 700;
 
-        --sp-1: 0.25rem;
         --sp-2: 0.5rem;
         --sp-3: 0.75rem;
         --sp-4: 1rem;
@@ -31,19 +32,13 @@
         --r-lg: 18px;
         --r-pill: 999px;
 
-        --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-        --dur-150: 150ms;
-
         --color-bg: #0b1220;
-        --color-surface-subtle: rgba(255, 255, 255, 0.03);
         --color-surface: rgba(255, 255, 255, 0.04);
         --color-surface-elevated: rgba(255, 255, 255, 0.08);
         --color-surface-overlay: rgba(255, 255, 255, 0.12);
         --color-border: rgba(255, 255, 255, 0.12);
-        --color-border-strong: rgba(255, 255, 255, 0.24);
 
         --color-card-bg: rgba(18, 27, 46, 0.95);
-        --color-frosted-bg: rgba(11, 20, 34, 0.85);
 
         --color-text-primary: rgba(255, 255, 255, 0.95);
         --color-text-secondary: rgba(255, 255, 255, 0.7);
@@ -54,7 +49,6 @@
 
         --shadow-md:
           0 1px 2px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.24);
-
         --surface-highlight: linear-gradient(
           180deg,
           rgba(255, 255, 255, 0.045),
@@ -64,34 +58,6 @@
         --font-system:
           -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
           system-ui, sans-serif;
-      }
-
-      :root[data-theme='light'] {
-        --color-bg: #f8fafc;
-        --color-surface-subtle: rgba(15, 23, 42, 0.025);
-        --color-surface: rgba(15, 23, 42, 0.04);
-        --color-surface-elevated: rgba(15, 23, 42, 0.06);
-        --color-surface-overlay: rgba(15, 23, 42, 0.09);
-        --color-border: rgba(15, 23, 42, 0.1);
-        --color-border-strong: rgba(15, 23, 42, 0.2);
-
-        --color-card-bg: #ffffff;
-        --color-frosted-bg: rgba(248, 250, 252, 0.85);
-
-        --color-text-primary: rgba(15, 23, 42, 0.95);
-        --color-text-secondary: rgba(15, 23, 42, 0.65);
-        --color-text-tertiary: rgba(15, 23, 42, 0.6);
-
-        --color-accent: #1d4ed8;
-        --color-accent-soft: rgba(29, 78, 216, 0.1);
-
-        --shadow-md:
-          0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.1);
-        --surface-highlight: linear-gradient(
-          180deg,
-          rgba(255, 255, 255, 0.55),
-          rgba(255, 255, 255, 0)
-        );
       }
 
       * {
@@ -109,105 +75,63 @@
         -webkit-font-smoothing: antialiased;
       }
 
-      /* ============================================================
-         Sticky header — title row + variant switcher segmented control
-         ============================================================ */
       header {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: var(--color-frosted-bg);
-        backdrop-filter: saturate(180%) blur(20px);
-        -webkit-backdrop-filter: saturate(180%) blur(20px);
-        border-bottom: 1px solid var(--color-border);
-      }
-      .header-inner {
-        max-width: 1200px;
+        padding: var(--sp-4) var(--sp-4) var(--sp-2);
+        max-width: 760px;
         margin: 0 auto;
-        padding: var(--sp-3) var(--sp-4);
-        display: flex;
-        flex-direction: column;
-        gap: var(--sp-3);
       }
-      .title-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-3);
-        flex-wrap: wrap;
-      }
-      .title-row h1 {
+      header h1 {
         margin: 0;
         font-size: var(--type-heading);
         font-weight: var(--weight-bold);
       }
-      .title-row .sub {
-        margin: 2px 0 0;
-        font-size: var(--type-caption);
-        color: var(--color-text-secondary);
-      }
-      .toggle {
-        appearance: none;
-        background: var(--color-surface-elevated);
-        color: var(--color-text-primary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--r-pill);
-        padding: 6px 14px;
-        font: inherit;
+      header p {
+        margin: 4px 0 0;
         font-size: var(--type-footnote);
-        font-weight: var(--weight-semibold);
-        cursor: pointer;
-      }
-
-      /* Switcher — segmented control across 4 variants */
-      .switcher {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: var(--r-md);
-        padding: 4px;
-      }
-      .switcher button {
-        appearance: none;
-        background: transparent;
         color: var(--color-text-secondary);
-        border: 1px solid transparent;
-        border-radius: var(--r-sm);
-        padding: 10px 8px;
-        font: inherit;
-        font-size: var(--type-footnote);
-        font-weight: var(--weight-semibold);
-        cursor: pointer;
-        text-align: center;
-        line-height: 1.15;
-      }
-      .switcher button .idx {
-        display: block;
-        font-size: var(--type-caption);
-        font-weight: var(--weight-regular);
-        color: var(--color-text-tertiary);
-        margin-bottom: 2px;
-      }
-      .switcher button.is-active {
-        background: var(--color-surface-overlay);
-        border-color: var(--color-border);
-        color: var(--color-text-primary);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-      }
-      :root[data-theme='light'] .switcher button.is-active {
-        background: #ffffff;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
       }
 
       main {
-        max-width: 1200px;
+        max-width: 760px;
         margin: 0 auto;
         padding: var(--sp-4);
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-5);
       }
 
-      /* Mock app card — mirrors UiCard look */
+      .variant-banner {
+        display: flex;
+        align-items: baseline;
+        gap: var(--sp-3);
+        padding-bottom: var(--sp-2);
+        border-bottom: 2px solid var(--color-border);
+      }
+      .variant-banner .num {
+        font-size: var(--type-title);
+        font-weight: var(--weight-bold);
+        color: var(--color-accent);
+        font-variant-numeric: tabular-nums;
+      }
+      .variant-banner .name {
+        font-size: var(--type-title);
+        font-weight: var(--weight-bold);
+      }
+      .variant-banner .tag {
+        margin-left: auto;
+        padding: 2px 10px;
+        border-radius: var(--r-pill);
+        background: var(--color-surface-elevated);
+        font-size: var(--type-caption);
+        font-weight: var(--weight-semibold);
+        color: var(--color-text-secondary);
+      }
+      .variant-notes {
+        margin: var(--sp-2) 0 0;
+        font-size: var(--type-footnote);
+        color: var(--color-text-secondary);
+      }
+
       .card {
         background: var(--color-card-bg);
         background-image: var(--surface-highlight);
@@ -215,30 +139,10 @@
         border-radius: var(--r-lg);
         box-shadow: var(--shadow-md);
         padding: var(--sp-4);
+        margin-top: var(--sp-3);
         display: flex;
         flex-direction: column;
         gap: var(--sp-4);
-      }
-      .card-head h2 {
-        margin: 0;
-        font-size: var(--type-title);
-        font-weight: var(--weight-bold);
-      }
-      .card-head h2 .tag {
-        display: inline-block;
-        margin-left: 8px;
-        padding: 2px 8px;
-        border-radius: var(--r-pill);
-        background: var(--color-surface-elevated);
-        font-size: var(--type-caption);
-        font-weight: var(--weight-semibold);
-        color: var(--color-text-secondary);
-        vertical-align: 2px;
-      }
-      .card-head .notes {
-        margin: 4px 0 0;
-        font-size: var(--type-footnote);
-        color: var(--color-text-secondary);
       }
       .field-label {
         font-size: var(--type-footnote);
@@ -253,22 +157,12 @@
         color: var(--color-text-tertiary);
         letter-spacing: 0.2px;
       }
-      hr.sep {
-        border: 0;
-        height: 1px;
-        background: var(--color-border);
-        margin: 4px 0;
-      }
 
       /* ============================================================
-         Shared chip base — matches UiChipGroup.vue base + compact
-
-         Heights are load-bearing. Compact = 8/14 padding + 1 px border
-         + footnote/bold. Tap-target = 56 px min-height + 14/12 padding
-         + 1 px border + body/semibold + r-md radius. No variant below
-         is allowed to change min-height, padding, border-width, font
-         size, font weight, or border-radius — they only restyle the
-         `.is-active` colors / surface.
+         Shared chip base — matches UiChipGroup.vue base + compact.
+         Heights are load-bearing: NO variant changes min-height,
+         padding, border-width, font, or radius — only `.is-active`
+         colors / surface.
          ============================================================ */
       .ui-chip-group {
         display: flex;
@@ -281,7 +175,6 @@
         gap: 6px;
       }
       .ui-chip {
-        appearance: none;
         min-width: 44px;
         padding: 8px 14px;
         border-radius: var(--r-pill);
@@ -293,19 +186,10 @@
         font-size: var(--type-footnote);
         font-weight: var(--weight-bold);
         letter-spacing: 0.2px;
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-        transition:
-          background var(--dur-150) var(--ease-standard),
-          color var(--dur-150) var(--ease-standard),
-          border-color var(--dur-150) var(--ease-standard),
-          box-shadow var(--dur-150) var(--ease-standard);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
-      .ui-chip:active {
-        transform: scale(0.96);
-      }
-
-      /* Tap-target size — segmented control button */
       .ui-chip-group--tap-target .ui-chip-row {
         gap: 8px;
       }
@@ -319,27 +203,21 @@
         font-weight: var(--weight-semibold);
       }
 
-      /* ============================================================
-         Variant: CURRENT — monochrome inversion
-         ============================================================ */
+      /* ---- Variant 1: Current — monochrome inversion ---- */
       .v-current .ui-chip.is-active {
         background: var(--color-text-primary);
         border-color: var(--color-text-primary);
         color: var(--color-bg);
       }
 
-      /* ============================================================
-         Variant A — accent-blue fill
-         ============================================================ */
+      /* ---- Variant 2: A · Accent fill ---- */
       .v-accent-fill .ui-chip.is-active {
         background: var(--color-accent);
         border-color: var(--color-accent);
         color: #ffffff;
       }
 
-      /* ============================================================
-         Variant B — iOS segmented control (elevated surface lift)
-         ============================================================ */
+      /* ---- Variant 3: B · iOS segmented ---- */
       .v-segmented .ui-chip-row {
         background: var(--color-surface);
         border: 1px solid var(--color-border);
@@ -361,20 +239,8 @@
         color: var(--color-text-primary);
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
       }
-      :root[data-theme='light'] .v-segmented .ui-chip.is-active {
-        background: #ffffff;
-        border-color: var(--color-border);
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-      }
 
-      /* ============================================================
-         Variant C — accent border + soft accent fill
-
-         Border stays 1 px in every size and state so chip dimensions
-         match the shipped UiChipGroup tap-target (56 px) and compact
-         heights exactly. Earlier draft bumped tap-target border to
-         2 px — removed to keep heights frame-perfect.
-         ============================================================ */
+      /* ---- Variant 4: C · Accent outline ---- */
       .v-accent-outline .ui-chip.is-active {
         background: var(--color-accent-soft);
         border: 1px solid var(--color-accent);
@@ -382,219 +248,272 @@
       }
 
       footer {
-        max-width: 1200px;
+        max-width: 760px;
         margin: 0 auto;
         padding: 0 var(--sp-4) var(--sp-5);
         color: var(--color-text-tertiary);
         font-size: var(--type-caption);
+      }
+      code {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 0.95em;
       }
     </style>
   </head>
 
   <body>
     <header>
-      <div class="header-inner">
-        <div class="title-row">
-          <div>
-            <h1>Chip style mockups</h1>
-            <p class="sub">
-              Four active-state treatments. Tap a variant to switch the card
-              below. Same selections are preserved across variants.
-            </p>
-          </div>
-          <button class="toggle" id="theme-toggle" type="button">Light mode</button>
-        </div>
-        <nav class="switcher" id="switcher" aria-label="Variant"></nav>
-      </div>
+      <h1>Chip style variants</h1>
+      <p>
+        All four active-state treatments, rendered statically (no
+        JavaScript). Each variant shows the active chip pre-selected so you
+        can compare the look. Chip heights are identical across all four —
+        only the selected-state color changes.
+      </p>
     </header>
 
     <main>
-      <section class="card" id="stage" aria-live="polite"></section>
+      <!-- ===================== VARIANT 1 ===================== -->
+      <section>
+        <div class="variant-banner">
+          <span class="num">1</span>
+          <span class="name">Current — monochrome inversion</span>
+          <span class="tag">shipped</span>
+        </div>
+        <p class="variant-notes">
+          Active chip flips to text-on-bg (white block in dark mode).
+          Decisive, high contrast; can feel "wall of white" when several
+          picks are active at once.
+        </p>
+        <div class="card v-current">
+          <div>
+            <p class="field-label">Mallampati class · tap-target</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip">I</span>
+                <span class="ui-chip is-active">II</span>
+                <span class="ui-chip">III</span>
+                <span class="ui-chip">IV</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">ASA class · tap-target with caption</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip">I</span>
+                <span class="ui-chip is-active">II</span>
+                <span class="ui-chip">III</span>
+                <span class="ui-chip">IV</span>
+              </div>
+              <p class="caption">Mild systemic disease</p>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">Nausea / vomiting · tap-target</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip is-active">No</span>
+                <span class="ui-chip">Yes</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">Cigarettes / day · compact bucket</p>
+            <div class="ui-chip-group">
+              <div class="ui-chip-row">
+                <span class="ui-chip">0</span>
+                <span class="ui-chip is-active">&lt;10</span>
+                <span class="ui-chip">10–19</span>
+                <span class="ui-chip">20+</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== VARIANT 2 ===================== -->
+      <section>
+        <div class="variant-banner">
+          <span class="num">2</span>
+          <span class="name">A · Accent fill</span>
+          <span class="tag">bold</span>
+        </div>
+        <p class="variant-notes">
+          Active chip uses the brand accent (blue). iOS "selected button"
+          feel; ties chips to the primary action color. Risk: blue already
+          appears on info banners and pre-med chips.
+        </p>
+        <div class="card v-accent-fill">
+          <div>
+            <p class="field-label">Mallampati class · tap-target</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip">I</span>
+                <span class="ui-chip is-active">II</span>
+                <span class="ui-chip">III</span>
+                <span class="ui-chip">IV</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">ASA class · tap-target with caption</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip">I</span>
+                <span class="ui-chip is-active">II</span>
+                <span class="ui-chip">III</span>
+                <span class="ui-chip">IV</span>
+              </div>
+              <p class="caption">Mild systemic disease</p>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">Nausea / vomiting · tap-target</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip is-active">No</span>
+                <span class="ui-chip">Yes</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">Cigarettes / day · compact bucket</p>
+            <div class="ui-chip-group">
+              <div class="ui-chip-row">
+                <span class="ui-chip">0</span>
+                <span class="ui-chip is-active">&lt;10</span>
+                <span class="ui-chip">10–19</span>
+                <span class="ui-chip">20+</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== VARIANT 3 ===================== -->
+      <section>
+        <div class="variant-banner">
+          <span class="num">3</span>
+          <span class="name">B · iOS segmented</span>
+          <span class="tag">quiet</span>
+        </div>
+        <p class="variant-notes">
+          Active chip lifts on an elevated surface inside a unified track.
+          Quietest, most "iOS-glass", matches the rest of the app. Lower
+          at-a-glance contrast than A.
+        </p>
+        <div class="card v-segmented">
+          <div>
+            <p class="field-label">Mallampati class · tap-target</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip">I</span>
+                <span class="ui-chip is-active">II</span>
+                <span class="ui-chip">III</span>
+                <span class="ui-chip">IV</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">ASA class · tap-target with caption</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip">I</span>
+                <span class="ui-chip is-active">II</span>
+                <span class="ui-chip">III</span>
+                <span class="ui-chip">IV</span>
+              </div>
+              <p class="caption">Mild systemic disease</p>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">Nausea / vomiting · tap-target</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip is-active">No</span>
+                <span class="ui-chip">Yes</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">Cigarettes / day · compact bucket</p>
+            <div class="ui-chip-group">
+              <div class="ui-chip-row">
+                <span class="ui-chip">0</span>
+                <span class="ui-chip is-active">&lt;10</span>
+                <span class="ui-chip">10–19</span>
+                <span class="ui-chip">20+</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== VARIANT 4 ===================== -->
+      <section>
+        <div class="variant-banner">
+          <span class="num">4</span>
+          <span class="name">C · Accent outline</span>
+          <span class="tag">mid</span>
+        </div>
+        <p class="variant-notes">
+          Soft accent fill + accent border + accent text on active. Quieter
+          than A, more visible than B. Risk: outline-only reads less
+          decisively than a filled state at chairside speed.
+        </p>
+        <div class="card v-accent-outline">
+          <div>
+            <p class="field-label">Mallampati class · tap-target</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip">I</span>
+                <span class="ui-chip is-active">II</span>
+                <span class="ui-chip">III</span>
+                <span class="ui-chip">IV</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">ASA class · tap-target with caption</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip">I</span>
+                <span class="ui-chip is-active">II</span>
+                <span class="ui-chip">III</span>
+                <span class="ui-chip">IV</span>
+              </div>
+              <p class="caption">Mild systemic disease</p>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">Nausea / vomiting · tap-target</p>
+            <div class="ui-chip-group ui-chip-group--tap-target">
+              <div class="ui-chip-row">
+                <span class="ui-chip is-active">No</span>
+                <span class="ui-chip">Yes</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="field-label">Cigarettes / day · compact bucket</p>
+            <div class="ui-chip-group">
+              <div class="ui-chip-row">
+                <span class="ui-chip">0</span>
+                <span class="ui-chip is-active">&lt;10</span>
+                <span class="ui-chip">10–19</span>
+                <span class="ui-chip">20+</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer>
       Tokens lifted from <code>packages/ui/src/styles/tokens.css</code>. Chip
       base + sizing matches <code>UiChipGroup.vue</code>; only the
-      <code>.is-active</code> state changes between variants.
+      <code>.is-active</code> state differs between variants.
     </footer>
-
-    <script>
-      const variants = [
-        {
-          key: 'current',
-          title: 'Current',
-          tag: 'shipped',
-          notes: 'Monochrome inversion — active chip flips to text-on-bg. Decisive, high contrast, may feel "wall of white" when several picks are active in one card.',
-          cls: 'v-current',
-        },
-        {
-          key: 'accent-fill',
-          title: 'Option A · Accent fill',
-          tag: 'bold',
-          notes: 'Active chip uses brand accent (blue). iOS "selected button" feel; ties chips to the app primary action color. Risk: blue already appears on info banners and pre-med chips.',
-          cls: 'v-accent-fill',
-        },
-        {
-          key: 'segmented',
-          title: 'Option B · iOS segmented',
-          tag: 'quiet',
-          notes: 'Active chip lifts on an elevated surface inside a unified track. Quietest, most "iOS-glass", matches the rest of the app aesthetic. Lower at-a-glance contrast than A.',
-          cls: 'v-segmented',
-        },
-        {
-          key: 'accent-outline',
-          title: 'Option C · Accent outline',
-          tag: 'mid',
-          notes: 'Soft accent fill + accent border + accent text on active. Quieter than A, more visible than B. Risk: outline-only at chairside speed is harder to scan than a filled state.',
-          cls: 'v-accent-outline',
-        },
-      ];
-
-      const mallampati = [
-        { value: 1, label: 'I' },
-        { value: 2, label: 'II' },
-        { value: 3, label: 'III' },
-        { value: 4, label: 'IV' },
-      ];
-      const asa = [
-        { value: 1, label: 'I', caption: 'Healthy patient' },
-        { value: 2, label: 'II', caption: 'Mild systemic disease' },
-        { value: 3, label: 'III', caption: 'Severe systemic disease' },
-        { value: 4, label: 'IV', caption: 'Constant threat to life' },
-      ];
-      const yesNo = [
-        { value: 'no', label: 'No' },
-        { value: 'yes', label: 'Yes' },
-      ];
-      const cigsPerDay = [
-        { value: 0, label: '0' },
-        { value: 5, label: '<10' },
-        { value: 15, label: '10–19' },
-        { value: 25, label: '20+' },
-      ];
-
-      // Selections are shared across variants so you can compare the same
-      // chosen state under each treatment without re-tapping.
-      const state = {
-        mallampati: 2,
-        asa: 2,
-        nausea: 'no',
-        cigs: 5,
-      };
-
-      let activeVariant = variants[0].key;
-
-      function chipGroup(variantKey, field, size, options, opts = {}) {
-        const variant = variants.find((v) => v.key === variantKey);
-        const wrapper = document.createElement('div');
-        wrapper.className = `ui-chip-group ${variant.cls} ui-chip-group--${size}`;
-        const row = document.createElement('div');
-        row.className = 'ui-chip-row';
-        row.setAttribute('role', 'radiogroup');
-        wrapper.appendChild(row);
-
-        const captionEl = document.createElement('p');
-        captionEl.className = 'caption';
-
-        function render() {
-          row.innerHTML = '';
-          const active = options.find((o) => o.value === state[field]);
-          for (const opt of options) {
-            const b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'ui-chip';
-            if (opt.value === state[field]) b.classList.add('is-active');
-            b.setAttribute('aria-pressed', String(opt.value === state[field]));
-            b.textContent = opt.label;
-            b.addEventListener('click', () => {
-              state[field] = opt.value;
-              render();
-            });
-            row.appendChild(b);
-          }
-          if (opts.showCaption) {
-            captionEl.textContent = active && active.caption ? active.caption : '';
-          }
-        }
-        render();
-        if (opts.showCaption) wrapper.appendChild(captionEl);
-        return wrapper;
-      }
-
-      function renderStage() {
-        const variant = variants.find((v) => v.key === activeVariant);
-        const stage = document.getElementById('stage');
-        stage.innerHTML = '';
-
-        const head = document.createElement('div');
-        head.className = 'card-head';
-        head.innerHTML = `
-          <h2>${variant.title}<span class="tag">${variant.tag}</span></h2>
-          <p class="notes">${variant.notes}</p>
-        `;
-        stage.appendChild(head);
-
-        const sep = document.createElement('hr');
-        sep.className = 'sep';
-        stage.appendChild(sep);
-
-        const f1 = document.createElement('div');
-        f1.innerHTML = `<p class="field-label">Mallampati class · tap-target</p>`;
-        f1.appendChild(chipGroup(activeVariant, 'mallampati', 'tap-target', mallampati));
-        stage.appendChild(f1);
-
-        const f2 = document.createElement('div');
-        f2.innerHTML = `<p class="field-label">ASA class · tap-target with caption</p>`;
-        f2.appendChild(
-          chipGroup(activeVariant, 'asa', 'tap-target', asa, { showCaption: true }),
-        );
-        stage.appendChild(f2);
-
-        const f3 = document.createElement('div');
-        f3.innerHTML = `<p class="field-label">Nausea / vomiting · tap-target</p>`;
-        f3.appendChild(chipGroup(activeVariant, 'nausea', 'tap-target', yesNo));
-        stage.appendChild(f3);
-
-        const f4 = document.createElement('div');
-        f4.innerHTML = `<p class="field-label">Cigarettes / day · compact bucket</p>`;
-        f4.appendChild(chipGroup(activeVariant, 'cigs', 'compact', cigsPerDay));
-        stage.appendChild(f4);
-      }
-
-      function renderSwitcher() {
-        const sw = document.getElementById('switcher');
-        sw.innerHTML = '';
-        variants.forEach((v, i) => {
-          const b = document.createElement('button');
-          b.type = 'button';
-          if (v.key === activeVariant) b.classList.add('is-active');
-          b.setAttribute('aria-pressed', String(v.key === activeVariant));
-          b.innerHTML = `<span class="idx">${i + 1} of 4</span>${v.title}`;
-          b.addEventListener('click', () => {
-            activeVariant = v.key;
-            renderSwitcher();
-            renderStage();
-          });
-          sw.appendChild(b);
-        });
-      }
-
-      renderSwitcher();
-      renderStage();
-
-      // Theme toggle
-      const toggle = document.getElementById('theme-toggle');
-      function syncToggleLabel() {
-        const theme = document.documentElement.dataset.theme;
-        toggle.textContent = theme === 'light' ? 'Dark mode' : 'Light mode';
-      }
-      syncToggleLabel();
-      toggle.addEventListener('click', () => {
-        const next =
-          document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-        document.documentElement.dataset.theme = next;
-        syncToggleLabel();
-      });
-    </script>
   </body>
 </html>
