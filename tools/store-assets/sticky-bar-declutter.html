@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sedation Pro — top bar declutter</title>
+    <style>
+      /* ============================================================
+         Static current-vs-proposed for StickyBar. Uses real tokens
+         from packages/ui (dark theme). The "current" column packs
+         every existing element (hamburger, phase label, sub line,
+         clearance bar + count + Ready, safety alert pill, Saved
+         pill, Undo, Emergency, progress rail). The "proposed"
+         column trims: drops the sub line, demotes Saved to a dot,
+         folds Ready into the clearance bar going green, and keeps
+         the rail subtler.
+         ============================================================ */
+      :root {
+        --type-body: 0.9375rem;
+        --type-footnote: 0.8125rem;
+        --type-caption: 0.6875rem;
+        --type-heading: 1.0625rem;
+
+        --weight-regular: 400;
+        --weight-medium: 500;
+        --weight-semibold: 600;
+        --weight-bold: 700;
+
+        --sp-2: 0.5rem;
+        --sp-3: 0.75rem;
+        --sp-4: 1rem;
+        --sp-5: 1.5rem;
+
+        --r-sm: 10px;
+        --r-md: 14px;
+        --r-pill: 999px;
+
+        --color-bg: #0b1220;
+        --color-surface: rgba(255, 255, 255, 0.04);
+        --color-surface-elevated: rgba(255, 255, 255, 0.08);
+        --color-surface-overlay: rgba(255, 255, 255, 0.12);
+        --color-border: rgba(255, 255, 255, 0.12);
+        --color-border-strong: rgba(255, 255, 255, 0.24);
+
+        --color-frosted-bg: rgba(11, 20, 34, 0.85);
+        --color-card-bg: rgba(18, 27, 46, 0.95);
+
+        --color-text-primary: rgba(255, 255, 255, 0.95);
+        --color-text-secondary: rgba(255, 255, 255, 0.7);
+        --color-text-tertiary: rgba(255, 255, 255, 0.6);
+
+        --color-accent: #3b82f6;
+        --color-good: #4ade80;
+        --color-warn: #facc15;
+        --color-danger: #fb7185;
+        --color-crisis: #ef4444;
+
+        --shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.12);
+        --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.24);
+        --surface-highlight: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.045),
+          rgba(255, 255, 255, 0)
+        );
+
+        --font-system:
+          -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui,
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #1a2434;
+        color: var(--color-text-primary);
+        font-family: var(--font-system);
+        font-size: 16px;
+        line-height: 1.4;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      header.page-head {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: var(--sp-4) var(--sp-4) 0;
+      }
+      header.page-head h1 {
+        margin: 0;
+        font-size: var(--type-heading);
+        font-weight: var(--weight-bold);
+      }
+      header.page-head p {
+        margin: 4px 0 0;
+        font-size: var(--type-footnote);
+        color: var(--color-text-secondary);
+      }
+
+      main {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: var(--sp-4);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(390px, 1fr));
+        gap: var(--sp-4);
+      }
+
+      /* iPhone-frame wrapper so the status bar overlay reads correctly */
+      .phone {
+        background: var(--color-bg);
+        border-radius: 28px;
+        border: 1px solid var(--color-border);
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        width: 100%;
+        max-width: 390px;
+        margin: 0 auto;
+      }
+      .col h2 {
+        margin: 0 0 var(--sp-3);
+        font-size: var(--type-body);
+        font-weight: var(--weight-bold);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .col h2 .tag {
+        padding: 2px 8px;
+        border-radius: var(--r-pill);
+        font-size: var(--type-caption);
+        font-weight: var(--weight-semibold);
+        background: var(--color-surface-elevated);
+        color: var(--color-text-secondary);
+      }
+      .col h2 .tag.bad {
+        background: rgba(251, 113, 133, 0.18);
+        color: var(--color-danger);
+      }
+      .col h2 .tag.good {
+        background: rgba(74, 222, 128, 0.18);
+        color: var(--color-good);
+      }
+
+      /* iOS status bar mock (47 px tall, semi-transparent overlay so you
+         see whether the bar's chrome correctly sits below it) */
+      .status-bar {
+        height: 47px;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.55));
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding: 0 22px 8px;
+        font-size: 14px;
+        font-weight: var(--weight-semibold);
+        letter-spacing: 0.2px;
+      }
+      .status-bar .right {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        font-size: 12px;
+      }
+      .status-bar .signal,
+      .status-bar .wifi,
+      .status-bar .battery {
+        display: inline-block;
+      }
+
+      /* ============================================================
+         CURRENT — packed bar, replicates StickyBar today
+         ============================================================ */
+      .bar {
+        position: relative;
+        background: var(--surface-highlight), var(--color-frosted-bg);
+        backdrop-filter: blur(20px) saturate(180%);
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: stretch;
+        padding-bottom: 8px;
+      }
+      .bar-nav {
+        width: 52px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-secondary);
+      }
+      .hamburger {
+        width: 22px;
+        height: 18px;
+        position: relative;
+      }
+      .hamburger span {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: currentColor;
+        border-radius: 1px;
+      }
+      .hamburger span:nth-child(1) {
+        top: 0;
+      }
+      .hamburger span:nth-child(2) {
+        top: 8px;
+      }
+      .hamburger span:nth-child(3) {
+        top: 16px;
+      }
+
+      .bar-info {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 12px 9px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        overflow: hidden;
+      }
+      .bar-phase-label {
+        font-size: 14px;
+        font-weight: var(--weight-bold);
+        letter-spacing: 0.15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .bar-sub {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: var(--type-caption);
+        color: var(--color-text-tertiary);
+      }
+      .bar-clearance-label {
+        font-weight: var(--weight-semibold);
+        color: var(--color-text-secondary);
+      }
+      .clearance-bar {
+        flex: 1;
+        max-width: 90px;
+        height: 5px;
+        background: var(--color-surface);
+        border-radius: var(--r-pill);
+        position: relative;
+        overflow: hidden;
+      }
+      .clearance-fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        background: var(--color-accent);
+        border-radius: var(--r-pill);
+      }
+      .clearance-fill.done {
+        background: var(--color-good);
+      }
+      .clearance-count {
+        font-variant-numeric: tabular-nums;
+        font-weight: var(--weight-semibold);
+        color: var(--color-text-secondary);
+      }
+      .pill-ready {
+        background: rgba(74, 222, 128, 0.18);
+        color: var(--color-good);
+        font-size: var(--type-caption);
+        font-weight: var(--weight-bold);
+        letter-spacing: 0.3px;
+        padding: 2px 8px;
+        border-radius: var(--r-pill);
+      }
+      .pill-alert {
+        background: rgba(251, 113, 133, 0.18);
+        color: var(--color-danger);
+        font-size: var(--type-caption);
+        font-weight: var(--weight-bold);
+        padding: 2px 8px;
+        border-radius: var(--r-pill);
+      }
+
+      .bar-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 10px 10px 0;
+      }
+      .saved-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: var(--type-caption);
+        color: var(--color-text-tertiary);
+        background: var(--color-surface);
+        padding: 4px 8px;
+        border-radius: var(--r-pill);
+        border: 1px solid var(--color-border);
+        white-space: nowrap;
+      }
+      .saved-pill .check {
+        color: var(--color-good);
+      }
+      .saved-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-good);
+        flex-shrink: 0;
+        title: 'Saved';
+      }
+      .btn-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-family: inherit;
+        font-size: var(--type-caption);
+        font-weight: var(--weight-bold);
+        padding: 6px 10px;
+        border-radius: var(--r-pill);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        color: var(--color-text-secondary);
+        white-space: nowrap;
+      }
+      .btn-emerg {
+        background: rgba(239, 68, 68, 0.16);
+        border-color: rgba(239, 68, 68, 0.35);
+        color: var(--color-crisis);
+      }
+      .bar-rail {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--color-surface);
+        overflow: visible;
+      }
+      .bar-rail-fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 25%;
+        background: var(--color-text-tertiary);
+        border-radius: var(--r-pill);
+      }
+      .bar-rail-head {
+        position: absolute;
+        top: 50%;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--color-text-primary);
+        transform: translate(-50%, -50%);
+      }
+
+      /* Spacer body so the phone frame doesn't end immediately under the bar */
+      .body {
+        padding: 14px 16px 80px;
+        font-size: var(--type-caption);
+        color: var(--color-text-tertiary);
+        font-style: italic;
+      }
+
+      /* ============================================================
+         PROPOSED — slimmed
+         - drops the sub-line in Phase 1 (clearance is the meaningful
+           signal; redundant phase sub gone)
+         - clearance bar wider, "12/14" count inline, no "Clearance"
+           word, no separate "✓ Ready" pill (the bar tints green when
+           complete)
+         - "Saved · HH:MM" becomes a 8px green dot (title attribute
+           carries the time on hover)
+         - rail kept but as a hairline (1 px) without the head dot
+         ============================================================ */
+      .proposed .bar-info {
+        padding: 12px 12px 11px 0;
+      }
+      .proposed .bar-sub--simple {
+        font-size: var(--type-caption);
+        color: var(--color-text-tertiary);
+      }
+      .proposed .bar-rail {
+        height: 1px;
+      }
+      .proposed .bar-rail-fill {
+        background: var(--color-border-strong);
+      }
+      .proposed .bar-rail-head {
+        display: none;
+      }
+
+      footer {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 var(--sp-4) var(--sp-5);
+        color: var(--color-text-tertiary);
+        font-size: var(--type-caption);
+      }
+      .notes {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--r-md);
+        padding: 12px 14px;
+        font-size: var(--type-caption);
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+      }
+      .notes ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+      }
+      code {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 0.95em;
+        color: var(--color-text-primary);
+      }
+    </style>
+  </head>
+
+  <body>
+    <header class="page-head">
+      <h1>Top bar declutter</h1>
+      <p>
+        Three Phase 1 scenarios side-by-side. Phone frame includes a mock iOS status bar so you can
+        confirm the bar's chrome sits below the clock / signal indicators (the safe-area fix that
+        just landed). Currents show the bar as it ships today; proposed shows the slimmed version.
+      </p>
+    </header>
+
+    <main>
+      <!-- ============ SCENARIO 1: Phase 1, mid-progress, no alerts ============ -->
+      <section class="col">
+        <h2>1. Phase 1 mid-progress <span class="tag">current</span></h2>
+        <div class="phone">
+          <div class="status-bar">
+            <span>4:52</span>
+            <span class="right">
+              <span class="signal">●●●●○</span>
+              <span class="wifi">▲</span>
+              <span class="battery">▭ 86%</span>
+            </span>
+          </div>
+          <div class="bar">
+            <div class="bar-nav">
+              <div class="hamburger"><span></span><span></span><span></span></div>
+            </div>
+            <div class="bar-info">
+              <div class="bar-phase-label">Phase 1 · Assessment</div>
+              <div class="bar-sub">
+                <span class="bar-clearance-label">Clearance</span>
+                <span class="clearance-bar"
+                  ><span class="clearance-fill" style="width: 64%"></span
+                ></span>
+                <span class="clearance-count">9 / 14</span>
+              </div>
+            </div>
+            <div class="bar-actions">
+              <span class="saved-pill"><span class="check">✓</span>Saved · 4:51</span>
+              <span class="btn-chip">↶ Undo</span>
+              <span class="btn-chip btn-emerg">Emergency</span>
+            </div>
+            <div class="bar-rail">
+              <span class="bar-rail-fill"></span>
+              <span class="bar-rail-head" style="left: 25%"></span>
+            </div>
+          </div>
+          <div class="body">— Phase 1 form scrolls below —</div>
+        </div>
+      </section>
+
+      <section class="col proposed">
+        <h2>1. Phase 1 mid-progress <span class="tag good">proposed</span></h2>
+        <div class="phone">
+          <div class="status-bar">
+            <span>4:52</span>
+            <span class="right">
+              <span class="signal">●●●●○</span>
+              <span class="wifi">▲</span>
+              <span class="battery">▭ 86%</span>
+            </span>
+          </div>
+          <div class="bar">
+            <div class="bar-nav">
+              <div class="hamburger"><span></span><span></span><span></span></div>
+            </div>
+            <div class="bar-info">
+              <div class="bar-phase-label">Phase 1 · Assessment</div>
+              <div class="bar-sub bar-sub--simple">
+                <span class="clearance-bar" style="max-width: 130px"
+                  ><span class="clearance-fill" style="width: 64%"></span
+                ></span>
+                <span class="clearance-count">9 / 14</span>
+              </div>
+            </div>
+            <div class="bar-actions">
+              <span class="saved-dot" title="Saved · 4:51"></span>
+              <span class="btn-chip">↶ Undo</span>
+              <span class="btn-chip btn-emerg">Emergency</span>
+            </div>
+            <div class="bar-rail">
+              <span class="bar-rail-fill" style="width: 25%"></span>
+            </div>
+          </div>
+          <div class="body">— Phase 1 form scrolls below —</div>
+        </div>
+      </section>
+
+      <!-- ============ SCENARIO 2: Phase 1 complete (Ready) ============ -->
+      <section class="col">
+        <h2>2. Phase 1 ready to advance <span class="tag">current</span></h2>
+        <div class="phone">
+          <div class="status-bar">
+            <span>4:58</span>
+            <span class="right">
+              <span class="signal">●●●●○</span>
+              <span class="wifi">▲</span>
+              <span class="battery">▭ 86%</span>
+            </span>
+          </div>
+          <div class="bar">
+            <div class="bar-nav">
+              <div class="hamburger"><span></span><span></span><span></span></div>
+            </div>
+            <div class="bar-info">
+              <div class="bar-phase-label">Phase 1 · Assessment</div>
+              <div class="bar-sub">
+                <span class="bar-clearance-label">Clearance</span>
+                <span class="clearance-bar"
+                  ><span class="clearance-fill done" style="width: 100%"></span
+                ></span>
+                <span class="clearance-count">14 / 14</span>
+                <span class="pill-ready">✓ Ready</span>
+              </div>
+            </div>
+            <div class="bar-actions">
+              <span class="saved-pill"><span class="check">✓</span>Saved · 4:57</span>
+              <span class="btn-chip">↶ Undo</span>
+              <span class="btn-chip btn-emerg">Emergency</span>
+            </div>
+            <div class="bar-rail">
+              <span class="bar-rail-fill" style="background: var(--color-good)"></span>
+              <span class="bar-rail-head" style="left: 25%"></span>
+            </div>
+          </div>
+          <div class="body">— Phase 1 form scrolls below —</div>
+        </div>
+      </section>
+
+      <section class="col proposed">
+        <h2>2. Phase 1 ready to advance <span class="tag good">proposed</span></h2>
+        <div class="phone">
+          <div class="status-bar">
+            <span>4:58</span>
+            <span class="right">
+              <span class="signal">●●●●○</span>
+              <span class="wifi">▲</span>
+              <span class="battery">▭ 86%</span>
+            </span>
+          </div>
+          <div class="bar">
+            <div class="bar-nav">
+              <div class="hamburger"><span></span><span></span><span></span></div>
+            </div>
+            <div class="bar-info">
+              <div class="bar-phase-label">Phase 1 · Assessment</div>
+              <div class="bar-sub bar-sub--simple">
+                <span class="clearance-bar" style="max-width: 130px"
+                  ><span class="clearance-fill done" style="width: 100%"></span
+                ></span>
+                <span class="clearance-count" style="color: var(--color-good)"
+                  >Ready · 14 / 14</span
+                >
+              </div>
+            </div>
+            <div class="bar-actions">
+              <span class="saved-dot" title="Saved · 4:57"></span>
+              <span class="btn-chip">↶ Undo</span>
+              <span class="btn-chip btn-emerg">Emergency</span>
+            </div>
+            <div class="bar-rail">
+              <span class="bar-rail-fill" style="width: 25%"></span>
+            </div>
+          </div>
+          <div class="body">— Phase 1 form scrolls below —</div>
+        </div>
+      </section>
+
+      <!-- ============ SCENARIO 3: Phase 3, alert active ============ -->
+      <section class="col">
+        <h2>3. Phase 3 with safety alert <span class="tag">current</span></h2>
+        <div class="phone">
+          <div class="status-bar">
+            <span>5:14</span>
+            <span class="right">
+              <span class="signal">●●●●○</span>
+              <span class="wifi">▲</span>
+              <span class="battery">▭ 84%</span>
+            </span>
+          </div>
+          <div class="bar">
+            <div class="bar-nav">
+              <div class="hamburger"><span></span><span></span><span></span></div>
+            </div>
+            <div class="bar-info">
+              <div class="bar-phase-label">Phase 3 · IV Sedation</div>
+              <div class="bar-sub">
+                <span>Drug administration</span>
+                <span class="pill-alert">⚠ OSA</span>
+              </div>
+            </div>
+            <div class="bar-actions">
+              <span class="saved-pill"><span class="check">✓</span>Saved · 5:13</span>
+              <span class="btn-chip">↶ Undo (3)</span>
+              <span class="btn-chip btn-emerg">Emergency</span>
+            </div>
+            <div class="bar-rail">
+              <span class="bar-rail-fill" style="width: 75%"></span>
+              <span class="bar-rail-head" style="left: 75%"></span>
+            </div>
+          </div>
+          <div class="body">— Phase 3 cards scroll below —</div>
+        </div>
+      </section>
+
+      <section class="col proposed">
+        <h2>3. Phase 3 with safety alert <span class="tag good">proposed</span></h2>
+        <div class="phone">
+          <div class="status-bar">
+            <span>5:14</span>
+            <span class="right">
+              <span class="signal">●●●●○</span>
+              <span class="wifi">▲</span>
+              <span class="battery">▭ 84%</span>
+            </span>
+          </div>
+          <div class="bar">
+            <div class="bar-nav">
+              <div class="hamburger"><span></span><span></span><span></span></div>
+            </div>
+            <div class="bar-info">
+              <div class="bar-phase-label">Phase 3 · IV Sedation</div>
+              <div class="bar-sub bar-sub--simple">
+                <span class="pill-alert">⚠ OSA</span>
+              </div>
+            </div>
+            <div class="bar-actions">
+              <span class="saved-dot" title="Saved · 5:13"></span>
+              <span class="btn-chip">↶ Undo (3)</span>
+              <span class="btn-chip btn-emerg">Emergency</span>
+            </div>
+            <div class="bar-rail">
+              <span class="bar-rail-fill" style="width: 75%"></span>
+            </div>
+          </div>
+          <div class="body">— Phase 3 cards scroll below —</div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="notes">
+        <strong>What's actually changed (proposed):</strong>
+        <ul>
+          <li>
+            <strong>Phase-sub line dropped on Phase 1</strong> — &ldquo;Pre-sedation
+            clearance&rdquo; restates &ldquo;Phase 1 · Assessment&rdquo;. On Phase 2/3/4 the sub is
+            kept until the bar fills with status (vitals, alerts).
+          </li>
+          <li>
+            <strong>Clearance is the bar + count only</strong> — drops the literal word
+            &ldquo;Clearance&rdquo;; the bar carries the meaning. When complete, the bar tints green
+            and the count flips to &ldquo;Ready · 14 / 14&rdquo;, so the separate &ldquo;✓
+            Ready&rdquo; pill goes away.
+          </li>
+          <li>
+            <strong>Saved becomes an 8 px green dot</strong> with the timestamp on its
+            <code>title</code> attribute. During the &lt; 800 ms &ldquo;Saving…&rdquo; window the
+            dot animates yellow so the feedback isn't lost.
+          </li>
+          <li>
+            <strong>Progress rail kept but slimmed</strong> — 1 px hairline, no head dot. Still
+            answers &ldquo;how far through am I?&rdquo; glanceably.
+          </li>
+          <li>
+            <strong>Phase label, Undo, Emergency, alert pills — all unchanged.</strong>
+            They were earning their space.
+          </li>
+        </ul>
+      </div>
+    </footer>
+  </body>
+</html>
