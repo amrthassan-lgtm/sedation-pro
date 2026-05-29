@@ -61,6 +61,12 @@
   --color-border: rgba(255, 255, 255, 0.12);
   --color-border-strong: rgba(255, 255, 255, 0.24);
 
+  /* iOS segmented-control active segment — the selected chip lifts above
+     the translucent chip track. Theme-aware: a brighter translucent white
+     in dark, solid white in light, so the segment always reads as raised
+     over the track regardless of theme. */
+  --color-segment-active: rgba(255, 255, 255, 0.12);
+
   /* Solid-ish surfaces — opaque enough to read as "above the background"
      rather than a translucent wash over it. */
   --color-card-bg: rgba(18, 27, 46, 0.95);
@@ -166,6 +172,7 @@
   --color-surface-overlay: rgba(15, 23, 42, 0.09);
   --color-border: rgba(15, 23, 42, 0.1);
   --color-border-strong: rgba(15, 23, 42, 0.2);
+  --color-segment-active: #ffffff;
 
   --color-card-bg: #ffffff;
   --color-frosted-bg: rgba(248, 250, 252, 0.85);

@@ -47,8 +47,7 @@
         --color-accent: #3b82f6;
         --color-accent-soft: rgba(59, 130, 246, 0.18);
 
-        --shadow-md:
-          0 1px 2px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.24);
+        --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.24);
         --surface-highlight: linear-gradient(
           180deg,
           rgba(255, 255, 255, 0.045),
@@ -56,8 +55,8 @@
         );
 
         --font-system:
-          -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
-          system-ui, sans-serif;
+          -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui,
+          sans-serif;
       }
 
       * {
@@ -265,10 +264,9 @@
     <header>
       <h1>Chip style variants</h1>
       <p>
-        All four active-state treatments, rendered statically (no
-        JavaScript). Each variant shows the active chip pre-selected so you
-        can compare the look. Chip heights are identical across all four —
-        only the selected-state color changes.
+        All four active-state treatments, rendered statically (no JavaScript). Each variant shows
+        the active chip pre-selected so you can compare the look. Chip heights are identical across
+        all four — only the selected-state color changes.
       </p>
     </header>
 
@@ -281,9 +279,8 @@
           <span class="tag">shipped</span>
         </div>
         <p class="variant-notes">
-          Active chip flips to text-on-bg (white block in dark mode).
-          Decisive, high contrast; can feel "wall of white" when several
-          picks are active at once.
+          Active chip flips to text-on-bg (white block in dark mode). Decisive, high contrast; can
+          feel "wall of white" when several picks are active at once.
         </p>
         <div class="card v-current">
           <div>
@@ -340,9 +337,8 @@
           <span class="tag">bold</span>
         </div>
         <p class="variant-notes">
-          Active chip uses the brand accent (blue). iOS "selected button"
-          feel; ties chips to the primary action color. Risk: blue already
-          appears on info banners and pre-med chips.
+          Active chip uses the brand accent (blue). iOS "selected button" feel; ties chips to the
+          primary action color. Risk: blue already appears on info banners and pre-med chips.
         </p>
         <div class="card v-accent-fill">
           <div>
@@ -399,9 +395,8 @@
           <span class="tag">quiet</span>
         </div>
         <p class="variant-notes">
-          Active chip lifts on an elevated surface inside a unified track.
-          Quietest, most "iOS-glass", matches the rest of the app. Lower
-          at-a-glance contrast than A.
+          Active chip lifts on an elevated surface inside a unified track. Quietest, most
+          "iOS-glass", matches the rest of the app. Lower at-a-glance contrast than A.
         </p>
         <div class="card v-segmented">
           <div>
@@ -458,9 +453,8 @@
           <span class="tag">mid</span>
         </div>
         <p class="variant-notes">
-          Soft accent fill + accent border + accent text on active. Quieter
-          than A, more visible than B. Risk: outline-only reads less
-          decisively than a filled state at chairside speed.
+          Soft accent fill + accent border + accent text on active. Quieter than A, more visible
+          than B. Risk: outline-only reads less decisively than a filled state at chairside speed.
         </p>
         <div class="card v-accent-outline">
           <div>
@@ -511,9 +505,8 @@
     </main>
 
     <footer>
-      Tokens lifted from <code>packages/ui/src/styles/tokens.css</code>. Chip
-      base + sizing matches <code>UiChipGroup.vue</code>; only the
-      <code>.is-active</code> state differs between variants.
+      Tokens lifted from <code>packages/ui/src/styles/tokens.css</code>. Chip base + sizing matches
+      <code>UiChipGroup.vue</code>; only the <code>.is-active</code> state differs between variants.
     </footer>
   </body>
 </html>

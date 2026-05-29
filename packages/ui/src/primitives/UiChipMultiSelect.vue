@@ -50,10 +50,11 @@ function toggle(value: T): void {
 </template>
 
 <style scoped>
-/* Visual identity matches UiChipGroup — same chip pill, same active-fill
-   inverse treatment — so the user perceives "selection chip" whether the
-   group is single- or multi-select. Behaviour differs (toggle vs replace),
-   which `aria-pressed` per chip surfaces semantically. */
+/* Visual identity matches UiChipGroup — same segmented-control track, same
+   raised active segment — so the user perceives "selection chip" whether
+   the group is single- or multi-select. Behaviour differs (toggle vs
+   replace), which `aria-pressed` per chip surfaces semantically; here
+   multiple segments can be raised at once. */
 .ui-chip-group {
   display: flex;
   flex-direction: column;
@@ -62,14 +63,18 @@ function toggle(value: T): void {
 .ui-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
+  padding: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-pill);
 }
 .ui-chip {
   min-width: 44px;
   padding: 8px 14px;
   border-radius: var(--r-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
   font-size: var(--type-footnote);
@@ -81,15 +86,17 @@ function toggle(value: T): void {
     background var(--dur-150) var(--ease-standard),
     color var(--dur-150) var(--ease-standard),
     border-color var(--dur-150) var(--ease-standard),
+    box-shadow var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
 }
 .ui-chip:active:not(:disabled) {
   transform: scale(0.96);
 }
 .ui-chip.is-active {
-  background: var(--color-text-primary);
-  border-color: var(--color-text-primary);
-  color: var(--color-bg);
+  background: var(--color-segment-active);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
 }
 .ui-chip:disabled {
   opacity: 0.4;

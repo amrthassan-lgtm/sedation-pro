@@ -101,17 +101,25 @@ const activeCaption = computed<string | undefined>(() => {
   flex-direction: column;
   gap: 6px;
 }
+/* iOS segmented-control track — the row is a single rounded container;
+   chips sit transparent inside it and the active one lifts off the
+   track. Compact buckets keep the pill radius; the tap-target override
+   below squares the track to md. */
 .ui-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
+  padding: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-pill);
 }
 .ui-chip {
   min-width: 44px;
   padding: 8px 14px;
   border-radius: var(--r-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
   font-size: var(--type-footnote);
@@ -123,16 +131,17 @@ const activeCaption = computed<string | undefined>(() => {
     background var(--dur-150) var(--ease-standard),
     color var(--dur-150) var(--ease-standard),
     border-color var(--dur-150) var(--ease-standard),
+    box-shadow var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
 }
 
-/* Tap-target variant — segmented-control style. Each chip flexes to
-   share the row width evenly so a gloved finger lands on the right one
-   without aiming; height clears the iOS 44 pt / Android 48 dp minimum
-   with generous margin. Squared corners (md radius vs pill) read as
-   "decisive button" rather than "tag." */
+/* Tap-target variant — each chip flexes to share the row width evenly so
+   a gloved finger lands on the right one without aiming; height clears
+   the iOS 44 pt / Android 48 dp minimum with generous margin. The track
+   squares to md radius (vs the pill of compact buckets) so it reads as a
+   decisive control rather than a tag. */
 .ui-chip-group--tap-target .ui-chip-row {
-  gap: 8px;
+  border-radius: var(--r-md);
 }
 .ui-chip-group--tap-target .ui-chip {
   flex: 1 1 0;
@@ -155,10 +164,14 @@ const activeCaption = computed<string | undefined>(() => {
 .ui-chip:active:not(:disabled) {
   transform: scale(0.96);
 }
+/* Active segment lifts off the track: brighter surface, hairline border,
+   and a small shadow. Border width stays 1px (transparent → visible) so
+   the chip's box never changes size between states. */
 .ui-chip.is-active {
-  background: var(--color-text-primary);
-  border-color: var(--color-text-primary);
-  color: var(--color-bg);
+  background: var(--color-segment-active);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
 }
 .ui-chip:disabled {
   opacity: 0.4;
