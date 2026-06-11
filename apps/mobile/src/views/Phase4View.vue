@@ -665,8 +665,13 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           </ul>
         </UiBanner>
 
+        <!-- The countdown itself lives in Card 12 (IV Out) a long scroll up;
+             repeating the remaining minutes here means a clinician who just
+             cleared the last checklist blocker isn't left with a button that
+             refuses for an unstated reason. -->
         <UiBanner v-else-if="!releaseStatus.eligible" tone="caution" icon="⏱" class="mt-2">
-          Discharge checks complete. Finishing the post-sedation observation window.
+          Discharge checks complete · {{ releaseStatus.remainingMin }} min remaining of the
+          {{ releaseStatus.waitMin }}-min observation wait.
         </UiBanner>
 
         <UiBanner v-else tone="safe" icon="✓" class="mt-2"> All discharge criteria met. </UiBanner>

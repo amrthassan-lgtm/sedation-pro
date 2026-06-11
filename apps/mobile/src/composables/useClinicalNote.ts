@@ -64,6 +64,21 @@ export interface ClinicalNote {
 
 const PRACTICE_NAME = DEFAULT_FORMULARY.practiceName;
 
+/**
+ * Identification clause that opens the narrative — "Jane Doe, a 47-year-old
+ * (MRN-4471)," ready to take a verb. The age appositive is set off with the
+ * commas English requires, and the MRN label is skipped when the stored
+ * identifier already begins with "MRN" (users routinely type "MRN-1234" into
+ * the MRN field, which used to render as "MRN MRN-1234").
+ */
+export function patientIntro(name: string, age: number | null, mrn: string): string {
+  const who = name.trim() || '[patient]';
+  const id = mrn.trim();
+  const idClause = id === '' ? '' : /^mrn/i.test(id) ? ` (${id})` : ` (MRN ${id})`;
+  if (age !== null) return `${who}, a ${age}-year-old${idClause},`;
+  return `${who}${idClause}`;
+}
+
 function fmtClock(ms: number | null | undefined): string {
   if (ms === null || ms === undefined) return '—';
   return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -322,11 +337,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
 
     // Para 1 — Identification + procedure
     {
-      const bits: string[] = [];
-      bits.push(`${patient.name || '[patient]'}`);
-      if (patient.age !== null) bits.push(`a ${patient.age}-year-old`);
-      if (patient.mrn) bits.push(`(MRN ${patient.mrn})`);
-      const intro = bits.join(' ');
+      const intro = patientIntro(patient.name, patient.age, patient.mrn);
       const proc = patient.procedure?.trim() || 'a planned dental procedure';
       const prov = patient.provider?.trim() || 'the attending provider';
       const asst = patient.assistants?.trim();
