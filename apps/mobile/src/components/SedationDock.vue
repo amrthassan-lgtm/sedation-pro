@@ -21,10 +21,12 @@ import type { Severity, TimerPillStatus } from '@sedation-pro/ui';
  *    Reversal is visually demoted (red section heading, separated grid) so
  *    muscle memory doesn't mis-tap it.
  *
- * Safety model: every tap commits immediately via `useIvDosing`. There is no
- * per-button cooldown — the safety net is the undo toast (5 s window) plus
- * the in-store dose log a clinician can review. Anything stricter (mandatory
- * confirmation on reversal, debounce on rapid double-taps) would belong here.
+ * Safety model: a tap commits immediately via `useIvDosing` — no
+ * confirmation step. Accidental double-taps are absorbed by UiDrugButton's
+ * built-in cooldown (1200 ms default: flashes a check overlay and swallows
+ * repeat taps); deliberate mistakes are covered by the undo toast (5 s
+ * window) and the reviewable in-store dose log. Anything stricter — e.g. a
+ * mandatory confirm on the reversal buttons — would belong here.
  *
  * The in-card buttons in Phase 3 stay as the "first encounter with this drug"
  * surface (max-dose math, weight calc, drug-specific explanations). The dock
