@@ -186,8 +186,8 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
           compact
           tone="versed"
           name="Versed"
-          dose="+1 mg"
-          @click="dosing.logIvVersed(1, 'dock')"
+          dose="+2 mg"
+          @click="dosing.logIvVersed(2, 'dock')"
         />
         <UiDrugButton
           compact
