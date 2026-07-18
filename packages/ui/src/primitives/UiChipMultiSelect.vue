@@ -1,14 +1,30 @@
 <script setup lang="ts" generic="T extends string | number">
+import { computed, nextTick, ref } from 'vue';
 import type { ChipOption } from '../primitive-types';
 
 interface Props {
   /** Currently-selected values. Chip with matching value lights up. */
   modelValue: ReadonlyArray<T>;
   options: ReadonlyArray<ChipOption<T>>;
+  /**
+   * Renders a trailing ghost "+ label" chip that morphs into an inline
+   * pill input, for vocabularies that can't enumerate every answer
+   * (medical problems, allergies). Committed text joins `modelValue` as
+   * a first-class selection — it renders as an active chip and a second
+   * tap removes it. Only meaningful when T is string: typed entries are
+   * emitted as-is.
+   */
+  allowCustom?: boolean;
+  /** Ghost-chip label; rendered as "+ <customLabel>". */
+  customLabel?: string;
+  customPlaceholder?: string;
   disabled?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  allowCustom: false,
+  customLabel: 'Other',
+  customPlaceholder: 'Type & press return',
   disabled: false,
 });
 
@@ -28,6 +44,53 @@ function toggle(value: T): void {
     emit('update:modelValue', [...cur, value]);
   }
 }
+
+/** Selections with no matching option — free-text entries added via the
+    ghost chip (or restored from a saved chart whose vocabulary changed).
+    Rendered after the option chips so the cloud keeps a stable order. */
+const customValues = computed<ReadonlyArray<T>>(() =>
+  props.modelValue.filter((v) => !props.options.some((opt) => opt.value === v)),
+);
+
+const entering = ref(false);
+const draft = ref('');
+const entryEl = ref<HTMLInputElement | null>(null);
+
+function startEntry(): void {
+  if (props.disabled) return;
+  entering.value = true;
+  draft.value = '';
+  void nextTick(() => entryEl.value?.focus());
+}
+
+function cancelEntry(): void {
+  entering.value = false;
+  draft.value = '';
+}
+
+function commitEntry(): void {
+  if (!entering.value) return;
+  const text = draft.value.trim();
+  cancelEntry();
+  if (text === '') return;
+  // Typing something already on the chip cloud shouldn't mint a duplicate:
+  // match against option values and labels (the cloud may abbreviate, e.g.
+  // "RLS" for Restless Leg Syndrome) and raise the existing chip instead.
+  const lower = text.toLowerCase();
+  const match = props.options.find(
+    (opt) => String(opt.value).toLowerCase() === lower || opt.label.toLowerCase() === lower,
+  );
+  if (match) {
+    if (!props.modelValue.includes(match.value)) {
+      emit('update:modelValue', [...props.modelValue, match.value]);
+    }
+    return;
+  }
+  if (props.modelValue.some((v) => String(v).toLowerCase() === lower)) return;
+  // Safe cast: free-text entry is only reachable on string-valued models
+  // (allowCustom is documented as string-only).
+  emit('update:modelValue', [...props.modelValue, text as T]);
+}
 </script>
 
 <template>
@@ -44,6 +107,40 @@ function toggle(value: T): void {
         @click="toggle(opt.value)"
       >
         {{ opt.label }}
+      </button>
+      <button
+        v-for="val in customValues"
+        :key="String(val)"
+        type="button"
+        class="ui-chip is-active"
+        :aria-pressed="true"
+        :disabled="props.disabled"
+        @click="toggle(val)"
+      >
+        {{ val }}
+      </button>
+      <input
+        v-if="props.allowCustom && entering"
+        ref="entryEl"
+        v-model="draft"
+        class="ui-chip-entry"
+        type="text"
+        :placeholder="props.customPlaceholder"
+        :aria-label="props.customPlaceholder"
+        enterkeyhint="done"
+        autocapitalize="words"
+        @keydown.enter.prevent="commitEntry"
+        @keydown.esc.prevent="cancelEntry"
+        @blur="commitEntry"
+      />
+      <button
+        v-else-if="props.allowCustom"
+        type="button"
+        class="ui-chip ui-chip-add"
+        :disabled="props.disabled"
+        @click="startEntry"
+      >
+        + {{ props.customLabel }}
       </button>
     </div>
   </div>
@@ -107,5 +204,37 @@ function toggle(value: T): void {
 }
 .ui-chip-group.is-disabled {
   opacity: 0.5;
+}
+/* Ghost "+ Other" chip: dashed border + tertiary text so it reads as an
+   affordance to extend the cloud, not another selectable condition. */
+.ui-chip-add {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  color: var(--color-text-tertiary);
+}
+.ui-chip-add:active:not(:disabled) {
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}
+/* Inline entry keeps the chip's pill metrics (same padding/type scale, so
+   the row doesn't jump when it swaps in) and follows the app's input-focus
+   convention: border shifts to the muted accent, no outer halo. */
+.ui-chip-entry {
+  width: 168px;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--color-accent-muted);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.2px;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-chip-entry::placeholder {
+  color: var(--color-text-tertiary);
+  font-weight: var(--weight-regular);
 }
 </style>

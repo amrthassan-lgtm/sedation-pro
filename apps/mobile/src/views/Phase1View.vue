@@ -610,7 +610,12 @@ const diazepamModalCopy = computed(() => {
 
         <p class="caption mt-1">Conditions</p>
         <UiField label="Medical problems">
-          <UiChipMultiSelect v-model="medicalProblems" :options="medicalProblemOptions" />
+          <UiChipMultiSelect
+            v-model="medicalProblems"
+            :options="medicalProblemOptions"
+            allow-custom
+            custom-placeholder="Type a condition"
+          />
         </UiField>
         <UiBanner v-if="diabetesGuidance" tone="caution" :title="diabetesGuidance.title">
           <ul class="diabetes-guidance">

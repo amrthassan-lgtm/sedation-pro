@@ -8,6 +8,7 @@ import {
   UiButton,
   UiCard,
   UiCheckbox,
+  UiChipMultiSelect,
   UiDrugButton,
   UiDrugSwatch,
   UiField,
@@ -137,6 +138,96 @@ describe('@sedation-pro/ui', () => {
     overlay?.click();
     expect(wrapper.emitted('cancel')).toBeFalsy();
     wrapper.unmount();
+  });
+
+  describe('UiChipMultiSelect custom entry', () => {
+    const options = [
+      { value: 'CVD', label: 'CVD' },
+      { value: 'Restless Leg Syndrome', label: 'RLS' },
+    ];
+
+    const mountWith = (modelValue: string[]) =>
+      mount(UiChipMultiSelect, {
+        props: { modelValue, options, allowCustom: true },
+      });
+
+    it('hides the entry affordance unless allowCustom is set', () => {
+      const wrapper = mount(UiChipMultiSelect, {
+        props: { modelValue: [], options },
+      });
+      expect(wrapper.find('.ui-chip-add').exists()).toBe(false);
+      wrapper.unmount();
+    });
+
+    it('adds a typed condition on Enter', async () => {
+      const wrapper = mountWith(['CVD']);
+      await wrapper.find('.ui-chip-add').trigger('click');
+      const input = wrapper.find('input.ui-chip-entry');
+      expect(input.exists()).toBe(true);
+      await input.setValue('  Epilepsy ');
+      await input.trigger('keydown.enter');
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([['CVD', 'Epilepsy']]);
+      expect(wrapper.find('input.ui-chip-entry').exists()).toBe(false);
+      wrapper.unmount();
+    });
+
+    it('selects the listed option when the typed text matches its value or label', async () => {
+      const wrapper = mountWith([]);
+      await wrapper.find('.ui-chip-add').trigger('click');
+      const input = wrapper.find('input.ui-chip-entry');
+      await input.setValue('rls');
+      await input.trigger('keydown.enter');
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([['Restless Leg Syndrome']]);
+      wrapper.unmount();
+    });
+
+    it('ignores blanks and case-insensitive duplicates', async () => {
+      const wrapper = mountWith(['Epilepsy']);
+      await wrapper.find('.ui-chip-add').trigger('click');
+      let input = wrapper.find('input.ui-chip-entry');
+      await input.setValue('   ');
+      await input.trigger('keydown.enter');
+      expect(wrapper.emitted('update:modelValue')).toBeFalsy();
+
+      await wrapper.find('.ui-chip-add').trigger('click');
+      input = wrapper.find('input.ui-chip-entry');
+      await input.setValue('EPILEPSY');
+      await input.trigger('keydown.enter');
+      expect(wrapper.emitted('update:modelValue')).toBeFalsy();
+      wrapper.unmount();
+    });
+
+    it('cancels entry on Escape without emitting', async () => {
+      const wrapper = mountWith([]);
+      await wrapper.find('.ui-chip-add').trigger('click');
+      const input = wrapper.find('input.ui-chip-entry');
+      await input.setValue('Epilepsy');
+      await input.trigger('keydown.esc');
+      expect(wrapper.emitted('update:modelValue')).toBeFalsy();
+      expect(wrapper.find('input.ui-chip-entry').exists()).toBe(false);
+      wrapper.unmount();
+    });
+
+    it('commits on blur so tapping away keeps the typed condition', async () => {
+      const wrapper = mountWith([]);
+      await wrapper.find('.ui-chip-add').trigger('click');
+      const input = wrapper.find('input.ui-chip-entry');
+      await input.setValue('Epilepsy');
+      await input.trigger('blur');
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([['Epilepsy']]);
+      wrapper.unmount();
+    });
+
+    it('renders custom selections as active chips that toggle off on tap', async () => {
+      const wrapper = mountWith(['CVD', 'Epilepsy']);
+      const custom = wrapper
+        .findAll('button.ui-chip')
+        .find((b) => b.text() === 'Epilepsy' && b.classes('is-active'));
+      expect(custom).toBeTruthy();
+      await custom?.trigger('click');
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([['CVD']]);
+      wrapper.unmount();
+    });
   });
 
   it('UiButton emits click only when state is idle and not disabled', async () => {
