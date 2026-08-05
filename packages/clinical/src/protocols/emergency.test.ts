@@ -48,4 +48,24 @@ describe('emergency protocols', () => {
       }
     }
   });
+
+  it('both hypertension protocols carry hydralazine as a second-line callout', () => {
+    for (const id of ['hypertension', 'hypertensive_crisis']) {
+      const proto = findProtocol(id);
+      const hydralazine = proto?.steps.find((s) => s.drug?.name === 'Hydralazine');
+      expect(hydralazine, `${id} missing hydralazine`).toBeDefined();
+      expect(hydralazine?.drug?.concentration).toBe('20 mg/ml');
+    }
+  });
+
+  it('dexamethasone callouts quote volumes for both stocked concentrations', () => {
+    const dexCallouts = EMERGENCY_PROTOCOLS.flatMap((p) => p.steps)
+      .map((s) => s.drug)
+      .filter((d) => d?.name === 'Dexamethasone');
+    expect(dexCallouts.length).toBeGreaterThan(0);
+    for (const callout of dexCallouts) {
+      expect(callout?.concentration).toContain('4 mg/ml');
+      expect(callout?.concentration).toContain('10 mg/ml');
+    }
+  });
 });

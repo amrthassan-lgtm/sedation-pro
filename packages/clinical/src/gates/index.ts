@@ -7,6 +7,7 @@ export {
   type DismissalInputs,
   type DismissalSafety,
 } from './dismissal-safety';
+export { EXPIRY_WARN_DAYS, expiryStatus, type ExpiryStatus } from './drug-expiry';
 export { fentanylTimer, versedTimer, type DrugTimerState, type TimerStatus } from './drug-timer';
 export {
   lastExamCheck,
