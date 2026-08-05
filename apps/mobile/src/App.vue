@@ -95,26 +95,21 @@ const wakeLock = useWakeLock();
 void wakeLock.request();
 
 /**
- * Audio alerts on Versed + Fentanyl timer "ready" transitions.
+ * Chime watcher + iOS audio unlock.
  *
- * The AudioContext starts `suspended` until a user gesture. The earlier
- * `{ once: true }` listener unlocked it on the first tap and then removed
- * itself — which broke the chime in the installed (Add-to-Home-Screen)
- * app: iOS standalone PWAs re-suspend the AudioContext whenever the app is
- * backgrounded or the screen sleeps, which is exactly what happens during
- * the multi-minute redose wait. With nothing left to resume it, `tick()`
- * silently no-ops (it requires `state === 'running'`).
- *
- * Fix: keep a persistent pointerdown listener (idempotent, cheap — every
- * dose tap re-warms the context) plus a visibilitychange handler that
- * resumes the context when the app returns to the foreground.
+ * `unlockAudio` primes the chime elements with a muted play()/pause(),
+ * which iOS only permits inside a real user gesture — so the unlock hangs
+ * off a persistent pointerdown listener. Persistent (not `{once:true}`)
+ * because priming can fail (latch stays clear and the next tap retries)
+ * and it's idempotent once both elements latch. Deliberately NOT wired to
+ * visibilitychange: that's not a gesture, so priming there always fails
+ * on iOS — and the old code latched "unlocked" anyway, leaving a pending
+ * play() that sounded on the next touch (the phantom chime-on-open).
+ * Resume silence is owned by useAlarms' grace gate.
  */
 useAlarms();
 if (typeof window !== 'undefined') {
   window.addEventListener('pointerdown', () => unlockAudio(), { passive: true });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') unlockAudio();
-  });
 }
 </script>
 

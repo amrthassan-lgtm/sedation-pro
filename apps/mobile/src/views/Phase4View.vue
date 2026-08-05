@@ -52,12 +52,12 @@ const now = useNow(1000);
 
 const eventLog = useEventLogStore();
 const { events } = storeToRefs(eventLog);
-const { lastIvMedAt, lastFlumazenilAt } = storeToRefs(iv);
+const { lastIvMedAt, lastIvSedativeAt, lastFlumazenilAt } = storeToRefs(iv);
 
-// Last in-office sedative across *any* route. Oral pre-med lives only in
-// the event log; bedtime ('Bedtime Premedication') is take-home and is
-// deliberately not counted. This feeds both the observation countdown and
-// the encounter classification.
+// Oral pre-med lives only in the event log; bedtime ('Bedtime
+// Premedication') is take-home and deliberately not counted. Feeds the
+// encounter classification and the premed-only chip copy — NOT the
+// observation countdown, which anchors on IV sedatives only.
 const lastOralPremedAt = computed<number | null>(() => {
   let latest: number | null = null;
   for (const e of events.value) {
@@ -66,13 +66,6 @@ const lastOralPremedAt = computed<number | null>(() => {
     }
   }
   return latest;
-});
-const lastSedativeAt = computed<number | null>(() => {
-  const oral = lastOralPremedAt.value;
-  const iv = lastIvMedAt.value;
-  if (oral === null) return iv;
-  if (iv === null) return oral;
-  return Math.max(oral, iv);
 });
 const encounterKind = computed(() =>
   classifyEncounter({
@@ -220,7 +213,7 @@ function stampRecoveryVitals() {
 
 const releaseStatus = computed(() =>
   releaseEligibility({
-    lastSedativeAt: lastSedativeAt.value,
+    lastIvSedativeAt: lastIvSedativeAt.value,
     lastFlumazenilAt: lastFlumazenilAt.value,
     now: now.value,
   }),
@@ -239,14 +232,16 @@ function stampIvOut() {
 }
 
 const ivOutChipTone = computed(() => {
-  if (releaseStatus.value.reason === 'no-sedative-given') return 'info';
+  if (releaseStatus.value.reason === 'no-iv-sedative') return 'info';
   if (releaseStatus.value.eligible) return 'safe';
   return 'caution';
 });
 
 const ivOutChipHeadline = computed(() => {
-  if (releaseStatus.value.reason === 'no-sedative-given') {
-    return 'No sedative given. Observation not required.';
+  if (releaseStatus.value.reason === 'no-iv-sedative') {
+    return lastOralPremedAt.value !== null
+      ? 'Oral pre-med only — no IV sedative given. Observation clock not started.'
+      : 'No sedative given. Observation not required.';
   }
   if (releaseStatus.value.eligible) {
     return releaseStatus.value.reason === 'flumazenil-reversal'
@@ -417,7 +412,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
       <UiBanner :tone="ivOutChipTone" icon="⏱" class="mt-2">
         <strong>{{ ivOutChipHeadline }}</strong>
-        <template v-if="!releaseStatus.eligible && releaseStatus.reason !== 'no-sedative-given'">
+        <template v-if="!releaseStatus.eligible && releaseStatus.reason !== 'no-iv-sedative'">
           <UiPercentBar
             :percent="
               releaseStatus.waitMin > 0

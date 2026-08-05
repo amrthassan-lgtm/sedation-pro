@@ -15,8 +15,10 @@ import { premedWait, releaseEligibility } from '@sedation-pro/clinical';
  *     is ready for IV start.
  *  2. Versed redose ready (cooling + ramping windows elapsed).
  *  3. Fentanyl redose ready (cooling window elapsed).
- *  4. IV-out / release wait cleared — the post-last-IV-med observation
- *     window has elapsed (20 min standard / 120 min after flumazenil).
+ *  4. IV-out / release wait cleared — the observation window after the
+ *     last IV *sedative* (Versed/Fentanyl) has elapsed (20 min standard /
+ *     120 min after flumazenil). Oral pre-med, Zofran, and naloxone
+ *     neither start nor reset this window.
  *
  * Two distinct sounds, deliberately:
  *  - Transitions 1–3 share the **ascending** "you may proceed" motif
@@ -43,32 +45,32 @@ import { premedWait, releaseEligibility } from '@sedation-pro/clinical';
  *    AudioContext at all — removes every Web Audio quirk).
  *  - Audio + haptic pair on every alert. The mute flag silences audio
  *    only; haptics are a separate sensory channel.
- *  - First-run guard: initial transition state is captured at setup, so a
- *    hydrated store already in "ready" after reload does not beep on mount.
- *  - Stale-resume guard (three layers, belt-and-suspenders):
- *      * Time delta: when the `now` jump exceeds the tick interval by a
- *        lot, the transition resolved during a background freeze and is
- *        stale.
- *      * Visibility flag: when the page just transitioned from `hidden`
- *        to `visible`, the *next* tick is treated as stale regardless of
- *        the delta — iOS standalone occasionally produces coalesced ticks
- *        on resume that the time delta alone doesn't catch.
- *      * First-tick suppression: the very first watcher invocation after
- *        mount never fires a chime, regardless of state. Cold-starts with
- *        a stale-day session can carry a state transition that the other
- *        two gates miss (e.g. a `releaseReady` that flips false→true
- *        within the first second because the deadline crossed in the gap
- *        between store-hydration and the first tick). Cost: a true
- *        transition that lands exactly on the first tick after mount is
- *        missed by ~1 s — acceptable because active cases mount long
- *        before any redose-ready / release-ready transition is due.
- *  - Data-driven suppression: if any source timestamp (`lastVersedAt`,
- *    `lastFentanylAt`, `lastFlumazenilAt`, `lastOralPremedAt`) changed
- *    between ticks, the transition was caused by a dose log or an undo —
- *    not by time elapsing — so no chime fires that tick. Without this,
- *    undoing a recent IV dose could drop `lastIvMedAt` back far enough
- *    that release-eligibility flips false → true and fires a false
- *    "case complete" ding.
+ *  - Silent catch-up (owner decision): a chime only fires for a
+ *    transition observed LIVE on a healthy foreground tick cadence.
+ *    Deadlines that pass while the app is closed, backgrounded, or
+ *    frozen surface visually only — never as audio on open/resume. Two
+ *    orthogonal gates enforce this:
+ *      * Stale tick: a watcher delta above `STALE_TICK_MS` (2× the tick
+ *        interval) means at least one whole tick was skipped — the
+ *        transition resolved during a freeze, so it is discarded.
+ *      * Arming grace: chimes arm only after `GRACE_MS` of continuous
+ *        healthy ticking since mount, since the last stale tick, and
+ *        since the last hidden→visible flip. This outlasts the coalesced
+ *        tick bursts iOS delivers on resume and covers the cold-start
+ *        gap between store hydration and the first tick. Cost: a true
+ *        transition landing inside the grace window is discarded (~4 s
+ *        against a ≥3 min clinical window; the visual state still
+ *        shows it).
+ *    Suppressed transitions are discarded, not deferred — `prev*`
+ *    snapshots update every tick regardless.
+ *  - Per-chime data suppression: each chime is suppressed only when ITS
+ *    OWN source timestamps changed that tick (a dose log or undo is a
+ *    data edit, not time elapsing). Guards are per-chime so logging a
+ *    Versed dose on the exact tick the Fentanyl timer goes ready cannot
+ *    swallow the Fentanyl chime. The release chime's inputs are
+ *    `lastIvSedativeAt` + `lastFlumazenilAt` only — Zofran/naloxone are
+ *    not inputs to the release computation, so their logs and undos
+ *    cannot flip it at all.
  *
  * Note: this does not defeat the iPhone hardware Ring/Silent switch (iOS
  * routes web audio through the ringer channel; only a native AVAudioSession
@@ -163,7 +165,8 @@ function pcmToWavDataUri(pcm: Int16Array): string {
 
 let readyEl: HTMLAudioElement | null = null;
 let endEl: HTMLAudioElement | null = null;
-let unlocked = false;
+let readyUnlocked = false;
+let endUnlocked = false;
 
 function ensure(motif: Motif, slot: 'ready' | 'end'): HTMLAudioElement | null {
   if (typeof Audio === 'undefined') return null;
@@ -177,36 +180,50 @@ function ensure(motif: Motif, slot: 'ready' | 'end'): HTMLAudioElement | null {
 }
 
 /**
- * Unlock both audio elements on a user gesture (App.vue's pointerdown +
- * visibilitychange). iOS only allows later programmatic `play()` once an
- * element has been played from within a gesture; a muted play()/pause()
- * satisfies that without an audible blip. Both elements are primed from
- * the same gesture so either chime can fire later. Runs at most once —
- * re-running on every pointerdown would cut off a chime that is playing
- * when the clinician taps.
+ * Unlock both audio elements on a user gesture (App.vue's persistent
+ * pointerdown listener). iOS only allows later programmatic `play()`
+ * once an element has been played from within a gesture; a muted
+ * play()/pause() satisfies that without an audible blip.
+ *
+ * The latch is per-element and set ONLY when priming provably succeeded
+ * (`play()`'s promise resolved). A rejected priming — e.g. any call
+ * outside a real gesture — leaves the latch clear so the next tap
+ * retries; the old single boolean latched on failure too, which
+ * permanently bricked audio and left a pending play() to sound on the
+ * next touch ("phantom chime when I open the app"). An element that is
+ * currently *playing* is already unlocked by definition and is never
+ * paused — priming must not cut off a live chime.
  */
 export function unlockAudio(): void {
-  if (unlocked) return;
+  if (readyUnlocked && endUnlocked) return;
   const a = ensure(READY_MOTIF, 'ready');
   const b = ensure(END_MOTIF, 'end');
   if (!a || !b) return;
-  const prime = (el: HTMLAudioElement): Promise<void> => {
+  const prime = (el: HTMLAudioElement, onSuccess: () => void): void => {
+    if (!el.paused) {
+      onSuccess();
+      return;
+    }
     el.muted = true;
     const p = el.play();
-    if (!p || typeof p.then !== 'function') return Promise.resolve();
-    return p
-      .then(() => {
-        el.pause();
-        el.currentTime = 0;
-        el.muted = false;
-      })
-      .catch(() => {
-        el.muted = false;
-      });
+    if (!p || typeof p.then !== 'function') {
+      // Legacy sync play() — no promise means it either threw (caught by
+      // the caller's gesture context) or started; treat as unlocked.
+      el.muted = false;
+      onSuccess();
+      return;
+    }
+    p.then(() => {
+      el.pause();
+      el.currentTime = 0;
+      el.muted = false;
+      onSuccess();
+    }).catch(() => {
+      el.muted = false;
+    });
   };
-  Promise.all([prime(a), prime(b)]).then(() => {
-    unlocked = true;
-  });
+  if (!readyUnlocked) prime(a, () => (readyUnlocked = true));
+  if (!endUnlocked) prime(b, () => (endUnlocked = true));
 }
 
 function play(slot: 'ready' | 'end', motif: Motif, muted: boolean): void {
@@ -218,26 +235,25 @@ function play(slot: 'ready' | 'end', motif: Motif, muted: boolean): void {
   if (p && typeof p.catch === 'function') p.catch(() => {});
 }
 
-// `useNow` ticks every 1 s. A jump materially larger than that means real
-// time skipped while the interval was frozen (app backgrounded), so any
-// transition surfacing on this tick happened during the freeze and is
-// stale. 5 s gives generous headroom over foreground timer jitter while
-// being far below any real inactivity gap.
+// `useNow` ticks every 1 s. A watcher delta above 2× the interval means
+// at least one whole tick was skipped (throttle/freeze/background) —
+// foreground jitter on a healthy interval is tens of ms, so 2 s cleanly
+// separates jitter from suspension.
 const TICK_MS = 1000;
-const FRESH_WINDOW_MS = 5_000;
+const STALE_TICK_MS = 2_000;
+// Chimes arm only after ~4 s of continuous healthy ticking (see header).
+const GRACE_MS = 4_000;
 
 const ORAL_PREMED_EVENT = 'Preoperative Oral Dose';
 
-// Belt-and-suspenders for the freshness gate: when the page just came back
-// from `hidden`, the *next* tick is treated as stale regardless of the
-// elapsed-time delta. iOS standalone PWAs occasionally produce coalesced
-// or oddly-timed ticks on resume; the visibility signal is more direct
-// than inferring "we just resumed" from time math alone. Module-scoped
+// iOS resume can deliver a burst of coalesced ticks whose individual
+// deltas look healthy, so time math alone can't spot "we just resumed".
+// The visibility flip re-arms the grace window directly. Module-scoped
 // so the listener is installed exactly once.
-let pendingResume = false;
+let lastVisibleAt = 0;
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') pendingResume = true;
+    if (document.visibilityState === 'visible') lastVisibleAt = Date.now();
   });
 }
 
@@ -280,22 +296,17 @@ export function useAlarms(): void {
   });
 
   // ---- IV-out / release wait cleared (end of supervised window) ----
-  // Skip the `no-sedative-given` case — that branch is `eligible: true`
-  // from t=0 (no wait to clear), so it must never chime.
-  const lastSedativeAt = computed<number | null>(() => {
-    const oral = lastOralPremedAt.value;
-    const ivMed = iv.lastIvMedAt;
-    if (oral === null) return ivMed;
-    if (ivMed === null) return oral;
-    return Math.max(oral, ivMed);
-  });
+  // Anchored on IV sedatives only (plus the flumazenil window inside the
+  // engine). Until the first Versed/Fentanyl dose the gate reports
+  // `no-iv-sedative` and we surface null — the countdown is never armed,
+  // so a premed-only case can't fire a premature "case complete" chime.
   const releaseReady = computed<boolean | null>(() => {
     const r = releaseEligibility({
-      lastSedativeAt: lastSedativeAt.value,
+      lastIvSedativeAt: iv.lastIvSedativeAt,
       lastFlumazenilAt: iv.lastFlumazenilAt,
       now: now.value,
     });
-    if (r.reason === 'no-sedative-given') return null;
+    if (r.reason === 'no-iv-sedative') return null;
     return r.eligible;
   });
 
@@ -313,21 +324,17 @@ export function useAlarms(): void {
   let prevFentanyl = fentanylState.value;
   let prevPremed = premedReady.value;
   let prevRelease = releaseReady.value;
-  // First-tick suppression flag — see the "Stale-resume guard" notes at
-  // the top of this file. The very first watcher invocation is always
-  // treated as stale so a cold-start can't fire a chime even if a
-  // transition slips through the time-delta + visibility gates.
-  let firstTick = true;
-  // Source timestamps that drive the four `*Ready` computeds. If any
-  // changed between ticks, the transition was data-driven (a dose was
-  // logged or undone) rather than time-driven — chimes should suppress.
-  // Without this, undoing a recent IV dose can drop `lastIvMedAt` back
-  // far enough that releaseReady flips false → true and fires a false
-  // "case complete" ding.
+  // Per-chime source timestamps. A change between ticks means the
+  // transition was data-driven (dose log / undo), not time-driven — the
+  // affected chime suppresses, the others stay live.
   let prevVersedAt = iv.lastVersedAt;
   let prevFentanylAt = iv.lastFentanylAt;
+  let prevIvSedativeAt = iv.lastIvSedativeAt;
   let prevFlumazenilAt = iv.lastFlumazenilAt;
   let prevPremedAt = lastOralPremedAt.value;
+  // Arming clock for the grace gate — reset at mount, on any stale tick,
+  // and on hidden→visible. See "Silent catch-up" in the header.
+  let armedSince = now.value;
 
   // `flush: 'sync'` so each 1 s tick is evaluated on its own — the default
   // batched flush would coalesce many ticks into a single huge delta and
@@ -336,34 +343,41 @@ export function useAlarms(): void {
   watch(
     now,
     (curr, prev) => {
+      if (curr - prev > STALE_TICK_MS) armedSince = curr;
+      if (lastVisibleAt > armedSince) armedSince = lastVisibleAt;
+      const live = curr - armedSince >= GRACE_MS && curr - prev <= STALE_TICK_MS;
+
       const currVersedAt = iv.lastVersedAt;
       const currFentanylAt = iv.lastFentanylAt;
+      const currIvSedativeAt = iv.lastIvSedativeAt;
       const currFlumazenilAt = iv.lastFlumazenilAt;
       const currPremedAt = lastOralPremedAt.value;
-      const dataChanged =
-        currVersedAt !== prevVersedAt ||
-        currFentanylAt !== prevFentanylAt ||
-        currFlumazenilAt !== prevFlumazenilAt ||
-        currPremedAt !== prevPremedAt;
-      const fresh = !firstTick && !pendingResume && curr - prev <= FRESH_WINDOW_MS && !dataChanged;
+      const versedFresh = currVersedAt === prevVersedAt;
+      const fentanylFresh = currFentanylAt === prevFentanylAt;
+      const premedFresh = currPremedAt === prevPremedAt;
+      const releaseFresh =
+        currIvSedativeAt === prevIvSedativeAt && currFlumazenilAt === prevFlumazenilAt;
+
       const v = versedState.value;
       const f = fentanylState.value;
       const pm = premedReady.value;
       const rl = releaseReady.value;
-      if (fresh && v === 'ready' && prevVersed !== 'ready') chimeReady();
-      if (fresh && f === 'ready' && prevFentanyl !== 'ready') chimeReady();
-      if (fresh && pm === true && prevPremed !== true) chimeReady();
-      if (fresh && rl === true && prevRelease !== true) chimeEnd();
+      if (live && versedFresh && v === 'ready' && prevVersed !== 'ready') chimeReady();
+      if (live && fentanylFresh && f === 'ready' && prevFentanyl !== 'ready') chimeReady();
+      if (live && premedFresh && pm === true && prevPremed !== true) chimeReady();
+      if (live && releaseFresh && rl === true && prevRelease !== true) chimeEnd();
+
+      // Snapshots update on every tick, suppressed or not — a suppressed
+      // transition is discarded, never deferred to a later tick.
       prevVersed = v;
       prevFentanyl = f;
       prevPremed = pm;
       prevRelease = rl;
       prevVersedAt = currVersedAt;
       prevFentanylAt = currFentanylAt;
+      prevIvSedativeAt = currIvSedativeAt;
       prevFlumazenilAt = currFlumazenilAt;
       prevPremedAt = currPremedAt;
-      pendingResume = false;
-      firstTick = false;
     },
     { flush: 'sync' },
   );

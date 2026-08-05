@@ -134,6 +134,20 @@ export const useIVStore = defineStore('iv', () => {
     if (doses.value.length === 0) return null;
     return doses.value[doses.value.length - 1]?.at ?? null;
   });
+  /**
+   * Last IV *sedative* — the release-clock anchor. Zofran and the
+   * reversal agents are IV meds but not sedatives; they never start or
+   * reset the discharge observation window (flumazenil gets its own
+   * 120-min window inside `releaseEligibility`). `lastIvMedAt` stays for
+   * encounter classification, where any IV med still counts.
+   */
+  const lastIvSedativeAt = computed(() => {
+    for (let i = doses.value.length - 1; i >= 0; i -= 1) {
+      const d = doses.value[i];
+      if (d && (d.drug === 'versed' || d.drug === 'fentanyl')) return d.at;
+    }
+    return null;
+  });
 
   /**
    * Drug timer state — `versedTimer` / `fentanylTimer` encode the engine's
@@ -343,6 +357,7 @@ export const useIVStore = defineStore('iv', () => {
     lastZofranAt,
     lastFlumazenilAt,
     lastIvMedAt,
+    lastIvSedativeAt,
     versedTimerAt,
     fentanylTimerAt,
     sedationStatus,

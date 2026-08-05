@@ -462,8 +462,11 @@ function onTouchEnd() {
         </button>
       </nav>
 
-      <!-- Audio mute. Quieter visual weight than the phase rows; chimes
-           fire on Versed/Fentanyl timer ready transitions (see useAlarms). -->
+      <!-- Audio mute. Quieter visual weight than the phase rows. Four
+           chimes fire on live transitions (see useAlarms): pre-med wait
+           cleared, Versed redose ready, Fentanyl redose ready, and the
+           IV-out/release observation wait clearing. Mute silences audio
+           only — haptics still fire. -->
       <button type="button" class="nav-utility" :aria-pressed="!audioMuted" @click="toggleMute">
         <span class="nav-utility-icon" aria-hidden="true">{{ audioMuted ? '🔇' : '🔔' }}</span>
         <span class="nav-utility-label">

@@ -32,6 +32,7 @@ describe('@sedation-pro/clinical', () => {
     expect(nicotineProtocol(15)?.hoursBefore).toBe(8);
     expect(phase1Completeness({ values: {} }).complete).toBe(false);
     expect(releaseEligibility({ now: Date.now() }).eligible).toBe(true);
+    expect(releaseEligibility({ now: Date.now() }).reason).toBe('no-iv-sedative');
     expect(classifyEncounter({ oralPremedGiven: false, ivMedGiven: false })).toBe('assessment');
   });
 });
