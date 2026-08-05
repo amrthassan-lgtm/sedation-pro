@@ -35,6 +35,7 @@ const savedLabel = computed<string | null>(() => {
 
 const phaseMeta: Record<Phase, { label: string; sub: string }> = {
   quickref: { label: 'Quick Reference', sub: 'Emergency protocols + drug doses' },
+  inventory: { label: 'Drug Inventory', sub: 'Emergency medication stock & expiry' },
   phase1: { label: 'Phase 1 · Assessment', sub: 'Pre-sedation clearance' },
   phase2: { label: 'Phase 2 · Oral Meds', sub: 'Pre-op anxiolytic' },
   phase3: { label: 'Phase 3 · IV Sedation', sub: 'Drug administration' },

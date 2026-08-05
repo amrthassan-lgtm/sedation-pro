@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
 
 import AppFooter from '@/components/AppFooter.vue';
+import AppUpdatePrompt from '@/components/AppUpdatePrompt.vue';
+import InventoryAlertBanner from '@/components/InventoryAlertBanner.vue';
 import SedationDock from '@/components/SedationDock.vue';
 import StickyBar from '@/components/StickyBar.vue';
 import NavDrawer from '@/components/NavDrawer.vue';
@@ -124,6 +126,7 @@ if (typeof window !== 'undefined') {
   <NavDrawer />
   <UndoToast />
   <div class="app-shell" :class="{ 'has-dock': dockReservesSpace }">
+    <InventoryAlertBanner />
     <RouterView v-slot="{ Component }">
       <transition name="page" mode="out-in">
         <component :is="Component" />
@@ -132,6 +135,7 @@ if (typeof window !== 'undefined') {
     <AppFooter class="no-print" />
   </div>
   <SedationDock v-if="showSedationDock" class="no-print" />
+  <AppUpdatePrompt />
 
   <UiModal
     :open="resumeGateOpen"

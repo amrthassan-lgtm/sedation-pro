@@ -10,6 +10,7 @@ const PHASE_ROUTES: Record<string, Phase> = {
   '/phase/3': 'phase3',
   '/phase/4': 'phase4',
   '/quick-reference': 'quickref',
+  '/inventory': 'inventory',
 };
 
 const GATED_PHASES: ReadonlySet<Phase> = new Set(['phase2', 'phase3', 'phase4']);
@@ -51,6 +52,11 @@ export const router = createRouter({
       name: 'quickref-detail',
       component: () => import('@/views/QuickReferenceDetailView.vue'),
       props: true,
+    },
+    {
+      path: '/inventory',
+      name: 'inventory',
+      component: () => import('@/views/InventoryView.vue'),
     },
     {
       path: '/clinical-note',

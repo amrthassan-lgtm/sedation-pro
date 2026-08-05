@@ -9,7 +9,10 @@ import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
 import { useCaseReset } from '@/composables/useCaseReset';
 import { useTheme, type ThemeChoice } from '@/composables/useTheme';
-import { UiModal } from '@sedation-pro/ui';
+import { UiModal, UiStatusPill } from '@sedation-pro/ui';
+import { expiryStatus } from '@sedation-pro/clinical';
+
+import { EMERGENCY_INVENTORY } from '@/data/emergency-inventory';
 import { DEFAULT_FORMULARY } from '@sedation-pro/clinical';
 import { snapDecision } from './navDrawerSwipe';
 
@@ -106,6 +109,37 @@ async function goQuickRef() {
   await router.push('/quick-reference');
   session.closeDrawer();
 }
+
+const inventoryActive = computed(() => currentPhase.value === 'inventory');
+
+async function goInventory() {
+  await router.push('/inventory');
+  session.closeDrawer();
+}
+
+/**
+ * Live stock summary for the drawer row. Computed at drawer render — the
+ * drawer opens fresh each time, so day-granularity staleness is a
+ * non-issue. 'limit' covers both expired and unreadable-expiry items.
+ */
+const inventorySummary = computed(() => {
+  const now = Date.now();
+  let expired = 0;
+  let expiring = 0;
+  for (const item of EMERGENCY_INVENTORY) {
+    const status = expiryStatus(item.expiresOn, now);
+    if (status.severity === 'limit') expired += 1;
+    else if (status.severity === 'caution') expiring += 1;
+  }
+  return { expired, expiring, total: EMERGENCY_INVENTORY.length };
+});
+
+const inventorySub = computed(() => {
+  const s = inventorySummary.value;
+  if (s.expired > 0) return `${s.expired} expired · ${s.expiring} expiring soon`;
+  if (s.expiring > 0) return `${s.expiring} expiring within 60 days`;
+  return `${s.total} items · all in date`;
+});
 
 // -------- Audio mute toggle ----------------------------------------------
 
@@ -363,6 +397,31 @@ function onTouchEnd() {
             <span class="nav-phase-title">Quick Reference</span>
             <span class="nav-phase-sub">Drugs · ACLS · emergencies</span>
           </span>
+          <span class="nav-phase-chevron" aria-hidden="true">›</span>
+        </button>
+        <button
+          type="button"
+          class="nav-phase nav-phase--inv"
+          :class="{ 'is-current': inventoryActive }"
+          @click="goInventory"
+        >
+          <span class="nav-phase-icon nav-phase-icon--inv" aria-hidden="true">💊</span>
+          <span class="nav-phase-main">
+            <span class="nav-phase-title">Drug Inventory</span>
+            <span class="nav-phase-sub">{{ inventorySub }}</span>
+          </span>
+          <UiStatusPill
+            v-if="inventorySummary.expired > 0"
+            class="nav-phase-badge"
+            severity="limit"
+            :label="String(inventorySummary.expired)"
+          />
+          <UiStatusPill
+            v-else-if="inventorySummary.expiring > 0"
+            class="nav-phase-badge"
+            severity="caution"
+            :label="String(inventorySummary.expiring)"
+          />
           <span class="nav-phase-chevron" aria-hidden="true">›</span>
         </button>
       </nav>
@@ -671,6 +730,15 @@ function onTouchEnd() {
 .nav-phase-icon--qr {
   background: linear-gradient(135deg, #14b8a6, #0d9488);
   color: #fff;
+}
+/* Inventory shares the reference-section identity family — indigo so it
+   reads as a sibling of Quick Reference without impersonating it. */
+.nav-phase-icon--inv {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+}
+.nav-phase-badge {
+  flex-shrink: 0;
 }
 .nav-phase.is-locked .nav-phase-icon {
   background: var(--color-surface-elevated);

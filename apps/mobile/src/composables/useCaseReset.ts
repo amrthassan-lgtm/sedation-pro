@@ -10,6 +10,17 @@
  * the initial-value defaults already encoded inline in each `defineStore`.
  * Clearing storage + reload sidesteps that whole maintenance burden.
  */
+/**
+ * Practice-level keys that survive "Start new case". The reset's job is to
+ * wipe per-CASE state; theme preference and the inventory-banner dismissal
+ * are per-PRACTICE and outliving the case is the point. (Theme previously
+ * being wiped here was a bug this list fixes.)
+ */
+const PRESERVED_KEYS: ReadonlySet<string> = new Set([
+  'sedation-pro:theme:v1',
+  'sedation-pro:inventory-banner:v1',
+]);
+
 export function useCaseReset(): { reset: () => void } {
   function reset(): void {
     if (typeof window === 'undefined') return;
@@ -17,7 +28,7 @@ export function useCaseReset(): { reset: () => void } {
     const keysToClear: string[] = [];
     for (let i = 0; i < window.localStorage.length; i++) {
       const k = window.localStorage.key(i);
-      if (k?.startsWith('sedation-pro:')) keysToClear.push(k);
+      if (k?.startsWith('sedation-pro:') && !PRESERVED_KEYS.has(k)) keysToClear.push(k);
     }
     keysToClear.forEach((k) => window.localStorage.removeItem(k));
 

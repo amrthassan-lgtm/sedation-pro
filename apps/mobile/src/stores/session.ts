@@ -8,7 +8,7 @@ import { persistRefs } from './persistence';
  * sedation phase — but it lives in the same enum so the sticky bar and nav
  * drawer can describe "where am I" with one prop.
  */
-export type Phase = 'quickref' | 'phase1' | 'phase2' | 'phase3' | 'phase4';
+export type Phase = 'quickref' | 'inventory' | 'phase1' | 'phase2' | 'phase3' | 'phase4';
 
 const SEDATION_PHASES: ReadonlyArray<Phase> = ['phase1', 'phase2', 'phase3', 'phase4'];
 
