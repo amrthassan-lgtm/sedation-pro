@@ -16,6 +16,7 @@ import {
   inventorySubLine,
   summarizeInventory,
 } from '@/composables/useInventoryStatus';
+import { readChimeLog } from '@/composables/useAlarms';
 import { DEFAULT_FORMULARY } from '@sedation-pro/clinical';
 import { snapDecision } from './navDrawerSwipe';
 
@@ -136,6 +137,24 @@ const { muted: audioMuted } = storeToRefs(audio);
 function toggleMute(): void {
   audioMuted.value = !audioMuted.value;
 }
+
+/**
+ * Flight-recorder readout: the last chime the app actually fired, with
+ * its trigger. Answers "what was that ding?" after the fact — computed at
+ * drawer render so it's fresh every time the drawer opens.
+ */
+const lastChime = computed(() => {
+  void drawerOpen.value; // re-read the persisted log on every open
+  const log = readChimeLog();
+  const last = log[log.length - 1];
+  if (!last) return null;
+  const when = new Date(last.at).toLocaleString(undefined, {
+    weekday: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${last.kind} · ${when}`;
+});
 
 // -------- Theme toggle ----------------------------------------------------
 //
@@ -456,8 +475,11 @@ function onTouchEnd() {
            only — haptics still fire. -->
       <button type="button" class="nav-utility" :aria-pressed="!audioMuted" @click="toggleMute">
         <span class="nav-utility-icon" aria-hidden="true">{{ audioMuted ? '🔇' : '🔔' }}</span>
-        <span class="nav-utility-label">
-          {{ audioMuted ? 'Timer chimes muted' : 'Timer chimes on' }}
+        <span class="nav-utility-main">
+          <span class="nav-utility-label">
+            {{ audioMuted ? 'Timer chimes muted' : 'Timer chimes on' }}
+          </span>
+          <span v-if="lastChime" class="nav-utility-sub">Last chime · {{ lastChime }}</span>
         </span>
       </button>
 
@@ -807,6 +829,23 @@ function onTouchEnd() {
 }
 .nav-utility:active {
   background: var(--color-surface);
+}
+.nav-utility-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+/* Flight-recorder readout — quiet caption under the toggle label. */
+.nav-utility-sub {
+  font-size: var(--type-caption);
+  color: var(--color-text-disabled);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 .nav-utility-icon {
   font-size: 15px;

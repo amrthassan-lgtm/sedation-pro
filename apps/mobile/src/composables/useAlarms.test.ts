@@ -166,6 +166,26 @@ describe('useAlarms', () => {
     scope.stop();
   });
 
+  it('records every fired chime in the persisted flight recorder', async () => {
+    const iv = useIVStore();
+    iv.logDose({ drug: 'versed', mg: 2 });
+    vi.advanceTimersByTime(4 * 60_000); // mount past redose-ready
+
+    const scope = effectScope();
+    scope.run(() => useAlarms());
+    await nextTick();
+
+    vi.advanceTimersByTime(17 * 60_000); // release clears at t+20
+    await nextTick();
+    expect(playCount).toBe(1);
+
+    const log = JSON.parse(localStorage.getItem('sedation-pro:chime-log:v1') ?? '[]');
+    expect(log.length).toBe(1);
+    expect(log[0].kind).toBe('Release cleared');
+    expect(typeof log[0].at).toBe('number');
+    scope.stop();
+  });
+
   it('chimes the resolution motif when the IV-out wait clears', async () => {
     const iv = useIVStore();
     iv.logDose({ drug: 'versed', mg: 2 });
@@ -196,6 +216,46 @@ describe('useAlarms', () => {
     await nextTick();
 
     vi.advanceTimersByTime(30 * 60_000);
+    await nextTick();
+
+    expect(playCount).toBe(0);
+    scope.stop();
+  });
+
+  it('a completely empty case stays silent through hours, resumes, and freezes', async () => {
+    // Field report 2026-08: "opened the app, it played a stale chime, no
+    // drug pushes at all." With empty stores every transition source is
+    // null — this fuzz locks that no tick pattern (long healthy runs,
+    // visibility flips, frozen jumps) can produce audio from nothing.
+    const scope = effectScope();
+    scope.run(() => useAlarms());
+    await nextTick();
+
+    for (let hour = 0; hour < 3; hour += 1) {
+      vi.advanceTimersByTime(45 * 60_000);
+      document.dispatchEvent(new Event('visibilitychange'));
+      vi.advanceTimersByTime(5 * 60_000);
+      vi.setSystemTime(Date.now() + 10 * 60_000); // frozen jump
+      vi.advanceTimersByTime(10 * 60_000);
+      await nextTick();
+    }
+
+    expect(playCount).toBe(0);
+    scope.stop();
+  });
+
+  it('a restored premed already past its wait does not chime on open', async () => {
+    // Resume-yesterday's-chart scenario: the premed event hydrates with
+    // its 30-min wait long since cleared. premedReady is true at mount —
+    // prev captures true, no transition, no chime.
+    const eventLog = useEventLogStore();
+    eventLog.append('Preoperative Oral Dose', { Drug: 'Triazolam', Dose: '0.25 mg' });
+    vi.advanceTimersByTime(3 * 60 * 60_000); // logged 3 hours ago
+
+    const scope = effectScope();
+    scope.run(() => useAlarms());
+    await nextTick();
+    vi.advanceTimersByTime(10 * 60_000);
     await nextTick();
 
     expect(playCount).toBe(0);

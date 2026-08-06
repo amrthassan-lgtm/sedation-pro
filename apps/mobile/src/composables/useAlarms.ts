@@ -246,6 +246,45 @@ const GRACE_MS = 4_000;
 
 const ORAL_PREMED_EVENT = 'Preoperative Oral Dose';
 
+/**
+ * Chime flight recorder — a small persisted ring of the last chimes fired,
+ * with which transition fired them. Exists because "the app played a stale
+ * chime, not sure where from" is undiagnosable after the fact without it;
+ * the drawer surfaces the latest entry. Survives reloads and (via
+ * useCaseReset's PRESERVED_KEYS) new-case resets.
+ */
+const CHIME_LOG_KEY = 'sedation-pro:chime-log:v1';
+const CHIME_LOG_MAX = 20;
+
+export type ChimeKind = 'Versed ready' | 'Fentanyl ready' | 'Pre-med cleared' | 'Release cleared';
+
+export interface ChimeLogEntry {
+  readonly kind: ChimeKind;
+  readonly at: number;
+}
+
+export function readChimeLog(): ReadonlyArray<ChimeLogEntry> {
+  if (typeof window === 'undefined' || !('localStorage' in window)) return [];
+  try {
+    const raw = window.localStorage.getItem(CHIME_LOG_KEY);
+    if (raw === null) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as ChimeLogEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function recordChime(kind: ChimeKind): void {
+  if (typeof window === 'undefined' || !('localStorage' in window)) return;
+  try {
+    const next = [...readChimeLog(), { kind, at: Date.now() }].slice(-CHIME_LOG_MAX);
+    window.localStorage.setItem(CHIME_LOG_KEY, JSON.stringify(next));
+  } catch {
+    // Diagnostics only — never let the recorder break the chime itself.
+  }
+}
+
 // iOS resume can deliver a burst of coalesced ticks whose individual
 // deltas look healthy, so time math alone can't spot "we just resumed".
 // The visibility flip re-arms the grace window directly. Module-scoped
@@ -310,11 +349,13 @@ export function useAlarms(): void {
     return r.eligible;
   });
 
-  function chimeReady(): void {
+  function chimeReady(kind: ChimeKind): void {
+    recordChime(kind);
     play('ready', READY_MOTIF, audio.muted);
     haptic('light');
   }
-  function chimeEnd(): void {
+  function chimeEnd(kind: ChimeKind): void {
+    recordChime(kind);
     play('end', END_MOTIF, audio.muted);
     // Heavier haptic for the case-complete event — weightier moment.
     haptic('medium');
@@ -362,10 +403,12 @@ export function useAlarms(): void {
       const f = fentanylState.value;
       const pm = premedReady.value;
       const rl = releaseReady.value;
-      if (live && versedFresh && v === 'ready' && prevVersed !== 'ready') chimeReady();
-      if (live && fentanylFresh && f === 'ready' && prevFentanyl !== 'ready') chimeReady();
-      if (live && premedFresh && pm === true && prevPremed !== true) chimeReady();
-      if (live && releaseFresh && rl === true && prevRelease !== true) chimeEnd();
+      if (live && versedFresh && v === 'ready' && prevVersed !== 'ready')
+        chimeReady('Versed ready');
+      if (live && fentanylFresh && f === 'ready' && prevFentanyl !== 'ready')
+        chimeReady('Fentanyl ready');
+      if (live && premedFresh && pm === true && prevPremed !== true) chimeReady('Pre-med cleared');
+      if (live && releaseFresh && rl === true && prevRelease !== true) chimeEnd('Release cleared');
 
       // Snapshots update on every tick, suppressed or not — a suppressed
       // transition is discarded, never deferred to a later tick.

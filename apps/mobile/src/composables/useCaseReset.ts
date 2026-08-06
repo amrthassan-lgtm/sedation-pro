@@ -19,6 +19,9 @@
 const PRESERVED_KEYS: ReadonlySet<string> = new Set([
   'sedation-pro:theme:v1',
   'sedation-pro:inventory-banner:v1',
+  // Chime flight recorder — diagnostics must survive the reset that often
+  // immediately follows the event being diagnosed.
+  'sedation-pro:chime-log:v1',
 ]);
 
 export function useCaseReset(): { reset: () => void } {
