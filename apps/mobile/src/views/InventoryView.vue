@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
 import { EXPIRY_WARN_DAYS, type Severity } from '@sedation-pro/clinical';
 import { UiBanner, UiCard, UiStack, UiStatCard, UiStatusPill } from '@sedation-pro/ui';
 
 import { INVENTORY_AS_OF, type InventoryItem } from '@/data/emergency-inventory';
-import { useInventoryStatus, type ClassifiedItem } from '@/composables/useInventoryStatus';
+import {
+  protocolsUsing,
+  useInventoryStatus,
+  type ClassifiedItem,
+} from '@/composables/useInventoryStatus';
 
 /**
  * Read-only by design: the inventory's source of truth is the checked-in
@@ -84,6 +91,21 @@ function orderLine(item: InventoryItem): string {
     ? `SKU ${item.onOrder.sku} · arriving as ${item.onOrder.substitution}`
     : `SKU ${item.onOrder.sku}`;
 }
+
+// -------- "Used in" expansion -----------------------------------------------
+// Tapping a mapped row expands the exact protocols that call for the drug
+// (same mapping as the stock pills — brand names resolve correctly).
+// Single-open, keyed by item id or gap-row drug name.
+const router = useRouter();
+const expandedId = ref<string | null>(null);
+
+function toggleExpanded(key: string): void {
+  expandedId.value = expandedId.value === key ? null : key;
+}
+
+function openProtocol(id: string): void {
+  void router.push(`/quick-reference/${id}`);
+}
 </script>
 
 <template>
@@ -145,23 +167,54 @@ function orderLine(item: InventoryItem): string {
           <span class="card-count">{{ section.entries.length }}</span>
         </header>
         <UiStack :gap="1">
-          <div v-for="entry in section.entries" :key="entry.item.id" class="inv-row">
-            <span class="inv-bar" :class="`inv-bar--${rowTone(entry)}`" aria-hidden="true" />
-            <div class="inv-main">
-              <p class="inv-drug">{{ entry.item.drug }}</p>
-              <p class="inv-desc">{{ entry.item.description }}</p>
-              <p class="inv-meta">{{ metaLine(entry.item) }}</p>
-              <p v-if="entry.item.onOrder" class="inv-order">{{ orderLine(entry.item) }}</p>
-              <p v-if="entry.item.notes" class="inv-note">{{ entry.item.notes }}</p>
+          <template v-for="entry in section.entries" :key="entry.item.id">
+            <component
+              :is="inv.usesFor(entry.item).length > 0 ? 'button' : 'div'"
+              class="inv-row"
+              :type="inv.usesFor(entry.item).length > 0 ? 'button' : undefined"
+              :aria-expanded="
+                inv.usesFor(entry.item).length > 0 ? expandedId === entry.item.id : undefined
+              "
+              @click="inv.usesFor(entry.item).length > 0 && toggleExpanded(entry.item.id)"
+            >
+              <span class="inv-bar" :class="`inv-bar--${rowTone(entry)}`" aria-hidden="true" />
+              <div class="inv-main">
+                <p class="inv-drug">{{ entry.item.drug }}</p>
+                <p class="inv-desc">{{ entry.item.description }}</p>
+                <p class="inv-meta">{{ metaLine(entry.item) }}</p>
+                <p v-if="entry.item.onOrder" class="inv-order">{{ orderLine(entry.item) }}</p>
+                <p v-if="entry.item.notes" class="inv-note">{{ entry.item.notes }}</p>
+              </div>
+              <div class="inv-pills">
+                <UiStatusPill :severity="pillSeverity(entry)">{{ pillLabel(entry) }}</UiStatusPill>
+                <UiStatusPill v-if="entry.item.onOrder" severity="empty">On order</UiStatusPill>
+                <UiStatusPill v-if="entry.item.category === 'sedation'" severity="empty">
+                  Sedation cart
+                </UiStatusPill>
+              </div>
+              <span
+                v-if="inv.usesFor(entry.item).length > 0"
+                class="inv-chevron"
+                :class="{ 'is-open': expandedId === entry.item.id }"
+                aria-hidden="true"
+              >
+                ›
+              </span>
+            </component>
+            <div v-if="expandedId === entry.item.id" class="inv-uses">
+              <p class="inv-uses-label">Used in</p>
+              <button
+                v-for="proto in inv.usesFor(entry.item)"
+                :key="proto.id"
+                type="button"
+                class="inv-uses-row"
+                @click="openProtocol(proto.id)"
+              >
+                <span class="inv-uses-name">{{ proto.name }}</span>
+                <span class="inv-uses-chevron" aria-hidden="true">›</span>
+              </button>
             </div>
-            <div class="inv-pills">
-              <UiStatusPill :severity="pillSeverity(entry)">{{ pillLabel(entry) }}</UiStatusPill>
-              <UiStatusPill v-if="entry.item.onOrder" severity="empty">On order</UiStatusPill>
-              <UiStatusPill v-if="entry.item.category === 'sedation'" severity="empty">
-                Sedation cart
-              </UiStatusPill>
-            </div>
-          </div>
+          </template>
         </UiStack>
       </UiCard>
     </template>
@@ -176,15 +229,42 @@ function orderLine(item: InventoryItem): string {
         <span class="card-count">{{ inv.notStocked.length }}</span>
       </header>
       <UiStack :gap="1">
-        <div v-for="name in inv.notStocked" :key="name" class="inv-row">
-          <span class="inv-bar inv-bar--slate" aria-hidden="true" />
-          <div class="inv-main">
-            <p class="inv-drug">{{ name }}</p>
+        <template v-for="name in inv.notStocked" :key="name">
+          <button
+            type="button"
+            class="inv-row"
+            :aria-expanded="expandedId === name"
+            @click="toggleExpanded(name)"
+          >
+            <span class="inv-bar inv-bar--slate" aria-hidden="true" />
+            <div class="inv-main">
+              <p class="inv-drug">{{ name }}</p>
+            </div>
+            <div class="inv-pills">
+              <UiStatusPill severity="empty">Not stocked</UiStatusPill>
+            </div>
+            <span
+              class="inv-chevron"
+              :class="{ 'is-open': expandedId === name }"
+              aria-hidden="true"
+            >
+              ›
+            </span>
+          </button>
+          <div v-if="expandedId === name" class="inv-uses">
+            <p class="inv-uses-label">Called for by</p>
+            <button
+              v-for="proto in protocolsUsing([name])"
+              :key="proto.id"
+              type="button"
+              class="inv-uses-row"
+              @click="openProtocol(proto.id)"
+            >
+              <span class="inv-uses-name">{{ proto.name }}</span>
+              <span class="inv-uses-chevron" aria-hidden="true">›</span>
+            </button>
           </div>
-          <div class="inv-pills">
-            <UiStatusPill severity="empty">Not stocked</UiStatusPill>
-          </div>
-        </div>
+        </template>
       </UiStack>
       <p class="inv-hint">
         Controlled substances (Midazolam, Fentanyl, Diazepam) are stored and tracked separately and
@@ -264,9 +344,80 @@ function orderLine(item: InventoryItem): string {
   padding: 10px 12px;
   border-radius: var(--r-md);
   transition: background var(--dur-150) var(--ease-standard);
+  /* Button reset — mapped rows render as <button> for the Used-in
+     expansion; unmapped rows stay divs and these are no-ops there. */
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+button.inv-row {
+  cursor: pointer;
 }
 .inv-row:active {
   background: var(--color-surface);
+}
+.inv-chevron {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 15px;
+  color: var(--color-text-disabled);
+  line-height: 1;
+  transition: transform var(--dur-150) var(--ease-standard);
+}
+.inv-chevron.is-open {
+  transform: rotate(90deg);
+}
+/* Expanded "Used in" panel — indented protocol links under the row. */
+.inv-uses {
+  margin: 0 4px 4px 34px;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.inv-uses-label {
+  margin: 0 0 2px;
+  font-size: var(--type-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+.inv-uses-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 8px 6px;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-150) var(--ease-standard);
+}
+.inv-uses-row:active {
+  background: var(--color-surface);
+}
+.inv-uses-name {
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+.inv-uses-chevron {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--color-text-disabled);
+  line-height: 1;
 }
 .inv-bar {
   flex-shrink: 0;

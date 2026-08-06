@@ -6,6 +6,7 @@ import {
   protocolCalloutNames,
   protocolGapList,
   protocolStockStatus,
+  protocolsUsing,
   summarizeInventory,
 } from './useInventoryStatus';
 import { EMERGENCY_INVENTORY, type InventoryItem } from '@/data/emergency-inventory';
@@ -102,6 +103,30 @@ describe('protocolStockStatus (best-of join)', () => {
     const classified = classifyInventory(NOW, [item({ id: 'a' })]);
     expect(protocolStockStatus('Glucagon', classified)).toBeNull();
     expect(protocolStockStatus('Midazolam', classified)).toBeNull();
+  });
+});
+
+describe('protocolsUsing (the "Used in" expansion)', () => {
+  it('resolves brand-named stock to its protocol drug — Ventolin finds the Albuterol pages', () => {
+    const ids = protocolsUsing(['Albuterol']).map((p) => p.id);
+    expect(ids).toContain('bronchospasm');
+    expect(ids).toContain('anaphylaxis');
+  });
+
+  it('a multi-mapped item collects every protocol across its names', () => {
+    const ids = protocolsUsing(['Epinephrine', 'Push-dose Epinephrine']).map((p) => p.id);
+    expect(ids).toContain('vfib_vtach');
+    expect(ids).toContain('anaphylaxis');
+    expect(ids).toContain('bradycardia'); // only via the push-dose name
+  });
+
+  it('gap-list names resolve too — Phenylephrine points at hypotension', () => {
+    expect(protocolsUsing(['Phenylephrine']).map((p) => p.id)).toEqual(['hypotension']);
+  });
+
+  it('empty or unknown names produce an empty list', () => {
+    expect(protocolsUsing([])).toEqual([]);
+    expect(protocolsUsing(['Not A Drug'])).toEqual([]);
   });
 });
 

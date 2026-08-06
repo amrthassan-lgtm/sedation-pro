@@ -100,6 +100,25 @@ export function protocolStockStatus(
   return best;
 }
 
+export interface ProtocolRef {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * Protocols (in library order) with at least one step callout whose drug
+ * name is in `names`. Drives the inventory's "Used in" expansion — the
+ * same mapping that powers the stock pills, so "Ventolin HFA" correctly
+ * resolves to the Albuterol protocols rather than string-matching.
+ */
+export function protocolsUsing(names: ReadonlyArray<string>): ReadonlyArray<ProtocolRef> {
+  if (names.length === 0) return [];
+  const wanted = new Set(names);
+  return EMERGENCY_PROTOCOLS.filter((p) =>
+    p.steps.some((s) => s.drug !== undefined && wanted.has(s.drug.name)),
+  ).map((p) => ({ id: p.id, name: p.name }));
+}
+
 /** Every distinct drug name referenced by protocol step callouts. */
 export function protocolCalloutNames(): ReadonlyArray<string> {
   const names = new Set<string>();
@@ -136,6 +155,7 @@ export interface InventoryStatus {
   readonly notStocked: ReadonlyArray<string>;
   readonly subLine: string;
   statusFor(calloutName: string): Severity | null;
+  usesFor(item: InventoryItem): ReadonlyArray<ProtocolRef>;
 }
 
 export function useInventoryStatus(now: number = Date.now()): InventoryStatus {
@@ -150,5 +170,6 @@ export function useInventoryStatus(now: number = Date.now()): InventoryStatus {
     notStocked: protocolGapList(),
     subLine: inventorySubLine(summary),
     statusFor: (calloutName) => protocolStockStatus(calloutName, classified),
+    usesFor: (item) => protocolsUsing(item.protocolDrugNames ?? []),
   };
 }
