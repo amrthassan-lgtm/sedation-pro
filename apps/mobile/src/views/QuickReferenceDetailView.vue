@@ -89,8 +89,9 @@ function open(id: string) {
  * Pieces drop out cleanly when the formulary doesn't carry that field.
  */
 function routeLine(drug: EmergencyDrugCallout): string {
+  // Volume is deliberately absent here — it renders on its own prominent
+  // Draw line; this line carries only route and concentration.
   const parts: string[] = [drug.route];
-  if (drug.volume) parts.push(drug.volume);
   if (drug.concentration) parts.push(drug.concentration);
   return parts.join(' · ');
 }
@@ -169,6 +170,17 @@ function syringeFor(drug: EmergencyDrugCallout) {
                   </span>
                   <span class="drug-dose">{{ step.drug.dose }}</span>
                 </div>
+                <p v-if="step.drug.mixFirst" class="drug-mix">⚠ {{ step.drug.mixFirst }}</p>
+                <div v-if="step.drug.volume" class="drug-draw">
+                  <span class="drug-draw-label">Draw</span>
+                  <span class="drug-draw-vol">{{ step.drug.volume }}</span>
+                </div>
+                <dl v-if="step.drug.drawTable" class="drug-draw-table">
+                  <div v-for="row in step.drug.drawTable" :key="row.label" class="drug-draw-row">
+                    <dt>{{ row.label }}</dt>
+                    <dd>{{ row.ml }}</dd>
+                  </div>
+                </dl>
                 <p class="drug-route">{{ routeLine(step.drug) }}</p>
                 <p v-if="step.drug.notes" class="drug-notes">{{ step.drug.notes }}</p>
                 <UiSyringe
@@ -376,6 +388,9 @@ function syringeFor(drug: EmergencyDrugCallout) {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--sp-2);
+  /* Long doses ("0.1 mg (100 mcg)") drop to their own line instead of
+     colliding with the drug name. */
+  flex-wrap: wrap;
 }
 .drug-name-group {
   display: inline-flex;
@@ -391,6 +406,62 @@ function syringeFor(drug: EmergencyDrugCallout) {
 .drug-dose {
   font-family: var(--font-mono);
   font-size: var(--type-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+/* MIX FIRST band — dilution recipes render as a danger-tinted warning
+   ABOVE the draw line; drawing these from the stock vial is a 100× error. */
+.drug-mix {
+  margin: 4px 0 0;
+  padding: 4px 8px;
+  font-size: var(--type-caption);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+  color: var(--color-danger);
+  background: var(--color-crisis-soft);
+  border: 1px solid var(--color-crisis);
+  border-radius: var(--r-sm);
+}
+/* The draw volume is the number a gloved hand acts on — it gets the hero
+   treatment the mg dose used to monopolize. */
+.drug-draw {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin-top: 2px;
+}
+.drug-draw-label {
+  font-size: var(--type-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+.drug-draw-vol {
+  font-family: var(--font-mono);
+  font-size: var(--type-heading);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+}
+.drug-draw-table {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  column-gap: var(--sp-3);
+  row-gap: 2px;
+  margin: 2px 0 0;
+}
+.drug-draw-row {
+  display: contents;
+}
+.drug-draw-table dt {
+  font-size: var(--type-caption);
+  color: var(--color-text-secondary);
+}
+.drug-draw-table dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--type-footnote);
   font-weight: var(--weight-bold);
   color: var(--color-text-primary);
 }

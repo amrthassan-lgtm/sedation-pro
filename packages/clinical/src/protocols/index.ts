@@ -5,6 +5,7 @@ export {
   findProtocol,
   protocolsByCategory,
   type EmergencyCategory,
+  type DrawTableRow,
   type EmergencyDrugCallout,
   type EmergencyProtocol,
   type ProtocolStep,

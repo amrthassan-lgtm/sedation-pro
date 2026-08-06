@@ -19,13 +19,16 @@ export interface SyringeConfig {
 }
 
 const SYRINGES: Readonly<Record<string, SyringeConfig>> = {
-  versed: { capacityMl: 5, color: '#f59e0b', concentration: '5 mg/mL' },
-  midazolam: { capacityMl: 5, color: '#f59e0b', concentration: '5 mg/mL' },
-  fentanyl: { capacityMl: 3, color: '#3b82f6', concentration: '50 mcg/mL' },
-  ondansetron: { capacityMl: 3, color: '#10b981', concentration: '2 mg/mL' },
-  zofran: { capacityMl: 3, color: '#10b981', concentration: '2 mg/mL' },
-  flumazenil: { capacityMl: 10, color: '#ef4444', concentration: '0.1 mg/mL' },
-  naloxone: { capacityMl: 3, color: '#ef4444', concentration: '0.4 mg/mL' },
+  versed: { capacityMl: 5, color: '#f59e0b', concentration: '5 mg/ml' },
+  midazolam: { capacityMl: 5, color: '#f59e0b', concentration: '5 mg/ml' },
+  fentanyl: { capacityMl: 3, color: '#3b82f6', concentration: '50 mcg/ml' },
+  ondansetron: { capacityMl: 3, color: '#10b981', concentration: '2 mg/ml' },
+  zofran: { capacityMl: 3, color: '#10b981', concentration: '2 mg/ml' },
+  // 3 cc matches the practice's trayed barrel and the Quick Reference
+  // landing card; the old 10 came from the 10 ml MAX dose, but the
+  // per-dose draw is 2.0 ml.
+  flumazenil: { capacityMl: 3, color: '#ef4444', concentration: '0.1 mg/ml' },
+  naloxone: { capacityMl: 3, color: '#ef4444', concentration: '0.4 mg/ml' },
 };
 
 /**
@@ -43,13 +46,15 @@ export function syringeConfig(drugName: string): SyringeConfig | null {
 }
 
 /**
- * Parse a volume string ("1.0 ml", "0.3 ml", "2.0 ml") into a number.
- * Returns `null` on unparseable input so the caller can skip the
- * illustration rather than render a syringe with the plunger fully home.
+ * Parse a single-value volume string ("1.0 ml", "1.0 ml (0.4 mg)") into a
+ * number. Range volumes ("0.5-1.0 ml") deliberately return `null` — a
+ * syringe drawn to an arbitrary range endpoint would be a misleading
+ * illustration. Unparseable input also returns `null` so the caller skips
+ * the illustration rather than render a plunger fully home.
  */
 export function parseVolumeMl(volume: string | undefined): number | null {
   if (!volume) return null;
-  const m = /([\d.]+)\s*ml/i.exec(volume);
+  const m = /^([\d.]+) ml(?: \([^)]+\))?$/i.exec(volume);
   if (!m || m[1] === undefined) return null;
   const n = parseFloat(m[1]);
   return Number.isFinite(n) ? n : null;

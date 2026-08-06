@@ -14,16 +14,42 @@ export type EmergencyCategory =
   | 'neurological'
   | 'other';
 
+/**
+ * One row of a callout's draw table: a dose ("20 mg"), patient weight
+ * ("150 lb (90 mg)"), or stocked presentation ("1 mg/ml vial") mapped to
+ * the volume to draw for it.
+ */
+export interface DrawTableRow {
+  readonly label: string;
+  /** Canonical volume string — "N.N ml". */
+  readonly ml: string;
+}
+
 /** Inline drug callout that sits next to a step. */
 export interface EmergencyDrugCallout {
   readonly name: string;
   readonly dose: string;
   readonly route: 'IV' | 'IM' | 'SubQ' | 'SL' | 'IN' | 'PO' | 'inhaled';
-  /** Volume to draw — e.g. `"0.3 ml"`. Optional. */
+  /**
+   * Volume to draw — the hero line. "N.N ml", a range "N.N-N.N ml" with
+   * endpoints positionally aligned to the dose range, or "N.N ml
+   * (annotation)".
+   */
   readonly volume?: string;
   /** Concentration as labelled — e.g. `"1 mg/ml (1:1000)"`. Optional. */
   readonly concentration?: string;
-  /** Extra clinical notes ("give over 2 minutes"; "via existing IV line"). Optional. */
+  /**
+   * Dilution recipe rendered as a warning band ABOVE the draw line.
+   * Always starts with "MIX FIRST:". The only free-text field allowed to
+   * use "→" (for the dilution result).
+   */
+  readonly mixFirst?: string;
+  /**
+   * Structured dose / weight / presentation → volume rows, rendered as an
+   * aligned table. Replaces the old prose "20 mg → 1.0ml; …" notes.
+   */
+  readonly drawTable?: ReadonlyArray<DrawTableRow>;
+  /** True free text only ("give over 2 minutes"). Never carries volumes. */
   readonly notes?: string;
 }
 
@@ -86,14 +112,20 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Semi-supine, positive pressure O₂ with BVM (100% at 6L/min)',
         severity: 'critical',
       },
-      { text: 'If no relief: 1-2mL Normal Saline transtracheal' },
+      { text: 'If no relief: 1-2 ml Normal Saline transtracheal' },
       {
-        text: 'Last resort: Succinylcholine IV (1mg/kg IM) → Assist ventilation with BVM',
+        text: 'Last resort: Succinylcholine IV (1 mg/kg IM), then assist ventilation with BVM',
         drug: {
           name: 'Succinylcholine',
           dose: '20-40 mg',
           route: 'IV',
-          notes: '20 mg → 1.0ml; 40 mg → 2.0ml. IM 1mg/kg = 0.05mg/lb. Keep refrigerated.',
+          volume: '1.0-2.0 ml',
+          concentration: '20 mg/ml',
+          drawTable: [
+            { label: '20 mg', ml: '1.0 ml' },
+            { label: '40 mg', ml: '2.0 ml' },
+          ],
+          notes: 'IM alternative 1 mg/kg (≈0.45 mg/lb); keep refrigerated',
         },
         severity: 'critical',
       },
@@ -116,30 +148,35 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     steps: [
       { text: 'Upright position' },
       {
-        text: 'Albuterol 2 puffs STAT, repeat q10-20min',
-        drug: { name: 'Albuterol', dose: '2 puffs', route: 'inhaled', notes: 'repeat q10-20min' },
+        text: 'Albuterol 2 puffs STAT, repeat q10-20 min',
+        drug: { name: 'Albuterol', dose: '2 puffs', route: 'inhaled', notes: 'repeat q10-20 min' },
       },
       { text: 'O₂ to >94%' },
       {
-        text: 'If severe: Epinephrine Sub-Q, repeat q20min up to 1mg',
+        text: 'If severe: Epinephrine Sub-Q, repeat q20 min up to 1 mg',
         drug: {
           name: 'Epinephrine',
           dose: '0.3-0.5 mg',
           route: 'SubQ',
           volume: '0.3-0.5 ml',
           concentration: '1 mg/ml (1:1000)',
-          notes: 'repeat q20min up to 1mg total',
+          drawTable: [
+            { label: '0.3 mg', ml: '0.3 ml' },
+            { label: '0.5 mg', ml: '0.5 ml' },
+          ],
+          notes: 'repeat q20 min up to 1 mg total',
         },
       },
       { text: '911 if unresolved', severity: 'critical' },
       { text: 'Reverse sedative PRN' },
       {
-        text: 'If aspiration suspected: Diphenhydramine 50mg IV + Dexamethasone 20mg IV',
+        text: 'If aspiration suspected: Diphenhydramine 50 mg IV + Dexamethasone 20 mg IV',
         drug: {
           name: 'Diphenhydramine',
           dose: '50 mg',
           route: 'IV',
           volume: '1.0 ml',
+          concentration: '50 mg/ml',
         },
       },
       {
@@ -148,8 +185,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Dexamethasone',
           dose: '20 mg',
           route: 'IV',
-          concentration: '10 mg/ml or 4 mg/ml',
-          notes: '10 mg/ml vial → 2.0ml; 4 mg/ml vial (in-office stock) → 5.0ml',
+          concentration: '4 mg/ml (in-office stock) or 10 mg/ml',
+          drawTable: [
+            { label: '4 mg/ml vial (in-office stock)', ml: '5.0 ml' },
+            { label: '10 mg/ml vial', ml: '2.0 ml' },
+          ],
         },
       },
       {
@@ -157,8 +197,15 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         severity: 'critical',
       },
       {
-        text: 'If unable to ventilate, prepare for intubation with Succinylcholine 20mg IV and Call 911',
-        drug: { name: 'Succinylcholine', dose: '20 mg', route: 'IV', volume: '1.0 ml' },
+        text: 'If unable to ventilate, prepare for intubation with Succinylcholine 20 mg IV and Call 911',
+        drug: {
+          name: 'Succinylcholine',
+          dose: '20 mg',
+          route: 'IV',
+          volume: '1.0 ml',
+          concentration: '20 mg/ml',
+          notes: 'keep refrigerated',
+        },
         severity: 'final',
       },
     ],
@@ -212,6 +259,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '4 mg',
           route: 'IV',
           volume: '2.0 ml',
+          concentration: '2 mg/ml',
           notes: 'give over 2-5 minutes',
         },
       },
@@ -234,8 +282,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Dexamethasone',
           dose: '20 mg',
           route: 'IV',
-          concentration: '10 mg/ml or 4 mg/ml',
-          notes: '10 mg/ml vial → 2.0ml; 4 mg/ml vial (in-office stock) → 5.0ml',
+          concentration: '4 mg/ml (in-office stock) or 10 mg/ml',
+          drawTable: [
+            { label: '4 mg/ml vial (in-office stock)', ml: '5.0 ml' },
+            { label: '10 mg/ml vial', ml: '2.0 ml' },
+          ],
         },
       },
       {
@@ -245,7 +296,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '20 mg',
           route: 'IV',
           volume: '1.0 ml',
-          notes: 'Keep refrigerated',
+          concentration: '20 mg/ml',
+          notes: 'keep refrigerated',
         },
       },
       { text: 'Call 911', severity: 'critical' },
@@ -261,7 +313,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     signs: ['cannot speak', 'cannot cough', 'cyanosis', 'silent chest'],
     steps: [
       { text: 'Conscious Patient: Heimlich maneuver / Back blows' },
-      { text: 'If fails → Direct visualization, Magill forceps removal' },
+      { text: 'If fails: direct visualization, Magill forceps removal' },
       { text: 'Unconscious Patient: Lay flat, call 911', severity: 'critical' },
       { text: 'Direct laryngoscope, suction, Magill forceps' },
       { text: 'BVM if needed', severity: 'critical' },
@@ -314,7 +366,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Use index finger to guide along hard palate' },
       { text: 'Advance until resistance felt (cuff in hypopharynx)' },
       {
-        text: 'Inflate cuff without holding device: Size 3: 20mL air; Size 4: 30mL air; Size 5: 40mL air',
+        text: 'Inflate cuff without holding device: Size 3: 20 ml air; Size 4: 30 ml air; Size 5: 40 ml air',
       },
       { text: 'LMA should lift slightly (~1-2cm) when properly seated' },
       { text: 'Attach BVM to LMA connector', severity: 'critical' },
@@ -371,7 +423,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       {
         text: 'If pain continues: Fentanyl or N₂O',
-        drug: { name: 'Fentanyl', dose: '25 mcg', route: 'IV', volume: '0.5 ml' },
+        drug: {
+          name: 'Fentanyl',
+          dose: '25 mcg',
+          route: 'IV',
+          volume: '0.5 ml',
+          concentration: '50 mcg/ml',
+        },
       },
       { text: 'Activate ACLS protocol if indicated', severity: 'final' },
     ],
@@ -402,13 +460,14 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         },
       },
       {
-        text: 'Fentanyl IV for pain (q10-20min)',
+        text: 'Fentanyl IV for pain (q10-20 min)',
         drug: {
           name: 'Fentanyl',
           dose: '25 mcg',
           route: 'IV',
           volume: '0.5 ml',
-          notes: 'q10-20min',
+          concentration: '50 mcg/ml',
+          notes: 'repeat q10-20 min',
         },
       },
       { text: 'Monitor vitals / Place EKG' },
@@ -430,7 +489,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Midazolam',
           dose: '1-2 mg',
           route: 'IV',
-          notes: '1 mg → 0.2ml; 2 mg → 0.4ml',
+          volume: '0.2-0.4 ml',
+          concentration: '5 mg/ml',
+          drawTable: [
+            { label: '1 mg', ml: '0.2 ml' },
+            { label: '2 mg', ml: '0.4 ml' },
+          ],
         },
       },
       { text: 'Patient in Supine Position' },
@@ -453,8 +517,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Hydralazine',
           dose: '5-10 mg',
           route: 'IV',
+          volume: '0.25-0.5 ml',
           concentration: '20 mg/ml',
-          notes: '5 mg → 0.25ml; 10 mg → 0.5ml · may repeat in ~20min',
+          drawTable: [
+            { label: '5 mg', ml: '0.25 ml' },
+            { label: '10 mg', ml: '0.5 ml' },
+          ],
+          notes: 'may repeat in ~20 min',
         },
       },
     ],
@@ -478,7 +547,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '4.0 ml',
           concentration: '5 mg/ml',
-          notes: 'over 2 minutes; repeat 20-40mg q10min up to 300mg total',
+          notes: 'over 2 minutes; repeat 20-40 mg q10 min up to 300 mg total',
         },
       },
       {
@@ -487,8 +556,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Hydralazine',
           dose: '5-10 mg',
           route: 'IV',
+          volume: '0.25-0.5 ml',
           concentration: '20 mg/ml',
-          notes: '5 mg → 0.25ml; 10 mg → 0.5ml · may repeat in ~20min',
+          drawTable: [
+            { label: '5 mg', ml: '0.25 ml' },
+            { label: '10 mg', ml: '0.5 ml' },
+          ],
+          notes: 'may repeat in ~20 min',
         },
       },
       { text: 'Monitor vitals continuously', severity: 'final' },
@@ -511,9 +585,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Atropine',
           dose: '0.5 mg',
           route: 'IV',
-          volume: '0.5 ml',
-          concentration: '1 mg/ml',
-          notes: 'q3-5min, max 3mg',
+          concentration: '1 mg/ml vial or 1 mg/10 ml prefilled',
+          drawTable: [
+            { label: '1 mg/ml vial', ml: '0.5 ml' },
+            { label: '1 mg/10 ml prefilled', ml: '5.0 ml' },
+          ],
+          notes: 'q3-5 min, max 3 mg',
         },
       },
       {
@@ -522,18 +599,27 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Ephedrine',
           dose: '2.5-5 mg',
           route: 'IV',
-          notes:
-            'dilute 1ml of 50mg/ml with 9ml saline → 5mg/ml. 2.5 mg → 0.5ml; 5 mg → 1.0ml. Effects in 10 min, duration 4 hr.',
+          volume: '0.5-1.0 ml',
+          concentration: '5 mg/ml (after dilution)',
+          mixFirst: 'MIX FIRST: 1 ml of 50 mg/ml + 9 ml saline → 5 mg/ml',
+          drawTable: [
+            { label: '2.5 mg', ml: '0.5 ml' },
+            { label: '5 mg', ml: '1.0 ml' },
+          ],
+          notes: 'effects in 10 min; duration 4 hr',
         },
       },
       {
         text: 'If Tachycardic (HR >100): Consider vagal maneuvers first, then Phenylephrine IV',
         drug: {
           name: 'Phenylephrine',
-          dose: '0.1 mg',
+          dose: '0.1 mg (100 mcg)',
           route: 'IV',
           volume: '1.0 ml',
-          notes: '100 mcg',
+          concentration: '100 mcg/ml (after dilution)',
+          mixFirst:
+            'MIX FIRST: dilute 1 ml of 10 mg/ml phenylephrine into 100 ml NS → 100 mcg/ml; never draw from the stock vial',
+          drawTable: [{ label: '0.1 mg', ml: '1.0 ml' }],
         },
       },
       { text: 'Monitor vitals' },
@@ -559,9 +645,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Atropine',
           dose: '1 mg',
           route: 'IV',
-          volume: '1.0 ml',
-          concentration: '1 mg/ml',
-          notes: 'repeat q3-5 min, max 3mg total',
+          concentration: '1 mg/ml vial or 1 mg/10 ml prefilled',
+          drawTable: [
+            { label: '1 mg/ml vial', ml: '1.0 ml' },
+            { label: '1 mg/10 ml prefilled (full syringe)', ml: '10.0 ml' },
+          ],
+          notes: 'repeat q3-5 min, max 3 mg total',
         },
       },
       { text: 'Call 911', severity: 'critical' },
@@ -572,8 +661,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '5-10 mcg',
           route: 'IV',
           volume: '0.5-1.0 ml',
-          concentration: '10 mcg/ml',
-          notes: 'mix 1mg Epi (1ml of 1:1000) into 100ml NS; give q2-3 min, titrate to response',
+          concentration: '10 mcg/ml (after mixing — never draw stock 1 mg/ml)',
+          mixFirst: 'MIX FIRST: 1 mg epi (1 ml of 1 mg/ml, 1:1000) into 100 ml NS → 10 mcg/ml',
+          drawTable: [
+            { label: '5 mcg', ml: '0.5 ml' },
+            { label: '10 mcg', ml: '1.0 ml' },
+          ],
+          notes: 'give q2-3 min, titrate to response',
         },
         severity: 'final',
       },
@@ -633,11 +727,15 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '2.0 ml',
           concentration: '3 mg/ml',
-          notes: 'rapid IV push (1-2 seconds); 12mg as 2nd and 3rd dose',
+          drawTable: [
+            { label: '6 mg (1st dose)', ml: '2.0 ml' },
+            { label: '12 mg (2nd/3rd dose)', ml: '4.0 ml' },
+          ],
+          notes: 'rapid IV push (1-2 seconds)',
         },
         severity: 'critical',
       },
-      { text: 'Flush Adenosine with 10mL of NS in IV line immediately' },
+      { text: 'Flush Adenosine with 10 ml of NS in IV line immediately' },
     ],
   },
   {
@@ -687,7 +785,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '0.6 mg/lb',
           route: 'IV',
           concentration: '20 mg/ml',
-          notes: '150 lb: 90mg/4.5ml; 200 lb: 120mg/6.0ml; 250 lb: 150mg/7.5ml',
+          drawTable: [
+            { label: '150 lb (90 mg)', ml: '4.5 ml' },
+            { label: '200 lb (120 mg)', ml: '6.0 ml' },
+            { label: '250 lb (150 mg)', ml: '7.5 ml' },
+          ],
+          notes: 'over 165 lb exceeds one 100 mg/5 ml vial — only 1 stocked',
         },
       },
     ],
@@ -740,7 +843,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '1.0 ml',
           concentration: '1 mg/ml (1:1000)',
-          notes: 'draw entire 1ml ampule; repeat q3-5 min',
+          notes: 'draw entire 1 ml ampule; repeat q3-5 min',
         },
         severity: 'critical',
       },
@@ -752,7 +855,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '6.0 ml',
           concentration: '50 mg/ml',
-          notes: 'IV PUSH; follow with 150mg (3.0ml) in 3-5 min',
+          notes: 'IV PUSH; 300 mg = two 150 mg/3 ml vials; follow with 150 mg (3.0 ml) in 3-5 min',
         },
         severity: 'critical',
       },
@@ -763,7 +866,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '0.6 mg/lb',
           route: 'IV',
           concentration: '20 mg/ml',
-          notes: '150 lb: 90mg/4.5ml; 200 lb: 120mg/6.0ml; 250 lb: 150mg/7.5ml',
+          drawTable: [
+            { label: '150 lb (90 mg)', ml: '4.5 ml' },
+            { label: '200 lb (120 mg)', ml: '6.0 ml' },
+            { label: '250 lb (150 mg)', ml: '7.5 ml' },
+          ],
+          notes: 'over 165 lb exceeds one 100 mg/5 ml vial — only 1 stocked',
         },
       },
       {
@@ -793,7 +901,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       { text: 'Turn on the AED and follow instructions' },
       { text: 'Establish Airway and appropriate ventilation' },
-      { text: 'Start IV and administer Bolus 500mL NS' },
+      { text: 'Start IV and administer Bolus 500 ml NS' },
       { text: "Review possible causes (H's and T's)" },
       {
         text: 'Epinephrine IV push, repeat q3-5 min',
@@ -803,7 +911,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '1.0 ml',
           concentration: '1 mg/ml (1:1000)',
-          notes: 'draw entire 1ml ampule; give as soon as IV access established; repeat q3-5 min',
+          notes: 'draw entire 1 ml ampule; give as soon as IV access established; repeat q3-5 min',
         },
         severity: 'critical',
       },
@@ -823,7 +931,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     steps: [
       { text: 'CALL 911 IMMEDIATELY', severity: 'critical' },
       {
-        text: 'Epinephrine IM (preferred) or IV → THIGH',
+        text: 'Epinephrine IM (preferred) or IV — inject into THIGH',
         drug: {
           name: 'Epinephrine',
           dose: '0.3 mg',
@@ -847,7 +955,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Diphenhydramine',
           dose: '25-50 mg',
           route: 'IV',
-          notes: '25 mg → 0.5ml; 50 mg → 1.0ml',
+          volume: '0.5-1.0 ml',
+          concentration: '50 mg/ml',
+          drawTable: [
+            { label: '25 mg', ml: '0.5 ml' },
+            { label: '50 mg', ml: '1.0 ml' },
+          ],
         },
       },
       {
@@ -858,7 +971,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '2.0 ml',
           concentration: '62.5 mg/ml',
-          notes: 'Mix-O-Vial: press top → mix → swirl → draw; full vial',
+          notes: 'Mix-O-Vial: press top, mix, swirl, draw; give full vial',
         },
       },
       {
@@ -867,9 +980,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Dexamethasone',
           dose: '8-12 mg',
           route: 'IV',
-          concentration: '10 mg/ml or 4 mg/ml',
-          notes:
-            '10 mg/ml: 8 mg → 0.8ml, 12 mg → 1.2ml · 4 mg/ml (in-office stock): 8 mg → 2.0ml, 12 mg → 3.0ml',
+          concentration: '4 mg/ml (in-office stock) or 10 mg/ml',
+          drawTable: [
+            { label: '4 mg/ml: 8 mg', ml: '2.0 ml' },
+            { label: '4 mg/ml: 12 mg', ml: '3.0 ml' },
+            { label: '10 mg/ml: 8 mg', ml: '0.8 ml' },
+            { label: '10 mg/ml: 12 mg', ml: '1.2 ml' },
+          ],
         },
       },
       { text: 'Monitor vitals continuously', severity: 'final' },
@@ -885,13 +1002,14 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     steps: [
       { text: 'If hypoventilation: Use BVM to assist breathing', severity: 'critical' },
       {
-        text: 'Flumazenil IV, repeat q3min up to 1mg',
+        text: 'Flumazenil IV, repeat q3 min up to 1 mg',
         drug: {
           name: 'Flumazenil',
           dose: '0.2 mg',
           route: 'IV',
           volume: '2.0 ml',
-          notes: 'give slowly over 15 sec; max 1.0mg (10ml) in 20 minutes',
+          concentration: '0.1 mg/ml (0.5 mg/5 ml vial)',
+          notes: 'give slowly over 15 sec; max 1.0 mg (10 ml) in 20 minutes',
         },
       },
     ],
@@ -911,8 +1029,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Naloxone',
           dose: '0.4-2 mg',
           route: 'IV',
-          volume: '1.0 ml',
-          notes: 'give slowly over 2-3 minutes; can repeat every 2-3 min',
+          volume: '1.0 ml (0.4 mg)',
+          concentration: '0.4 mg/ml',
+          drawTable: [
+            { label: '0.4 mg', ml: '1.0 ml' },
+            { label: '2 mg (five 1 ml vials — 2 stocked)', ml: '5.0 ml' },
+          ],
+          notes: 'give slowly over 2-3 minutes; titrate q2-3 min',
         },
       },
     ],
@@ -928,7 +1051,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Supine position' },
       {
         text: 'If seizure >5min: Midazolam IM/IV',
-        drug: { name: 'Midazolam', dose: '5 mg', route: 'IM', volume: '1.0 ml' },
+        drug: {
+          name: 'Midazolam',
+          dose: '5 mg',
+          route: 'IM',
+          volume: '1.0 ml',
+          concentration: '5 mg/ml',
+        },
       },
       {
         text: 'If continues: Diazepam IV/IM',
@@ -936,7 +1065,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Diazepam',
           dose: '5-10 mg',
           route: 'IV',
-          notes: '5 mg → 1.0ml; 10 mg → 2.0ml',
+          volume: '1.0-2.0 ml',
+          concentration: '5 mg/ml',
+          drawTable: [
+            { label: '5 mg', ml: '1.0 ml' },
+            { label: '10 mg', ml: '2.0 ml' },
+          ],
         },
       },
       { text: 'Call 911', severity: 'critical' },
@@ -959,7 +1093,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Ammonia capsule / sternal rub' },
       { text: 'Monitor vitals' },
       { text: 'Cold towel to forehead / reassure patient' },
-      { text: 'If not conscious within 120 seconds → Call 911', severity: 'critical' },
+      { text: 'If not conscious within 120 seconds: Call 911', severity: 'critical' },
       { text: 'Give patient 20 minutes to recover before discharge', severity: 'final' },
     ],
   },
@@ -994,7 +1128,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '50 ml',
           concentration: '0.5 g/ml (50% Dextrose)',
-          notes: 'use 50ml prefilled syringe or draw entire vial into 60cc syringe',
+          notes: 'use 50 ml prefilled syringe or draw entire vial into 60 cc syringe',
         },
       },
       {
@@ -1053,7 +1187,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '0.6 mg/lb',
           route: 'IV',
           concentration: '20 mg/ml',
-          notes: 'give slowly through catheter to relieve arterial spasm',
+          drawTable: [
+            { label: '150 lb (90 mg)', ml: '4.5 ml' },
+            { label: '200 lb (120 mg)', ml: '6.0 ml' },
+            { label: '250 lb (150 mg)', ml: '7.5 ml' },
+          ],
+          notes:
+            'give slowly through catheter to relieve arterial spasm; over 165 lb exceeds one 100 mg/5 ml vial — only 1 stocked',
         },
       },
       { text: 'Remove needle' },

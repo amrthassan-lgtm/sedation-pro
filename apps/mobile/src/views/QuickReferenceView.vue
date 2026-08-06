@@ -50,7 +50,7 @@ const searchInputRef = useTemplateRef<{ focus: () => void }>('searchInputRef');
 
 /**
  * IV drug reference table — restores the legacy app's drawing-up chart so a
- * clinician can grab the Emergency button and see "Versed 1 mg → 0.2 mL"
+ * clinician can grab the Emergency button and see "Versed 1 mg → 0.2 ml"
  * without leaving the screen. Doses + notes are presentation data; the
  * concentration / colour / formal name come from the formulary so practices
  * that override the formulary get this card free.
@@ -101,7 +101,7 @@ const DRUG_REF_SEEDS: ReadonlyArray<DrugRefSeed> = [
     tapeLabel: 'Flumazenil',
     doses: [0.2],
     doseUnit: 'mg',
-    note: 'Draw 2 mL per dose. Repeat q3 min. Max 1.0 mg total (5 doses).',
+    note: 'Draw 2 ml per dose. Repeat q3 min. Max 1.0 mg total (5 doses).',
     warning: 'Wait 3 min between doses · monitor 120 min post-reversal.',
   },
   {
@@ -110,7 +110,7 @@ const DRUG_REF_SEEDS: ReadonlyArray<DrugRefSeed> = [
     tapeLabel: 'Naloxone',
     doses: [0.4],
     doseUnit: 'mg',
-    note: 'Single-dose vial = 1 mL. Repeat q2-3 min PRN. Give over 2-3 min.',
+    note: 'Single-dose vial = 1 ml. Repeat q2-3 min PRN. Give over 2-3 min.',
   },
 ];
 
@@ -296,7 +296,7 @@ onMounted(() => {
               :drawn-ml="ref.drawnMl"
               :color="ref.drug.color ?? '#94a3b8'"
               :concentration="`${ref.drug.concentration.value} ${ref.drug.concentration.unit}`"
-              :caption="`${ref.rows[0]?.doseLabel ?? ''} · ${ref.rows[0]?.ml.toFixed(1) ?? ''} mL`"
+              :caption="`${ref.rows[0]?.doseLabel ?? ''} · ${ref.rows[0]?.ml.toFixed(1) ?? ''} ml`"
               compact
             />
             <div class="drug-dose-list">
@@ -304,7 +304,7 @@ onMounted(() => {
                 <span class="drug-dose-amt" :style="{ color: ref.drug.color }">
                   {{ row.doseLabel }}
                 </span>
-                <span class="drug-dose-vol">{{ row.ml.toFixed(1) }} mL</span>
+                <span class="drug-dose-vol">{{ row.ml.toFixed(1) }} ml</span>
               </div>
             </div>
             <p class="drug-dose-note">{{ ref.seed.note }}</p>
