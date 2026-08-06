@@ -44,6 +44,20 @@
 }
 
 /*
+ * Right-aligned mono count in a card header — shared by Quick Reference's
+ * drug/category cards and the inventory sections, so the "N items" glyph
+ * reads identically everywhere.
+ */
+.card-count {
+  font-size: var(--type-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.4px;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  margin-left: auto;
+}
+
+/*
  * Print hygiene — anything tagged `.no-print` (sticky bar, nav drawer, app
  * footer, sedation dock, undo toast, the per-view toolbars on the clinical
  * note) drops out of print output. The clinical note's paper body and the

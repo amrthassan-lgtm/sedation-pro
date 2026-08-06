@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import { alcoholBucketValue, usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
+import { useInventoryStatus } from '@/composables/useInventoryStatus';
 import { useGateFeedback } from '@/composables/useGateFeedback';
 import { useOtherableSelect } from '@/composables/useOtherableSelect';
 import { haptic } from '@/composables/useHaptics';
@@ -45,6 +46,27 @@ const patient = usePatientStore();
 const undo = useUndoStore();
 
 useAssessmentAudit();
+
+/**
+ * Live kit check behind the "Emergency drugs accessible" attestation.
+ * Mount-time snapshot (day granularity). `limit` tone only when stock is
+ * truly expired; unknown-date-only problems soften to `caution`.
+ */
+const kitStatus = useInventoryStatus();
+const kitAlert = computed<{ tone: 'limit' | 'caution'; detail: string } | null>(() => {
+  const bad = kitStatus.needsAttention;
+  if (bad.length === 0) return null;
+  const trulyExpired = bad.some((c) => c.status.valid && c.status.daysLeft < 0);
+  const names = bad.slice(0, 3).map((c) => c.item.drug);
+  const more = bad.length > names.length ? ` +${bad.length - names.length} more` : '';
+  const onOrder = kitStatus.summary.onOrder;
+  const orderNote =
+    onOrder > 0 ? ` · ${onOrder} replacement${onOrder === 1 ? '' : 's'} on order` : '';
+  return {
+    tone: trulyExpired ? 'limit' : 'caution',
+    detail: `${names.join(', ')}${more} — expired or missing a readable date${orderNote}.`,
+  };
+});
 
 const {
   name,
@@ -761,6 +783,22 @@ const diazepamModalCopy = computed(() => {
           label="Emergency drugs accessible"
           hint="Flumazenil · Naloxone · Epinephrine · Atropine · Albuterol · Nitroglycerin · Dextrose · all in reach"
         />
+        <!-- Warn-don't-block (owner decision): the checkbox stays a clinical
+             attestation; the app just refuses to stay silent when its own
+             inventory data contradicts what's being attested. -->
+        <UiBanner
+          v-if="kitAlert"
+          :tone="kitAlert.tone"
+          icon="⚠"
+          title="Emergency kit has expired or unverified stock"
+        >
+          {{ kitAlert.detail }}
+          <div class="kit-alert-actions">
+            <button type="button" class="kit-alert-btn" @click="void router.push('/inventory')">
+              Review inventory
+            </button>
+          </div>
+        </UiBanner>
         <UiCheckbox
           id="field-monitoring_equipment_checked"
           v-model="monitoringEquipmentChecked"
@@ -948,5 +986,28 @@ const diazepamModalCopy = computed(() => {
 .phase-advance-icon {
   font-size: 18px;
   line-height: 1;
+}
+
+/* Kit-alert action — same idiom as the launch banner's buttons. */
+.kit-alert-actions {
+  margin-top: var(--sp-2);
+}
+.kit-alert-btn {
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-150) var(--ease-standard),
+    transform var(--dur-150) var(--ease-standard);
+}
+.kit-alert-btn:active {
+  transform: scale(0.97);
 }
 </style>

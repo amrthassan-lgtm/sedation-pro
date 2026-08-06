@@ -10,9 +10,10 @@ import {
   type EmergencyProtocol,
   type ProtocolStep,
 } from '@sedation-pro/clinical';
-import { UiBanner, UiButton, UiCard, UiSyringe } from '@sedation-pro/ui';
+import { UiBanner, UiButton, UiCard, UiStatusPill, UiSyringe } from '@sedation-pro/ui';
 
 import { parseVolumeMl, syringeConfig } from '@/composables/useSyringeConfig';
+import { useInventoryStatus } from '@/composables/useInventoryStatus';
 
 interface Props {
   id: string;
@@ -58,6 +59,25 @@ function severityClass(step: ProtocolStep): string {
 
 function goBack() {
   void router.push('/quick-reference');
+}
+
+/**
+ * Stock pill on drug callouts, from the crash-cart inventory's explicit
+ * opt-in mapping. Best-of across lots: the pill answers "can I grab an
+ * in-date unit right now?" — reorder pressure lives on the inventory
+ * screen. Unmapped drugs (controlled substances, unstocked agents)
+ * render no pill at all.
+ */
+const inventory = useInventoryStatus();
+const STOCK_PILL: Record<'safe' | 'caution' | 'limit', string> = {
+  safe: 'In stock',
+  caution: 'Expiring',
+  limit: 'Expired',
+};
+function stockPill(name: string): { severity: 'safe' | 'caution' | 'limit'; label: string } | null {
+  const severity = inventory.statusFor(name);
+  if (severity === null || severity === 'crisis') return null;
+  return { severity, label: STOCK_PILL[severity] };
 }
 
 function open(id: string) {
@@ -138,7 +158,15 @@ function syringeFor(drug: EmergencyDrugCallout) {
               <p class="step-text">{{ step.text }}</p>
               <div v-if="step.drug" class="drug-callout">
                 <div class="drug-head">
-                  <span class="drug-name">{{ step.drug.name }}</span>
+                  <span class="drug-name-group">
+                    <span class="drug-name">{{ step.drug.name }}</span>
+                    <UiStatusPill
+                      v-if="stockPill(step.drug.name)"
+                      :severity="stockPill(step.drug.name)!.severity"
+                    >
+                      {{ stockPill(step.drug.name)!.label }}
+                    </UiStatusPill>
+                  </span>
                   <span class="drug-dose">{{ step.drug.dose }}</span>
                 </div>
                 <p class="drug-route">{{ routeLine(step.drug) }}</p>
@@ -348,6 +376,12 @@ function syringeFor(drug: EmergencyDrugCallout) {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--sp-2);
+}
+.drug-name-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
 }
 .drug-name {
   font-size: var(--type-footnote);

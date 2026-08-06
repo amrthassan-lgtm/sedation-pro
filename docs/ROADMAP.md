@@ -119,7 +119,8 @@ sticky bar can never drift.
   Phase 1, undo button, emergency button), `NavDrawer` (avatar,
   patient summary pills, phase entries with lock state), `UndoToast`
   (slide-in with tone-tinted accent).
-- Routes: `/phase/1..4`, `/quick-reference`, `/ui-demo`, plus root and
+- Routes: `/phase/1..4`, `/quick-reference` (+ `/:id` detail),
+  `/inventory`, `/clinical-note`, `/ui-demo` (dev only), plus root and
   catch-all redirects.
 - Phase gating: a `router.beforeEach` guard rewrites attempts to enter
   Phase 2/3/4 back to `/phase/1` while `isPhase1Complete` is false; the

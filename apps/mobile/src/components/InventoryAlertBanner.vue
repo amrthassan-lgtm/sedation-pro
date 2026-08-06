@@ -2,10 +2,9 @@
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { expiryStatus } from '@sedation-pro/clinical';
 import { UiBanner } from '@sedation-pro/ui';
 
-import { EMERGENCY_INVENTORY } from '@/data/emergency-inventory';
+import { classifyInventory, summarizeInventory } from '@/composables/useInventoryStatus';
 
 /**
  * Launch-time expiry warning. Non-blocking by design — the launch
@@ -43,43 +42,37 @@ function dismissForToday(): void {
   }
 }
 
-const summary = computed(() => {
-  let expired = 0;
-  let expiring = 0;
-  let soonest: { drug: string; daysLeft: number } | null = null;
-  for (const item of EMERGENCY_INVENTORY) {
-    const status = expiryStatus(item.expiresOn, nowMs);
-    if (status.severity === 'limit') expired += 1;
-    else if (status.severity === 'caution') expiring += 1;
-    if (status.severity !== 'safe' && (soonest === null || status.daysLeft < soonest.daysLeft)) {
-      soonest = { drug: item.drug, daysLeft: status.daysLeft };
-    }
-  }
-  return { expired, expiring, soonest };
-});
+const summary = computed(() => summarizeInventory(classifyInventory(nowMs)));
 
 const visible = computed(
   () =>
-    summary.value.expired + summary.value.expiring > 0 &&
+    summary.value.expired + summary.value.expiringSoon > 0 &&
     dismissedDay.value !== today &&
     // The inventory view carries its own always-on banner.
     route.path !== '/inventory',
 );
 
 const title = computed(() => {
-  const { expired, expiring } = summary.value;
+  const { expired, expiringSoon } = summary.value;
   const parts: string[] = [];
   if (expired > 0) parts.push(`${expired} emergency drug${expired === 1 ? '' : 's'} expired`);
-  if (expiring > 0) parts.push(`${expiring} expiring soon`);
+  if (expiringSoon > 0) parts.push(`${expiringSoon} expiring soon`);
   return parts.join(' · ');
 });
 
 const detail = computed(() => {
   const s = summary.value.soonest;
   if (!s) return '';
-  return s.daysLeft < 0 || !Number.isFinite(s.daysLeft)
-    ? `${s.drug} needs replacement.`
-    : `${s.drug} expires in ${s.daysLeft} days.`;
+  const lead =
+    s.daysLeft < 0 || !Number.isFinite(s.daysLeft)
+      ? `${s.drug} needs replacement.`
+      : `${s.drug} expires in ${s.daysLeft} days.`;
+  // Truthful reassurance, derived from the structured onOrder field —
+  // reduces alarm fatigue on a warn-only banner.
+  const onOrder = summary.value.onOrder;
+  return onOrder > 0
+    ? `${lead} ${onOrder} replacement${onOrder === 1 ? '' : 's'} already on order.`
+    : lead;
 });
 
 function review(): void {
@@ -121,8 +114,9 @@ function review(): void {
   flex-wrap: wrap;
 }
 .inv-alert-btn {
+  min-height: 44px;
   padding: 8px 14px;
-  border-radius: var(--r-pill);
+  border-radius: var(--r-md);
   border: 1px solid var(--color-border-strong);
   background: transparent;
   color: var(--color-text-primary);
@@ -130,9 +124,14 @@ function review(): void {
   font-weight: var(--weight-semibold);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-150) var(--ease-standard),
+    transform var(--dur-150) var(--ease-standard);
 }
+/* Hierarchy via weight + surface, per the house button doctrine. */
 .inv-alert-btn--primary {
   background: var(--color-surface-elevated);
+  font-weight: var(--weight-bold);
 }
 .inv-alert-btn:active {
   transform: scale(0.97);

@@ -60,7 +60,9 @@ function reloadNow(): void {
   left: 50%;
   bottom: calc(var(--sp-5) + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  z-index: 60;
+  /* Above the SedationDock (89-91) so the Reload pill stays reachable on
+     Phase 3; below the sticky bar (100) and drawer. */
+  z-index: 95;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -68,23 +70,31 @@ function reloadNow(): void {
   border-radius: var(--r-pill);
   background: var(--color-surface-elevated);
   border: 1px solid var(--color-border-strong);
-  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.35));
+  box-shadow: var(--shadow-lg);
 }
 .update-prompt-text {
   font-size: var(--type-footnote);
   font-weight: var(--weight-semibold);
   color: var(--color-text-primary);
 }
+/* Muted chrome per the house button doctrine: hierarchy comes from
+   weight + border, not a bright accent fill. */
 .update-prompt-btn {
   padding: 6px 14px;
-  border-radius: var(--r-pill);
-  border: none;
-  background: var(--color-accent);
-  color: #fff;
+  border-radius: var(--r-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-overlay);
+  color: var(--color-text-primary);
   font-size: var(--type-footnote);
   font-weight: var(--weight-bold);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-150) var(--ease-standard),
+    transform var(--dur-150) var(--ease-standard);
+}
+.update-prompt-btn:active {
+  transform: scale(0.96);
 }
 .update-prompt-close {
   padding: 4px 8px;
@@ -93,6 +103,10 @@ function reloadNow(): void {
   color: var(--color-text-tertiary);
   font-size: var(--type-footnote);
   cursor: pointer;
+  transition: transform var(--dur-150) var(--ease-standard);
+}
+.update-prompt-close:active {
+  transform: scale(0.96);
 }
 .update-pop-enter-active,
 .update-pop-leave-active {

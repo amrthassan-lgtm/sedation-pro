@@ -27,8 +27,35 @@ export interface InventoryItem {
   readonly quantity: number;
   /** 'YYYY-MM' (or 'YYYY-MM-DD'); '' when unknown. */
   readonly expiresOn: string;
+  /** Replacement purchase in flight. */
+  readonly onOrder?: {
+    readonly sku: string;
+    /** Form change vs the current row, e.g. spray → tablets. */
+    readonly substitution?: string;
+  };
+  /**
+   * Opt-in link to `EMERGENCY_PROTOCOLS` drug-callout names (exact
+   * spelling — a vitest tripwire verifies each against the real
+   * protocol data). Absence renders NOTHING on protocol screens, never
+   * "not stocked". The infiltration lidocaines deliberately carry no
+   * mapping: they must never satisfy a 'Cardiac Lidocaine' lookup
+   * (wrong-vial hazard).
+   */
+  readonly protocolDrugNames?: ReadonlyArray<string>;
+  /** Free-text action note for humans (NOT order tracking — see onOrder). */
   readonly notes?: string;
 }
+
+/** Vintage of the transcribed paper sheet — bump when re-verifying stock. */
+export const INVENTORY_AS_OF = '2026-08';
+
+/**
+ * Protocol drug callouts that are deliberately NOT part of the stocked
+ * emergency kit: controlled substances live in the sedation cart with
+ * their own tracking. Excluded from the "not stocked" gap report so it
+ * only surfaces genuine purchasing decisions.
+ */
+export const CONTROLLED_EXCLUSIONS: ReadonlyArray<string> = ['Midazolam', 'Fentanyl', 'Diazepam'];
 
 export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   {
@@ -39,6 +66,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0115-1695-30',
     quantity: 1,
     expiresOn: '2027-04',
+    protocolDrugNames: ['Epinephrine'],
   },
   {
     id: 'epi-autoinjector-03',
@@ -48,6 +76,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0115-1694-30',
     quantity: 1,
     expiresOn: '2026-08',
+    protocolDrugNames: ['Epinephrine'],
   },
   {
     id: 'glucose-gel',
@@ -57,7 +86,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0574-0069-15',
     quantity: 1,
     expiresOn: '2026-06',
-    notes: 'Replacement on order (SKU GLUT15)',
+    onOrder: { sku: 'GLUT15' },
   },
   {
     id: 'adenosine-12-a',
@@ -67,6 +96,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '63323-651-23',
     quantity: 1,
     expiresOn: '2026-12',
+    protocolDrugNames: ['Adenosine'],
   },
   {
     id: 'adenosine-6',
@@ -76,6 +106,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '63323-651-00',
     quantity: 1,
     expiresOn: '2028-04',
+    protocolDrugNames: ['Adenosine'],
   },
   {
     id: 'adenosine-12-b',
@@ -85,6 +116,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '63323-651-01',
     quantity: 1,
     expiresOn: '2026-11',
+    protocolDrugNames: ['Adenosine'],
   },
   {
     id: 'epi-vial-adrenalin',
@@ -94,6 +126,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '42023-159-01',
     quantity: 2,
     expiresOn: '2026-06',
+    protocolDrugNames: ['Epinephrine'],
   },
   {
     id: 'amiodarone-150-a',
@@ -103,6 +136,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0143-9875-01',
     quantity: 1,
     expiresOn: '2027-04',
+    protocolDrugNames: ['Amiodarone'],
   },
   {
     id: 'amiodarone-150-b',
@@ -112,6 +146,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0143-9875-01',
     quantity: 1,
     expiresOn: '2027-10',
+    protocolDrugNames: ['Amiodarone'],
   },
   {
     id: 'amiodarone-900',
@@ -121,6 +156,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '67457-153-18',
     quantity: 1,
     expiresOn: '2027-08',
+    protocolDrugNames: ['Amiodarone'],
   },
   {
     id: 'aspirin',
@@ -130,6 +166,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '68599-1311-3',
     quantity: 1,
     expiresOn: '2026-09',
+    protocolDrugNames: ['Aspirin'],
   },
   {
     id: 'atropine-1ml',
@@ -139,6 +176,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '70069-641-01',
     quantity: 2,
     expiresOn: '2026-09',
+    protocolDrugNames: ['Atropine'],
   },
   {
     id: 'atropine-10ml',
@@ -148,6 +186,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '64253-400-30',
     quantity: 1,
     expiresOn: '2027-02',
+    protocolDrugNames: ['Atropine'],
   },
   {
     id: 'dexamethasone',
@@ -157,6 +196,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0641-6145-01',
     quantity: 1,
     expiresOn: '2027-08',
+    protocolDrugNames: ['Dexamethasone'],
   },
   {
     id: 'diphenhydramine',
@@ -166,6 +206,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0641-0376-21',
     quantity: 2,
     expiresOn: '2026-08',
+    protocolDrugNames: ['Diphenhydramine'],
   },
   {
     id: 'ephedrine',
@@ -175,6 +216,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '16714-037-01',
     quantity: 1,
     expiresOn: '2027-04',
+    protocolDrugNames: ['Ephedrine'],
   },
   {
     id: 'epi-vial',
@@ -184,6 +226,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '54288-103-01',
     quantity: 3,
     expiresOn: '2027-02',
+    protocolDrugNames: ['Epinephrine', 'Push-dose Epinephrine'],
   },
   {
     id: 'flumazenil-a',
@@ -193,6 +236,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0143-9784-01',
     quantity: 1,
     expiresOn: '2027-07',
+    protocolDrugNames: ['Flumazenil'],
   },
   {
     id: 'flumazenil-b',
@@ -202,6 +246,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0143-9784-01',
     quantity: 2,
     expiresOn: '2028-05',
+    protocolDrugNames: ['Flumazenil'],
   },
   {
     id: 'hydralazine',
@@ -211,6 +256,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '55150-400-01',
     quantity: 1,
     expiresOn: '2027-06',
+    protocolDrugNames: ['Hydralazine'],
   },
   {
     id: 'labetalol',
@@ -220,7 +266,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '25021-317-40',
     quantity: 1,
     expiresOn: '2026-03',
-    notes: 'Replacement on order (SKU LABE540V)',
+    onOrder: { sku: 'LABE540V' },
+    protocolDrugNames: ['Labetalol'],
   },
   {
     id: 'lidocaine-1pct',
@@ -248,6 +295,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '63323-208-01',
     quantity: 1,
     expiresOn: '2027-12',
+    protocolDrugNames: ['Cardiac Lidocaine'],
   },
   {
     id: 'naloxone-vial',
@@ -257,6 +305,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '36000-308-01',
     quantity: 2,
     expiresOn: '2027-03',
+    protocolDrugNames: ['Naloxone'],
   },
   {
     id: 'narcan-spray',
@@ -266,6 +315,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '69547-627-02',
     quantity: 2,
     expiresOn: '2026-05',
+    protocolDrugNames: ['Naloxone'],
   },
   {
     id: 'nitroglycerin',
@@ -275,7 +325,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '28595-120-49',
     quantity: 1,
     expiresOn: '2026-05',
-    notes: 'Replacement on order — 0.4 mg tablets ×25 (SKU NITR4-25O-R)',
+    onOrder: { sku: 'NITR4-25O-R', substitution: '0.4 mg tablets ×25' },
+    protocolDrugNames: ['Nitroglycerin'],
   },
   {
     id: 'ondansetron',
@@ -285,6 +336,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '72266-123-01',
     quantity: 1,
     expiresOn: '2027-02',
+    protocolDrugNames: ['Ondansetron'],
   },
   {
     id: 'ventolin',
@@ -294,7 +346,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0173-0682-24',
     quantity: 1,
     expiresOn: '2026-01',
-    notes: 'Replacement on order — 60-dose inhaler (SKU VENT60)',
+    onOrder: { sku: 'VENT60', substitution: '60-dose inhaler' },
+    protocolDrugNames: ['Albuterol'],
   },
   {
     id: 'succinylcholine',
@@ -306,6 +359,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     notes:
       'In the fridge but off the paper sheet — read lot + expiry from the vial and update here',
+    protocolDrugNames: ['Succinylcholine'],
   },
   {
     id: 'd50w',
@@ -315,6 +369,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '',
     quantity: 1,
     expiresOn: '',
-    notes: 'On order (SKU DEXT5050V-E) — new line item; fills the hypoglycemia IV-route gap',
+    onOrder: { sku: 'DEXT5050V-E' },
+    notes: 'New line item — fills the hypoglycemia IV-route gap',
+    protocolDrugNames: ['D50W'],
   },
 ];

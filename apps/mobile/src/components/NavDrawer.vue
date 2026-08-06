@@ -10,9 +10,12 @@ import { useEventLogStore } from '@/stores/event-log';
 import { useCaseReset } from '@/composables/useCaseReset';
 import { useTheme, type ThemeChoice } from '@/composables/useTheme';
 import { UiModal, UiStatusPill } from '@sedation-pro/ui';
-import { expiryStatus } from '@sedation-pro/clinical';
 
-import { EMERGENCY_INVENTORY } from '@/data/emergency-inventory';
+import {
+  classifyInventory,
+  inventorySubLine,
+  summarizeInventory,
+} from '@/composables/useInventoryStatus';
 import { DEFAULT_FORMULARY } from '@sedation-pro/clinical';
 import { snapDecision } from './navDrawerSwipe';
 
@@ -120,26 +123,10 @@ async function goInventory() {
 /**
  * Live stock summary for the drawer row. Computed at drawer render — the
  * drawer opens fresh each time, so day-granularity staleness is a
- * non-issue. 'limit' covers both expired and unreadable-expiry items.
+ * non-issue. 'expired' covers both expired and unreadable-expiry items.
  */
-const inventorySummary = computed(() => {
-  const now = Date.now();
-  let expired = 0;
-  let expiring = 0;
-  for (const item of EMERGENCY_INVENTORY) {
-    const status = expiryStatus(item.expiresOn, now);
-    if (status.severity === 'limit') expired += 1;
-    else if (status.severity === 'caution') expiring += 1;
-  }
-  return { expired, expiring, total: EMERGENCY_INVENTORY.length };
-});
-
-const inventorySub = computed(() => {
-  const s = inventorySummary.value;
-  if (s.expired > 0) return `${s.expired} expired · ${s.expiring} expiring soon`;
-  if (s.expiring > 0) return `${s.expiring} expiring within 60 days`;
-  return `${s.total} items · all in date`;
-});
+const inventorySummary = computed(() => summarizeInventory(classifyInventory(Date.now())));
+const inventorySub = computed(() => inventorySubLine(inventorySummary.value));
 
 // -------- Audio mute toggle ----------------------------------------------
 
@@ -417,10 +404,10 @@ function onTouchEnd() {
             :label="String(inventorySummary.expired)"
           />
           <UiStatusPill
-            v-else-if="inventorySummary.expiring > 0"
+            v-else-if="inventorySummary.expiringSoon > 0"
             class="nav-phase-badge"
             severity="caution"
-            :label="String(inventorySummary.expiring)"
+            :label="String(inventorySummary.expiringSoon)"
           />
           <span class="nav-phase-chevron" aria-hidden="true">›</span>
         </button>
@@ -743,6 +730,12 @@ function onTouchEnd() {
 .nav-phase-badge {
   flex-shrink: 0;
 }
+/* The pill's uppercase tracking (1.2px) trails the glyph — on a bare
+   digit that reads as off-center. Zero it for numeric badges; the
+   two-class selector outranks the pill's own single-class rule. */
+.nav-phase .nav-phase-badge {
+  letter-spacing: 0;
+}
 .nav-phase.is-locked .nav-phase-icon {
   background: var(--color-surface-elevated);
   color: var(--color-text-disabled);
@@ -768,6 +761,11 @@ function onTouchEnd() {
   font-size: var(--type-caption);
   color: var(--color-text-disabled);
   letter-spacing: 0.2px;
+  /* Live sub-lines (inventory status) can outgrow the 288px drawer —
+     ellipsize so every nav row keeps the same height. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nav-phase-chevron {

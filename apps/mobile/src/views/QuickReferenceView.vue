@@ -11,8 +11,17 @@ import {
 } from '@sedation-pro/clinical';
 import { UiBanner, UiCard, UiStack, UiSyringe, UiTextInput } from '@sedation-pro/ui';
 
+import {
+  classifyInventory,
+  inventorySubLine,
+  summarizeInventory,
+} from '@/composables/useInventoryStatus';
+
 const router = useRouter();
 const route = useRoute();
+
+// Mount-time stock summary for the inventory link row (day granularity).
+const inventorySummary = summarizeInventory(classifyInventory(Date.now()));
 
 const query = ref('');
 /**
@@ -243,7 +252,7 @@ onMounted(() => {
     <UiCard class="drug-ref-card">
       <header class="drug-ref-head">
         <p class="heading">IV Drug Reference</p>
-        <span class="drug-ref-count">{{ drugRefs.length }}</span>
+        <span class="card-count">{{ drugRefs.length }}</span>
       </header>
       <UiStack :gap="1">
         <div
@@ -360,7 +369,7 @@ onMounted(() => {
           aria-hidden="true"
         />
         <p class="heading category-title">{{ group.label }}</p>
-        <span class="category-count">{{ group.protocols.length }}</span>
+        <span class="card-count">{{ group.protocols.length }}</span>
       </header>
 
       <p v-if="group.protocols.length === 0" class="body muted empty">
@@ -404,6 +413,19 @@ onMounted(() => {
         </UiStack>
       </template>
     </UiCard>
+
+    <!-- Discovery link to the standalone inventory. Hidden while searching
+         so it can never masquerade as a protocol result — restocking is a
+         between-cases task, not a crisis lookup. -->
+    <UiCard v-if="!isSearching">
+      <UiStack :gap="1">
+        <button type="button" class="row" @click="void router.push('/inventory')">
+          <span class="row-name">Drug Inventory</span>
+          <span class="row-summary">{{ inventorySubLine(inventorySummary) }}</span>
+          <span class="row-chevron" aria-hidden="true">›</span>
+        </button>
+      </UiStack>
+    </UiCard>
   </main>
 </template>
 
@@ -426,14 +448,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-}
-.drug-ref-count {
-  font-size: var(--type-caption);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.4px;
-  color: var(--color-text-tertiary);
-  font-family: var(--font-mono);
-  margin-left: auto;
 }
 .drug-pill-wrap {
   border-radius: var(--r-md);
@@ -656,13 +670,6 @@ onMounted(() => {
 .category-title {
   flex: 1;
   margin: 0;
-}
-.category-count {
-  font-size: var(--type-caption);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.4px;
-  color: var(--color-text-tertiary);
-  font-family: var(--font-mono);
 }
 
 .subhead {

@@ -2,6 +2,8 @@
 import { CLINICAL_LIB_VERSION, DEFAULT_FORMULARY } from '@sedation-pro/clinical';
 import { UI_LIB_VERSION } from '@sedation-pro/ui';
 
+import { INVENTORY_AS_OF } from '@/data/emergency-inventory';
+
 /**
  * App footer: the single-source logo, brand name, and library versions.
  * Uses `public/logo-source.svg` (the same asset that drives the favicon,
@@ -25,7 +27,7 @@ const practiceName = DEFAULT_FORMULARY.practiceName;
     </div>
     <p class="app-footer-meta">
       © {{ year }} {{ practiceName }} · Sedation Pro · clinical&nbsp;v{{ CLINICAL_LIB_VERSION }} ·
-      ui&nbsp;v{{ UI_LIB_VERSION }}
+      ui&nbsp;v{{ UI_LIB_VERSION }} · inv&nbsp;{{ INVENTORY_AS_OF }}
     </p>
   </footer>
 </template>

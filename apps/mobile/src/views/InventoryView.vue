@@ -1,15 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-
-import {
-  expiryStatus,
-  EXPIRY_WARN_DAYS,
-  type ExpiryStatus,
-  type Severity,
-} from '@sedation-pro/clinical';
+import { EXPIRY_WARN_DAYS, type Severity } from '@sedation-pro/clinical';
 import { UiBanner, UiCard, UiStack, UiStatCard, UiStatusPill } from '@sedation-pro/ui';
 
-import { EMERGENCY_INVENTORY, type InventoryItem } from '@/data/emergency-inventory';
+import { INVENTORY_AS_OF, type InventoryItem } from '@/data/emergency-inventory';
+import { useInventoryStatus, type ClassifiedItem } from '@/composables/useInventoryStatus';
 
 /**
  * Read-only by design: the inventory's source of truth is the checked-in
@@ -17,51 +11,36 @@ import { EMERGENCY_INVENTORY, type InventoryItem } from '@/data/emergency-invent
  * GitHub edit when stock changes. Day granularity means a mount-time
  * timestamp is fresh enough — no ticking clock needed.
  */
-const now = Date.now();
+const inv = useInventoryStatus();
 
-interface ClassifiedItem {
-  readonly item: InventoryItem;
-  readonly status: ExpiryStatus;
-}
+const expiredCount = inv.summary.expired;
+const expiringCount = inv.summary.expiringSoon;
 
-const classified = computed<ReadonlyArray<ClassifiedItem>>(() =>
-  EMERGENCY_INVENTORY.map((item) => ({ item, status: expiryStatus(item.expiresOn, now) })),
-);
+type SectionTone = 'danger' | 'warn' | 'good' | 'slate';
 
-function byUrgency(a: ClassifiedItem, b: ClassifiedItem): number {
-  // -Infinity (unknown expiry) naturally sorts first — the least-trusted
-  // stock tops the attention list.
-  return a.status.daysLeft - b.status.daysLeft;
-}
-
-const needsAttention = computed(() =>
-  classified.value.filter((c) => c.status.severity === 'limit').sort(byUrgency),
-);
-const expiringSoon = computed(() =>
-  classified.value.filter((c) => c.status.severity === 'caution').sort(byUrgency),
-);
-const inDate = computed(() =>
-  classified.value.filter((c) => c.status.severity === 'safe').sort(byUrgency),
-);
-
-const expiredCount = computed(() => needsAttention.value.length);
-const expiringCount = computed(() => expiringSoon.value.length);
-
-const sections = computed(() => [
+const sections: ReadonlyArray<{
+  id: string;
+  label: string;
+  hint: string;
+  tone: SectionTone;
+  entries: ReadonlyArray<ClassifiedItem>;
+}> = [
   {
     id: 'attention',
     label: 'Needs attention',
     hint: 'Expired or unknown expiration',
-    entries: needsAttention.value,
+    tone: 'danger',
+    entries: inv.needsAttention,
   },
   {
     id: 'expiring',
     label: `Expiring within ${EXPIRY_WARN_DAYS} days`,
     hint: 'Reorder window',
-    entries: expiringSoon.value,
+    tone: 'warn',
+    entries: inv.expiringSoon,
   },
-  { id: 'ok', label: 'In date', hint: '', entries: inDate.value },
-]);
+  { id: 'ok', label: 'In date', hint: '', tone: 'good', entries: inv.inDate },
+];
 
 function pillSeverity(c: ClassifiedItem): Severity | 'empty' {
   if (!c.status.valid) return 'empty';
@@ -75,6 +54,12 @@ function pillLabel(c: ClassifiedItem): string {
   return 'OK';
 }
 
+function rowTone(c: ClassifiedItem): SectionTone {
+  if (c.status.severity === 'limit') return 'danger';
+  if (c.status.severity === 'caution') return 'warn';
+  return 'good';
+}
+
 function formatExpiryMonth(expiresOn: string): string {
   const match = /^(\d{4})-(\d{2})/.exec(expiresOn);
   if (!match) return '—';
@@ -86,12 +71,18 @@ function formatExpiryMonth(expiresOn: string): string {
 }
 
 function metaLine(item: InventoryItem): string {
-  const parts = [
+  return [
     item.lot === '' ? 'Lot —' : `Lot ${item.lot}`,
     `Qty ${item.quantity}`,
     `Exp ${formatExpiryMonth(item.expiresOn)}`,
-  ];
-  return parts.join(' · ');
+  ].join(' · ');
+}
+
+function orderLine(item: InventoryItem): string {
+  if (!item.onOrder) return '';
+  return item.onOrder.substitution
+    ? `SKU ${item.onOrder.sku} · arriving as ${item.onOrder.substitution}`
+    : `SKU ${item.onOrder.sku}`;
 }
 </script>
 
@@ -108,7 +99,10 @@ function metaLine(item: InventoryItem): string {
       icon="⚠"
       :title="`${expiredCount} medication${expiredCount === 1 ? '' : 's'} expired or unverified`"
     >
-      Replace before the next sedation case. Items marked "on order" are already being handled.
+      Replace before the next sedation case.
+      {{
+        inv.summary.onOrder > 0 ? `${inv.summary.onOrder} replacements are already on order.` : ''
+      }}
     </UiBanner>
     <UiBanner
       v-else-if="expiringCount > 0"
@@ -124,39 +118,81 @@ function metaLine(item: InventoryItem): string {
         label="Expired / no date"
         :value="String(expiredCount)"
         :severity="expiredCount > 0 ? 'limit' : 'safe'"
+        :category="expiredCount > 0 ? 'Action' : 'Clear'"
       />
       <UiStatCard
         :label="`Expiring ≤ ${EXPIRY_WARN_DAYS} d`"
         :value="String(expiringCount)"
         :severity="expiringCount > 0 ? 'caution' : 'safe'"
+        :category="expiringCount > 0 ? 'Reorder' : 'Clear'"
       />
-      <UiStatCard label="Line items" :value="String(classified.length)" severity="empty" />
+      <UiStatCard
+        label="Line items"
+        :value="String(inv.summary.total)"
+        severity="safe"
+        category="Tracked"
+      />
     </div>
 
     <template v-for="section in sections" :key="section.id">
       <UiCard v-if="section.entries.length > 0" class="inv-card">
         <header class="inv-head">
-          <p class="heading">{{ section.label }}</p>
-          <span class="inv-count">{{ section.entries.length }}</span>
+          <span class="inv-swatch" :class="`inv-swatch--${section.tone}`" aria-hidden="true" />
+          <div class="inv-head-main">
+            <p class="inv-title">{{ section.label }}</p>
+            <p v-if="section.hint" class="inv-hint">{{ section.hint }}</p>
+          </div>
+          <span class="card-count">{{ section.entries.length }}</span>
         </header>
-        <p v-if="section.hint" class="caption inv-hint">{{ section.hint }}</p>
         <UiStack :gap="1">
           <div v-for="entry in section.entries" :key="entry.item.id" class="inv-row">
+            <span class="inv-bar" :class="`inv-bar--${rowTone(entry)}`" aria-hidden="true" />
             <div class="inv-main">
               <p class="inv-drug">{{ entry.item.drug }}</p>
               <p class="inv-desc">{{ entry.item.description }}</p>
               <p class="inv-meta">{{ metaLine(entry.item) }}</p>
+              <p v-if="entry.item.onOrder" class="inv-order">{{ orderLine(entry.item) }}</p>
               <p v-if="entry.item.notes" class="inv-note">{{ entry.item.notes }}</p>
             </div>
-            <UiStatusPill :severity="pillSeverity(entry)">{{ pillLabel(entry) }}</UiStatusPill>
+            <div class="inv-pills">
+              <UiStatusPill :severity="pillSeverity(entry)">{{ pillLabel(entry) }}</UiStatusPill>
+              <UiStatusPill v-if="entry.item.onOrder" severity="empty">On order</UiStatusPill>
+            </div>
           </div>
         </UiStack>
       </UiCard>
     </template>
 
+    <UiCard v-if="inv.notStocked.length > 0" class="inv-card">
+      <header class="inv-head">
+        <span class="inv-swatch inv-swatch--slate" aria-hidden="true" />
+        <div class="inv-head-main">
+          <p class="inv-title">Called for by protocols, not stocked</p>
+          <p class="inv-hint">A purchasing decision — not currently part of the kit</p>
+        </div>
+        <span class="card-count">{{ inv.notStocked.length }}</span>
+      </header>
+      <UiStack :gap="1">
+        <div v-for="name in inv.notStocked" :key="name" class="inv-row">
+          <span class="inv-bar inv-bar--slate" aria-hidden="true" />
+          <div class="inv-main">
+            <p class="inv-drug">{{ name }}</p>
+          </div>
+          <div class="inv-pills">
+            <UiStatusPill severity="empty">Not stocked</UiStatusPill>
+          </div>
+        </div>
+      </UiStack>
+      <p class="inv-hint">
+        Controlled substances (Midazolam, Fentanyl, Diazepam) are stored and tracked separately and
+        are deliberately excluded here.
+      </p>
+    </UiCard>
+
     <p class="caption inv-footer">
-      Inventory is maintained in the practice repo — tell Claude the new lot and expiration when
-      replacement stock arrives, and every device updates on the next deploy.
+      Paper sheet transcribed {{ INVENTORY_AS_OF }} · inventory is maintained in the practice repo —
+      tell Claude the new lot and expiration when replacement stock arrives, and every device
+      updates on the next deploy.
     </p>
   </main>
 </template>
@@ -172,7 +208,7 @@ function metaLine(item: InventoryItem): string {
 }
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: var(--sp-2);
 }
 .inv-card {
@@ -185,26 +221,68 @@ function metaLine(item: InventoryItem): string {
   align-items: center;
   gap: var(--sp-2);
 }
-.inv-count {
-  font-size: var(--type-caption);
+.inv-head-main {
+  min-width: 0;
+}
+.inv-title {
+  margin: 0;
+  font-size: var(--type-heading);
   font-weight: var(--weight-bold);
-  letter-spacing: 0.4px;
-  color: var(--color-text-tertiary);
-  font-family: var(--font-mono);
-  margin-left: auto;
+  color: var(--color-text-primary);
+}
+.inv-swatch {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.inv-swatch--danger {
+  background: var(--color-danger);
+}
+.inv-swatch--warn {
+  background: var(--color-warn);
+}
+.inv-swatch--good {
+  background: var(--color-good);
+}
+.inv-swatch--slate {
+  background: var(--color-text-disabled);
 }
 .inv-hint {
-  margin-top: calc(-1 * var(--sp-2));
+  margin: 0;
+  font-size: var(--type-caption);
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.2px;
 }
 .inv-row {
   display: flex;
   align-items: flex-start;
   gap: var(--sp-3);
-  padding: 10px 4px;
-  border-bottom: 1px solid var(--color-border);
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  transition: background var(--dur-150) var(--ease-standard);
 }
-.inv-row:last-child {
-  border-bottom: none;
+.inv-row:active {
+  background: var(--color-surface);
+}
+.inv-bar {
+  flex-shrink: 0;
+  width: 10px;
+  height: 28px;
+  border-radius: 3px;
+  margin-top: 2px;
+}
+.inv-bar--danger {
+  background: var(--color-danger);
+}
+.inv-bar--warn {
+  background: var(--color-warn);
+}
+.inv-bar--good {
+  background: var(--color-good);
+}
+.inv-bar--slate {
+  background: var(--color-text-disabled);
 }
 .inv-main {
   min-width: 0;
@@ -228,10 +306,22 @@ function metaLine(item: InventoryItem): string {
   color: var(--color-text-tertiary);
   font-family: var(--font-mono);
 }
+.inv-order {
+  margin: 4px 0 0;
+  font-size: var(--type-caption);
+  color: var(--color-text-secondary);
+}
 .inv-note {
   margin: 4px 0 0;
   font-size: var(--type-caption);
-  color: var(--color-warn);
+  color: var(--color-text-secondary);
+}
+.inv-pills {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
 }
 .inv-footer {
   text-align: center;
