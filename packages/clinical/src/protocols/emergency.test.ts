@@ -58,6 +58,15 @@ describe('emergency protocols', () => {
     }
   });
 
+  it('hypoglycemia carries no glucagon callout but keeps the knowledge in step text', () => {
+    // Owner decision 2026-08: glucagon is deliberately not stocked (IV
+    // office — immediate access + D50W is the no-IV branch). A structured
+    // callout would point the clinician at a drug the cart doesn't carry.
+    const proto = findProtocol('hypoglycemia');
+    expect(proto?.steps.some((s) => s.drug?.name === 'Glucagon')).toBe(false);
+    expect(proto?.steps.some((s) => s.text.includes('Glucagon'))).toBe(true);
+  });
+
   it('dexamethasone callouts quote volumes for both stocked concentrations', () => {
     const dexCallouts = EMERGENCY_PROTOCOLS.flatMap((p) => p.steps)
       .map((s) => s.drug)

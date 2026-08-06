@@ -998,13 +998,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         },
       },
       {
-        text: 'Unconscious + No IV: Glucagon IM',
-        drug: {
-          name: 'Glucagon',
-          dose: '1 mg',
-          route: 'IM',
-          notes: 'prefilled auto-injector or reconstitute vial',
-        },
+        // Deliberate: no drug callout here. The practice decided (2026-08)
+        // not to stock glucagon — an IV sedation office always has line
+        // skills and D50W at hand, so the office path for the no-IV branch
+        // is immediate access, not an IM injection the cart doesn't carry.
+        text: 'Unconscious + No IV: establish IV access immediately for D50W — call 911 if unable. (Glucagon 1 mg IM is the no-IV alternative; deliberately not stocked — office protocol is immediate IV access.)',
+        severity: 'critical',
       },
       {
         text: 'Recheck Blood Glucose after 15 minutes (target: 70-110mg/dl), repeat if needed',

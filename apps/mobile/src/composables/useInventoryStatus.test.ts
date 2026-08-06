@@ -119,14 +119,13 @@ describe('live inventory data invariants', () => {
     expect(sources.map((i) => i.id)).toEqual(['lidocaine-cardiac']);
   });
 
-  it('the protocol gap list is exactly the three known purchasing decisions', () => {
+  it('the protocol gap list is exactly the two open purchasing decisions', () => {
     // Tripwire: a future protocol edit that adds a new drug callout (or a
     // mapping typo that orphans an existing one) fails here on purpose.
-    expect(protocolGapList()).toEqual([
-      'Glucagon',
-      'Methylprednisolone (Solu-Medrol)',
-      'Phenylephrine',
-    ]);
+    // Glucagon left this list 2026-08: the owner decided not to stock it
+    // (IV office — the hypoglycemia protocol's no-IV branch is now
+    // "establish access for D50W"), so it is no longer a callout at all.
+    expect(protocolGapList()).toEqual(['Methylprednisolone (Solu-Medrol)', 'Phenylephrine']);
   });
 
   it('controlled substances appear as callouts but are excluded from the gap list', () => {
