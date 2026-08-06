@@ -166,6 +166,16 @@ describe('emergency protocols', () => {
     expect(row?.ml).toBe('4.0 ml');
   });
 
+  it('seizure carries no IV-diazepam callout but keeps the knowledge in step text', () => {
+    // Owner confirmation 2026-08: no IV diazepam is stocked — midazolam is
+    // the office agent. A structured callout with draw volumes would point
+    // at a drug that isn't in the building.
+    const proto = findProtocol('seizure');
+    expect(proto?.steps.some((s) => s.drug?.name === 'Diazepam')).toBe(false);
+    expect(proto?.steps.some((s) => s.text.includes('diazepam'))).toBe(true);
+    expect(proto?.steps.some((s) => s.drug?.name === 'Midazolam')).toBe(true);
+  });
+
   it('hypoglycemia carries no glucagon callout but keeps the knowledge in step text', () => {
     // Owner decision 2026-08: glucagon is deliberately not stocked (IV
     // office — immediate access + D50W is the no-IV branch). A structured

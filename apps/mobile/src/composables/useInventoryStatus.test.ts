@@ -130,10 +130,13 @@ describe('live inventory data invariants', () => {
 
   it('controlled substances appear as callouts but are excluded from the gap list', () => {
     const callouts = protocolCalloutNames();
-    for (const name of ['Midazolam', 'Fentanyl', 'Diazepam']) {
+    for (const name of ['Midazolam', 'Fentanyl']) {
       expect(callouts).toContain(name);
       expect(protocolGapList()).not.toContain(name);
     }
+    // Diazepam is no longer a callout at all — its seizure step was
+    // demoted to a text aside (no IV diazepam stocked, owner 2026-08).
+    expect(callouts).not.toContain('Diazepam');
   });
 
   it('every mapped protocol name exists among real protocol callouts (spelling tripwire)', () => {

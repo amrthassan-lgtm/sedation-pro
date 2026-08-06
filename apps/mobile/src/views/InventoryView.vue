@@ -157,6 +157,9 @@ function orderLine(item: InventoryItem): string {
             <div class="inv-pills">
               <UiStatusPill :severity="pillSeverity(entry)">{{ pillLabel(entry) }}</UiStatusPill>
               <UiStatusPill v-if="entry.item.onOrder" severity="empty">On order</UiStatusPill>
+              <UiStatusPill v-if="entry.item.category === 'sedation'" severity="empty">
+                Sedation cart
+              </UiStatusPill>
             </div>
           </div>
         </UiStack>

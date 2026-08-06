@@ -1060,18 +1060,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         },
       },
       {
-        text: 'If continues: Diazepam IV/IM',
-        drug: {
-          name: 'Diazepam',
-          dose: '5-10 mg',
-          route: 'IV',
-          volume: '1.0-2.0 ml',
-          concentration: '5 mg/ml',
-          drawTable: [
-            { label: '5 mg', ml: '1.0 ml' },
-            { label: '10 mg', ml: '2.0 ml' },
-          ],
-        },
+        // Deliberate: no drug callout. The practice stocks no IV diazepam
+        // (owner confirmation 2026-08) — midazolam above is the office
+        // agent; the diazepam mention stays as textbook knowledge only.
+        text: 'If continues: repeat midazolam. (IV diazepam 5-10 mg is the textbook alternative — not stocked; midazolam is the office agent.)',
       },
       { text: 'Call 911', severity: 'critical' },
       {

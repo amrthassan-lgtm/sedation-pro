@@ -42,6 +42,12 @@ export interface InventoryItem {
    * (wrong-vial hazard).
    */
   readonly protocolDrugNames?: ReadonlyArray<string>;
+  /**
+   * 'sedation' marks sedation-cart stock (controlled substances + oral
+   * premeds) tracked alongside the crash cart in this one list, per the
+   * owner's choice. Absent = emergency kit.
+   */
+  readonly category?: 'sedation';
   /** Free-text action note for humans (NOT order tracking — see onOrder). */
   readonly notes?: string;
 }
@@ -53,9 +59,12 @@ export const INVENTORY_AS_OF = '2026-08';
  * Protocol drug callouts that are deliberately NOT part of the stocked
  * emergency kit: controlled substances live in the sedation cart with
  * their own tracking. Excluded from the "not stocked" gap report so it
- * only surfaces genuine purchasing decisions.
+ * only surfaces genuine purchasing decisions. (Diazepam left this list
+ * 2026-08 when its seizure callout was demoted to a text aside — the
+ * practice stocks no IV diazepam. These two exclusions retire once the
+ * sedation-cart rows land in this file with their own mappings.)
  */
-export const CONTROLLED_EXCLUSIONS: ReadonlyArray<string> = ['Midazolam', 'Fentanyl', 'Diazepam'];
+export const CONTROLLED_EXCLUSIONS: ReadonlyArray<string> = ['Midazolam', 'Fentanyl'];
 
 export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   {
