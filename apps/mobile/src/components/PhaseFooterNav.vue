@@ -72,7 +72,10 @@ function goForward() {
   align-items: stretch;
 }
 .phase-nav-spacer {
-  flex: 1;
+  /* Purely a semantic divider — the buttons already flex to share the
+     row, and letting this grow was starving the labels of a third of
+     the width (the old "Phase 1 · Asse…" truncation). */
+  flex: 0 0 var(--sp-2);
 }
 .phase-nav-btn {
   flex: 1 1 0;

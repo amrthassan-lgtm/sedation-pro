@@ -179,6 +179,13 @@ watch(phase1ValidationAttempted, (attempted) => {
   if (attempted) void scrollToFirstMissing();
 });
 
+// Sticky-bar clearance counter taps arrive as a counter bump so every tap
+// re-scrolls even while the attempted flag is already raised.
+watch(
+  () => patient.phase1ScrollRequests,
+  () => void scrollToFirstMissing(),
+);
+
 const missingCount = computed(() => completeness.value.total - completeness.value.done);
 
 /**
@@ -517,14 +524,14 @@ const diazepamModalCopy = computed(() => {
         <UiField id="field-pt" label="Patient name" required :invalid="isMissing('pt')">
           <UiTextInput v-model="name" block />
         </UiField>
-        <UiRow :gap="3" wrap>
-          <UiField id="field-mrn" label="MRN" required :invalid="isMissing('mrn')">
-            <UiTextInput v-model="mrn" inputmode="numeric" />
-          </UiField>
-          <UiField label="Procedure">
-            <UiTextInput v-model="procedure" />
-          </UiField>
-        </UiRow>
+        <UiField id="field-mrn" label="MRN" required :invalid="isMissing('mrn')">
+          <UiTextInput v-model="mrn" inputmode="numeric" />
+        </UiField>
+        <!-- Own full-width textarea: procedures are naturally phrases and
+             this was the last clipping single-line free-text field. -->
+        <UiField label="Procedure">
+          <UiTextarea v-model="procedure" :rows="2" />
+        </UiField>
 
         <p class="caption mt-1">Clearance</p>
         <UiField

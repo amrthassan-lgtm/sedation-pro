@@ -99,6 +99,22 @@ function orderLine(item: InventoryItem): string {
 const router = useRouter();
 const expandedId = ref<string | null>(null);
 
+// One protocol scan per item, not six per row per render.
+const usesById = new Map(inv.classified.map((c) => [c.item.id, inv.usesFor(c.item)]));
+function usesOf(item: InventoryItem) {
+  return usesById.get(item.id) ?? [];
+}
+
+// "In date" is the longest, least-actionable section — collapsed by
+// default so attention lands on the sections that need it.
+const collapsed = ref(new Set<string>(['ok']));
+function toggleSection(id: string): void {
+  const next = new Set(collapsed.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  collapsed.value = next;
+}
+
 function toggleExpanded(key: string): void {
   expandedId.value = expandedId.value === key ? null : key;
 }
@@ -158,42 +174,61 @@ function openProtocol(id: string): void {
 
     <template v-for="section in sections" :key="section.id">
       <UiCard v-if="section.entries.length > 0" class="inv-card">
-        <header class="inv-head">
+        <header
+          class="inv-head inv-head--toggle"
+          role="button"
+          tabindex="0"
+          :aria-expanded="!collapsed.has(section.id)"
+          @click="toggleSection(section.id)"
+          @keydown.enter.prevent="toggleSection(section.id)"
+        >
           <span class="inv-swatch" :class="`inv-swatch--${section.tone}`" aria-hidden="true" />
           <div class="inv-head-main">
             <p class="inv-title">{{ section.label }}</p>
             <p v-if="section.hint" class="inv-hint">{{ section.hint }}</p>
           </div>
           <span class="card-count">{{ section.entries.length }}</span>
+          <span
+            class="inv-chevron"
+            :class="{ 'is-open': !collapsed.has(section.id) }"
+            aria-hidden="true"
+          >
+            ›
+          </span>
         </header>
-        <UiStack :gap="1">
+        <UiStack v-if="!collapsed.has(section.id)" :gap="1">
           <template v-for="entry in section.entries" :key="entry.item.id">
             <component
-              :is="inv.usesFor(entry.item).length > 0 ? 'button' : 'div'"
+              :is="usesOf(entry.item).length > 0 ? 'button' : 'div'"
               class="inv-row"
-              :type="inv.usesFor(entry.item).length > 0 ? 'button' : undefined"
+              :type="usesOf(entry.item).length > 0 ? 'button' : undefined"
               :aria-expanded="
-                inv.usesFor(entry.item).length > 0 ? expandedId === entry.item.id : undefined
+                usesOf(entry.item).length > 0 ? expandedId === entry.item.id : undefined
               "
-              @click="inv.usesFor(entry.item).length > 0 && toggleExpanded(entry.item.id)"
+              :aria-label="
+                usesOf(entry.item).length > 0
+                  ? `${entry.item.drug} — show protocols using it`
+                  : undefined
+              "
+              @click="usesOf(entry.item).length > 0 && toggleExpanded(entry.item.id)"
             >
               <span class="inv-bar" :class="`inv-bar--${rowTone(entry)}`" aria-hidden="true" />
-              <div class="inv-main">
-                <p class="inv-drug">{{ entry.item.drug }}</p>
-                <p class="inv-desc">{{ entry.item.description }}</p>
-                <p class="inv-meta">{{ metaLine(entry.item) }}</p>
-                <p v-if="entry.item.onOrder" class="inv-order">{{ orderLine(entry.item) }}</p>
-                <p v-if="entry.item.notes" class="inv-note">{{ entry.item.notes }}</p>
-              </div>
-              <div class="inv-pills">
+              <span class="inv-main">
+                <span class="inv-drug">{{ entry.item.drug }}</span>
+                <span class="inv-desc">{{ entry.item.description }}</span>
+                <span class="inv-meta">{{ metaLine(entry.item) }}</span>
+                <span v-if="entry.item.onOrder" class="inv-order">{{ orderLine(entry.item) }}</span>
+                <span v-if="entry.item.notes" class="inv-note">{{ entry.item.notes }}</span>
+              </span>
+              <span class="inv-pills">
                 <UiStatusPill :severity="pillSeverity(entry)">{{ pillLabel(entry) }}</UiStatusPill>
                 <UiStatusPill v-if="entry.item.onOrder" severity="empty">On order</UiStatusPill>
                 <UiStatusPill v-if="entry.item.category === 'sedation'" severity="empty">
                   Sedation cart
                 </UiStatusPill>
-              </div>
+              </span>
               <span
-                v-if="inv.usesFor(entry.item).length > 0"
+                v-if="usesOf(entry.item).length > 0"
                 class="inv-chevron"
                 :class="{ 'is-open': expandedId === entry.item.id }"
                 aria-hidden="true"
@@ -204,7 +239,7 @@ function openProtocol(id: string): void {
             <div v-if="expandedId === entry.item.id" class="inv-uses">
               <p class="inv-uses-label">Used in</p>
               <button
-                v-for="proto in inv.usesFor(entry.item)"
+                v-for="proto in usesOf(entry.item)"
                 :key="proto.id"
                 type="button"
                 class="inv-uses-row"
@@ -234,15 +269,16 @@ function openProtocol(id: string): void {
             type="button"
             class="inv-row"
             :aria-expanded="expandedId === name"
+            :aria-label="`${name} — show protocols calling for it`"
             @click="toggleExpanded(name)"
           >
             <span class="inv-bar inv-bar--slate" aria-hidden="true" />
-            <div class="inv-main">
-              <p class="inv-drug">{{ name }}</p>
-            </div>
-            <div class="inv-pills">
+            <span class="inv-main">
+              <span class="inv-drug">{{ name }}</span>
+            </span>
+            <span class="inv-pills">
               <UiStatusPill severity="empty">Not stocked</UiStatusPill>
-            </div>
+            </span>
             <span
               class="inv-chevron"
               :class="{ 'is-open': expandedId === name }"
@@ -303,6 +339,10 @@ function openProtocol(id: string): void {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+}
+.inv-head--toggle {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .inv-head-main {
   min-width: 0;
@@ -439,21 +479,25 @@ button.inv-row {
   background: var(--color-text-disabled);
 }
 .inv-main {
+  display: block;
   min-width: 0;
   flex: 1;
 }
 .inv-drug {
+  display: block;
   margin: 0;
   font-size: var(--type-body);
   font-weight: var(--weight-semibold);
   color: var(--color-text-primary);
 }
 .inv-desc {
+  display: block;
   margin: 2px 0 0;
   font-size: var(--type-footnote);
   color: var(--color-text-secondary);
 }
 .inv-meta {
+  display: block;
   margin: 4px 0 0;
   font-size: var(--type-caption);
   letter-spacing: 0.2px;
@@ -461,17 +505,19 @@ button.inv-row {
   font-family: var(--font-mono);
 }
 .inv-order {
+  display: block;
   margin: 4px 0 0;
   font-size: var(--type-caption);
   color: var(--color-text-secondary);
 }
 .inv-note {
+  display: block;
   margin: 4px 0 0;
   font-size: var(--type-caption);
   color: var(--color-text-secondary);
 }
 .inv-pills {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;

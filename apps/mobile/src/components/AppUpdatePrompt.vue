@@ -97,6 +97,9 @@ function reloadNow(): void {
   transform: scale(0.96);
 }
 .update-prompt-close {
+  /* 44pt HIG minimum for the dismiss target. */
+  min-width: 44px;
+  min-height: 44px;
   padding: 4px 8px;
   border: none;
   background: transparent;

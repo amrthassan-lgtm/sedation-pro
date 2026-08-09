@@ -54,6 +54,10 @@ function add(term: string): void {
   margin: 0 0 var(--sp-2);
 }
 .ui-qa-chip {
+  /* 44pt HIG minimum — these were the smallest targets in the app. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   font-size: var(--type-caption);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.2px;

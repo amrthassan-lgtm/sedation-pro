@@ -168,6 +168,12 @@ function commitEntry(): void {
 }
 .ui-chip {
   min-width: 44px;
+  /* 44pt HIG minimum for gloved fingers; inline-flex keeps the label
+     visually centered so density doesn't change. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 8px 14px;
   border-radius: var(--r-pill);
   border: 1px solid var(--color-border);

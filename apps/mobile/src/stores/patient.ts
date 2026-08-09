@@ -242,6 +242,18 @@ export const usePatientStore = defineStore('patient', () => {
     phase1ValidationAttempted.value = true;
   }
 
+  /**
+   * Scroll-to-first-missing request channel for callers outside Phase 1's
+   * scope (the sticky bar's clearance counter). A counter rather than a
+   * boolean so every tap re-fires the watcher — the attempted flag alone
+   * only transitions once.
+   */
+  const phase1ScrollRequests = ref(0);
+  function requestMissingFieldScroll() {
+    phase1ValidationAttempted.value = true;
+    phase1ScrollRequests.value += 1;
+  }
+
   watch(isPhase1Complete, (complete) => {
     if (complete) phase1ValidationAttempted.value = false;
   });
@@ -438,6 +450,8 @@ export const usePatientStore = defineStore('patient', () => {
     isPhase1Complete,
     phase1ValidationAttempted,
     markValidationAttempted,
+    phase1ScrollRequests,
+    requestMissingFieldScroll,
     reset,
   };
 });

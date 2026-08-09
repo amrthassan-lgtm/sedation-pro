@@ -48,8 +48,13 @@ const visible = computed(
   () =>
     summary.value.expired + summary.value.expiringSoon > 0 &&
     dismissedDay.value !== today &&
-    // The inventory view carries its own always-on banner.
-    route.path !== '/inventory',
+    // One warning per screen: the inventory view carries its own
+    // always-on banner, Phase 1 renders the kit banner beside the
+    // emergency-drugs checkbox, and Quick Reference is a crisis surface
+    // that must stay pure signal during a protocol lookup.
+    route.path !== '/inventory' &&
+    route.path !== '/phase/1' &&
+    !route.path.startsWith('/quick-reference'),
 );
 
 const title = computed(() => {

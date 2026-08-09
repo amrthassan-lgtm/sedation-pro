@@ -77,6 +77,11 @@ const railProgressPercent = computed(() => {
   return ((railActiveIndex.value + 1) / railPhases.length) * 100;
 });
 
+function jumpToMissing() {
+  if (patient.isPhase1Complete) return;
+  patient.requestMissingFieldScroll();
+}
+
 function emergency() {
   // `focus=search` signals the QR view to autofocus its input on mount.
   // Direct navigation (nav drawer, deep link) won't carry the query param
@@ -107,7 +112,18 @@ function emergency() {
         <span class="sticky-bar-phase-label">{{ meta.label }}</span>
       </div>
       <div class="sticky-bar-sub">
-        <template v-if="showClearance">
+        <!-- Tappable while incomplete: jumps to the first missing required
+             field via the store's scroll-request channel. -->
+        <button
+          v-if="showClearance"
+          type="button"
+          class="sticky-bar-clearance"
+          :disabled="isPhase1Complete"
+          :aria-label="
+            isPhase1Complete ? 'Clearance complete' : 'Show the first missing required field'
+          "
+          @click="jumpToMissing"
+        >
           <span class="sticky-bar-clearance-label">Clearance</span>
           <span class="sticky-bar-clearance-bar" aria-hidden="true">
             <span
@@ -119,7 +135,7 @@ function emergency() {
             {{ completeness.done }} / {{ completeness.total }}
           </span>
           <span v-if="isPhase1Complete" class="sticky-bar-ready">✓ Ready</span>
-        </template>
+        </button>
         <template v-else>
           <span class="sticky-bar-phase-sub">{{ meta.sub }}</span>
         </template>
@@ -258,8 +274,28 @@ function emergency() {
   color: var(--color-text-tertiary);
   letter-spacing: 0.2px;
 }
+/* The whole clearance cluster is one button (jump-to-first-missing);
+   inherits the sub row's type scale, keeps the old inline look. */
+.sticky-bar-clearance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.sticky-bar-clearance:disabled {
+  cursor: default;
+}
 .sticky-bar-clearance-label {
   color: var(--color-text-tertiary);
+  white-space: nowrap;
 }
 .sticky-bar-clearance-bar {
   flex: 1;
@@ -280,6 +316,10 @@ function emergency() {
   font-weight: var(--weight-bold);
   color: var(--color-text-primary);
   letter-spacing: 0.3px;
+  /* The fraction and Ready chip never wrap — the flexible bar absorbs
+     width pressure instead. */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .sticky-bar-ready {
   font-weight: var(--weight-bold);
@@ -289,6 +329,8 @@ function emergency() {
   font-size: var(--type-caption);
   background: var(--color-good-soft);
   color: var(--color-good);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .sticky-bar-alerts {

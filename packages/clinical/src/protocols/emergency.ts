@@ -619,7 +619,6 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           concentration: '100 mcg/ml (after dilution)',
           mixFirst:
             'MIX FIRST: dilute 1 ml of 10 mg/ml phenylephrine into 100 ml NS → 100 mcg/ml; never draw from the stock vial',
-          drawTable: [{ label: '0.1 mg', ml: '1.0 ml' }],
         },
       },
       { text: 'Monitor vitals' },

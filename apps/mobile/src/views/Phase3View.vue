@@ -42,7 +42,21 @@ const undo = useUndoStore();
 const eventLog = useEventLogStore();
 const now = useNow(1000);
 
-const { weightLb, diabetic, safetyAlerts } = storeToRefs(patient);
+const { weightLb, diabetic, safetyAlerts, baselineBp, baselineSpo2, baselineGlucose } =
+  storeToRefs(patient);
+
+/** Phase 1 baseline reference shown atop Pre-Op Vitals; '' hides the line. */
+const baselineLine = computed(() => {
+  const parts: string[] = [];
+  if (baselineBp.value.sbp !== null && baselineBp.value.dbp !== null) {
+    parts.push(`BP ${baselineBp.value.sbp}/${baselineBp.value.dbp}`);
+  }
+  if (baselineSpo2.value !== null) parts.push(`SpO₂ ${baselineSpo2.value}%`);
+  if (diabetic.value && baselineGlucose.value !== null) {
+    parts.push(`glucose ${baselineGlucose.value} mg/dL`);
+  }
+  return parts.length > 0 ? `Phase 1 baseline · ${parts.join(' · ')}` : '';
+});
 
 // The SedationDock is a redose cockpit — arm it only once a sedative has
 // actually been given, not on scroll. (A beta tester scrolled ahead to
@@ -485,6 +499,9 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading"><span class="heading-step">1</span>Pre-Op Vitals</p>
+      <!-- Comparing against Phase 1's baseline is the whole point of
+           re-taking vitals — surface it where the eyes already are. -->
+      <p v-if="baselineLine" class="caption baseline-line">{{ baselineLine }}</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
@@ -934,8 +951,8 @@ function onNaloxone() {
     </UiCard>
 
     <PhaseFooterNav
-      :back="{ label: 'Phase 2 · Oral Sedation', route: '/phase/2', tint: 'ph2' }"
-      :forward="{ label: 'Phase 4 · Recovery', route: '/phase/4', tint: 'ph4' }"
+      :back="{ label: 'Oral Sedation', route: '/phase/2', tint: 'ph2' }"
+      :forward="{ label: 'Recovery', route: '/phase/4', tint: 'ph4' }"
     />
 
     <template #rail>
@@ -952,6 +969,11 @@ function onNaloxone() {
 </template>
 
 <style scoped>
+.baseline-line {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  letter-spacing: 0.2px;
+}
 .drug-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

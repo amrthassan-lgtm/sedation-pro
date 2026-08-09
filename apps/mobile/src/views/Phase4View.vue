@@ -688,7 +688,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       </UiButton>
     </UiCard>
 
-    <PhaseFooterNav :back="{ label: 'Phase 3 · IV Sedation', route: '/phase/3', tint: 'ph3' }" />
+    <PhaseFooterNav :back="{ label: 'IV Sedation', route: '/phase/3', tint: 'ph3' }" />
 
     <template #rail>
       <PatientSummaryCard />

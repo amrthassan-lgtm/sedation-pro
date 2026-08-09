@@ -446,7 +446,9 @@ function syringeFor(drug: EmergencyDrugCallout) {
 }
 .drug-draw-table {
   display: grid;
-  grid-template-columns: max-content max-content;
+  /* Label column may wrap (naloxone's vial note is 34 chars); the ml
+     column never does — no horizontal overflow at 375px. */
+  grid-template-columns: minmax(0, 1fr) max-content;
   column-gap: var(--sp-3);
   row-gap: 2px;
   margin: 2px 0 0;
@@ -457,6 +459,8 @@ function syringeFor(drug: EmergencyDrugCallout) {
 .drug-draw-table dt {
   font-size: var(--type-caption);
   color: var(--color-text-secondary);
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 .drug-draw-table dd {
   margin: 0;
