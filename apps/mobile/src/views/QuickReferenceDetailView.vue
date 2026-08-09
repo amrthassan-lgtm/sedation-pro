@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import {
   EMERGENCY_PROTOCOLS,
@@ -57,7 +57,35 @@ function severityClass(step: ProtocolStep): string {
   return '';
 }
 
+/**
+ * Context-aware back button. Protocol details are reachable from more
+ * than one place now (Quick Reference list, the inventory's "Used in"
+ * expansion, related-protocol links), so the toolbar reflects where the
+ * user actually came from and `router.back()` returns them there. A
+ * deep link / fresh load has no in-app history — fall back to pushing
+ * the Quick Reference list, the old behavior.
+ *
+ * `history.state` isn't reactive; depending on `route.fullPath` makes
+ * the label recompute when related-protocol taps reuse this component.
+ */
+const route = useRoute();
+const backContext = computed<{ label: string; hasHistory: boolean }>(() => {
+  void route.fullPath;
+  const prev =
+    typeof window !== 'undefined'
+      ? (router.options.history.state?.back as string | null | undefined)
+      : null;
+  if (typeof prev !== 'string') return { label: '← Quick Reference', hasHistory: false };
+  if (prev === '/inventory') return { label: '← Drug Inventory', hasHistory: true };
+  if (prev.startsWith('/quick-reference/')) return { label: '← Back', hasHistory: true };
+  return { label: '← Quick Reference', hasHistory: true };
+});
+
 function goBack() {
+  if (backContext.value.hasHistory) {
+    router.back();
+    return;
+  }
   void router.push('/quick-reference');
 }
 
@@ -119,7 +147,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
 <template>
   <main class="phase-view">
     <header class="toolbar">
-      <UiButton tone="neutral" @click="goBack">← Quick Reference</UiButton>
+      <UiButton tone="neutral" @click="goBack">{{ backContext.label }}</UiButton>
     </header>
 
     <template v-if="protocol">
