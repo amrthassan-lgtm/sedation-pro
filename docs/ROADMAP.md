@@ -273,70 +273,90 @@ errors or undo regrets.
 - Telehealth / remote monitoring.
 - Pediatric sedation — adult workflow only.
 - Non-IV sedation modalities beyond oral premedication.
-- EHR integration — exportable / copyable / shareable note only in v1.
-  Open Dental write-back is designed below as a post-v1 candidate.
+- Multi-practice EHR integration. Open Dental write-back for this
+  practice is built — see the section below.
 
 Each is a candidate for v2 once v1 is live and stable.
 
-## Post-v1 candidate — Open Dental note write-back
+## Open Dental note write-back — built, verified against the live API
 
-**Intent.** One-tap "send to chart": resolve the patient in the
-practice's Open Dental by MRN, then write the generated clinical note
-into their record. Builds directly on the existing
-`clinicalNoteToText()` serializer — the note is already a stable,
-testable string contract, so this is an export adapter plus the
-compliance scaffolding around it, not a rewrite.
+**Status.** Implemented on `feat/send-to-chart`. Every fact below was tested
+against this practice's live Open Dental on 2026-08-14; the earlier
+desk-researched design in this section was wrong in three ways that mattered
+and has been replaced rather than annotated.
 
-**API shape (researched May 2026 against the Open Dental REST API v1).**
+**What it does.** One tap on the clinical note writes two artifacts into the
+patient's chart: the note text as a commlog, and the note PDF as a document
+in the Images module. That replaces printing the note, scanning it in, and
+separately pasting the text.
 
-- Base URL `https://api.opendental.com/api/v1`,
-  `Content-Type: application/json`.
-- Auth header: `Authorization: ODFHIR {DeveloperKey}/{CustomerKey}`.
-  Developer key from the Open Dental Developer Portal
-  (vendor.relations@opendental.com, 1–3 business days); the Customer
-  key is per practice/developer pair. This is a bearer credential —
-  it must live in secure native storage (Capacitor Preferences /
-  Keychain), never in localStorage or the JS bundle.
-- Permissions + throttling: read-only keys (`ApiReadAll`) are
-  throttled to 1 request / 5 s; any write permission (e.g.
-  `ApiComm`) relaxes to 1 request / 1 s. One note per case is far
-  under either limit.
+**Corrections to the original design.**
 
-**Flow.**
+- **No native shell, relay or proxy is needed.** CORS is fully open on this
+  API (`access-control-allow-origin: *`, all headers and methods, confirmed
+  on both the preflight and a real authenticated GET), so the PWA calls it
+  directly with `fetch()`. The old plan's requirement for secure native
+  storage drove a Capacitor dependency that does not exist.
+- **MRN maps to `PatNum`, not `ChartNumber`.** `ChartNumber` is empty on this
+  practice's records, so `GET /patients?ChartNumber={MRN}` — the original
+  step 1 — returns nothing. The practice enters the PatNum into the MRN
+  field, so `GET /patients/{PatNum}` resolves directly and there is no
+  search-and-disambiguate step to build.
+- **The PDF is the other half.** The original design wrote text only. A
+  scanned-looking PDF in Images is what the practice actually files.
 
-1. **Resolve patient (needs read access — already held):**
-   `GET /patients?ChartNumber={MRN}`. Open Dental has _no dedicated
-   MRN field_ — the practice's MRN must map to `ChartNumber`
-   (≤ 15 chars) or a custom `PatField`. Search is partial-match and
-   case-insensitive, so the adapter must exact-match and, given the
-   wrong-patient stakes, cross-check name + birthdate before writing.
-   Returns `PatNum` (the internal key for step 2).
-2. **Write the note (needs write access — `ApiComm`, to be purchased):**
-   `POST /commlogs` with
-   `{ PatNum, Note: clinicalNoteToText(note), CommDateTime, commType }`.
-   Commlogs is the right target: append-only (every POST is a new
-   timestamped entry), patient-keyed, free-text body. _Not_
-   `PatientNotes` — that's a single 1:1 field per patient and `PUT`
-   replaces it (no per-visit history). `ProcNotes` is a fallback only
-   if the visit must attach to a specific `ProcNum`.
+**Endpoints.**
 
-**Open risks to design around (not yet solved).**
+- `GET /patients/{PatNum}` → 200. Used as the wrong-patient guard: the
+  confirmation dialog shows the returned `LName, FName` and `Birthdate`, so
+  the provider confirms against the person rather than the number they typed.
+- `POST /commlogs` → 201, body
+  `{ PatNum, CommType, Mode_, SentOrReceived, Note }`. `CommType` is **711**,
+  the "Sedation Note" definition created in Category 27 (`CommLogTypes`) on
+  2026-08-14. Practice-specific — never guess or substitute it.
+- `POST /documents/Upload` → 201, body
+  `{ PatNum, rawBase64, extension: ".pdf", Description, DateCreated,
+DocCategory }`. `DocCategory` is **136**, "IV Sedation Consents".
+  `GET /documents/{DocNum}` returns metadata only, never file bytes — a
+  read-back verification step would always appear to fail.
 
-- PHI in transit flips the app's "local-only, no network without
-  explicit action" stance — needs a BAA with Open Dental, an audit
-  trail of what was sent and when, and a _non-silent_ failure path
-  (a chart write that fails the way localStorage silently fails would
-  be a documentation gap, not a cosmetic one).
-- MRN→ChartNumber mapping is practice-configured and not guaranteed
-  unique/populated; the patient-match step is itself a wrong-patient
-  surface and needs a confirm-before-send gate.
-- Requires the practice's Open Dental to expose the remote API
-  (eConnector / cloud), not just Local/Service mode.
+**Endpoints that silently do nothing.** `PUT /procedurelogs` with a `Note`
+returns 200 and writes nothing. `POST /procnotes` does work but is unused —
+the practice chose commlog, so there is no procedure lookup to build.
 
-**References.**
+**Auth and limits.** `Authorization: ODFHIR {DeveloperKey}/{CustomerKey}`.
+1 request/second on the write-enabled key, so the two writes are sequential
+and spaced ~1100 ms. Keys live in this device's localStorage, entered through
+the in-app settings screen; they are never in the repo, the bundle or any
+committed file.
 
-- API specification — <https://www.opendental.com/site/apispecification.html>
-- Commlogs — <https://www.opendental.com/site/apicommlogs.html>
-- Patients (lookup) — <https://www.opendental.com/site/apipatients.html>
-- PatientNotes — <https://www.opendental.com/site/apipatientnotes.html>
-- Developer setup — <https://www.opendental.com/site/apisetup.html>
+**Every write is permanent — this is the design constraint.** Commlogs have
+no DELETE (removal is UI-only), and `DELETE /documents/{DocNum}` returns
+`400 "Could not find folder for patient."` here, because Images are stored
+LocalAtoZ where the cloud API cannot reach them. Consequences the
+implementation is built around:
+
+- The two artifacts are tracked separately and retried separately. A single
+  "retry the send" after a partial failure would re-post a commlog that
+  already succeeded and permanently duplicate a clinical note.
+- Send state is flushed to storage synchronously on every transition, not on
+  a watcher tick. A tablet sleeping between the two calls would otherwise
+  lose a `sent` marker that existed only in memory, and the retry would
+  double-post.
+- The returned `DocNum` is never persisted. Open Dental defers
+  materialization: the row is recreated under a new `DocNum` the first time
+  someone opens the document, so the number is stale almost immediately. The
+  `Description` string is the durable identity.
+
+**Deferred materialization, and the warning staff will see.** An
+API-uploaded file is not written to disk immediately — the row holds the PDF
+as base64 in its `Note` field with a placeholder `filePath`. The first person
+to open it gets a **"document has been previously deleted"** warning, after
+which Open Dental writes the real file and it opens normally forever after.
+This is expected and benign, and it is documented in `README.md` because an
+unexplained warning of that wording on a medicolegal record is worse than the
+quirk itself.
+
+**Remaining risk.** PHI now leaves the device, which changes the app's
+local-only posture: a BAA with Open Dental is required, and the audit trail of
+what was sent and when currently lives only in the per-case send record.
