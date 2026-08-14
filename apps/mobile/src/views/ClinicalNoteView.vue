@@ -4,10 +4,30 @@ import { useRouter } from 'vue-router';
 
 import { useClinicalNote } from '@/composables/useClinicalNote';
 import { clinicalNoteToText } from '@/composables/clinicalNoteText';
-import { UiButton } from '@sedation-pro/ui';
+import { useSendToChart } from '@/composables/useSendToChart';
+import { UiBanner, UiButton, UiModal } from '@sedation-pro/ui';
 
 const router = useRouter();
 const note = useClinicalNote();
+
+/**
+ * Send to chart. Entirely inert with no Open Dental keys stored: the button
+ * renders disabled with its reason, and nothing else on this screen — Print,
+ * Copy text, Share, or the note itself — changes in any way.
+ */
+const chart = useSendToChart(note);
+const resendOpen = ref(false);
+
+function goToSettings() {
+  void router.push('/settings');
+}
+function openResend() {
+  resendOpen.value = true;
+}
+function confirmResend() {
+  resendOpen.value = false;
+  void chart.requestResend();
+}
 
 // Kind- and status-aware disposition line (mirrors the text export).
 const dispositionLabel = computed(() => {
@@ -93,8 +113,50 @@ async function shareNote() {
         <UiButton tone="neutral" @click="copyNote">{{ copyLabel }}</UiButton>
         <UiButton v-if="supportsShare" tone="primary" @click="shareNote">Share</UiButton>
         <UiButton tone="success" @click="printNote">Print</UiButton>
+        <UiButton
+          tone="primary"
+          :disabled="!chart.precondition.value.ready || chart.busy.value"
+          @click="chart.requestSend"
+        >
+          {{ chart.busy.value ? 'Working…' : chart.primaryLabel.value }}
+        </UiButton>
       </div>
     </header>
+
+    <!-- Persistent, not a toast: a records operation must still be readable
+         when the operator looks back a minute later, or after a reload. It
+         reads from the persisted send record, so it survives both. -->
+    <section class="chart-panel no-print">
+      <p
+        v-if="!chart.precondition.value.ready && chart.precondition.value.reason"
+        class="chart-reason"
+      >
+        {{ chart.precondition.value.reason }}
+        <button
+          v-if="chart.precondition.value.needsSettings"
+          class="chart-link"
+          @click="goToSettings"
+        >
+          Open settings
+        </button>
+      </p>
+
+      <UiBanner v-if="chart.lookupError.value" tone="limit">
+        {{ chart.lookupError.value }}
+      </UiBanner>
+
+      <UiBanner
+        v-for="(line, i) in chart.resultLines.value"
+        :key="i"
+        :tone="line.tone === 'ok' ? 'safe' : line.tone === 'partial' ? 'caution' : 'limit'"
+      >
+        {{ line.text }}
+      </UiBanner>
+
+      <button v-if="chart.canResend.value" class="chart-link chart-secondary" @click="openResend">
+        Send another copy to the chart
+      </button>
+    </section>
 
     <article class="note-paper">
       <header class="note-header">
@@ -190,6 +252,52 @@ async function shareNote() {
 
       <footer class="note-footer">Generated {{ note.generatedAt }} · Sedation Pro v0.1</footer>
     </article>
+
+    <!-- The wrong-patient guard. The name and date of birth lead, because
+         the operator confirms against the person, not against the number
+         they typed — and nothing written here can be taken back. -->
+    <UiModal
+      :open="chart.confirmTarget.value !== null"
+      title="Send to this chart?"
+      tone="primary"
+      confirm-label="Send to chart"
+      cancel-label="Cancel"
+      :dismiss-on-backdrop="false"
+      @confirm="chart.confirmSend"
+      @cancel="chart.cancelSend"
+    >
+      <p class="confirm-who">{{ chart.confirmTarget.value?.name }}</p>
+      <p class="confirm-dob">
+        Born {{ chart.confirmTarget.value?.birthdate || '—' }} · Patient ID
+        {{ chart.confirmTarget.value?.patNum }}
+      </p>
+      <p class="confirm-list-label">This will write:</p>
+      <ul class="confirm-list">
+        <li v-for="a in chart.confirmTarget.value?.artifacts ?? []" :key="a">
+          {{ a === 'commlog' ? 'The note text, as a chart note' : 'The note PDF, into Images' }}
+        </li>
+      </ul>
+      <p class="confirm-warn">Entries filed to Open Dental cannot be removed from this app.</p>
+    </UiModal>
+
+    <UiModal
+      :open="resendOpen"
+      title="Send a second copy?"
+      tone="danger"
+      confirm-label="Send another copy"
+      cancel-label="Cancel"
+      @confirm="confirmResend"
+      @cancel="resendOpen = false"
+    >
+      <p>
+        This note has already been filed to the chart. Sending again adds a
+        <strong>second copy</strong> that cannot be removed from this app — only from within Open
+        Dental.
+      </p>
+      <ul class="confirm-list">
+        <li v-for="(line, i) in chart.resultLines.value" :key="i">{{ line.text }}</li>
+      </ul>
+    </UiModal>
   </main>
 </template>
 
@@ -458,5 +566,53 @@ async function shareNote() {
     margin: 0.5in;
     size: letter;
   }
+}
+
+.chart-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.chart-reason {
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+}
+.chart-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-accent, #2563eb);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.chart-secondary {
+  align-self: flex-start;
+  font-size: var(--type-footnote);
+}
+.confirm-who {
+  font-size: var(--type-title);
+  font-weight: 700;
+}
+.confirm-dob {
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--sp-3);
+}
+.confirm-list-label {
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+}
+.confirm-list {
+  margin: var(--sp-1) 0 var(--sp-3) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--type-footnote);
+}
+.confirm-warn {
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
 }
 </style>

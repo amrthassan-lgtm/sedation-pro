@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vu
 
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
+import { useRecoveryStore } from '@/stores/recovery';
 import { useToastStore } from '@/stores/toast';
 
 const PHASE_ROUTES: Record<string, Phase> = {
@@ -63,6 +64,13 @@ export const router = createRouter({
       name: 'clinical-note',
       component: () => import('@/views/ClinicalNoteView.vue'),
     },
+    // Practice-level setup, deliberately NOT gated behind Phase 1 — the keys
+    // get entered on a quiet afternoon, not with a patient in the chair.
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/views/SettingsView.vue'),
+    },
     // UiDemoView is the developer-only primitives gallery — ships only in
     // `pnpm dev`. Excluded from production / store builds so a deep link can't
     // land a clinician on the demo screen.
@@ -88,6 +96,39 @@ export const router = createRouter({
  */
 router.beforeEach((to: RouteLocationNormalized) => {
   const patient = usePatientStore();
+
+  /**
+   * An unsigned note is not a record, so it must not be reachable — not by
+   * deep link, not by a stale back button, not by a restored session. The
+   * button in Phase 4 is disabled in parallel; both surfaces read the same
+   * `providerSignatureDataUrl`, so they can't disagree.
+   *
+   * Deliberately independent of encounter kind. Phase 4 is reachable
+   * whenever Phase 1 is complete, so an assessment-only case (sedation
+   * deferred) can still be signed and still produce its note — the signature
+   * is exactly what `canConclude` already requires there. Gating on
+   * "was sedation given" instead would trap half of this practice's notes.
+   */
+  if (to.path === '/clinical-note') {
+    const recovery = useRecoveryStore();
+    if (recovery.providerSignatureDataUrl === null) {
+      // Mirrors the Phase 1 gate: flip the attempted flag so Phase 4 paints
+      // the red ring on the signature field rather than bouncing silently.
+      recovery.releaseAttempted = true;
+      const toast = useToastStore();
+      toast.show(
+        {
+          id: `gate-signature-${Date.now()}`,
+          label: 'Signature required',
+          sub: 'Sign in Phase 4 to generate the note',
+          tone: 'caution',
+        },
+        6000,
+      );
+      return { path: '/phase/4' };
+    }
+  }
+
   const targetPhase = PHASE_ROUTES[to.path];
   if (targetPhase && GATED_PHASES.has(targetPhase) && !patient.isPhase1Complete) {
     // Flip the validation flag so Phase 1 paints red rings on every missing
