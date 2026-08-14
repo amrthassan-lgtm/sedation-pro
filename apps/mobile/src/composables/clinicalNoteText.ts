@@ -2,8 +2,16 @@ import type { ClinicalNote } from './useClinicalNote';
 
 const WIDTH = 52;
 
-/** Human disposition line — kind- and status-aware. */
-function dispositionLine(d: ClinicalNote['disposition']): string {
+/**
+ * Human disposition line — kind- and status-aware.
+ *
+ * Exported because the PDF renderer needs the identical string. An
+ * assessment-only case must never be described as a released sedation
+ * patient, and the cheapest way to guarantee the three surfaces (screen,
+ * text export, PDF) agree is for them to share this one function rather
+ * than each re-deriving the branch.
+ */
+export function dispositionLine(d: ClinicalNote['disposition']): string {
   if (d.kind === 'assessment') {
     return d.released
       ? 'FINAL — pre-sedation assessment; sedation deferred'
