@@ -1,10 +1,16 @@
-name: Deploy preview to GitHub Pages
+name: Deploy to GitHub Pages
 
+# `main` only. This URL is the live clinical app — the practice opens it from
+# a tablet home-screen icon to run real sedation cases — and every push here
+# replaces what that tablet loads on next launch. The trigger previously also
+# matched `claude/**`, which meant any working branch could swap the app out
+# from under a case in progress, without `ci.yml` (main + PRs only) having
+# run on it. Feature branches now deploy nowhere; they reach the tablet by
+# merging to `main` after CI, which is the point.
 on:
   push:
     branches:
       - main
-      - 'claude/**'
   workflow_dispatch:
 
 permissions:
