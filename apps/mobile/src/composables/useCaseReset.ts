@@ -1,3 +1,5 @@
+import { CREDENTIALS_KEY } from '@/services/od-credentials';
+
 /**
  * Wipes every persisted store under the `sedation-pro:*` namespace and
  * hard-reloads onto Phase 1, so every Pinia setup-store re-initializes
@@ -22,6 +24,11 @@ const PRESERVED_KEYS: ReadonlySet<string> = new Set([
   // Chime flight recorder — diagnostics must survive the reset that often
   // immediately follows the event being diagnosed.
   'sedation-pro:chime-log:v1',
+  // Open Dental API keys. Per-PRACTICE, entered once on the one tablet that
+  // files notes to the chart — wiping them here would silently unpair the app
+  // from the PMS every time a new case starts. Imported rather than retyped so
+  // a key rename can't quietly drop it back out of this list.
+  CREDENTIALS_KEY,
 ]);
 
 export function useCaseReset(): { reset: () => void } {

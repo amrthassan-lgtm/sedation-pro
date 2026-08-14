@@ -683,9 +683,19 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       >
         {{ terminalLabel }}
       </UiButton>
-      <UiButton tone="neutral" block class="mt-2" @click="goToClinicalNote">
+      <!-- An unsigned note is not a record. The router refuses
+           /clinical-note without a signature; disabling here means the
+           clinician never taps into a bounce. Both read providerSigned. -->
+      <UiButton
+        tone="neutral"
+        block
+        class="mt-2"
+        :disabled="!providerSigned"
+        @click="goToClinicalNote"
+      >
         Generate Clinical Note
       </UiButton>
+      <p v-if="!providerSigned" class="gate-hint">Sign above (card 16) to generate the note.</p>
     </UiCard>
 
     <PhaseFooterNav :back="{ label: 'IV Sedation', route: '/phase/3', tint: 'ph3' }" />
@@ -747,5 +757,12 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--sp-2);
+}
+
+.gate-hint {
+  margin-top: var(--sp-1);
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+  text-align: center;
 }
 </style>

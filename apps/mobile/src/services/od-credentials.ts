@@ -12,7 +12,7 @@
  * fall out of that list, "Start new case" silently unpairs the app from
  * Open Dental in the middle of a treatment day.
  */
-const CREDENTIALS_KEY = 'sedation-pro:od-credentials:v1';
+export const CREDENTIALS_KEY = 'sedation-pro:od-credentials:v1';
 
 export interface OdCredentials {
   readonly developerKey: string;
