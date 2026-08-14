@@ -299,7 +299,15 @@ export function useSendToChart(
         tone: 'partial',
         text: 'Part of this note is already in the chart. Retry only what failed — resending everything files a second copy that cannot be removed.',
       });
-    } else if (send.commlog.status === 'failed' && send.pdf.status === 'idle') {
+      return lines;
+    }
+
+    // An artifact still reading 'sending' was interrupted mid-write, and the
+    // app cannot know whether it landed. Claiming "nothing was written" there
+    // would be the one wrong thing to say: it invites the retry that
+    // duplicates. Only assert it when every artifact definitively failed.
+    const outcomeUnknown = send.commlog.status === 'sending' || send.pdf.status === 'sending';
+    if (!outcomeUnknown) {
       lines.push({ tone: 'fail', text: 'Nothing was written to the chart.' });
     }
     return lines;

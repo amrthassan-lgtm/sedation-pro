@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, type CSSProperties } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useAudioStore } from '@/stores/audio';
@@ -17,6 +17,7 @@ import {
   summarizeInventory,
 } from '@/composables/useInventoryStatus';
 import { readChimeLog } from '@/composables/useAlarms';
+import { hasCredentials } from '@/services/od-credentials';
 import { DEFAULT_FORMULARY } from '@sedation-pro/clinical';
 import { snapDecision } from './navDrawerSwipe';
 
@@ -31,6 +32,7 @@ interface NavPhaseEntry {
 }
 
 const router = useRouter();
+const route = useRoute();
 const session = useSessionStore();
 const patient = usePatientStore();
 const eventLog = useEventLogStore();
@@ -118,6 +120,19 @@ const inventoryActive = computed(() => currentPhase.value === 'inventory');
 
 async function goInventory() {
   await router.push('/inventory');
+  session.closeDrawer();
+}
+
+/**
+ * Settings is practice setup, not a phase, so it sits below the case rows
+ * and carries no tint of its own. Read at drawer render rather than held in
+ * a store: the pairing changes about once, and the drawer opens fresh.
+ */
+const settingsActive = computed(() => route.path === '/settings');
+const chartConnected = computed(() => hasCredentials());
+
+async function goSettings() {
+  await router.push('/settings');
   session.closeDrawer();
 }
 
@@ -428,6 +443,21 @@ function onTouchEnd() {
             severity="caution"
             :label="String(inventorySummary.expiringSoon)"
           />
+          <span class="nav-phase-chevron" aria-hidden="true">›</span>
+        </button>
+        <button
+          type="button"
+          class="nav-phase nav-phase--set"
+          :class="{ 'is-current': settingsActive }"
+          @click="goSettings"
+        >
+          <span class="nav-phase-icon nav-phase-icon--set" aria-hidden="true">⚙</span>
+          <span class="nav-phase-main">
+            <span class="nav-phase-title">Settings</span>
+            <span class="nav-phase-sub">
+              {{ chartConnected ? 'Open Dental · keys stored' : 'Open Dental · not connected' }}
+            </span>
+          </span>
           <span class="nav-phase-chevron" aria-hidden="true">›</span>
         </button>
       </nav>
@@ -747,6 +777,13 @@ function onTouchEnd() {
    reads as a sibling of Quick Reference without impersonating it. */
 .nav-phase-icon--inv {
   background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+}
+/* Settings is practice setup, not clinical reference — deliberately the one
+   neutral row in this section so it doesn't compete with the two rows a
+   clinician reaches for mid-case. */
+.nav-phase-icon--set {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
   color: #fff;
 }
 .nav-phase-badge {

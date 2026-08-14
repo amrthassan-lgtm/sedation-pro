@@ -188,6 +188,17 @@ async function testConnection(): Promise<void> {
 </template>
 
 <style scoped>
+/* `.phase-view` is a per-view scoped rule, not a global one — each standalone
+   screen declares its own. Without this the page renders full-bleed while
+   every other screen is a centred 760px column. */
+.phase-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-4) var(--sp-7);
+  max-width: 760px;
+  margin-inline: auto;
+}
 .settings-note {
   font-size: var(--type-footnote);
   color: var(--color-text-secondary);
