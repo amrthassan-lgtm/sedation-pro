@@ -194,6 +194,19 @@ function ensure(motif: Motif, slot: 'ready' | 'end'): HTMLAudioElement | null {
  * currently *playing* is already unlocked by definition and is never
  * paused — priming must not cut off a live chime.
  */
+/**
+ * One unlock entry per page load, not per element. Two elements prime on the
+ * same gesture, and logging both would double the noise for no extra signal
+ * — what matters is "the unlock ran at this time", not which slot won first.
+ */
+let unlockLogged = false;
+
+function recordUnlock(kind: 'Unlock primed' | 'Unlock failed'): void {
+  if (unlockLogged) return;
+  unlockLogged = true;
+  recordChime(kind);
+}
+
 export function unlockAudio(): void {
   if (readyUnlocked && endUnlocked) return;
   const a = ensure(READY_MOTIF, 'ready');
@@ -204,22 +217,43 @@ export function unlockAudio(): void {
       onSuccess();
       return;
     }
-    el.muted = true;
+    // `muted` alone was not enough in the field: launching the app played
+    // the ready tone and then the end tone — the two elements primed here,
+    // in this order — with nothing in the chime log to explain it. Setting
+    // volume to 0 as well means the element is silent even where the muted
+    // flag is applied late or ignored for a freshly constructed element.
+    const silence = (): void => {
+      el.muted = true;
+      el.volume = 0;
+    };
+    const restore = (): void => {
+      el.muted = false;
+      el.volume = 1;
+    };
+
+    silence();
     const p = el.play();
     if (!p || typeof p.then !== 'function') {
-      // Legacy sync play() — no promise means it either threw (caught by
-      // the caller's gesture context) or started; treat as unlocked.
-      el.muted = false;
+      // Legacy sync play(): the element is playing now and there is no
+      // promise to hang the stop on. Pause it before restoring — the old
+      // code restored immediately and left it playing audibly to the end,
+      // which is the likeliest source of the audible unlock.
+      el.pause();
+      el.currentTime = 0;
+      restore();
+      recordUnlock('Unlock primed');
       onSuccess();
       return;
     }
     p.then(() => {
       el.pause();
       el.currentTime = 0;
-      el.muted = false;
+      restore();
+      recordUnlock('Unlock primed');
       onSuccess();
     }).catch(() => {
-      el.muted = false;
+      restore();
+      recordUnlock('Unlock failed');
     });
   };
   if (!readyUnlocked) prime(a, () => (readyUnlocked = true));
@@ -254,12 +288,24 @@ const ORAL_PREMED_EVENT = 'Preoperative Oral Dose';
  * useCaseReset's PRESERVED_KEYS) new-case resets.
  */
 const CHIME_LOG_KEY = 'sedation-pro:chime-log:v1';
-const CHIME_LOG_MAX = 20;
+// Raised from 20 when unlock events joined the log: each page load can add
+// one, and a run of reloads while debugging must not push the actual chimes
+// out of the window that explains them.
+const CHIME_LOG_MAX = 40;
 
 export type ChimeKind = 'Versed ready' | 'Fentanyl ready' | 'Pre-med cleared' | 'Release cleared';
 
+/**
+ * Priming is not a chime, but it is the only other thing that can make the
+ * chime elements emit sound, so it belongs in the same record. Without it an
+ * empty log was ambiguous — it could mean "no chime fired" or "something
+ * made a noise that this recorder cannot see", and the owner hit exactly
+ * that: two tones on launch, nothing logged to explain them.
+ */
+export type AudioEventKind = ChimeKind | 'Unlock primed' | 'Unlock failed';
+
 export interface ChimeLogEntry {
-  readonly kind: ChimeKind;
+  readonly kind: AudioEventKind;
   readonly at: number;
 }
 
@@ -275,7 +321,7 @@ export function readChimeLog(): ReadonlyArray<ChimeLogEntry> {
   }
 }
 
-function recordChime(kind: ChimeKind): void {
+function recordChime(kind: AudioEventKind): void {
   if (typeof window === 'undefined' || !('localStorage' in window)) return;
   try {
     const next = [...readChimeLog(), { kind, at: Date.now() }].slice(-CHIME_LOG_MAX);

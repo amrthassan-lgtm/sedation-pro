@@ -481,24 +481,47 @@ describe('unlockAudio', () => {
     vi.useFakeTimers();
   });
 
-  interface UnlockMockControls {
-    instances: Array<{ play: ReturnType<typeof vi.fn>; pause: ReturnType<typeof vi.fn> }>;
+  interface UnlockMockInstance {
+    play: ReturnType<typeof vi.fn>;
+    pause: ReturnType<typeof vi.fn>;
+    muted: boolean;
+    volume: number;
+    /** Element state captured at the moment play() was invoked. */
+    atPlay: { muted: boolean; volume: number } | null;
+    /** Element state captured at the moment pause() was invoked. */
+    atPause: { muted: boolean; volume: number } | null;
   }
 
-  function installAudioMock(opts: { reject: boolean; startPlaying?: boolean }): UnlockMockControls {
+  interface UnlockMockControls {
+    instances: UnlockMockInstance[];
+  }
+
+  function installAudioMock(opts: {
+    reject: boolean;
+    startPlaying?: boolean;
+    /** Emulate a legacy browser whose play() returns undefined. */
+    sync?: boolean;
+  }): UnlockMockControls {
     const controls: UnlockMockControls = { instances: [] };
     class UnlockMockAudio {
       preload = '';
       muted = false;
+      volume = 1;
       currentTime = 0;
       paused = !opts.startPlaying;
+      atPlay: { muted: boolean; volume: number } | null = null;
+      atPause: { muted: boolean; volume: number } | null = null;
       constructor(public src = '') {
-        controls.instances.push(this as unknown as UnlockMockControls['instances'][number]);
+        controls.instances.push(this as unknown as UnlockMockInstance);
       }
-      play = vi.fn(() =>
-        opts.reject ? Promise.reject(new Error('gesture required')) : Promise.resolve(),
-      );
-      pause = vi.fn();
+      play = vi.fn(() => {
+        this.atPlay = { muted: this.muted, volume: this.volume };
+        if (opts.sync) return undefined;
+        return opts.reject ? Promise.reject(new Error('gesture required')) : Promise.resolve();
+      });
+      pause = vi.fn(() => {
+        this.atPause = { muted: this.muted, volume: this.volume };
+      });
     }
     (globalThis as unknown as { Audio?: unknown }).Audio = UnlockMockAudio;
     return controls;
@@ -550,5 +573,85 @@ describe('unlockAudio', () => {
       expect(el.play).not.toHaveBeenCalled();
       expect(el.pause).not.toHaveBeenCalled();
     }
+  });
+
+  /**
+   * Reported from the field: launching the app played the ready tone and
+   * then the end tone — the two elements primed here, in that order — with
+   * nothing in the chime log to explain it. `muted` alone was not holding.
+   */
+  it('is silent while priming: muted AND volume 0 at the moment play() runs', async () => {
+    const controls = installAudioMock({ reject: false });
+    const mod = await import('./useAlarms');
+
+    mod.unlockAudio();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(controls.instances.length).toBeGreaterThan(0);
+    for (const el of controls.instances) {
+      expect(el.atPlay).toEqual({ muted: true, volume: 0 });
+    }
+  });
+
+  it('restores audibility only after pausing, never mid-playback', async () => {
+    const controls = installAudioMock({ reject: false });
+    const mod = await import('./useAlarms');
+
+    mod.unlockAudio();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    for (const el of controls.instances) {
+      // Still silenced at the moment pause() ran...
+      expect(el.atPause).toEqual({ muted: true, volume: 0 });
+      // ...and audible again only afterwards, ready for a real chime.
+      expect(el.muted).toBe(false);
+      expect(el.volume).toBe(1);
+    }
+  });
+
+  /**
+   * The legacy branch is the likeliest source of the audible unlock: it used
+   * to restore the element immediately without pausing, leaving it playing
+   * audibly to the end.
+   */
+  it('pauses before restoring even when play() returns no promise', async () => {
+    const controls = installAudioMock({ reject: false, sync: true });
+    const mod = await import('./useAlarms');
+
+    mod.unlockAudio();
+    await Promise.resolve();
+
+    for (const el of controls.instances) {
+      expect(el.pause).toHaveBeenCalled();
+      expect(el.atPause).toEqual({ muted: true, volume: 0 });
+      expect(el.volume).toBe(1);
+    }
+  });
+
+  it('records the unlock so an empty log is real evidence, once per load', async () => {
+    window.localStorage.clear();
+    installAudioMock({ reject: false });
+    const mod = await import('./useAlarms');
+
+    mod.unlockAudio();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const kinds = mod.readChimeLog().map((e) => e.kind);
+    expect(kinds).toEqual(['Unlock primed']);
+  });
+
+  it('records a failed unlock distinctly from a successful one', async () => {
+    window.localStorage.clear();
+    installAudioMock({ reject: true });
+    const mod = await import('./useAlarms');
+
+    mod.unlockAudio();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mod.readChimeLog().map((e) => e.kind)).toEqual(['Unlock failed']);
   });
 });

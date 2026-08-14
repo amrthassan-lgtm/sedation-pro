@@ -509,7 +509,9 @@ function onTouchEnd() {
           <span class="nav-utility-label">
             {{ audioMuted ? 'Timer chimes muted' : 'Timer chimes on' }}
           </span>
-          <span v-if="lastChime" class="nav-utility-sub">Last chime · {{ lastChime }}</span>
+          <!-- "audio", not "chime": the log now also carries the unlock
+               priming, which is a sound source without being a chime. -->
+          <span v-if="lastChime" class="nav-utility-sub">Last audio · {{ lastChime }}</span>
         </span>
       </button>
 
