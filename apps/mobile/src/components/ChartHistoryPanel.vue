@@ -25,7 +25,7 @@ const props = defineProps<{
 const fetchedLabel = computed(() => {
   const at = props.history.fetchedAt.value;
   if (at === null) return '';
-  return new Date(at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  return new Date(at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 });
 
 const anyChanges = computed(() => props.history.proposals.value.some((p) => p.changes));
@@ -86,14 +86,17 @@ const readSummary = computed(() => {
             <span v-else class="chart-nochange">no change</span>
           </div>
           <p class="chart-val"><span class="chart-tag">Chart</span>{{ p.chartText }}</p>
-          <p class="chart-val chart-current">
+          <p v-if="p.currentText !== '—'" class="chart-val chart-current">
             <span class="chart-tag">Now</span>{{ p.currentText }}
+          </p>
+          <p v-else class="chart-val chart-current">
+            <span class="chart-tag">Now</span><em>this field is empty</em>
           </p>
         </div>
       </div>
 
       <div class="chart-actions mt-2">
-        <UiButton v-if="anyChanges" tone="neutral" @click="history.acceptAll()">
+        <UiButton v-if="anyChanges" tone="primary" @click="history.acceptAll()">
           Accept all
         </UiButton>
         <UiButton tone="neutral" @click="history.dismiss()">Close</UiButton>
