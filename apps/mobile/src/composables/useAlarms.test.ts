@@ -475,6 +475,28 @@ describe('useAlarms', () => {
   });
 });
 
+describe('the silent lead-in', () => {
+  /**
+   * The unlock must play the chime element itself — the iOS permission is
+   * per-element — so priming is a real play() on the real tone. It was still
+   * audible in the field with the element muted AND at volume 0, so those
+   * flags cannot be relied on. Silence in the sample data can be.
+   */
+  it('starts every motif with silence longer than the prime-then-pause gap', async () => {
+    const mod = await import('./useAlarms');
+    const lead = Math.floor(mod.LEAD_SILENCE_SEC * 22050);
+    expect(mod.LEAD_SILENCE_SEC).toBeGreaterThanOrEqual(0.25);
+
+    for (const motif of [mod.READY_MOTIF, mod.END_MOTIF]) {
+      const pcm = mod.renderMotif(motif);
+      const leadIn = [...pcm.slice(0, lead)];
+      expect(leadIn.every((sample) => sample === 0)).toBe(true);
+      // ...and the tone still exists after it.
+      expect([...pcm.slice(lead)].some((sample) => sample !== 0)).toBe(true);
+    }
+  });
+});
+
 describe('unlockAudio', () => {
   beforeEach(() => {
     vi.resetModules();

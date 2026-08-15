@@ -90,7 +90,7 @@ interface Motif {
 }
 
 /** Ascending E5 → G6 — "you may proceed" (pre-med clear, redose ready). */
-const READY_MOTIF: Motif = {
+export const READY_MOTIF: Motif = {
   pulses: [659, 880, 1175, 1568],
   pulseSec: 0.38,
   gapSec: 0.1,
@@ -100,7 +100,7 @@ const READY_MOTIF: Motif = {
 };
 
 /** Descending G5 → E5 → C5 — settled C-major cadence: "case complete". */
-const END_MOTIF: Motif = {
+export const END_MOTIF: Motif = {
   pulses: [784, 659, 523],
   pulseSec: 0.5,
   gapSec: 0.08,
@@ -109,13 +109,32 @@ const END_MOTIF: Motif = {
   releaseSec: 0.1,
 };
 
+/**
+ * Digital silence at the head of every chime.
+ *
+ * The iOS unlock has to play the chime element itself — the permission is
+ * per-element, so priming a different, silent element would unlock the wrong
+ * one. Priming is therefore a real play() on the real tone, stopped a few
+ * milliseconds later, and it was reported audible in the field even with the
+ * element both muted AND at volume 0. Those two controls are advisory on some
+ * WebKit builds; sample data is not. A silent lead-in means the priming play
+ * lands entirely inside silence, so there is nothing to hear no matter what
+ * the volume flags do.
+ *
+ * 400 ms is far longer than the gap between play() starting and the pause
+ * that follows it, and imperceptible on a timer alert that is telling the
+ * clinician a wait has elapsed.
+ */
+export const LEAD_SILENCE_SEC = 0.4;
+
 /** Render a motif to 16-bit mono PCM samples (pure math, no Web Audio). */
-function renderMotif(m: Motif): Int16Array {
+export function renderMotif(m: Motif): Int16Array {
   const slot = m.pulseSec + m.gapSec;
-  const total = Math.ceil(m.pulses.length * slot * SAMPLE_RATE);
+  const lead = Math.floor(LEAD_SILENCE_SEC * SAMPLE_RATE);
+  const total = lead + Math.ceil(m.pulses.length * slot * SAMPLE_RATE);
   const pcm = new Int16Array(total);
   m.pulses.forEach((freq, i) => {
-    const startSample = Math.floor(i * slot * SAMPLE_RATE);
+    const startSample = lead + Math.floor(i * slot * SAMPLE_RATE);
     const len = Math.floor(m.pulseSec * SAMPLE_RATE);
     for (let s = 0; s < len; s += 1) {
       const t = s / SAMPLE_RATE;
