@@ -48,6 +48,8 @@ export interface UseMrnResolve {
   readonly chartAge: Ref<number | null>;
   /** Muted explanation for the `unavailable` state. */
   readonly unavailableReason: Ref<string>;
+  /** Blank fields this lookup filled from the chart. */
+  readonly autoFilled: Ref<ReadonlyArray<'name' | 'age'>>;
   /** Name and/or age disagreements against what the clinician typed. */
   readonly mismatches: ComputedRef<ReadonlyArray<MrnMismatch>>;
   readonly enabled: ComputedRef<boolean>;
@@ -66,6 +68,13 @@ export function useMrnResolve(): UseMrnResolve {
   const chartBirthdate = ref('');
   const chartAge = ref<number | null>(null);
   const unavailableReason = ref('');
+  /**
+   * Fields this lookup filled because they were still blank. Surfaced so the
+   * clinician can see the form wrote itself from the chart rather than
+   * wondering where a value came from — a silent write into a clinical
+   * record is exactly what the review panel exists to avoid elsewhere.
+   */
+  const autoFilled = ref<ReadonlyArray<'name' | 'age'>>([]);
 
   /** Guards against a slow early request overwriting a newer one. */
   let requestSeq = 0;
@@ -95,6 +104,7 @@ export function useMrnResolve(): UseMrnResolve {
     chartBirthdate.value = '';
     chartAge.value = null;
     if (next !== 'unavailable') unavailableReason.value = '';
+    autoFilled.value = [];
     // A cleared resolution must clear the stored identity too, or a stale
     // one would be compared against at send time.
     patient.resolvedIdentity = null;
@@ -132,6 +142,28 @@ export function useMrnResolve(): UseMrnResolve {
         birthdate: found.Birthdate,
         resolvedAt: Date.now(),
       };
+
+      /**
+       * Fill what is still BLANK, never what the clinician typed.
+       *
+       * Age is required to leave Phase 1 and is derived deterministically
+       * from the chart's date of birth, which is displayed right beside it —
+       * so a blank age is work the app can do more reliably than a person
+       * doing the arithmetic in their head. A value already present is left
+       * alone and handled as a mismatch below: the person in the chair
+       * outranks the chart, and overwriting a typed entry is the one thing
+       * this must not do.
+       */
+      const filled: Array<'name' | 'age'> = [];
+      if (patient.age === null && chartAge.value !== null) {
+        patient.age = chartAge.value;
+        filled.push('age');
+      }
+      if (patient.name.trim() === '' && chartName.value !== '') {
+        patient.name = chartName.value;
+        filled.push('name');
+      }
+      autoFilled.value = filled;
     } catch (error) {
       if (seq !== requestSeq) return;
       // 404 is a real answer about the chart; anything else — offline,
@@ -221,6 +253,7 @@ export function useMrnResolve(): UseMrnResolve {
     chartBirthdate,
     chartAge,
     unavailableReason,
+    autoFilled,
     mismatches,
     enabled,
     resolveNow,

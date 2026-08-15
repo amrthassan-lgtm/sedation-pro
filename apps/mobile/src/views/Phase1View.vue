@@ -567,6 +567,11 @@ const diazepamModalCopy = computed(() => {
             Couldn't verify — {{ mrnLookup.unavailableReason.value || 'offline' }}
           </p>
 
+          <p v-if="mrnLookup.autoFilled.value.length > 0" class="mrn-line mrn-muted">
+            Filled {{ mrnLookup.autoFilled.value.join(' and ') }} from the chart — check it against
+            the patient.
+          </p>
+
           <!-- Two independent fields agreeing is a much stronger signal than
                either alone, so a disagreement is worth showing plainly. -->
           <div v-for="m in mrnLookup.mismatches.value" :key="m.kind" class="mrn-mismatch">

@@ -177,6 +177,64 @@ describe('the resolve state machine', () => {
   });
 });
 
+describe('filling blanks from the chart', () => {
+  it('fills a blank age, since it is required and derived from the chart DOB', async () => {
+    const patient = usePatientStore();
+    patient.age = null;
+    const r = useMrnResolve();
+
+    patient.mrn = '4242';
+    await settle();
+
+    expect(patient.age).toBe(39);
+    expect(r.autoFilled.value).toContain('age');
+  });
+
+  it('fills a blank name with the chart spelling', async () => {
+    const patient = usePatientStore();
+    patient.name = '';
+    const r = useMrnResolve();
+
+    patient.mrn = '4242';
+    await settle();
+
+    expect(patient.name).toBe('Rivera, Dana');
+    expect(r.autoFilled.value).toContain('name');
+  });
+
+  /**
+   * The person in the chair outranks the chart. A typed value is never
+   * overwritten — it becomes a mismatch the clinician resolves instead.
+   */
+  it('never overwrites what the clinician already typed', async () => {
+    const patient = usePatientStore();
+    patient.age = 37;
+    patient.name = 'John Smith';
+    const r = useMrnResolve();
+
+    patient.mrn = '4242';
+    await settle();
+
+    expect(patient.age).toBe(37);
+    expect(patient.name).toBe('John Smith');
+    expect(r.autoFilled.value).toEqual([]);
+    expect(r.mismatches.value.map((m) => m.kind).sort()).toEqual(['age', 'name']);
+  });
+
+  it('reports nothing filled when the chart has no usable birthdate', async () => {
+    getPatient.mockResolvedValue({ ...CHART, Birthdate: '0001-01-01' });
+    const patient = usePatientStore();
+    patient.age = null;
+    const r = useMrnResolve();
+
+    patient.mrn = '4242';
+    await settle();
+
+    expect(patient.age).toBeNull();
+    expect(r.autoFilled.value).not.toContain('age');
+  });
+});
+
 describe('re-checking an unchanged MRN', () => {
   /**
    * Found by driving the real UI. Blur fires `resolveNow`, and blur is what
