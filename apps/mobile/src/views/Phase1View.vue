@@ -9,6 +9,9 @@ import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { useInventoryStatus } from '@/composables/useInventoryStatus';
 import { useGateFeedback } from '@/composables/useGateFeedback';
 import { useOtherableSelect } from '@/composables/useOtherableSelect';
+import { useMrnResolve } from '@/composables/useMrnResolve';
+import { usePullHistory } from '@/composables/usePullHistory';
+import ChartHistoryPanel from '@/components/ChartHistoryPanel.vue';
 import { haptic } from '@/composables/useHaptics';
 import DrugAttributes from '@/components/DrugAttributes.vue';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
@@ -338,6 +341,20 @@ const medicalProblemOptions = [
 ];
 
 /**
+ * Chart lookup. Both of these are inert with no Open Dental keys stored: no
+ * timer, no request, no extra UI — Phase 1 is exactly the form it was.
+ * Neither ever gates the case; a lookup that fails or times out costs the
+ * clinician nothing but the offer.
+ */
+const mrnLookup = useMrnResolve();
+const chartHistory = usePullHistory(medicalProblemOptions.map((o) => o.value));
+
+function pullHistory(): void {
+  const patNum = patient.resolvedIdentity?.patNum;
+  if (patNum !== undefined) void chartHistory.pull(patNum);
+}
+
+/**
  * Morning-of-sedation guidance for diabetic patients. NPO removes the
  * meal the morning doses anticipate, so we hold whatever the patient
  * takes (orals and injected insulin alike). Insulin pump is the lone
@@ -525,8 +542,56 @@ const diazepamModalCopy = computed(() => {
           <UiTextInput v-model="name" block />
         </UiField>
         <UiField id="field-mrn" label="MRN" required :invalid="isMissing('mrn')">
-          <UiTextInput v-model="mrn" inputmode="numeric" />
+          <UiTextInput v-model="mrn" inputmode="numeric" @blur="mrnLookup.resolveNow" />
         </UiField>
+
+        <!-- Inline chart identity. Advisory in every state, including
+             not-found: walk-ins and emergencies exist, and the number can be
+             corrected later. Nothing here blocks typing or progress. -->
+        <div v-if="mrnLookup.enabled.value" class="mrn-check">
+          <p v-if="mrnLookup.status.value === 'checking'" class="mrn-line mrn-muted">
+            Checking chart…
+          </p>
+          <p v-else-if="mrnLookup.status.value === 'resolved'" class="mrn-line mrn-ok">
+            ✓ {{ mrnLookup.chartName.value
+            }}<template v-if="mrnLookup.chartBirthdate.value">
+              · DOB {{ mrnLookup.chartBirthdate.value }}</template
+            ><template v-if="mrnLookup.chartAge.value !== null">
+              · {{ mrnLookup.chartAge.value }}y</template
+            >
+          </p>
+          <p v-else-if="mrnLookup.status.value === 'not-found'" class="mrn-line mrn-warn">
+            ✕ No patient with ID {{ mrn }}
+          </p>
+          <p v-else-if="mrnLookup.status.value === 'unavailable'" class="mrn-line mrn-muted">
+            Couldn't verify — {{ mrnLookup.unavailableReason.value || 'offline' }}
+          </p>
+
+          <!-- Two independent fields agreeing is a much stronger signal than
+               either alone, so a disagreement is worth showing plainly. -->
+          <div v-for="m in mrnLookup.mismatches.value" :key="m.kind" class="mrn-mismatch">
+            <span>{{ m.message }}</span>
+            <button
+              type="button"
+              class="mrn-fix"
+              @click="m.kind === 'name' ? mrnLookup.applyChartName() : mrnLookup.applyChartAge()"
+            >
+              {{ m.kind === 'name' ? 'Use chart spelling' : `Use ${m.chartValue}` }}
+            </button>
+          </div>
+
+          <button
+            v-if="patient.resolvedIdentity !== null && chartHistory.canPull.value"
+            type="button"
+            class="mrn-fix mrn-pull"
+            :disabled="chartHistory.status.value === 'loading'"
+            @click="pullHistory"
+          >
+            {{
+              chartHistory.status.value === 'loading' ? 'Reading chart…' : 'Pull history from chart'
+            }}
+          </button>
+        </div>
         <!-- Own full-width textarea: procedures are naturally phrases and
              this was the last clipping single-line free-text field. -->
         <UiField label="Procedure">
@@ -638,6 +703,7 @@ const diazepamModalCopy = computed(() => {
         </UiField>
 
         <p class="caption mt-1">Conditions</p>
+        <ChartHistoryPanel :history="chartHistory" class="mb-2" />
         <UiField label="Medical problems">
           <UiChipMultiSelect
             v-model="medicalProblems"
@@ -1016,5 +1082,52 @@ const diazepamModalCopy = computed(() => {
 }
 .kit-alert-btn:active {
   transform: scale(0.97);
+}
+
+/* Inline chart identity under the MRN field. Advisory styling on purpose:
+   nothing here is an error state that stops the case. */
+.mrn-check {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: -4px;
+}
+.mrn-line {
+  font-size: var(--type-footnote);
+}
+.mrn-ok {
+  color: var(--color-safe, #047857);
+}
+.mrn-warn {
+  color: var(--color-limit, #be123c);
+}
+.mrn-muted {
+  color: var(--color-text-secondary);
+}
+.mrn-mismatch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-size: var(--type-footnote);
+  color: var(--color-caution, #b45309);
+}
+.mrn-fix {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-accent, #2563eb);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.mrn-pull {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.mrn-fix:disabled {
+  color: var(--color-text-secondary);
+  cursor: default;
+  text-decoration: none;
 }
 </style>

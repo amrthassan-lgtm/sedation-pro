@@ -138,6 +138,69 @@ describe('the wrong-patient guard', () => {
     expect(postCommlog).not.toHaveBeenCalled();
   });
 
+  /**
+   * The one hard stop in the chart-lookup work. Everything in Phase 1 is
+   * advisory, but if the chart confirmed at the start of the case is not the
+   * chart the note is about to be filed into, the MRN changed mid-case —
+   * which is the wrong-patient scenario itself, not a stale field.
+   */
+  it('refuses when the chart resolved now is not the one the case started against', async () => {
+    const patient = usePatientStore();
+    patient.resolvedIdentity = {
+      patNum: 999,
+      lName: 'Rivera',
+      fName: 'Dana',
+      birthdate: '1987-01-01',
+      resolvedAt: Date.now(),
+    };
+    // Same ID, but the chart now names somebody else.
+    getPatient.mockResolvedValue({
+      PatNum: 999,
+      LName: 'Okafor',
+      FName: 'Sam',
+      Birthdate: '1990-05-05',
+    });
+    const { chart } = setup();
+
+    await chart.requestSend();
+
+    expect(chart.confirmTarget.value).toBeNull();
+    expect(chart.lookupError.value).toMatch(/started against Rivera, Dana/);
+    expect(chart.lookupError.value).toMatch(/nothing has been written/i);
+
+    await chart.confirmSend();
+    expect(postCommlog).not.toHaveBeenCalled();
+    expect(uploadDocument).not.toHaveBeenCalled();
+  });
+
+  it('proceeds when the identity still matches, ignoring case and spacing', async () => {
+    const patient = usePatientStore();
+    patient.resolvedIdentity = {
+      patNum: 999,
+      lName: ' test ',
+      fName: 'PATIENT',
+      birthdate: '1986-01-02',
+      resolvedAt: Date.now(),
+    };
+    const { chart } = setup();
+
+    await chart.requestSend();
+
+    expect(chart.lookupError.value).toBe('');
+    expect(chart.confirmTarget.value).toMatchObject({ patNum: 999 });
+  });
+
+  it('does not stop a case that was never resolved at the start', async () => {
+    // Offline at intake, or no keys then — an ordinary state, not a blocker.
+    usePatientStore().resolvedIdentity = null;
+    const { chart } = setup();
+
+    await chart.requestSend();
+
+    expect(chart.lookupError.value).toBe('');
+    expect(chart.confirmTarget.value).not.toBeNull();
+  });
+
   it('writes nothing if the operator cancels', async () => {
     const { chart } = setup();
     await chart.requestSend();

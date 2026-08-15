@@ -2,6 +2,7 @@ import { computed, ref, type ComputedRef, type Ref } from 'vue';
 
 import { clinicalNoteToPdf } from './clinicalNoteToPdf';
 import { clinicalNoteToText } from './clinicalNoteText';
+import { chartDisplayName } from './chartHistory';
 import type { ClinicalNote } from './useClinicalNote';
 import { readCredentials } from '@/services/od-credentials';
 import {
@@ -60,6 +61,27 @@ export interface ResultLine {
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Is the chart resolved now the same one the case was opened against?
+ *
+ * Compares the PatNum and the name. The number alone is not enough: charts
+ * get merged and re-pointed in a PMS, and a number that now belongs to
+ * someone else is exactly the case worth catching. Birthdate is deliberately
+ * excluded — it gets corrected in charts, and a corrected DOB is not a
+ * different patient.
+ */
+function sameChart(
+  startOfCase: { patNum: number; lName: string; fName: string },
+  patNum: number,
+  found: { LName: string; FName: string },
+): boolean {
+  if (startOfCase.patNum !== patNum) return false;
+  const norm = (s: string): string => s.trim().toLowerCase();
+  return (
+    norm(startOfCase.lName) === norm(found.LName) && norm(startOfCase.fName) === norm(found.FName)
+  );
+}
 
 function fmtTime(iso: string): string {
   const d = new Date(iso);
@@ -159,9 +181,28 @@ export function useSendToChart(
       // The wrong-patient guard. A mistyped MRN must fail HERE, while the
       // mistake is still reversible — not at write time, when it isn't.
       const found: OdPatient = await getPatient(patNum, creds);
+
+      // Hard stop, and the only one in this feature. Everything about the
+      // Phase 1 chart lookup is advisory, but this is different: the case was
+      // opened against a chart that was confirmed at the start, and the chart
+      // the note is about to be filed into is a different one. That is the
+      // wrong-patient scenario, not a stale field, so it refuses rather than
+      // warns. The escape hatch is deliberate — fix the MRN, or reset the
+      // send record — never a button that shrugs and writes anyway.
+      const startOfCase = patient.resolvedIdentity;
+      if (startOfCase !== null && !sameChart(startOfCase, patNum, found)) {
+        confirmTarget.value = null;
+        lookupError.value =
+          `This case was started against ${chartDisplayName(startOfCase.lName, startOfCase.fName)} ` +
+          `(ID ${startOfCase.patNum}), but ID ${patNum} is ` +
+          `${chartDisplayName(found.LName, found.FName)}. The MRN changed during the case — ` +
+          'nothing has been written. Check which chart this note belongs to before sending.';
+        return;
+      }
+
       confirmTarget.value = {
         patNum,
-        name: `${found.LName}, ${found.FName}`.replace(/,\s*$/, ''),
+        name: chartDisplayName(found.LName, found.FName),
         birthdate: found.Birthdate,
         artifacts,
       };

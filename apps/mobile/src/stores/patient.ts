@@ -118,6 +118,24 @@ export const usePatientStore = defineStore('patient', () => {
   const diabetic = ref(false);
   const baselineGlucose = ref<number | null>(null);
 
+  /**
+   * Who the MRN resolved to in Open Dental at the start of the case.
+   *
+   * Kept so the send-time re-resolution has something to compare against: if
+   * the chart the note is about to be written into is not the chart confirmed
+   * when the case began, the MRN changed mid-case and that is the
+   * wrong-patient scenario. Null whenever the MRN has not been resolved —
+   * offline, no keys, or simply not looked up — which must stay an ordinary
+   * state, never a blocker.
+   */
+  const resolvedIdentity = ref<{
+    patNum: number;
+    lName: string;
+    fName: string;
+    birthdate: string;
+    resolvedAt: number;
+  } | null>(null);
+
   // -------- Expanded medical / social history -------------------------------
   // Free-text fields the legacy app captured as textareas. Optional inputs —
   // not part of the unlock gate, but they flow into the clinical note's
@@ -351,6 +369,7 @@ export const usePatientStore = defineStore('patient', () => {
     medicalProblems,
     diabetic,
     baselineGlucose,
+    resolvedIdentity,
     medicationsList,
     allergiesList,
     hospitalisations,
@@ -406,6 +425,7 @@ export const usePatientStore = defineStore('patient', () => {
   }
 
   return {
+    resolvedIdentity,
     name,
     mrn,
     provider,
