@@ -187,6 +187,9 @@ const endVitalsState = computed<ActionState>(() =>
   endStampedAt.value !== null ? 'logged' : 'idle',
 );
 
+/** Drives the advisory line on the release card — never the gate itself. */
+const recoveryVitalsStamped = computed(() => endStampedAt.value !== null);
+
 function stampRecoveryVitals() {
   recovery.stampRecoveryVitals();
   undo.stamp({
@@ -467,7 +470,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           <UiCheckbox
             id="gate-pulseox"
             :model-value="!!discharge.pulseOxPrinted"
-            label="Pulse-ox printout filed"
+            label="Pulse-ox printout (Edan X10) scanned to chart"
             required
             size="tap-target"
             :invalid="gate.isInvalid('gate-pulseox')"
@@ -670,6 +673,14 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         </UiBanner>
 
         <UiBanner v-else tone="safe" icon="✓" class="mt-2"> All discharge criteria met. </UiBanner>
+
+        <!-- Advisory, never a blocker. The continuous SpO₂ trace is on the
+             Edan X10 printout that gets scanned into the chart, so a missing
+             transcription is a gap in THIS note rather than a gap in
+             monitoring — worth showing, not worth stopping a discharge for. -->
+        <UiBanner v-if="!recoveryVitalsStamped" tone="caution" class="mt-2">
+          Discharge vitals not stamped — the note will say so and point to the monitor printout.
+        </UiBanner>
       </template>
 
       <UiButton

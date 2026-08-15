@@ -267,7 +267,20 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
         'Recovery vitals',
         recovery.endHr !== null || recovery.endBpSys !== null || recovery.endSpo2 !== null
           ? `HR ${recovery.endHr ?? '—'} · BP ${recovery.endBpSys ?? '—'}/${recovery.endBpDia ?? '—'} · SpO₂ ${recovery.endSpo2 ?? '—'}%`
-          : '—',
+          : 'Not transcribed — see the monitor printout',
+      ],
+      /**
+       * The continuous SpO₂ trace lives on the Edan X10 printout, scanned
+       * into the patient's chart. This note is a transcription of moments;
+       * that strip is the actual monitoring record for the whole case, and a
+       * reader needs to be told it exists and where it is — otherwise the
+       * note reads as the only evidence of monitoring, which understates it.
+       */
+      [
+        'SpO₂ trend printout',
+        recovery.discharge['pulseOxPrinted'] === true
+          ? 'Edan X10 printout scanned into the patient chart'
+          : 'Not confirmed',
       ],
     ];
     if (patient.diabetic) {
