@@ -132,14 +132,15 @@ async function shareNote() {
         class="chart-reason"
       >
         {{ chart.precondition.value.reason }}
-        <button
-          v-if="chart.precondition.value.needsSettings"
-          class="chart-link"
-          @click="goToSettings"
-        >
-          Open settings
-        </button>
       </p>
+      <UiButton
+        v-if="!chart.precondition.value.ready && chart.precondition.value.needsSettings"
+        tone="neutral"
+        class="chart-inline-action"
+        @click="goToSettings"
+      >
+        Open settings
+      </UiButton>
 
       <UiBanner v-if="chart.lookupError.value" tone="limit">
         {{ chart.lookupError.value }}
@@ -153,9 +154,14 @@ async function shareNote() {
         {{ line.text }}
       </UiBanner>
 
-      <button v-if="chart.canResend.value" class="chart-link chart-secondary" @click="openResend">
+      <UiButton
+        v-if="chart.canResend.value"
+        tone="neutral"
+        class="chart-secondary"
+        @click="openResend"
+      >
         Send another copy to the chart
-      </button>
+      </UiButton>
     </section>
 
     <article class="note-paper">
@@ -578,18 +584,9 @@ async function shareNote() {
   font-size: var(--type-footnote);
   color: var(--color-text-secondary);
 }
-.chart-link {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: var(--color-accent, #2563eb);
-  text-decoration: underline;
-  cursor: pointer;
-}
+.chart-inline-action,
 .chart-secondary {
   align-self: flex-start;
-  font-size: var(--type-footnote);
 }
 .confirm-who {
   font-size: var(--type-title);

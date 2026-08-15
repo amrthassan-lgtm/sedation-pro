@@ -644,6 +644,10 @@ const diazepamModalCopy = computed(() => {
               Yes, this is the patient
             </UiButton>
             <p v-else class="ident-ok">✓ Confirmed</p>
+            <p v-if="mrnLookup.autoFilled.value.length > 0" class="ident-filled">
+              Filled {{ mrnLookup.autoFilled.value.join(' and ') }} from the chart — check it
+              against the patient.
+            </p>
           </div>
 
           <p v-else-if="mrnLookup.status.value === 'not-found'" class="mrn-line mrn-warn">
@@ -653,35 +657,30 @@ const diazepamModalCopy = computed(() => {
             Couldn't verify — {{ mrnLookup.unavailableReason.value || 'offline' }}
           </p>
 
-          <p v-if="mrnLookup.autoFilled.value.length > 0" class="mrn-line mrn-muted">
-            Filled {{ mrnLookup.autoFilled.value.join(' and ') }} from the chart — check it against
-            the patient.
-          </p>
-
           <!-- Still live once the name is edited by hand: an auto-filled name
                that gets corrected is compared again immediately. -->
           <div v-for="m in mrnLookup.mismatches.value" :key="m.kind" class="mrn-mismatch">
-            <span>{{ m.message }}</span>
-            <button
-              type="button"
-              class="mrn-fix"
+            <span class="mrn-mismatch-text">{{ m.message }}</span>
+            <UiButton
+              tone="neutral"
               @click="m.kind === 'name' ? mrnLookup.applyChartName() : mrnLookup.applyChartAge()"
             >
               {{ m.kind === 'name' ? 'Use chart spelling' : `Use ${m.chartValue}` }}
-            </button>
+            </UiButton>
           </div>
 
-          <button
+          <UiButton
             v-if="mrnLookup.identityConfirmed.value && chartHistory.canPull.value"
-            type="button"
-            class="mrn-fix mrn-pull"
+            tone="neutral"
+            block
+            class="mt-1"
             :disabled="chartHistory.status.value === 'loading'"
             @click="pullHistory"
           >
             {{
               chartHistory.status.value === 'loading' ? 'Reading chart…' : 'Pull history from chart'
             }}
-          </button>
+          </UiButton>
         </div>
 
         <!-- The MRN now names someone other than the person this case's data
@@ -1232,40 +1231,36 @@ const diazepamModalCopy = computed(() => {
 }
 .mrn-mismatch {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  flex-direction: column;
+  align-items: flex-start;
   gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--radius-md, 12px);
+  background: var(--color-surface-subtle);
+}
+.mrn-mismatch-text {
   font-size: var(--type-footnote);
   color: var(--color-caution, #b45309);
-}
-.mrn-fix {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: var(--color-accent, #2563eb);
-  text-decoration: underline;
-  cursor: pointer;
-}
-.mrn-pull {
-  align-self: flex-start;
-  margin-top: 2px;
-}
-.mrn-fix:disabled {
-  color: var(--color-text-secondary);
-  cursor: default;
-  text-decoration: none;
 }
 
 /* The identity is the wrong-patient guard now that the MRN leads the form,
    so it is sized to be read rather than skimmed. */
 .ident {
-  border-radius: var(--radius-md, 10px);
+  border-radius: var(--radius-md, 12px);
   padding: var(--sp-3);
-  border: 1px solid var(--color-border, rgba(127, 127, 127, 0.25));
+  background: var(--color-surface-subtle);
+  border: 1px solid transparent;
 }
+/* Only the un-answered state draws a border — once confirmed it settles
+   back into the same quiet surface every other inner block uses. */
 .ident-ask {
   border-color: var(--color-accent, #2563eb);
+  background: var(--color-surface);
+}
+.ident-filled {
+  margin-top: var(--sp-2);
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
 }
 .ident-name {
   font-size: var(--type-title);
