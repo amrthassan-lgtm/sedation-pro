@@ -388,3 +388,80 @@ export function bytesToBase64(bytes: Uint8Array): string {
   }
   return btoa(binary);
 }
+
+// -------- Read-only chart history ------------------------------------------
+//
+// Three list endpoints used to pre-fill the Phase 1 medical history. All are
+// GETs: nothing here writes, so unlike the note-filing paths above a failure
+// costs the clinician nothing but the offer. Row shapes are deliberately
+// loose — Open Dental returns booleans as strings and unset dates as
+// "0001-01-01", and normalising that is `chartHistory.ts`'s job, not the
+// transport's.
+
+async function odList(
+  path: string,
+  label: string,
+  credentials: OdCredentials,
+  fetchImpl: FetchLike,
+  timeoutMs: number,
+): Promise<ReadonlyArray<Record<string, unknown>>> {
+  const body = await odRequest(
+    { path, method: 'GET', expectStatus: 200, label },
+    credentials,
+    fetchImpl,
+    timeoutMs,
+  );
+  const parsed = parseJson(body);
+  // An empty chart legitimately returns `[]`; anything non-array is treated
+  // as "nothing recorded" rather than an error, because a malformed list must
+  // not present as a clinical fact either way.
+  return Array.isArray(parsed) ? (parsed as Record<string, unknown>[]) : [];
+}
+
+export function getAllergies(
+  patNum: number,
+  credentials: OdCredentials,
+  fetchImpl: FetchLike = browserFetch,
+  timeoutMs: number = OD_TIMEOUT_MS,
+): Promise<ReadonlyArray<Record<string, unknown>>> {
+  assertPatNum(patNum, 'the allergy list');
+  return odList(
+    `/allergies?PatNum=${patNum}`,
+    'the allergy list',
+    credentials,
+    fetchImpl,
+    timeoutMs,
+  );
+}
+
+export function getMedications(
+  patNum: number,
+  credentials: OdCredentials,
+  fetchImpl: FetchLike = browserFetch,
+  timeoutMs: number = OD_TIMEOUT_MS,
+): Promise<ReadonlyArray<Record<string, unknown>>> {
+  assertPatNum(patNum, 'the medication list');
+  return odList(
+    `/medicationpats?PatNum=${patNum}`,
+    'the medication list',
+    credentials,
+    fetchImpl,
+    timeoutMs,
+  );
+}
+
+export function getDiseases(
+  patNum: number,
+  credentials: OdCredentials,
+  fetchImpl: FetchLike = browserFetch,
+  timeoutMs: number = OD_TIMEOUT_MS,
+): Promise<ReadonlyArray<Record<string, unknown>>> {
+  assertPatNum(patNum, 'the problem list');
+  return odList(
+    `/diseases?PatNum=${patNum}`,
+    'the problem list',
+    credentials,
+    fetchImpl,
+    timeoutMs,
+  );
+}
