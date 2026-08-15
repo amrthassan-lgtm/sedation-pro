@@ -55,6 +55,10 @@ export interface UseMrnResolve {
   readonly enabled: ComputedRef<boolean>;
   /** Resolve immediately, skipping the debounce (used on blur). */
   resolveNow: () => Promise<void>;
+  /** True once the clinician has confirmed this is the right person. */
+  readonly identityConfirmed: ComputedRef<boolean>;
+  /** Confirm the identity, filling any blank name / age from the chart. */
+  confirmIdentity: () => void;
   /** Adopt the chart's spelling / computed age into the form. */
   applyChartName: () => void;
   applyChartAge: () => void;
@@ -135,35 +139,18 @@ export function useMrnResolve(): UseMrnResolve {
       status.value = 'resolved';
       resolvedFor = patNum;
       unavailableReason.value = '';
+      // A re-resolve of the SAME chart keeps its confirmation: blur and
+      // reload must not re-ask a question the clinician already answered.
+      const alreadyConfirmed =
+        patient.resolvedIdentity?.patNum === patNum ? patient.resolvedIdentity.confirmedAt : null;
       patient.resolvedIdentity = {
         patNum,
         lName: found.LName,
         fName: found.FName,
         birthdate: found.Birthdate,
         resolvedAt: Date.now(),
+        confirmedAt: alreadyConfirmed,
       };
-
-      /**
-       * Fill what is still BLANK, never what the clinician typed.
-       *
-       * Age is required to leave Phase 1 and is derived deterministically
-       * from the chart's date of birth, which is displayed right beside it —
-       * so a blank age is work the app can do more reliably than a person
-       * doing the arithmetic in their head. A value already present is left
-       * alone and handled as a mismatch below: the person in the chair
-       * outranks the chart, and overwriting a typed entry is the one thing
-       * this must not do.
-       */
-      const filled: Array<'name' | 'age'> = [];
-      if (patient.age === null && chartAge.value !== null) {
-        patient.age = chartAge.value;
-        filled.push('age');
-      }
-      if (patient.name.trim() === '' && chartName.value !== '') {
-        patient.name = chartName.value;
-        filled.push('name');
-      }
-      autoFilled.value = filled;
     } catch (error) {
       if (seq !== requestSeq) return;
       // 404 is a real answer about the chart; anything else — offline,
@@ -236,6 +223,40 @@ export function useMrnResolve(): UseMrnResolve {
     return out;
   });
 
+  /**
+   * The wrong-patient guard, made active.
+   *
+   * With the MRN entered before the name, both cross-check fields are blank
+   * when the chart resolves — so they fill FROM the chart and can never
+   * disagree with it. The machine check is therefore vacuous here, and the
+   * clinician reading the name and date of birth against the person in the
+   * chair is what actually catches a mistyped-but-valid ID, which returns a
+   * different real patient rather than an error.
+   *
+   * Filling on confirmation rather than on resolve keeps one acceptance
+   * model across the whole feature: nothing from the chart enters the record
+   * until a human has looked at it.
+   */
+  function confirmIdentity(): void {
+    if (status.value !== 'resolved' || patient.resolvedIdentity === null) return;
+    patient.resolvedIdentity = { ...patient.resolvedIdentity, confirmedAt: Date.now() };
+
+    const filled: Array<'name' | 'age'> = [];
+    if (patient.age === null && chartAge.value !== null) {
+      patient.age = chartAge.value;
+      filled.push('age');
+    }
+    if (patient.name.trim() === '' && chartName.value !== '') {
+      patient.name = chartName.value;
+      filled.push('name');
+    }
+    autoFilled.value = filled;
+  }
+
+  const identityConfirmed = computed(
+    () => status.value === 'resolved' && patient.resolvedIdentity?.confirmedAt != null,
+  );
+
   function applyChartName(): void {
     if (chartName.value === '') return;
     // Store the chart's own "Last, First" so the note header matches the
@@ -254,6 +275,8 @@ export function useMrnResolve(): UseMrnResolve {
     chartAge,
     unavailableReason,
     autoFilled,
+    identityConfirmed,
+    confirmIdentity,
     mismatches,
     enabled,
     resolveNow,

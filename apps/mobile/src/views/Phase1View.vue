@@ -20,6 +20,7 @@ import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
 import {
   UiBanner,
   UiBpInput,
+  UiButton,
   UiCard,
   UiCheckbox,
   UiChipGroup,
@@ -538,28 +539,48 @@ const diazepamModalCopy = computed(() => {
       <p class="heading">Patient Identification</p>
       <UiStack :gap="3" class="mt-2">
         <p class="caption">Patient</p>
-        <UiField id="field-pt" label="Patient name" required :invalid="isMissing('pt')">
-          <UiTextInput v-model="name" block />
-        </UiField>
         <UiField id="field-mrn" label="MRN" required :invalid="isMissing('mrn')">
           <UiTextInput v-model="mrn" inputmode="numeric" @blur="mrnLookup.resolveNow" />
         </UiField>
 
-        <!-- Inline chart identity. Advisory in every state, including
-             not-found: walk-ins and emergencies exist, and the number can be
+        <!-- Chart identity. The MRN leads the form now, so both cross-check
+             fields are blank when this resolves and neither can disagree with
+             the chart it came from — which makes the clinician reading this
+             against the person in the chair the actual wrong-patient guard.
+             It is presented to be read, not glanced past. Advisory in every
+             state, including not-found: walk-ins exist and the number can be
              corrected later. Nothing here blocks typing or progress. -->
         <div v-if="mrnLookup.enabled.value" class="mrn-check">
           <p v-if="mrnLookup.status.value === 'checking'" class="mrn-line mrn-muted">
             Checking chart…
           </p>
-          <p v-else-if="mrnLookup.status.value === 'resolved'" class="mrn-line mrn-ok">
-            ✓ {{ mrnLookup.chartName.value
-            }}<template v-if="mrnLookup.chartBirthdate.value">
-              · DOB {{ mrnLookup.chartBirthdate.value }}</template
-            ><template v-if="mrnLookup.chartAge.value !== null">
-              · {{ mrnLookup.chartAge.value }}y</template
+
+          <div
+            v-else-if="mrnLookup.status.value === 'resolved'"
+            class="ident"
+            :class="mrnLookup.identityConfirmed.value ? 'ident-done' : 'ident-ask'"
+          >
+            <p class="ident-name">{{ mrnLookup.chartName.value }}</p>
+            <p class="ident-meta">
+              <template v-if="mrnLookup.chartBirthdate.value"
+                >DOB {{ mrnLookup.chartBirthdate.value }}</template
+              ><template v-if="mrnLookup.chartAge.value !== null">
+                · {{ mrnLookup.chartAge.value }}y</template
+              >
+              · ID {{ mrn }}
+            </p>
+            <UiButton
+              v-if="!mrnLookup.identityConfirmed.value"
+              tone="primary"
+              block
+              class="mt-2"
+              @click="mrnLookup.confirmIdentity()"
             >
-          </p>
+              Yes, this is the patient
+            </UiButton>
+            <p v-else class="ident-ok">✓ Confirmed</p>
+          </div>
+
           <p v-else-if="mrnLookup.status.value === 'not-found'" class="mrn-line mrn-warn">
             ✕ No patient with ID {{ mrn }}
           </p>
@@ -572,8 +593,8 @@ const diazepamModalCopy = computed(() => {
             the patient.
           </p>
 
-          <!-- Two independent fields agreeing is a much stronger signal than
-               either alone, so a disagreement is worth showing plainly. -->
+          <!-- Still live once the name is edited by hand: an auto-filled name
+               that gets corrected is compared again immediately. -->
           <div v-for="m in mrnLookup.mismatches.value" :key="m.kind" class="mrn-mismatch">
             <span>{{ m.message }}</span>
             <button
@@ -586,7 +607,7 @@ const diazepamModalCopy = computed(() => {
           </div>
 
           <button
-            v-if="patient.resolvedIdentity !== null && chartHistory.canPull.value"
+            v-if="mrnLookup.identityConfirmed.value && chartHistory.canPull.value"
             type="button"
             class="mrn-fix mrn-pull"
             :disabled="chartHistory.status.value === 'loading'"
@@ -597,6 +618,11 @@ const diazepamModalCopy = computed(() => {
             }}
           </button>
         </div>
+
+        <UiField id="field-pt" label="Patient name" required :invalid="isMissing('pt')">
+          <UiTextInput v-model="name" block />
+        </UiField>
+
         <!-- Own full-width textarea: procedures are naturally phrases and
              this was the last clipping single-line free-text field. -->
         <UiField label="Procedure">
@@ -1134,5 +1160,31 @@ const diazepamModalCopy = computed(() => {
   color: var(--color-text-secondary);
   cursor: default;
   text-decoration: none;
+}
+
+/* The identity is the wrong-patient guard now that the MRN leads the form,
+   so it is sized to be read rather than skimmed. */
+.ident {
+  border-radius: var(--radius-md, 10px);
+  padding: var(--sp-3);
+  border: 1px solid var(--color-border, rgba(127, 127, 127, 0.25));
+}
+.ident-ask {
+  border-color: var(--color-accent, #2563eb);
+}
+.ident-name {
+  font-size: var(--type-title);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.ident-meta {
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+.ident-ok {
+  margin-top: var(--sp-2);
+  font-size: var(--type-footnote);
+  color: var(--color-safe, #047857);
 }
 </style>

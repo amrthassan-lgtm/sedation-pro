@@ -152,6 +152,7 @@ describe('the wrong-patient guard', () => {
       fName: 'Dana',
       birthdate: '1987-01-01',
       resolvedAt: Date.now(),
+      confirmedAt: Date.now(),
     };
     // Same ID, but the chart now names somebody else.
     getPatient.mockResolvedValue({
@@ -181,6 +182,7 @@ describe('the wrong-patient guard', () => {
       fName: 'PATIENT',
       birthdate: '1986-01-02',
       resolvedAt: Date.now(),
+      confirmedAt: Date.now(),
     };
     const { chart } = setup();
 

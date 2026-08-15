@@ -177,7 +177,7 @@ describe('the resolve state machine', () => {
   });
 });
 
-describe('filling blanks from the chart', () => {
+describe('confirming the identity fills blanks from the chart', () => {
   it('fills a blank age, since it is required and derived from the chart DOB', async () => {
     const patient = usePatientStore();
     patient.age = null;
@@ -185,9 +185,14 @@ describe('filling blanks from the chart', () => {
 
     patient.mrn = '4242';
     await settle();
+    expect(patient.age).toBeNull(); // nothing enters the record un-looked-at
+    expect(r.identityConfirmed.value).toBe(false);
+
+    r.confirmIdentity();
 
     expect(patient.age).toBe(39);
     expect(r.autoFilled.value).toContain('age');
+    expect(r.identityConfirmed.value).toBe(true);
   });
 
   it('fills a blank name with the chart spelling', async () => {
@@ -197,6 +202,7 @@ describe('filling blanks from the chart', () => {
 
     patient.mrn = '4242';
     await settle();
+    r.confirmIdentity();
 
     expect(patient.name).toBe('Rivera, Dana');
     expect(r.autoFilled.value).toContain('name');
@@ -214,6 +220,7 @@ describe('filling blanks from the chart', () => {
 
     patient.mrn = '4242';
     await settle();
+    r.confirmIdentity();
 
     expect(patient.age).toBe(37);
     expect(patient.name).toBe('John Smith');
@@ -229,6 +236,7 @@ describe('filling blanks from the chart', () => {
 
     patient.mrn = '4242';
     await settle();
+    r.confirmIdentity();
 
     expect(patient.age).toBeNull();
     expect(r.autoFilled.value).not.toContain('age');

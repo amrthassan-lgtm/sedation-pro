@@ -134,6 +134,8 @@ export const usePatientStore = defineStore('patient', () => {
     fName: string;
     birthdate: string;
     resolvedAt: number;
+    /** When the clinician confirmed this is the right person. */
+    confirmedAt: number | null;
   } | null>(null);
 
   // -------- Expanded medical / social history -------------------------------
