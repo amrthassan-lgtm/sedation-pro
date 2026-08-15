@@ -168,7 +168,14 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       ['NPO confirmed', patient.npoConfirmed ? 'Yes (≥6h solids / ≥2h liquids)' : '—'],
       ['Date of last medical exam', fmtDate(patient.lastExamDate)],
       ['Current medications', patient.medicationsList.trim() || '—'],
-      ['Known allergies', patient.allergiesList.trim() || 'NKDA'],
+      // A blank field used to print "NKDA", which asserts to a reader that
+      // the patient has no known drug allergies — a claim nobody made. NKDA
+      // now appears only when the clinician ticked it, and a field that was
+      // somehow left blank says so instead of inventing an answer.
+      [
+        'Known allergies',
+        patient.allergiesList.trim() || (patient.nkdaConfirmed ? 'NKDA' : 'Not recorded'),
+      ],
       ['Past hospitalisations', patient.hospitalisations.trim() || '—'],
       ['Past surgeries', patient.surgeries.trim() || '—'],
       ['Anesthesia history', patient.anesthesiaHistory.trim() || '—'],

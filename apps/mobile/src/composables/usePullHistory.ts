@@ -17,6 +17,7 @@ import {
   isOdError,
 } from '@/services/opendental';
 import { usePatientStore } from '@/stores/patient';
+import { useUndoStore } from '@/stores/undo';
 
 /**
  * Pull the patient's problems, allergies and medications from Open Dental
@@ -73,6 +74,7 @@ const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms
 
 export function usePullHistory(vocabulary: ReadonlyArray<string>): UsePullHistory {
   const patient = usePatientStore();
+  const undo = useUndoStore();
 
   const status = ref<PullStatus>('idle');
   const error = ref('');
@@ -180,8 +182,39 @@ export function usePullHistory(vocabulary: ReadonlyArray<string>): UsePullHistor
     return out;
   });
 
+  /**
+   * Add the chart's entries to a free-text field without discarding what the
+   * clinician typed.
+   *
+   * Replacing was the original behaviour and it was wrong for the same
+   * reason the problems list merges: the text was written after talking to
+   * the person in the chair, and the chart is second-hand. Entries already
+   * present are skipped so accepting twice cannot duplicate.
+   */
+  function mergeText(current: string, incoming: string): string {
+    const existing = current.trim();
+    if (incoming === '') return existing;
+    if (existing === '') return incoming;
+    const haystack = existing.toLowerCase();
+    const additions = incoming
+      .split(', ')
+      .map((e) => e.trim())
+      .filter((e) => e !== '' && !haystack.includes(e.toLowerCase()));
+    return additions.length === 0 ? existing : `${existing}, ${additions.join(', ')}`;
+  }
+
   function accept(key: ProposalKey): void {
     if (status.value !== 'ready') return;
+
+    // Captured before the write so the undo can put it back exactly.
+    const beforeProblems = [...patient.medicalProblems];
+    const beforeAllergies = patient.allergiesList;
+    const beforeMedications = patient.medicationsList;
+    const beforeNkda = patient.nkdaConfirmed;
+
+    let label = '';
+    let after = '';
+
     if (key === 'problems') {
       // Union, not replace. These are a set of conditions: adding the
       // chart's must never silently drop one the clinician just entered
@@ -191,12 +224,44 @@ export function usePullHistory(vocabulary: ReadonlyArray<string>): UsePullHistor
       const merged = [...patient.medicalProblems];
       for (const p of chartProblems.value) if (!merged.includes(p)) merged.push(p);
       patient.medicalProblems = merged;
+      label = 'Medical problems';
+      after = merged.join(', ');
     } else if (key === 'allergies') {
-      if (chartAllergies.value !== '') patient.allergiesList = chartAllergies.value;
+      // The chart's NKDA is an assertion about the patient, so it maps onto
+      // the tickbox rather than being pasted in as if it were a substance.
+      if (chartAllergies.value === 'NKDA') {
+        patient.nkdaConfirmed = true;
+        after = 'NKDA';
+      } else if (chartAllergies.value !== '') {
+        patient.allergiesList = mergeText(patient.allergiesList, chartAllergies.value);
+        after = patient.allergiesList;
+      }
+      label = 'Allergies';
     } else {
-      if (chartMedications.value !== '') patient.medicationsList = chartMedications.value;
+      if (chartMedications.value !== '') {
+        patient.medicationsList = mergeText(patient.medicationsList, chartMedications.value);
+        after = patient.medicationsList;
+      }
+      label = 'Medications';
     }
+
     applied.value = new Set([...applied.value, key]);
+
+    // Same idiom as every other mutating action in the app: an undo entry,
+    // and a row in the event log so the note records that this came from the
+    // chart rather than from the patient.
+    undo.stamp({
+      event: 'Chart history accepted',
+      details: { Field: label, Value: after || '—', Source: 'Open Dental' },
+      toast: { label: `✓ ${label} accepted from chart`, tone: 'safe' },
+      revert: () => {
+        patient.medicalProblems = beforeProblems;
+        patient.allergiesList = beforeAllergies;
+        patient.medicationsList = beforeMedications;
+        patient.nkdaConfirmed = beforeNkda;
+        applied.value = new Set([...applied.value].filter((k) => k !== key));
+      },
+    });
   }
 
   function acceptAll(): void {

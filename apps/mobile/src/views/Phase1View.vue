@@ -103,6 +103,7 @@ const {
   baselineGlucose,
   medicationsList,
   allergiesList,
+  nkdaConfirmed,
   hospitalisations,
   surgeries,
   familyHistory,
@@ -877,9 +878,15 @@ const diazepamModalCopy = computed(() => {
           <UiQuickAddChips v-model="medicationsList" :terms="medicationTerms" />
           <UiTextarea v-model="medicationsList" :rows="3" block />
         </UiField>
-        <UiField label="Allergies">
+        <!-- Required, and satisfiable two ways. A blank field used to print
+             "NKDA" on the note, which asserts something about the patient
+             that nobody established — so NKDA is now a thing you tick, not a
+             thing a blank field means. The two are mutually exclusive: the
+             store clears one when the other is set. -->
+        <UiField id="field-allergies" label="Allergies" required :invalid="isMissing('allergies')">
           <UiQuickAddChips v-model="allergiesList" :terms="allergyTerms" />
           <UiTextarea v-model="allergiesList" :rows="2" block />
+          <UiCheckbox v-model="nkdaConfirmed" label="No known drug allergies (NKDA)" class="mt-2" />
         </UiField>
 
         <p class="caption mt-1">Past</p>

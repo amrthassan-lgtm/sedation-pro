@@ -24,6 +24,7 @@ function fillAllRequiredFields(patient: Patient): void {
   patient.heightIn = 70;
   patient.age = 45;
   patient.lastExamDate = '2025-12-01';
+  patient.nkdaConfirmed = true;
   patient.medsVerified = true;
   patient.osaStatus = 'none';
   patient.smokingStatus = 'never';

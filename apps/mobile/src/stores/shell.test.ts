@@ -129,6 +129,7 @@ describe('shell stores — single sources of truth', () => {
     patient.heightIn = 70;
     patient.age = 45;
     patient.lastExamDate = '2025-12-01';
+    patient.nkdaConfirmed = true;
     patient.medsVerified = true;
     patient.osaStatus = 'none';
     patient.smokingStatus = 'never';
@@ -181,6 +182,7 @@ describe('shell stores — single sources of truth', () => {
     patient.heightIn = 70;
     patient.age = 45;
     patient.lastExamDate = '2025-12-01';
+    patient.nkdaConfirmed = true;
     patient.medsVerified = true;
     patient.osaStatus = 'none';
     patient.smokingStatus = 'never';
@@ -260,6 +262,7 @@ describe('shell stores — single sources of truth', () => {
     patient.heightIn = 60;
     patient.age = 30;
     patient.lastExamDate = '2026-01-01';
+    patient.nkdaConfirmed = true;
     patient.medsVerified = true;
     patient.osaStatus = 'none';
     patient.smokingStatus = 'never';
@@ -272,10 +275,10 @@ describe('shell stores — single sources of truth', () => {
     patient.monitoringEquipmentChecked = true;
 
     expect(patient.isPhase1Complete).toBe(true);
-    expect(patient.completeness.total).toBe(19);
+    expect(patient.completeness.total).toBe(20);
 
     patient.diabetic = true;
-    expect(patient.completeness.total).toBe(20);
+    expect(patient.completeness.total).toBe(21);
     expect(patient.isPhase1Complete).toBe(false);
 
     patient.baselineGlucose = 110;

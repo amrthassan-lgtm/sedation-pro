@@ -25,6 +25,7 @@ vi.mock('@/services/opendental', async () => {
 const { OdError } = await import('@/services/opendental');
 const { usePullHistory, CHART_READ_SPACING_MS } = await import('./usePullHistory');
 const { usePatientStore } = await import('@/stores/patient');
+const { useUndoStore } = await import('@/stores/undo');
 
 const VOCAB = ['CVD', 'Hypertension', 'Diabetes', 'Asthma', 'GERD'];
 const PAT = 4242;
@@ -117,9 +118,11 @@ describe('proposing, not applying', () => {
 
   /**
    * The clinician typed it after talking to the person in the chair; the
-   * chart is second-hand. Accepting is explicit, per field.
+   * chart is second-hand. Accepting ADDS the chart's entries rather than
+   * replacing — discarding what was just taken from the patient is the one
+   * outcome an accept must never produce.
    */
-  it('does not silently overwrite what the clinician already typed', async () => {
+  it('adds the chart entries without discarding what the clinician typed', async () => {
     getAllergies.mockResolvedValue([{ defDescription: 'Latex', StatusIsActive: 'true' }]);
     const patient = usePatientStore();
     patient.allergiesList = 'Shellfish — anaphylaxis';
@@ -129,7 +132,47 @@ describe('proposing, not applying', () => {
     expect(patient.allergiesList).toBe('Shellfish — anaphylaxis');
 
     h.accept('allergies');
+    expect(patient.allergiesList).toBe('Shellfish — anaphylaxis, Latex');
+  });
+
+  it('does not duplicate an entry the field already carries', async () => {
+    getAllergies.mockResolvedValue([{ defDescription: 'Latex', StatusIsActive: 'true' }]);
+    const patient = usePatientStore();
+    patient.allergiesList = 'Latex';
+    const h = usePullHistory(VOCAB);
+
+    await runPull(h);
+    h.accept('allergies');
+
     expect(patient.allergiesList).toBe('Latex');
+  });
+
+  /** NKDA is an assertion about the patient, not a substance to paste in. */
+  it('maps the chart NKDA onto the tickbox rather than the text field', async () => {
+    getAllergies.mockResolvedValue([{ defDescription: '*NKDA', StatusIsActive: 'true' }]);
+    const patient = usePatientStore();
+    const h = usePullHistory(VOCAB);
+
+    await runPull(h);
+    h.accept('allergies');
+
+    expect(patient.nkdaConfirmed).toBe(true);
+    expect(patient.allergiesList).toBe('');
+  });
+
+  it('can be undone, restoring exactly what was there before', async () => {
+    getAllergies.mockResolvedValue([{ defDescription: 'Latex', StatusIsActive: 'true' }]);
+    const patient = usePatientStore();
+    patient.allergiesList = 'Shellfish';
+    const h = usePullHistory(VOCAB);
+
+    await runPull(h);
+    h.accept('allergies');
+    expect(patient.allergiesList).toBe('Shellfish, Latex');
+
+    useUndoStore().undo();
+
+    expect(patient.allergiesList).toBe('Shellfish');
   });
 
   it('adds chart conditions without dropping ones already entered', async () => {

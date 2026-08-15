@@ -19,8 +19,14 @@ export interface Phase1FieldSpec {
 }
 
 /**
- * The 19 unconditional required fields, plus `baseline_glucose` which is
+ * The 20 unconditional required fields, plus `baseline_glucose` which is
  * required only when `diabetic === 'yes'`.
+ *
+ * `allergies` is required because the printed note previously rendered a
+ * blank allergy field as "NKDA" — turning "nobody asked" into a positive
+ * assertion that the patient has no known drug allergies. The UI satisfies
+ * it either by listing allergies or by ticking an explicit NKDA box, so the
+ * note can claim NKDA because the clinician asserted it.
  */
 export const PHASE1_REQUIRED_FIELDS: ReadonlyArray<Phase1FieldSpec> = [
   // Step 1 — Patient Identification
@@ -36,6 +42,7 @@ export const PHASE1_REQUIRED_FIELDS: ReadonlyArray<Phase1FieldSpec> = [
   { id: 'patient_age', label: 'Age', step: 3 },
   { id: 'last_exam', label: 'Date of last exam', step: 3 },
   // Step 4 — Medical History
+  { id: 'allergies', label: 'Allergies (or NKDA)', step: 4 },
   { id: 'meds_verified', label: 'Epocrates drug check', step: 4 },
   { id: 'osa_history', label: 'OSA history', step: 4 },
   // Step 5 — Social Screening

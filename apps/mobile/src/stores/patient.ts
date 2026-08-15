@@ -179,6 +179,13 @@ export const usePatientStore = defineStore('patient', () => {
   // pre-sedation summary and narrative so the chart is real.
   const medicationsList = ref('');
   const allergiesList = ref('');
+  /**
+   * Explicit "no known drug allergies". Separate from an empty
+   * `allergiesList` on purpose: the note used to print a blank field as
+   * NKDA, which asserts something about the patient that nobody actually
+   * established. Ticking this is the assertion.
+   */
+  const nkdaConfirmed = ref(false);
   const hospitalisations = ref('');
   const surgeries = ref('');
   const familyHistory = ref('');
@@ -191,6 +198,18 @@ export const usePatientStore = defineStore('patient', () => {
   const ekgPlaced = ref(false);
   const emergencyDrugsAvailable = ref(false);
   const monitoringEquipmentChecked = ref(false);
+
+  /**
+   * NKDA and a list of allergies are contradictory claims, so entering one
+   * clears the other. Without this a clinician could tick NKDA, then add an
+   * allergy, and leave a record asserting both.
+   */
+  watch(allergiesList, (list) => {
+    if (list.trim() !== '' && nkdaConfirmed.value) nkdaConfirmed.value = false;
+  });
+  watch(nkdaConfirmed, (on) => {
+    if (on && allergiesList.value.trim() !== '') allergiesList.value = '';
+  });
 
   // -------- Live derived state ---------------------------------------------
 
@@ -265,6 +284,7 @@ export const usePatientStore = defineStore('patient', () => {
         height: heightIn.value ?? '',
         patient_age: age.value ?? '',
         last_exam: lastExamDate.value,
+        allergies: nkdaConfirmed.value ? 'NKDA' : allergiesList.value,
         meds_verified: medsVerified.value,
         osa_history: osaStatus.value,
         smoking_status: smokingStatus.value,
@@ -410,6 +430,7 @@ export const usePatientStore = defineStore('patient', () => {
     caseOwner,
     medicationsList,
     allergiesList,
+    nkdaConfirmed,
     hospitalisations,
     surgeries,
     familyHistory,
@@ -492,6 +513,7 @@ export const usePatientStore = defineStore('patient', () => {
     baselineGlucose,
     medicationsList,
     allergiesList,
+    nkdaConfirmed,
     hospitalisations,
     surgeries,
     familyHistory,

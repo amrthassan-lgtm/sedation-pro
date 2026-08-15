@@ -27,6 +27,7 @@ function completePhase1(): void {
   patient.heightIn = 70;
   patient.age = 40;
   patient.lastExamDate = '2026-08-01';
+  patient.nkdaConfirmed = true;
   patient.medsVerified = true;
   patient.osaStatus = 'none';
   patient.smokingStatus = 'never';

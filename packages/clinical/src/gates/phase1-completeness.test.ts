@@ -16,6 +16,7 @@ const ALL_FILLED: Record<string, unknown> = {
   height: 68,
   patient_age: 42,
   last_exam: '2025-01-15',
+  allergies: 'NKDA',
   meds_verified: true,
   osa_history: 'none',
   smoking_status: 'never',
@@ -29,8 +30,26 @@ const ALL_FILLED: Record<string, unknown> = {
 };
 
 describe('phase1Completeness', () => {
-  it('ships exactly 19 unconditional required fields across 6 steps', () => {
-    expect(PHASE1_REQUIRED_FIELDS).toHaveLength(19);
+  /**
+   * The note used to print a blank allergy field as "NKDA" — turning
+   * "nobody asked" into a positive claim about the patient. Requiring the
+   * field is what lets the note assert NKDA honestly.
+   */
+  it('requires allergies, satisfied by a list or an explicit NKDA', () => {
+    const blank = phase1Completeness({ values: { ...ALL_FILLED, allergies: '' } });
+    expect(blank.complete).toBe(false);
+    expect(blank.missing.map((m) => m.id)).toContain('allergies');
+
+    expect(phase1Completeness({ values: { ...ALL_FILLED, allergies: 'NKDA' } }).complete).toBe(
+      true,
+    );
+    expect(
+      phase1Completeness({ values: { ...ALL_FILLED, allergies: 'Penicillin' } }).complete,
+    ).toBe(true);
+  });
+
+  it('ships exactly 20 unconditional required fields across 6 steps', () => {
+    expect(PHASE1_REQUIRED_FIELDS).toHaveLength(20);
     const steps = new Set(PHASE1_REQUIRED_FIELDS.map((f) => f.step));
     expect(steps.size).toBe(6);
   });
@@ -38,8 +57,8 @@ describe('phase1Completeness', () => {
   it('returns complete=true when all fields are filled', () => {
     const r = phase1Completeness({ values: ALL_FILLED });
     expect(r.complete).toBe(true);
-    expect(r.done).toBe(19);
-    expect(r.total).toBe(19);
+    expect(r.done).toBe(20);
+    expect(r.total).toBe(20);
     expect(r.percent).toBe(100);
     expect(r.missing).toEqual([]);
   });
@@ -48,7 +67,7 @@ describe('phase1Completeness', () => {
     const partial = { ...ALL_FILLED, pt: '', mrn: '   ' };
     const r = phase1Completeness({ values: partial });
     expect(r.complete).toBe(false);
-    expect(r.done).toBe(17);
+    expect(r.done).toBe(18);
     expect(r.missing.map((m) => m.id).sort()).toEqual(['mrn', 'pt']);
     const ptField = r.missing.find((m) => m.id === 'pt');
     expect(ptField?.step).toBe(1);
@@ -86,7 +105,7 @@ describe('phase1Completeness', () => {
   it('adds baseline_glucose to the required set when diabetic === yes', () => {
     const without = phase1Completeness({ values: ALL_FILLED, diabetic: 'yes' });
     expect(without.complete).toBe(false);
-    expect(without.total).toBe(20);
+    expect(without.total).toBe(21);
     expect(without.missing.some((m) => m.id === PHASE1_CONDITIONAL_GLUCOSE.id)).toBe(true);
 
     const withGlucose = phase1Completeness({
@@ -94,17 +113,17 @@ describe('phase1Completeness', () => {
       diabetic: 'yes',
     });
     expect(withGlucose.complete).toBe(true);
-    expect(withGlucose.total).toBe(20);
+    expect(withGlucose.total).toBe(21);
   });
 
   it('does not require glucose for non-diabetic patients', () => {
-    expect(phase1Completeness({ values: ALL_FILLED, diabetic: 'no' }).total).toBe(19);
-    expect(phase1Completeness({ values: ALL_FILLED, diabetic: null }).total).toBe(19);
+    expect(phase1Completeness({ values: ALL_FILLED, diabetic: 'no' }).total).toBe(20);
+    expect(phase1Completeness({ values: ALL_FILLED, diabetic: null }).total).toBe(20);
   });
 
   it('rounds the percent to the nearest integer', () => {
     const r = phase1Completeness({ values: { ...ALL_FILLED, pt: '' } });
-    // 18 / 19 = 94.7% → 95
+    // 19 / 20 = 95%
     expect(r.percent).toBe(95);
   });
 });
