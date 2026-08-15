@@ -243,6 +243,95 @@ describe('confirming the identity fills blanks from the chart', () => {
   });
 });
 
+describe('the case owner', () => {
+  it('binds on the first confirmation and does not rebind on a later MRN', async () => {
+    const patient = usePatientStore();
+    const r = useMrnResolve();
+
+    patient.mrn = '4242';
+    await settle();
+    r.confirmIdentity();
+    expect(patient.caseOwner).toMatchObject({ patNum: 4242, lName: 'Rivera' });
+
+    getPatient.mockResolvedValue({
+      PatNum: 5555,
+      LName: 'Okafor',
+      FName: 'Sam',
+      Birthdate: '1990-05-05',
+    });
+    patient.mrn = '5555';
+    await settle();
+
+    // The lookup moved; the case did not.
+    expect(patient.resolvedIdentity?.patNum).toBe(5555);
+    expect(patient.caseOwner?.patNum).toBe(4242);
+  });
+
+  /**
+   * The reported gap: changing the MRN left one patient's history sitting
+   * under another's identity with nothing to say so.
+   */
+  it('raises a conflict naming both people', async () => {
+    const patient = usePatientStore();
+    const r = useMrnResolve();
+
+    patient.mrn = '4242';
+    await settle();
+    r.confirmIdentity();
+    expect(r.ownerConflict.value).toBeNull();
+
+    getPatient.mockResolvedValue({
+      PatNum: 5555,
+      LName: 'Okafor',
+      FName: 'Sam',
+      Birthdate: '1990-05-05',
+    });
+    patient.mrn = '5555';
+    await settle();
+
+    expect(r.ownerConflict.value).toMatchObject({
+      owner: { patNum: 4242, lName: 'Rivera' },
+      resolved: { patNum: 5555, lName: 'Okafor' },
+    });
+  });
+
+  it('rebinds only when told to, and clears the conflict', async () => {
+    const patient = usePatientStore();
+    const r = useMrnResolve();
+
+    patient.mrn = '4242';
+    await settle();
+    r.confirmIdentity();
+
+    getPatient.mockResolvedValue({
+      PatNum: 5555,
+      LName: 'Okafor',
+      FName: 'Sam',
+      Birthdate: '1990-05-05',
+    });
+    patient.mrn = '5555';
+    await settle();
+
+    r.rebindCaseOwner();
+
+    expect(patient.caseOwner?.patNum).toBe(5555);
+    expect(r.ownerConflict.value).toBeNull();
+    expect(r.identityConfirmed.value).toBe(true);
+  });
+
+  it('does not conflict when the same MRN is re-resolved', async () => {
+    const patient = usePatientStore();
+    const r = useMrnResolve();
+
+    patient.mrn = '4242';
+    await settle();
+    r.confirmIdentity();
+    await r.resolveNow();
+
+    expect(r.ownerConflict.value).toBeNull();
+  });
+});
+
 describe('re-checking an unchanged MRN', () => {
   /**
    * Found by driving the real UI. Blur fires `resolveNow`, and blur is what

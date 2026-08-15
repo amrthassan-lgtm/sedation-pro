@@ -189,7 +189,12 @@ export function useSendToChart(
       // wrong-patient scenario, not a stale field, so it refuses rather than
       // warns. The escape hatch is deliberate — fix the MRN, or reset the
       // send record — never a button that shrugs and writes anyway.
-      const startOfCase = patient.resolvedIdentity;
+      // The CASE OWNER, not the latest lookup. resolvedIdentity is
+      // overwritten by every keystroke that resolves, so comparing against it
+      // meant an MRN changed mid-case silently became "the chart this case
+      // was always about" and this guard compared the new patient to
+      // themselves.
+      const startOfCase = patient.caseOwner;
       if (startOfCase !== null && !sameChart(startOfCase, patNum, found)) {
         confirmTarget.value = null;
         lookupError.value =

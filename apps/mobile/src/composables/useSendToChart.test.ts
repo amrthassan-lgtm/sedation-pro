@@ -146,13 +146,12 @@ describe('the wrong-patient guard', () => {
    */
   it('refuses when the chart resolved now is not the one the case started against', async () => {
     const patient = usePatientStore();
-    patient.resolvedIdentity = {
+    patient.caseOwner = {
       patNum: 999,
       lName: 'Rivera',
       fName: 'Dana',
       birthdate: '1987-01-01',
-      resolvedAt: Date.now(),
-      confirmedAt: Date.now(),
+      boundAt: Date.now(),
     };
     // Same ID, but the chart now names somebody else.
     getPatient.mockResolvedValue({
@@ -176,13 +175,12 @@ describe('the wrong-patient guard', () => {
 
   it('proceeds when the identity still matches, ignoring case and spacing', async () => {
     const patient = usePatientStore();
-    patient.resolvedIdentity = {
+    patient.caseOwner = {
       patNum: 999,
       lName: ' test ',
       fName: 'PATIENT',
       birthdate: '1986-01-02',
-      resolvedAt: Date.now(),
-      confirmedAt: Date.now(),
+      boundAt: Date.now(),
     };
     const { chart } = setup();
 
@@ -194,7 +192,7 @@ describe('the wrong-patient guard', () => {
 
   it('does not stop a case that was never resolved at the start', async () => {
     // Offline at intake, or no keys then — an ordinary state, not a blocker.
-    usePatientStore().resolvedIdentity = null;
+    usePatientStore().caseOwner = null;
     const { chart } = setup();
 
     await chart.requestSend();

@@ -57,6 +57,13 @@ export interface UseMrnResolve {
   resolveNow: () => Promise<void>;
   /** True once the clinician has confirmed this is the right person. */
   readonly identityConfirmed: ComputedRef<boolean>;
+  /** Set when the MRN now names someone other than the case's owner. */
+  readonly ownerConflict: ComputedRef<{
+    owner: { patNum: number; lName: string; fName: string };
+    resolved: { patNum: number; lName: string; fName: string };
+  } | null>;
+  /** Deliberately move this case to the newly resolved patient. */
+  rebindCaseOwner: () => void;
   /** Confirm the identity, filling any blank name / age from the chart. */
   confirmIdentity: () => void;
   /** Adopt the chart's spelling / computed age into the form. */
@@ -239,7 +246,21 @@ export function useMrnResolve(): UseMrnResolve {
    */
   function confirmIdentity(): void {
     if (status.value !== 'resolved' || patient.resolvedIdentity === null) return;
-    patient.resolvedIdentity = { ...patient.resolvedIdentity, confirmedAt: Date.now() };
+    const id = patient.resolvedIdentity;
+    patient.resolvedIdentity = { ...id, confirmedAt: Date.now() };
+    // Bind the case to this person the first time, and never rebind
+    // silently afterwards — a later MRN change raises `ownerConflict`
+    // instead, which is a question for the clinician rather than a fact the
+    // app decides on its own.
+    if (patient.caseOwner === null) {
+      patient.caseOwner = {
+        patNum: id.patNum,
+        lName: id.lName,
+        fName: id.fName,
+        birthdate: id.birthdate,
+        boundAt: Date.now(),
+      };
+    }
 
     const filled: Array<'name' | 'age'> = [];
     if (patient.age === null && chartAge.value !== null) {
@@ -251,6 +272,40 @@ export function useMrnResolve(): UseMrnResolve {
       filled.push('name');
     }
     autoFilled.value = filled;
+  }
+
+  /**
+   * The MRN now resolves to somebody other than the person this case's data
+   * belongs to. Advisory on its own — the caller decides whether to
+   * interrupt, and only does so once the case actually holds something.
+   */
+  const ownerConflict = computed(() => {
+    const owner = patient.caseOwner;
+    const id = patient.resolvedIdentity;
+    return status.value === 'resolved' &&
+      owner !== null &&
+      id !== null &&
+      owner.patNum !== id.patNum
+      ? { owner, resolved: id }
+      : null;
+  });
+
+  /**
+   * Move the case to the newly resolved patient. Deliberate, and the caller
+   * records it in the event log — the chart should show that the switch was
+   * a decision, not an accident.
+   */
+  function rebindCaseOwner(): void {
+    const id = patient.resolvedIdentity;
+    if (id === null) return;
+    patient.caseOwner = {
+      patNum: id.patNum,
+      lName: id.lName,
+      fName: id.fName,
+      birthdate: id.birthdate,
+      boundAt: Date.now(),
+    };
+    patient.resolvedIdentity = { ...id, confirmedAt: Date.now() };
   }
 
   const identityConfirmed = computed(
@@ -276,6 +331,8 @@ export function useMrnResolve(): UseMrnResolve {
     unavailableReason,
     autoFilled,
     identityConfirmed,
+    ownerConflict,
+    rebindCaseOwner,
     confirmIdentity,
     mismatches,
     enabled,

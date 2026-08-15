@@ -1,5 +1,8 @@
 import { CREDENTIALS_KEY } from '@/services/od-credentials';
 
+/** Set just before a reset to pre-seed the MRN of the case being started. */
+export const PENDING_MRN_KEY = 'sedation-pro:pending-mrn:v1';
+
 /**
  * Wipes every persisted store under the `sedation-pro:*` namespace and
  * hard-reloads onto Phase 1, so every Pinia setup-store re-initializes
@@ -29,6 +32,9 @@ const PRESERVED_KEYS: ReadonlySet<string> = new Set([
   // from the PMS every time a new case starts. Imported rather than retyped so
   // a key rename can't quietly drop it back out of this list.
   CREDENTIALS_KEY,
+  // Carries the new patient's MRN across the wipe-and-reload so switching
+  // patients doesn't make the clinician retype the number they just entered.
+  PENDING_MRN_KEY,
 ]);
 
 export function useCaseReset(): { reset: () => void } {

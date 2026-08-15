@@ -138,6 +138,41 @@ export const usePatientStore = defineStore('patient', () => {
     confirmedAt: number | null;
   } | null>(null);
 
+  /**
+   * Who this case's clinical data belongs to.
+   *
+   * Bound once, when an identity is first confirmed, and never silently
+   * rewritten — which is the whole point. `resolvedIdentity` is the most
+   * recent lookup and is overwritten on every keystroke that resolves; using
+   * it as "who this case is about" meant changing the MRN mid-case quietly
+   * moved the case to the new patient, taking the previous patient's history
+   * along with it.
+   */
+  const caseOwner = ref<{
+    patNum: number;
+    lName: string;
+    fName: string;
+    birthdate: string;
+    boundAt: number;
+  } | null>(null);
+
+  /**
+   * True once anything clinical has been entered. Used to decide whether an
+   * identity change is worth interrupting for: correcting a mistyped MRN
+   * before entering anything is routine and must not nag.
+   */
+  const hasCaseContent = computed(
+    () =>
+      name.value.trim() !== '' ||
+      age.value !== null ||
+      weightLb.value !== null ||
+      medicalProblems.value.length > 0 ||
+      allergiesList.value.trim() !== '' ||
+      medicationsList.value.trim() !== '' ||
+      asaClass.value !== '' ||
+      mallampati.value !== '',
+  );
+
   // -------- Expanded medical / social history -------------------------------
   // Free-text fields the legacy app captured as textareas. Optional inputs —
   // not part of the unlock gate, but they flow into the clinical note's
@@ -372,6 +407,7 @@ export const usePatientStore = defineStore('patient', () => {
     diabetic,
     baselineGlucose,
     resolvedIdentity,
+    caseOwner,
     medicationsList,
     allergiesList,
     hospitalisations,
@@ -428,6 +464,8 @@ export const usePatientStore = defineStore('patient', () => {
 
   return {
     resolvedIdentity,
+    caseOwner,
+    hasCaseContent,
     name,
     mrn,
     provider,

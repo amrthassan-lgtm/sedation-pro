@@ -5,6 +5,8 @@ import { useRouter } from 'vue-router';
 
 import { alcoholBucketValue, usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
+import { useEventLogStore } from '@/stores/event-log';
+import { useCaseReset, PENDING_MRN_KEY } from '@/composables/useCaseReset';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { useInventoryStatus } from '@/composables/useInventoryStatus';
 import { useGateFeedback } from '@/composables/useGateFeedback';
@@ -48,6 +50,8 @@ import {
 const router = useRouter();
 const patient = usePatientStore();
 const undo = useUndoStore();
+const eventLog = useEventLogStore();
+const { reset: resetCase } = useCaseReset();
 
 useAssessmentAudit();
 
@@ -347,8 +351,69 @@ const medicalProblemOptions = [
  * Neither ever gates the case; a lookup that fails or times out costs the
  * clinician nothing but the offer.
  */
+// A patient switch pre-seeds the new MRN across the reset's reload.
+if (typeof window !== 'undefined') {
+  try {
+    const pending = window.localStorage.getItem(PENDING_MRN_KEY);
+    if (pending !== null) {
+      window.localStorage.removeItem(PENDING_MRN_KEY);
+      patient.mrn = pending;
+    }
+  } catch {
+    // Nothing to recover; the clinician retypes the number.
+  }
+}
+
 const mrnLookup = useMrnResolve();
 const chartHistory = usePullHistory(medicalProblemOptions.map((o) => o.value));
+
+/**
+ * The MRN now names someone other than the person this case's data belongs
+ * to. Only worth interrupting once the case actually holds something —
+ * correcting a mistyped number before entering anything is routine.
+ */
+const ownerConflictOpen = computed(
+  () => mrnLookup.ownerConflict.value !== null && patient.hasCaseContent,
+);
+const conflictOwnerName = computed(() => {
+  const c = mrnLookup.ownerConflict.value;
+  return c ? `${c.owner.lName}, ${c.owner.fName}`.replace(/,\s*$/, '') : '';
+});
+const conflictNewName = computed(() => {
+  const c = mrnLookup.ownerConflict.value;
+  return c ? `${c.resolved.lName}, ${c.resolved.fName}`.replace(/,\s*$/, '') : '';
+});
+
+/**
+ * Wipe and start again for the newly resolved patient, carrying the MRN
+ * across the reload so it doesn't have to be retyped.
+ */
+function startNewCaseForResolved(): void {
+  const c = mrnLookup.ownerConflict.value;
+  if (c === null) return;
+  try {
+    window.localStorage.setItem(PENDING_MRN_KEY, String(c.resolved.patNum));
+  } catch {
+    // Pre-seeding is a convenience; the reset itself still matters.
+  }
+  resetCase();
+}
+
+/**
+ * Keep the data and move the case to the new patient. Recorded in the event
+ * log, because a case changing hands mid-assessment should be visible in the
+ * chart rather than inferred from a changed number.
+ */
+function keepCaseForResolved(): void {
+  const c = mrnLookup.ownerConflict.value;
+  if (c === null) return;
+  eventLog.append('Case reassigned to a different patient', {
+    From: `${conflictOwnerName.value} (ID ${c.owner.patNum})`,
+    To: `${conflictNewName.value} (ID ${c.resolved.patNum})`,
+    Note: 'Existing assessment data was kept by the provider.',
+  });
+  mrnLookup.rebindCaseOwner();
+}
 
 function pullHistory(): void {
   const patNum = patient.resolvedIdentity?.patNum;
@@ -618,6 +683,36 @@ const diazepamModalCopy = computed(() => {
             }}
           </button>
         </div>
+
+        <!-- The MRN now names someone other than the person this case's data
+       belongs to. Two paths, no silent third: the case moves deliberately or
+       it starts again. Leaving one patient's history under another's identity
+       is the state this exists to prevent. -->
+        <UiModal
+          :open="ownerConflictOpen"
+          title="This is a different patient"
+          tone="danger"
+          confirm-label="Start a new case"
+          cancel-label="Keep this case"
+          :dismiss-on-backdrop="false"
+          @confirm="startNewCaseForResolved"
+          @cancel="keepCaseForResolved"
+        >
+          <p>
+            This case holds assessment data entered for
+            <strong>{{ conflictOwnerName }}</strong
+            >, but the MRN now resolves to <strong>{{ conflictNewName }}</strong
+            >.
+          </p>
+          <p class="conflict-note">
+            <strong>Start a new case</strong> clears everything and begins again for
+            {{ conflictNewName }}, keeping the MRN you just entered.
+          </p>
+          <p class="conflict-note">
+            <strong>Keep this case</strong> moves the existing data to {{ conflictNewName }} and
+            records the change in the event log. Only do this if the data really belongs to them.
+          </p>
+        </UiModal>
 
         <UiField id="field-pt" label="Patient name" required :invalid="isMissing('pt')">
           <UiTextInput v-model="name" block />
@@ -1186,5 +1281,11 @@ const diazepamModalCopy = computed(() => {
   margin-top: var(--sp-2);
   font-size: var(--type-footnote);
   color: var(--color-safe, #047857);
+}
+
+.conflict-note {
+  margin-top: var(--sp-2);
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
 }
 </style>
