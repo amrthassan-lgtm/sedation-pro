@@ -14,7 +14,13 @@ import type { UsePullHistory } from '@/composables/usePullHistory';
  * assessment is the moment that gets discovered, so the confirmation step is
  * the point of the feature rather than friction around it.
  */
-const props = defineProps<{ history: UsePullHistory }>();
+const props = defineProps<{
+  history: UsePullHistory;
+  /** Repeated here on purpose — see the identity strip in the template. */
+  patientName: string;
+  birthdate: string;
+  patNum: string;
+}>();
 
 const fetchedLabel = computed(() => {
   const at = props.history.fetchedAt.value;
@@ -23,6 +29,17 @@ const fetchedLabel = computed(() => {
 });
 
 const anyChanges = computed(() => props.history.proposals.value.some((p) => p.changes));
+
+/** Concrete evidence the read happened, rather than an implied success. */
+const readSummary = computed(() => {
+  const c = props.history.counts.value;
+  const parts = [
+    `${c.problems} problem${c.problems === 1 ? '' : 's'}`,
+    `${c.allergies} allerg${c.allergies === 1 ? 'y' : 'ies'}`,
+    `${c.medications} medication${c.medications === 1 ? '' : 's'}`,
+  ];
+  return parts.join(' · ');
+});
 </script>
 
 <template>
@@ -35,9 +52,23 @@ const anyChanges = computed(() => props.history.proposals.value.some((p) => p.ch
     </UiBanner>
 
     <template v-else>
-      <p class="chart-provenance mt-1">
-        Read from Open Dental at {{ fetchedLabel }}. Charts go stale — confirm each item with the
-        patient before accepting it.
+      <!-- The identity, repeated. Accepting happens well below the fold, far
+           from the confirmation at the top of Phase 1 — so the person whose
+           chart this is gets named again at the moment their data is about to
+           enter the record, not only when the MRN was typed. -->
+      <div class="chart-who mt-2">
+        <p class="chart-who-name">{{ patientName }}</p>
+        <p class="chart-who-meta">
+          <template v-if="birthdate">DOB {{ birthdate }} · </template>ID {{ patNum }}
+        </p>
+      </div>
+
+      <UiBanner tone="safe" class="mt-2">
+        Chart read at {{ fetchedLabel }} · {{ readSummary }}
+      </UiBanner>
+
+      <p class="chart-provenance mt-2">
+        Charts go stale — confirm each item with the patient before accepting it.
       </p>
 
       <UiBanner v-for="w in history.warnings.value" :key="w" tone="limit" class="mt-2">
@@ -72,6 +103,21 @@ const anyChanges = computed(() => props.history.proposals.value.some((p) => p.ch
 </template>
 
 <style scoped>
+.chart-who {
+  padding: var(--sp-3);
+  border-radius: var(--radius-md, 12px);
+  background: var(--color-surface-subtle);
+}
+.chart-who-name {
+  font-size: var(--type-title);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.chart-who-meta {
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
 .chart-provenance {
   font-size: var(--type-footnote);
   color: var(--color-text-secondary);

@@ -60,6 +60,8 @@ export interface UsePullHistory {
   /** Contradictions worth a warning rather than a silent resolution. */
   readonly warnings: ComputedRef<ReadonlyArray<string>>;
   readonly fetchedAt: Ref<number | null>;
+  /** Row counts from the last successful read. */
+  readonly counts: Ref<{ problems: number; allergies: number; medications: number }>;
   readonly canPull: ComputedRef<boolean>;
   pull: (patNum: number) => Promise<void>;
   accept: (key: ProposalKey) => void;
@@ -77,6 +79,12 @@ export function usePullHistory(vocabulary: ReadonlyArray<string>): UsePullHistor
   const fetchedAt = ref<number | null>(null);
   const applied = ref<Set<ProposalKey>>(new Set());
 
+  /** What the chart actually returned, for a concrete "it worked" readout. */
+  const counts = ref<{ problems: number; allergies: number; medications: number }>({
+    problems: 0,
+    allergies: 0,
+    medications: 0,
+  });
   const chartProblems = ref<ReadonlyArray<string>>([]);
   const chartAllergies = ref('');
   const chartMedications = ref('');
@@ -106,6 +114,16 @@ export function usePullHistory(vocabulary: ReadonlyArray<string>): UsePullHistor
       nkdaContradiction.value = allergySummary.contradiction;
       chartMedications.value = summariseMedications(meds);
 
+      counts.value = {
+        problems: chartProblems.value.length,
+        allergies:
+          allergySummary.text === ''
+            ? 0
+            : allergySummary.nkda
+              ? 1
+              : allergySummary.text.split(', ').length,
+        medications: chartMedications.value === '' ? 0 : chartMedications.value.split(', ').length,
+      };
       fetchedAt.value = Date.now();
       status.value = 'ready';
     } catch (e) {
@@ -196,6 +214,7 @@ export function usePullHistory(vocabulary: ReadonlyArray<string>): UsePullHistor
     proposals,
     warnings,
     fetchedAt,
+    counts,
     canPull,
     pull,
     accept,

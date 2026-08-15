@@ -828,7 +828,13 @@ const diazepamModalCopy = computed(() => {
         </UiField>
 
         <p class="caption mt-1">Conditions</p>
-        <ChartHistoryPanel :history="chartHistory" class="mb-2" />
+        <ChartHistoryPanel
+          :history="chartHistory"
+          :patient-name="mrnLookup.chartName.value"
+          :birthdate="mrnLookup.chartBirthdate.value"
+          :pat-num="mrn"
+          class="mb-2"
+        />
         <UiField label="Medical problems">
           <UiChipMultiSelect
             v-model="medicalProblems"
