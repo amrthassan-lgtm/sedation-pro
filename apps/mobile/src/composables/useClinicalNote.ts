@@ -13,6 +13,7 @@ import {
   type EncounterKind,
   type LocalCombinedResult,
 } from '@sedation-pro/clinical';
+import { monitorTraceDescription } from '@/config/site';
 
 /** Single row in the chronological table of the printable note. */
 export interface ClinicalNoteRow {
@@ -270,17 +271,15 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
           : 'Not transcribed — see the monitor printout',
       ],
       /**
-       * The continuous SpO₂ trace lives on the Edan X10 printout, scanned
-       * into the patient's chart. This note is a transcription of moments;
+       * The continuous SpO₂ trace lives on the monitor's output (see the
+       * site profile), which reaches the patient's chart. This note is a transcription of moments;
        * that strip is the actual monitoring record for the whole case, and a
        * reader needs to be told it exists and where it is — otherwise the
        * note reads as the only evidence of monitoring, which understates it.
        */
       [
         'SpO₂ trend printout',
-        recovery.discharge['pulseOxPrinted'] === true
-          ? 'Edan X10 printout scanned into the patient chart'
-          : 'Not confirmed',
+        recovery.discharge['pulseOxPrinted'] === true ? monitorTraceDescription() : 'Not confirmed',
       ],
     ];
     if (patient.diabetic) {

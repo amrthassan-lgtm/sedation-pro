@@ -10,6 +10,7 @@ import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { useNow } from '@/composables/useNow';
+import { monitorAttestationLabel } from '@/config/site';
 import { useGateFeedback, type GateEntry } from '@/composables/useGateFeedback';
 import { haptic } from '@/composables/useHaptics';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
@@ -470,7 +471,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
           <UiCheckbox
             id="gate-pulseox"
             :model-value="!!discharge.pulseOxPrinted"
-            label="Pulse-ox printout (Edan X10) scanned to chart"
+            :label="monitorAttestationLabel()"
             required
             size="tap-target"
             :invalid="gate.isInvalid('gate-pulseox')"
@@ -675,7 +676,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
         <UiBanner v-else tone="safe" icon="✓" class="mt-2"> All discharge criteria met. </UiBanner>
 
         <!-- Advisory, never a blocker. The continuous SpO₂ trace is on the
-             Edan X10 printout that gets scanned into the chart, so a missing
+             monitor output that reaches the chart (see the site profile), so a missing
              transcription is a gap in THIS note rather than a gap in
              monitoring — worth showing, not worth stopping a discharge for. -->
         <UiBanner v-if="!recoveryVitalsStamped" tone="caution" class="mt-2">

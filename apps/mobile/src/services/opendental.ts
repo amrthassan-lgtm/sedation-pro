@@ -1,4 +1,5 @@
 import type { OdCredentials } from './od-credentials';
+import { ACTIVE_SITE } from '@/config/site';
 
 /**
  * The only place in the app where fetch() touches Open Dental.
@@ -26,10 +27,13 @@ export const OD_BASE_URL = 'https://api.opendental.com/api/v1';
  * wrong definition or drops the PDF into the wrong image category, with no
  * way to delete it afterwards.
  */
-/** Commlog definition: "Sedation Note". */
-export const COMM_TYPE_SEDATION_NOTE = 711;
+/**
+ * Commlog definition: "Sedation Note". Sourced from the site profile so a
+ * second practice is a config change, not a grep.
+ */
+export const COMM_TYPE_SEDATION_NOTE = ACTIVE_SITE.openDental.commTypeSedationNote;
 /** Image category: "IV Sedation Consents". */
-export const DOC_CATEGORY_IV_SEDATION = 136;
+export const DOC_CATEGORY_IV_SEDATION = ACTIVE_SITE.openDental.docCategorySedation;
 
 /** Long enough for a several-hundred-KB PDF on practice wifi. */
 export const OD_TIMEOUT_MS = 20_000;
