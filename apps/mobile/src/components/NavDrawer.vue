@@ -158,17 +158,48 @@ function toggleMute(): void {
  * its trigger. Answers "what was that ding?" after the fact — computed at
  * drawer render so it's fresh every time the drawer opens.
  */
-const lastChime = computed(() => {
-  void drawerOpen.value; // re-read the persisted log on every open
-  const log = readChimeLog();
-  const last = log[log.length - 1];
-  if (!last) return null;
-  const when = new Date(last.at).toLocaleString(undefined, {
+const CHIME_KINDS: ReadonlyArray<string> = [
+  'Versed ready',
+  'Fentanyl ready',
+  'Pre-med cleared',
+  'Release cleared',
+];
+
+function stamp(at: number): string {
+  return new Date(at).toLocaleString(undefined, {
     weekday: 'short',
     hour: 'numeric',
     minute: '2-digit',
   });
-  return `${last.kind} · ${when}`;
+}
+
+/**
+ * The last actual CHIME, ignoring unlock entries.
+ *
+ * The unlock is recorded on every page load, so showing the newest entry of
+ * any kind meant this line read "Unlock primed" almost always — burying the
+ * answer to the question it exists for. Unlock events stay in the log for
+ * diagnostics; they just don't get the one visible slot.
+ */
+const lastChime = computed(() => {
+  void drawerOpen.value; // re-read the persisted log on every open
+  const log = readChimeLog();
+  for (let i = log.length - 1; i >= 0; i--) {
+    const entry = log[i];
+    if (entry && CHIME_KINDS.includes(entry.kind)) return `${entry.kind} · ${stamp(entry.at)}`;
+  }
+  return null;
+});
+
+/** Shown only when no chime has ever fired, so the line is never empty. */
+const lastUnlock = computed(() => {
+  void drawerOpen.value;
+  const log = readChimeLog();
+  for (let i = log.length - 1; i >= 0; i--) {
+    const entry = log[i];
+    if (entry && !CHIME_KINDS.includes(entry.kind)) return `${entry.kind} · ${stamp(entry.at)}`;
+  }
+  return null;
 });
 
 // -------- Theme toggle ----------------------------------------------------
@@ -511,7 +542,10 @@ function onTouchEnd() {
           </span>
           <!-- "audio", not "chime": the log now also carries the unlock
                priming, which is a sound source without being a chime. -->
-          <span v-if="lastChime" class="nav-utility-sub">Last audio · {{ lastChime }}</span>
+          <span v-if="lastChime" class="nav-utility-sub">Last chime · {{ lastChime }}</span>
+          <span v-else-if="lastUnlock" class="nav-utility-sub">
+            No chimes yet · {{ lastUnlock }}
+          </span>
         </span>
       </button>
 
