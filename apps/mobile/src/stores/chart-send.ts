@@ -222,6 +222,21 @@ export const useChartSendStore = defineStore('chart-send', () => {
    * A blank or non-numeric MRN returns false: there is no other chart to
    * confuse this one with, and the send is already blocked upstream by having
    * no target PatNum.
+   *
+   * NOT redundant with the `caseOwner` check in `useSendToChart`, despite
+   * both answering a wrong-patient question. They cover different windows and
+   * neither subsumes the other:
+   *
+   *   this one   — keyed on the SEND RECORD, so it only exists once something
+   *                has been filed. Covers "I already wrote to patient A and
+   *                the MRN now says B", and works even when the identity was
+   *                never confirmed (offline at intake leaves caseOwner null).
+   *   caseOwner  — keyed on the CONFIRMED IDENTITY, so it works before
+   *                anything is filed. Covers "this case is about A and the
+   *                note is about to go to B".
+   *
+   * Deleting either one opens a hole the other does not cover. Both are
+   * pinned by tests naming the scenario they alone catch.
    */
   function patientMismatch(currentMrn: string | number | null | undefined): boolean {
     if (!sendRecordExists.value) return false;

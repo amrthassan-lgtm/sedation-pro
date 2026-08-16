@@ -12,6 +12,11 @@ const PHASE_ROUTES: Record<string, Phase> = {
   '/phase/4': 'phase4',
   '/quick-reference': 'quickref',
   '/inventory': 'inventory',
+  // Practice setup, not a sedation phase — but it still needs an identity,
+  // or the sticky bar keeps showing the phase the clinician came FROM while
+  // they are on Settings, which is the one screen that then misreports where
+  // they are.
+  '/settings': 'settings',
 };
 
 const GATED_PHASES: ReadonlySet<Phase> = new Set(['phase2', 'phase3', 'phase4']);

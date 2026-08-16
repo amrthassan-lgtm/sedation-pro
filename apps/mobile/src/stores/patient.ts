@@ -168,6 +168,10 @@ export const usePatientStore = defineStore('patient', () => {
       weightLb.value !== null ||
       medicalProblems.value.length > 0 ||
       allergiesList.value.trim() !== '' ||
+      // Ticking NKDA leaves allergiesList empty, but it IS an assertion about
+      // the patient — without this a case carrying only that reads as empty
+      // and the patient-switch prompt stays silent.
+      nkdaConfirmed.value ||
       medicationsList.value.trim() !== '' ||
       asaClass.value !== '' ||
       mallampati.value !== '',

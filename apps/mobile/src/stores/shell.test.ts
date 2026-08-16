@@ -10,6 +10,21 @@ import { usePatientStore } from './patient';
 import { useIVStore } from './iv';
 
 describe('shell stores — single sources of truth', () => {
+  /**
+   * Ticking NKDA leaves `allergiesList` empty, so a case carrying only that
+   * assertion used to read as empty — and the patient-switch prompt, which
+   * only fires on a case with content, stayed silent.
+   */
+  it('patient.hasCaseContent counts an NKDA assertion as content', () => {
+    const patient = usePatientStore();
+    expect(patient.hasCaseContent).toBe(false);
+
+    patient.nkdaConfirmed = true;
+
+    expect(patient.allergiesList).toBe('');
+    expect(patient.hasCaseContent).toBe(true);
+  });
+
   beforeEach(() => {
     // persistRefs() reads from localStorage on store init; without clearing,
     // values written by an earlier test would re-hydrate the next store and

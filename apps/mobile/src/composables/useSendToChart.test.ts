@@ -201,6 +201,26 @@ describe('the wrong-patient guard', () => {
     expect(chart.confirmTarget.value).not.toBeNull();
   });
 
+  /**
+   * The window the caseOwner check cannot cover: nothing was ever confirmed
+   * (offline at intake), so there is no owner to compare against — but a send
+   * already happened, and the MRN has moved since. Only the send record knows.
+   */
+  it('still catches an MRN change after a send when the identity was never confirmed', async () => {
+    const patient = usePatientStore();
+    patient.caseOwner = null;
+    const { chart, send } = setup();
+
+    await sendAndConfirm(chart);
+    expect(send.allSent).toBe(true);
+
+    patient.mrn = '1000';
+    const moved = useSendToChart(note);
+
+    expect(moved.precondition.value.ready).toBe(false);
+    expect(moved.precondition.value.reason).toMatch(/MRN has changed/i);
+  });
+
   it('writes nothing if the operator cancels', async () => {
     const { chart } = setup();
     await chart.requestSend();

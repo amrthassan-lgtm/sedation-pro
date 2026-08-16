@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { router } from './index';
 import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
+import { useSessionStore } from '@/stores/session';
 
 /**
  * The clinical note is gated on the provider signature: an unsigned note is
@@ -98,6 +99,23 @@ describe('clinical-note signature gate', () => {
     await router.push('/settings');
 
     expect(router.currentRoute.value.path).toBe('/settings');
+  });
+
+  /**
+   * The sticky bar reads the session phase. Without an identity for
+   * /settings it kept showing the phase the clinician navigated FROM, so the
+   * one screen that is not a case step was also the one misreporting where
+   * they were.
+   */
+  it('gives settings its own identity so the sticky bar stops showing the previous phase', async () => {
+    const session = useSessionStore();
+    completePhase1();
+    await router.push('/phase/4');
+    expect(session.currentPhase).toBe('phase4');
+
+    await router.push('/settings');
+
+    expect(session.currentPhase).toBe('settings');
   });
 
   it('still gates Phase 2-4 behind Phase 1', async () => {
