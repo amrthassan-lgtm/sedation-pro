@@ -58,6 +58,32 @@ docs/                      DEVELOPMENT.md, ROADMAP.md
 - **No comments that restate the code.** Comments should explain _why_, not
   _what_. Prefer well-named exports.
 
+## Design bar
+
+**Premium iOS look, always.** This is a standing instruction from the owner,
+not a per-task preference. Every new surface is held to it: grouped inset
+lists with hairline separators on the card's own surface, destructive and
+reordering controls behind an `Edit` toggle rather than a button on every
+row, plain text buttons in the accent colour instead of bordered chrome,
+44px minimum tap targets, and a resting state that reads before it invites
+action. `PicklistEditor.vue` and `InventoryView.vue` are the reference rows.
+
+- **Never invent a CSS custom property.** The token vocabulary lives in
+  `packages/ui/src/styles/tokens.css` — read it, don't guess from memory. An
+  undefined `var(--whatever)` resolves to nothing and fails **silently**:
+  format, typecheck, tests and build all stay green while the screen is
+  wrong. Real names are `--r-sm|md|lg|xl|pill` (not `--radius-*`),
+  `--color-surface-subtle|elevated|overlay` (there is no `--sunken`),
+  `--sp-1..8`, `--type-caption|footnote|body|heading|title|display`.
+- **Both themes are a gate, not a nicety.** Light is
+  `:root[data-theme='light']`; the persisted key is a bare string at
+  `sedation-pro:theme:v1`. Check computed values in a real browser rather
+  than assuming a token resolves.
+- **Drive it in a browser before claiming it works.** Repeated experience in
+  this repo: a dead button, a control that unmounts mid-tap, a guard that
+  never fires, an unstyled row — none were visible to the suite, typecheck
+  or build. Only a live drive caught them.
+
 ## Common commands
 
 Run from the repo root:

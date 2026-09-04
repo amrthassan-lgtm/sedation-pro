@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
-import { UiButton, UiCard, UiStatusPill, UiTextInput } from '@sedation-pro/ui';
+import { UiCard, UiTextInput } from '@sedation-pro/ui';
 
 /**
  * One editable practice pick-list — the staff roster, the IV supplies, the
  * note vocabulary.
  *
- * Entries are not inline-editable on purpose. These strings land verbatim on
- * a medicolegal note, and a text input that rewrites the list on every
- * keystroke makes a half-typed name a real, persisted state. Correcting an
- * entry is remove-then-add, which is rare and unambiguous.
+ * Shaped as a grouped list: rows sit on the card's own surface separated by
+ * hairlines, matching the inventory rows rather than inventing a second list
+ * idiom. At rest a row shows only the name; the destructive and reordering
+ * controls live behind Edit, so the common act of reading the roster is not
+ * a wall of buttons.
  *
- * Collapsed by default: eight of these open at once would bury the Open
- * Dental cards below several screens of scroll on the tablet.
+ * Entries are not inline-editable on purpose. These strings print verbatim on
+ * a medicolegal note, and a field that rewrites the list on every keystroke
+ * makes a half-typed clinician a real, persisted state. Correcting an entry
+ * is remove-then-add.
  */
 const props = defineProps<{
   label: string;
@@ -30,8 +33,20 @@ const emit = defineEmits<{
 }>();
 
 const open = ref(false);
+const editing = ref(false);
+const adding = ref(false);
 const draft = ref('');
 const bodyId = `picklist-${Math.random().toString(36).slice(2, 9)}`;
+
+// Collapsing the card puts it back to its resting state, so reopening never
+// lands the clinician in a half-finished edit they have forgotten about.
+watch(open, (isOpen) => {
+  if (!isOpen) {
+    editing.value = false;
+    adding.value = false;
+    draft.value = '';
+  }
+});
 
 const trimmedDraft = computed(() => draft.value.trim());
 const isDuplicate = computed(() =>
@@ -43,6 +58,12 @@ function add(): void {
   if (!canAdd.value) return;
   emit('update', [...props.entries, trimmedDraft.value]);
   draft.value = '';
+  adding.value = false;
+}
+
+function cancelAdd(): void {
+  draft.value = '';
+  adding.value = false;
 }
 
 function removeAt(index: number): void {
@@ -67,36 +88,56 @@ function move(index: number, delta: number): void {
 
 <template>
   <UiCard>
-    <button
-      type="button"
-      class="picklist-head"
-      :aria-expanded="open"
-      :aria-controls="bodyId"
-      @click="open = !open"
-    >
-      <span class="picklist-head-text">
-        <span class="heading">{{ label }}</span>
-        <span class="picklist-count">
-          {{ entries.length }} {{ entries.length === 1 ? 'entry' : 'entries' }}
+    <div class="pl-head">
+      <button
+        type="button"
+        class="pl-disclosure"
+        :aria-expanded="open"
+        :aria-controls="bodyId"
+        @click="open = !open"
+      >
+        <span class="pl-head-text">
+          <span class="pl-title">{{ label }}</span>
+          <span class="pl-sub">
+            {{ entries.length }} {{ entries.length === 1 ? 'entry' : 'entries' }}
+            <template v-if="overridden"> · Customised</template>
+          </span>
         </span>
-      </span>
-      <UiStatusPill v-if="overridden" severity="safe" label="Customised" />
-      <span class="picklist-chevron" :class="{ 'is-open': open }" aria-hidden="true">›</span>
-    </button>
+        <span class="pl-chevron" :class="{ 'is-open': open }" aria-hidden="true">›</span>
+      </button>
+      <button
+        v-if="open && entries.length > 0"
+        type="button"
+        class="pl-edit"
+        @click="editing = !editing"
+      >
+        {{ editing ? 'Done' : 'Edit' }}
+      </button>
+    </div>
 
-    <div v-if="open" :id="bodyId" class="picklist-body">
-      <p v-if="hint" class="picklist-note">{{ hint }}</p>
-      <p v-if="firstIsDefault && entries.length > 0" class="picklist-note">
-        “{{ entries[0] }}” is pre-filled on a new case. Move an entry to the top to change that.
+    <div v-if="open" :id="bodyId" class="pl-body">
+      <p v-if="hint" class="pl-note">{{ hint }}</p>
+      <p v-if="firstIsDefault && entries.length > 0" class="pl-note">
+        “{{ entries[0] }}” is pre-filled on a new case. Tap Edit and move an entry to the top to
+        change that.
       </p>
 
-      <ul v-if="entries.length > 0" class="picklist-rows">
-        <li v-for="(entry, i) in entries" :key="entry" class="picklist-row">
-          <span class="picklist-entry">{{ entry }}</span>
-          <span class="picklist-actions">
+      <ul class="pl-rows">
+        <li v-for="(entry, i) in entries" :key="entry" class="pl-row">
+          <button
+            v-if="editing"
+            type="button"
+            class="pl-remove"
+            :aria-label="`Remove ${entry}`"
+            @click="removeAt(i)"
+          >
+            <span aria-hidden="true">−</span>
+          </button>
+          <span class="pl-entry">{{ entry }}</span>
+          <span v-if="editing" class="pl-reorder">
             <button
               type="button"
-              class="picklist-icon"
+              class="pl-arrow"
               :disabled="i === 0"
               :aria-label="`Move ${entry} up`"
               @click="move(i, -1)"
@@ -105,47 +146,58 @@ function move(index: number, delta: number): void {
             </button>
             <button
               type="button"
-              class="picklist-icon"
+              class="pl-arrow"
               :disabled="i === entries.length - 1"
               :aria-label="`Move ${entry} down`"
               @click="move(i, 1)"
             >
               ↓
             </button>
-            <button
-              type="button"
-              class="picklist-icon is-remove"
-              :aria-label="`Remove ${entry}`"
-              @click="removeAt(i)"
-            >
-              ✕
-            </button>
           </span>
         </li>
+
+        <li v-if="entries.length === 0" class="pl-row pl-row-empty">
+          Nothing on this list. A new case leaves the matching field blank.
+        </li>
+
+        <li v-if="adding" class="pl-row pl-row-add">
+          <UiTextInput v-model="draft" placeholder="Name" autofocus @keyup.enter="add" />
+          <button type="button" class="pl-action" @click="cancelAdd">Cancel</button>
+          <button type="button" class="pl-action is-primary" :disabled="!canAdd" @click="add">
+            Add
+          </button>
+        </li>
+        <li v-else class="pl-row">
+          <button type="button" class="pl-add" @click="adding = true">
+            <span class="pl-add-glyph" aria-hidden="true">+</span>
+            Add an entry
+          </button>
+        </li>
       </ul>
-      <p v-else class="picklist-note">
-        Nothing on this list. A new case leaves the matching field blank.
+
+      <p v-if="adding && isDuplicate" class="pl-note">
+        “{{ trimmedDraft }}” is already on the list.
       </p>
 
-      <div class="picklist-add">
-        <UiTextInput v-model="draft" placeholder="Add an entry" @keyup.enter="add" />
-        <UiButton tone="neutral" :disabled="!canAdd" @click="add">Add</UiButton>
-      </div>
-      <p v-if="isDuplicate" class="picklist-note">“{{ trimmedDraft }}” is already on the list.</p>
-
-      <UiButton v-if="overridden" tone="neutral" block @click="emit('restore')">
+      <button v-if="overridden" type="button" class="pl-restore" @click="emit('restore')">
         Restore the shipped list
-      </UiButton>
+      </button>
     </div>
   </UiCard>
 </template>
 
 <style scoped>
-.picklist-head {
+.pl-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.pl-disclosure {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   background: none;
   border: 0;
   padding: 0;
@@ -153,89 +205,184 @@ function move(index: number, delta: number): void {
   color: inherit;
   font: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.picklist-head-text {
+.pl-head-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
   flex: 1;
   min-width: 0;
 }
-.picklist-count,
-.picklist-note {
+.pl-title {
+  font-size: var(--type-heading);
+  font-weight: 600;
+}
+.pl-sub,
+.pl-note {
   font-size: var(--type-footnote);
   color: var(--color-text-secondary);
 }
-.picklist-chevron {
-  font-size: 1.25rem;
-  color: var(--color-text-secondary);
-  transition: transform var(--dur-250) var(--ease-standard);
+.pl-note {
+  margin: 0;
 }
-.picklist-chevron.is-open {
+.pl-chevron {
+  flex-shrink: 0;
+  font-size: 15px;
+  color: var(--color-text-disabled);
+  line-height: 1;
+  transition: transform var(--dur-150) var(--ease-standard);
+}
+.pl-chevron.is-open {
   transform: rotate(90deg);
 }
-.picklist-body {
+/* Text button, iOS list-header idiom — no chrome, accent colour, right-aligned. */
+.pl-edit {
+  flex-shrink: 0;
+  background: none;
+  border: 0;
+  padding: var(--sp-2);
+  margin: calc(var(--sp-2) * -1);
+  font: inherit;
+  font-size: var(--type-body);
+  color: var(--color-accent);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pl-body {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
   margin-top: var(--sp-3);
 }
-.picklist-rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
+.pl-rows {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.picklist-row {
+/* Hairline-separated rows on the card's own surface — the inventory idiom,
+   not a stack of individually-backgrounded pills. */
+.pl-row {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-subtle);
+  gap: var(--sp-3);
+  min-height: 44px;
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--color-border);
 }
-.picklist-entry {
+.pl-row:first-child {
+  border-top: 0;
+}
+.pl-entry {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.picklist-actions {
+.pl-row-empty {
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+}
+.pl-row-add {
+  gap: var(--sp-2);
+}
+.pl-row-add > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.pl-remove,
+.pl-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-pill);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pl-remove {
+  color: #fff;
+  background: var(--color-danger);
+  font-size: 20px;
+  line-height: 1;
+}
+.pl-reorder {
   display: flex;
   gap: var(--sp-1);
   flex-shrink: 0;
 }
-.picklist-icon {
-  min-width: 40px;
-  min-height: 40px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-elevated);
+.pl-arrow {
   color: var(--color-text-secondary);
-  font-size: 1rem;
-  cursor: pointer;
+  font-size: 15px;
 }
-.picklist-icon:disabled {
-  opacity: 0.35;
+.pl-arrow:active:not(:disabled) {
+  background: var(--color-surface);
+}
+.pl-arrow:disabled {
+  color: var(--color-text-disabled);
   cursor: default;
 }
-.picklist-icon.is-remove {
-  color: var(--color-danger);
-}
-.picklist-add {
+.pl-add {
   display: flex;
-  gap: var(--sp-2);
   align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: var(--type-body);
+  color: var(--color-accent);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-.picklist-add > :first-child {
-  flex: 1;
-  min-width: 0;
+.pl-add-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid currentColor;
+  font-size: 15px;
+  line-height: 1;
 }
-/* The button is content-sized; without this the flex row squeezes it and
-   clips the label. */
-.picklist-add > :last-child {
-  flex: 0 0 auto;
-  white-space: nowrap;
+.pl-action {
+  flex-shrink: 0;
+  background: none;
+  border: 0;
+  padding: var(--sp-2);
+  font: inherit;
+  font-size: var(--type-body);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.pl-action.is-primary {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+.pl-action:disabled {
+  color: var(--color-text-disabled);
+  cursor: default;
+}
+.pl-restore {
+  align-self: flex-start;
+  background: none;
+  border: 0;
+  padding: var(--sp-2) 0;
+  font: inherit;
+  font-size: var(--type-body);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-chevron {
+    transition: none;
+  }
 }
 </style>
