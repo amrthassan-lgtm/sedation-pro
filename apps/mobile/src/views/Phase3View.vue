@@ -311,7 +311,7 @@ const premedChip = computed(() => {
 // does *on top of* logging (opening the reversal process panel) stays
 // here as local UI state.
 
-const { logIvVersed, logIvFentanyl, logIvZofran } = useIvDosing();
+const { logIvVersed, logIvFentanyl, logIvZofran, readiness } = useIvDosing();
 
 // -------- Live drug timer pills (use the engine + now ticker) ---------------
 
@@ -626,6 +626,7 @@ function onNaloxone() {
           sub="0.2 ml"
           :state="versedTestState"
           :logged-at="fmtClock(lastVersedAt)"
+          :disabled="!readiness.ready"
           @click="logIvVersed(1, 'test dose')"
         />
       </div>
@@ -664,6 +665,7 @@ function onNaloxone() {
               name="Versed"
               dose="1 mg"
               sub="0.2 ml"
+              :disabled="!readiness.ready"
               @click="logIvVersed(1, 'additional')"
             />
             <UiDrugButton
@@ -671,6 +673,7 @@ function onNaloxone() {
               name="Versed"
               dose="2 mg"
               sub="0.4 ml"
+              :disabled="!readiness.ready"
               @click="logIvVersed(2, 'additional')"
             />
           </div>
@@ -682,6 +685,7 @@ function onNaloxone() {
               name="Fentanyl"
               dose="25 mcg"
               sub="0.5 ml"
+              :disabled="!readiness.ready"
               @click="logIvFentanyl(25, 'additional')"
             />
             <UiDrugButton
@@ -689,6 +693,7 @@ function onNaloxone() {
               name="Fentanyl"
               dose="50 mcg"
               sub="1.0 ml"
+              :disabled="!readiness.ready"
               @click="logIvFentanyl(50, 'additional')"
             />
           </div>

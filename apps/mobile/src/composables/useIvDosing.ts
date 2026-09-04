@@ -1,4 +1,10 @@
+import { computed } from 'vue';
+
+import { ivSedationReadiness } from '@sedation-pro/clinical';
+
 import { useIVStore } from '@/stores/iv';
+import { usePatientStore } from '@/stores/patient';
+import { useToastStore } from '@/stores/toast';
 import { useUndoStore } from '@/stores/undo';
 
 /**
@@ -18,12 +24,49 @@ import { useUndoStore } from '@/stores/undo';
 export function useIvDosing() {
   const iv = useIVStore();
   const undo = useUndoStore();
+  const patient = usePatientStore();
+  const toast = useToastStore();
+
+  /**
+   * EKG confirmation, evaluated at the instant a sedative is given rather
+   * than once at intake. See `ivSedationReadiness` for why it moved out of
+   * the Phase 1 gate.
+   */
+  const readiness = computed(() => ivSedationReadiness({ ekgPlaced: patient.ekgPlaced }));
+
+  /**
+   * Last line of defence behind the disabled buttons. The controls are
+   * disabled in both surfaces, but this composable is the one choke point
+   * every IV dose passes through, so the rule is enforced here too rather
+   * than trusting two call sites to stay disabled.
+   *
+   * Scoped to the SEDATIVES on purpose. Zofran is not a sedative, and
+   * flumazenil and naloxone are the rescue agents — a readiness check must
+   * never stand between a clinician and a reversal drug.
+   */
+  function refusedForReadiness(): boolean {
+    if (readiness.value.ready) return false;
+    const blocker = readiness.value.blockers[0];
+    if (blocker) {
+      toast.show(
+        {
+          id: `iv-readiness-${Date.now()}`,
+          label: blocker.label,
+          sub: blocker.detail,
+          tone: 'caution',
+        },
+        6000,
+      );
+    }
+    return true;
+  }
 
   function nowClock(): string {
     return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   function logIvVersed(mg: number, sub: string) {
+    if (refusedForReadiness()) return;
     iv.logDose({ drug: 'versed', mg });
     undo.stamp({
       event: 'IV Dose',
@@ -37,6 +80,7 @@ export function useIvDosing() {
   }
 
   function logIvFentanyl(mcg: number, sub: string) {
+    if (refusedForReadiness()) return;
     iv.logDose({ drug: 'fentanyl', mcg });
     undo.stamp({
       event: 'IV Dose',
@@ -89,6 +133,7 @@ export function useIvDosing() {
   }
 
   return {
+    readiness,
     logIvVersed,
     logIvFentanyl,
     logIvZofran,

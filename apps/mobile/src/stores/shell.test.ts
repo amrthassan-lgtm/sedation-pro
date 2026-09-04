@@ -285,15 +285,17 @@ describe('shell stores — single sources of truth', () => {
     patient.asaClass = 'I';
     patient.npoConfirmed = true;
     patient.consentObtained = true;
-    patient.ekgPlaced = true;
     patient.emergencyDrugsAvailable = true;
     patient.monitoringEquipmentChecked = true;
 
+    // EKG is deliberately not set: it left the Phase 1 required set and is
+    // gated at the first IV sedative instead, so an assessment visit that
+    // never places leads still completes.
     expect(patient.isPhase1Complete).toBe(true);
-    expect(patient.completeness.total).toBe(20);
+    expect(patient.completeness.total).toBe(19);
 
     patient.diabetic = true;
-    expect(patient.completeness.total).toBe(21);
+    expect(patient.completeness.total).toBe(20);
     expect(patient.isPhase1Complete).toBe(false);
 
     patient.baselineGlucose = 110;
