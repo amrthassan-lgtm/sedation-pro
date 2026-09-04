@@ -6,9 +6,9 @@ import { useIVStore } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
 import { formatAlcoholBucket, usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
+import { useFormularyStore } from '@/stores/formulary';
 import {
   classifyEncounter,
-  DEFAULT_FORMULARY,
   localCombined,
   type EncounterKind,
   type LocalCombinedResult,
@@ -62,8 +62,6 @@ export interface ClinicalNote {
   /** ISO date string of when the note was rendered — printed in the footer. */
   readonly generatedAt: string;
 }
-
-const PRACTICE_NAME = DEFAULT_FORMULARY.practiceName;
 
 /**
  * Identification clause that opens the narrative — "Jane Doe, a 47-year-old
@@ -120,6 +118,10 @@ const SMOKING_LABELS: Record<string, string> = {
  */
 export function useClinicalNote(): ComputedRef<ClinicalNote> {
   const patient = usePatientStore();
+  // Letterhead and narrative both name the practice, and a second office
+  // renames it in Settings — so it is read from the active formulary rather
+  // than the shipped constant.
+  const formulary = useFormularyStore();
   const iv = useIVStore();
   const local = useLocalAnestheticStore();
   const recovery = useRecoveryStore();
@@ -362,7 +364,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       const asst = patient.assistants?.trim();
       const asstSentence = asst ? ` Dental assistant: ${asst}.` : '';
       narrative.push(
-        `${intro} presented to ${PRACTICE_NAME} on ${today} for ${proc} under moderate IV sedation. Attending provider: ${prov}.${asstSentence}`,
+        `${intro} presented to ${formulary.practiceName} on ${today} for ${proc} under moderate IV sedation. Attending provider: ${prov}.${asstSentence}`,
       );
     }
 
@@ -537,7 +539,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
 
     return {
       header: {
-        practice: PRACTICE_NAME,
+        practice: formulary.practiceName,
         patient: patient.name || '[Patient Name]',
         mrn: patient.mrn || '—',
         date: today,

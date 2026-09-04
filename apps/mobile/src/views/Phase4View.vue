@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 
 import { useIVStore } from '@/stores/iv';
 import { usePatientStore } from '@/stores/patient';
+import { useFormularyStore } from '@/stores/formulary';
 import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
@@ -35,17 +36,13 @@ import {
   UiTextarea,
   UiTextInput,
 } from '@sedation-pro/ui';
-import {
-  classifyEncounter,
-  DEFAULT_FORMULARY,
-  dismissalSafety,
-  releaseEligibility,
-} from '@sedation-pro/clinical';
+import { classifyEncounter, dismissalSafety, releaseEligibility } from '@sedation-pro/clinical';
 import type { ActionState, BpValue } from '@sedation-pro/ui';
 
 const router = useRouter();
 
 const iv = useIVStore();
+const formulary = useFormularyStore();
 const patient = usePatientStore();
 const recovery = useRecoveryStore();
 const undo = useUndoStore();
@@ -140,18 +137,19 @@ const yesNoOptions = [
   { value: true, label: 'Yes' },
 ];
 
-const companionRelationOptions = DEFAULT_FORMULARY.picklists.companionRelations.map((r) => ({
-  value: r,
-  label: r,
-}));
+const companionRelationOptions = computed(() =>
+  formulary.picklists.companionRelations.map((r) => ({ value: r, label: r })),
+);
 
 // Quick-add chips for the complication fields. Tapping appends the term to
 // the free-text — the textarea stays the canonical, note-bound field so the
 // chart reads as a narrative and the medicolegal contract is untouched.
 // "Other" is just typing in the box. The term vocab is formulary data so a
 // practice tunes it at setup without touching the UI.
-const sedationComplicationOptions = DEFAULT_FORMULARY.picklists.sedationComplications;
-const venipunctureComplicationOptions = DEFAULT_FORMULARY.picklists.venipunctureComplications;
+const sedationComplicationOptions = computed(() => formulary.picklists.sedationComplications);
+const venipunctureComplicationOptions = computed(
+  () => formulary.picklists.venipunctureComplications,
+);
 
 // The companion signs a separate paper consent (post-op instructions), so
 // the engine no longer carries a companion-signature gate. Only the provider
