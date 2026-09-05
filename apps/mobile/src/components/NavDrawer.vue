@@ -8,6 +8,7 @@ import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
 import { useFormularyStore } from '@/stores/formulary';
+import { useNoteArchiveStore } from '@/stores/note-archive';
 import { useCaseReset } from '@/composables/useCaseReset';
 import { useTheme, type ThemeChoice } from '@/composables/useTheme';
 import { UiModal, UiStatusPill } from '@sedation-pro/ui';
@@ -130,6 +131,23 @@ async function goInventory() {
  * a store: the pairing changes about once, and the drawer opens fresh.
  */
 const settingsActive = computed(() => route.path === '/settings');
+
+/**
+ * Saved notes are records of finished encounters, so the row sits with
+ * Settings below the case rows rather than among the phases.
+ */
+const archive = useNoteArchiveStore();
+const notesActive = computed(() => route.path.startsWith('/notes'));
+const notesSub = computed(() =>
+  archive.count === 0
+    ? 'Nothing saved yet'
+    : `${archive.count} signed ${archive.count === 1 ? 'note' : 'notes'}`,
+);
+
+async function goNotes() {
+  await router.push('/notes');
+  session.closeDrawer();
+}
 const chartConnected = computed(() => hasCredentials());
 
 async function goSettings() {
@@ -475,6 +493,19 @@ function onTouchEnd() {
             severity="caution"
             :label="String(inventorySummary.expiringSoon)"
           />
+          <span class="nav-phase-chevron" aria-hidden="true">›</span>
+        </button>
+        <button
+          type="button"
+          class="nav-phase nav-phase--set"
+          :class="{ 'is-current': notesActive }"
+          @click="goNotes"
+        >
+          <span class="nav-phase-icon nav-phase-icon--set" aria-hidden="true">🗎</span>
+          <span class="nav-phase-main">
+            <span class="nav-phase-title">Saved Notes</span>
+            <span class="nav-phase-sub">{{ notesSub }}</span>
+          </span>
           <span class="nav-phase-chevron" aria-hidden="true">›</span>
         </button>
         <button

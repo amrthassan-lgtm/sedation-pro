@@ -1,5 +1,6 @@
 import { CREDENTIALS_KEY } from '@/services/od-credentials';
 import { FORMULARY_KEY } from '@/stores/formulary';
+import { NOTE_ARCHIVE_KEY } from '@/stores/note-archive';
 
 /** Set just before a reset to pre-seed the MRN of the case being started. */
 export const PENDING_MRN_KEY = 'sedation-pro:pending-mrn:v1';
@@ -37,6 +38,10 @@ export const PRESERVED_KEYS: ReadonlySet<string> = new Set([
   // Settings — wiping it here would silently put another office's staff
   // names back on this practice's notes.
   FORMULARY_KEY,
+  // Signed notes from finished encounters. The whole point of freezing one
+  // is that it outlives the case it came from — wiping it here would
+  // destroy the assessment note the sedation visit exists to continue.
+  NOTE_ARCHIVE_KEY,
   // Carries the new patient's MRN across the wipe-and-reload so switching
   // patients doesn't make the clinician retype the number they just entered.
   PENDING_MRN_KEY,

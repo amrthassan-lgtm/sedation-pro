@@ -12,6 +12,7 @@ export type Phase =
   | 'quickref'
   | 'inventory'
   | 'settings'
+  | 'notes'
   | 'phase1'
   | 'phase2'
   | 'phase3'

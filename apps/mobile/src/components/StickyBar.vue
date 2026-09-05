@@ -58,6 +58,7 @@ const phaseMeta: Record<Phase, { label: string; sub: string }> = {
   quickref: { label: 'Quick Reference', sub: 'Emergency protocols + drug doses' },
   inventory: { label: 'Drug Inventory', sub: 'Emergency medication stock & expiry' },
   settings: { label: 'Settings', sub: 'Practice setup' },
+  notes: { label: 'Saved Notes', sub: 'Signed encounters' },
   phase1: { label: 'Phase 1 · Assessment', sub: 'Pre-sedation clearance' },
   phase2: { label: 'Phase 2 · Oral Meds', sub: 'Pre-op anxiolytic' },
   phase3: { label: 'Phase 3 · IV Sedation', sub: 'Drug administration' },

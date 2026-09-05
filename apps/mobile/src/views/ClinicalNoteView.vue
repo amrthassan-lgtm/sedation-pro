@@ -3,12 +3,24 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useClinicalNote } from '@/composables/useClinicalNote';
+import { useNoteArchiveStore } from '@/stores/note-archive';
 import { clinicalNoteToText } from '@/composables/clinicalNoteText';
 import { useSendToChart } from '@/composables/useSendToChart';
 import { UiBanner, UiButton, UiModal } from '@sedation-pro/ui';
 
 const router = useRouter();
-const note = useClinicalNote();
+
+/**
+ * With an `id` this screen shows a FROZEN note from the archive; without
+ * one it shows the live note for the case currently open. Same rendering
+ * either way, so an archived note cannot drift from what was signed.
+ */
+const props = defineProps<{ id?: string | undefined }>();
+const archive = useNoteArchiveStore();
+const liveNote = useClinicalNote();
+const archived = computed(() => (props.id === undefined ? undefined : archive.find(props.id)));
+const isArchived = computed(() => archived.value !== undefined);
+const note = computed(() => archived.value?.note ?? liveNote.value);
 
 /**
  * Send to chart. Entirely inert with no Open Dental keys stored: the button
@@ -114,6 +126,7 @@ async function shareNote() {
         <UiButton v-if="supportsShare" tone="primary" @click="shareNote">Share</UiButton>
         <UiButton tone="success" @click="printNote">Print</UiButton>
         <UiButton
+          v-if="!isArchived"
           tone="primary"
           :disabled="!chart.precondition.value.ready || chart.busy.value"
           @click="chart.requestSend"
@@ -126,7 +139,7 @@ async function shareNote() {
     <!-- Persistent, not a toast: a records operation must still be readable
          when the operator looks back a minute later, or after a reload. It
          reads from the persisted send record, so it survives both. -->
-    <section class="chart-panel no-print">
+    <section v-if="!isArchived" class="chart-panel no-print">
       <p
         v-if="!chart.precondition.value.ready && chart.precondition.value.reason"
         class="chart-reason"
