@@ -26,6 +26,28 @@ export type ArtifactState =
   | { status: 'sent'; at: string }
   | { status: 'failed'; at: string; detail: string };
 
+/**
+ * The outcome of one write inside a deliberate resend.
+ *
+ * A 'sent' artifact is frozen — `markSent` / `markFailed` refuse to touch it,
+ * because every path out of 'sent' would eventually authorise a second
+ * irreversible commlog. Correct, but it also meant a resend could not report
+ * anything at all: the screen kept showing the FIRST send's timestamps while
+ * the second attempt succeeded or failed in silence. A PDF that failed on
+ * resend was invisible.
+ *
+ * This log sits beside the artifact states rather than in them. It is
+ * reporting only — nothing reads it to decide whether a write is allowed —
+ * so the freeze stays absolute and the operator still finds out what happened.
+ */
+export interface ResendAttempt {
+  readonly kind: ArtifactKind;
+  readonly at: string;
+  readonly ok: boolean;
+  /** '' when the attempt succeeded. */
+  readonly detail: string;
+}
+
 export interface ChartSendState {
   patNum: number | null;
   /** "Lastname, Firstname · YYYY-MM-DD" as confirmed against the PMS at send time. */
@@ -99,8 +121,9 @@ export const useChartSendStore = defineStore('chart-send', () => {
   const patientLabel = ref<string | null>(null);
   const commlog = ref<ArtifactState>({ status: 'idle' });
   const pdf = ref<ArtifactState>({ status: 'idle' });
+  const resendLog = ref<ResendAttempt[]>([]);
 
-  const persisted = { patNum, patientLabel, commlog, pdf };
+  const persisted = { patNum, patientLabel, commlog, pdf, resendLog };
 
   function artifactFor(kind: ArtifactKind): Ref<ArtifactState> {
     return kind === 'commlog' ? commlog : pdf;
@@ -300,6 +323,21 @@ export const useChartSendStore = defineStore('chart-send', () => {
     patientLabel.value = null;
     commlog.value = { status: 'idle' };
     pdf.value = { status: 'idle' };
+    resendLog.value = [];
+    flushSync();
+  }
+
+  /** Clears the previous attempt's lines so the panel shows THIS resend. */
+  function beginResend(): void {
+    resendLog.value = [];
+    flushSync();
+  }
+
+  function recordResend(kind: ArtifactKind, ok: boolean, detail = ''): void {
+    resendLog.value = [
+      ...resendLog.value,
+      { kind, at: new Date().toISOString(), ok, detail: ok ? '' : sanitizeDetail(detail) },
+    ];
     flushSync();
   }
 
@@ -308,6 +346,7 @@ export const useChartSendStore = defineStore('chart-send', () => {
     patientLabel,
     commlog,
     pdf,
+    resendLog,
 
     anythingSent,
     allSent,
@@ -326,6 +365,8 @@ export const useChartSendStore = defineStore('chart-send', () => {
     markPdfSending,
     markPdfSent,
     markPdfFailed,
+    beginResend,
+    recordResend,
     reset,
   };
 });

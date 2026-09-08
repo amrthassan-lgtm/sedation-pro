@@ -231,6 +231,11 @@ export function useSendToChart(
 
   /** Deliberate second copy — the caller gates this behind its own warning. */
   async function requestResend(): Promise<void> {
+    // Re-entrancy guard. Without it a second tap while the first resend is
+    // in flight starts an overlapping lookup/commlog/PDF cycle, which blows
+    // Open Dental's 1 req/sec limit — and the PDF, being last in each cycle,
+    // is the write that gets rejected.
+    if (busy.value) return;
     resending.value = true;
     if (readCredentials() === null || parsedMrn.value === null) return;
     await openConfirm(['commlog', 'pdf']);
@@ -250,6 +255,10 @@ export function useSendToChart(
 
     confirmTarget.value = null;
     busy.value = true;
+    // Captured before the `finally` clears it — every write below needs to
+    // know whether this is a resend, and `resending` is per-attempt state.
+    const isResend = resending.value;
+    if (isResend) send.beginResend();
 
     try {
       if (
@@ -278,10 +287,13 @@ export function useSendToChart(
             creds,
           );
           send.markCommlogSent();
+          if (isResend) send.recordResend('commlog', true);
         } catch (error) {
-          send.markCommlogFailed(
-            isOdError(error) ? describeOdError(error) : 'The note text failed to send.',
-          );
+          const detail = isOdError(error)
+            ? describeOdError(error)
+            : 'The note text failed to send.';
+          send.markCommlogFailed(detail);
+          if (isResend) send.recordResend('commlog', false, detail);
         }
         wrote = true;
       }
@@ -301,10 +313,13 @@ export function useSendToChart(
             creds,
           );
           send.markPdfSent();
+          if (isResend) send.recordResend('pdf', true);
         } catch (error) {
-          send.markPdfFailed(
-            isOdError(error) ? describeOdError(error) : 'The PDF could not be generated or sent.',
-          );
+          const detail = isOdError(error)
+            ? describeOdError(error)
+            : 'The PDF could not be generated or sent.';
+          send.markPdfFailed(detail);
+          if (isResend) send.recordResend('pdf', false, detail);
         }
       }
     } finally {
@@ -316,11 +331,41 @@ export function useSendToChart(
   // -------- Reporting -------------------------------------------------------
 
   /**
+   * What the LAST deliberate resend actually did.
+   *
+   * The artifact states cannot carry this: once 'sent' they are frozen, so a
+   * resend's success or failure was previously discarded and the panel went
+   * on showing the first send's timestamps. A PDF that failed on resend
+   * looked exactly like one that had never been attempted.
+   */
+  const resendLines = computed<ReadonlyArray<ResultLine>>(() => {
+    const out: ResultLine[] = [];
+    for (const attempt of send.resendLog) {
+      const label = attempt.kind === 'commlog' ? 'Note text' : 'PDF';
+      out.push(
+        attempt.ok
+          ? {
+              tone: 'ok',
+              text: `Second copy · ${label} written to the chart at ${fmtTime(attempt.at)}.`,
+            }
+          : { tone: 'fail', text: `Second copy · ${label} failed — ${attempt.detail}` },
+      );
+    }
+    if (out.length > 0 && send.resendLog.some((a) => !a.ok)) {
+      out.push({
+        tone: 'partial',
+        text: 'The first copy is still in the chart. Check Open Dental before sending again — a commlog cannot be removed through the API.',
+      });
+    }
+    return out;
+  });
+
+  /**
    * One line per artifact, naming which one, its HTTP status, and — the part
    * the operator actually needs — whether anything reached the chart, since
    * that decides whether they have to go clean something up in Open Dental.
    */
-  const resultLines = computed<ReadonlyArray<ResultLine>>(() => {
+  const baseResultLines = computed<ReadonlyArray<ResultLine>>(() => {
     const lines: ResultLine[] = [];
     const who = send.patientLabel ?? 'the patient';
 
@@ -361,6 +406,16 @@ export function useSendToChart(
     }
     return lines;
   });
+
+  /**
+   * The artifact record first, then whatever the last resend did. Both are
+   * needed: the record says what is in the chart, the resend lines say what
+   * just happened to it.
+   */
+  const resultLines = computed<ReadonlyArray<ResultLine>>(() => [
+    ...baseResultLines.value,
+    ...resendLines.value,
+  ]);
 
   return {
     precondition,

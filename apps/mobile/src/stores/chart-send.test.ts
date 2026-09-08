@@ -415,6 +415,8 @@ describe('chart-send store', () => {
         patientLabel: null,
         commlog: { status: 'idle' },
         pdf: { status: 'idle' },
+        // Resend outcomes belong to the record that was reset with it.
+        resendLog: [],
       });
     });
 

@@ -355,3 +355,108 @@ describe('rate limiting', () => {
     expect(uploadDocument).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * Reported from live use: after continuing a case past an assessment, the
+ * primary button was greyed out (both artifacts already 'sent'), the resend
+ * button appeared, and it filed a second commlog while the PDF never
+ * arrived — with no error shown anywhere.
+ */
+describe('resending after everything is already filed', () => {
+  async function sentCase() {
+    const { chart, send } = setup();
+    await sendAndConfirm(chart);
+    expect(send.allSent).toBe(true);
+    postCommlog.mockClear();
+    uploadDocument.mockClear();
+    return { chart, send };
+  }
+
+  /** Walk the resend the operator does: tap, confirm the name, write. */
+  async function resendAndConfirm(chart: ReturnType<typeof useSendToChart>): Promise<void> {
+    await chart.requestResend();
+    await chart.confirmSend();
+  }
+
+  it('attempts both artifacts, not just the note text', async () => {
+    const { chart } = await sentCase();
+
+    await resendAndConfirm(chart);
+
+    expect(postCommlog).toHaveBeenCalledTimes(1);
+    expect(uploadDocument).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * The defect that made this undiagnosable. A 'sent' artifact is frozen, so
+   * markPdfFailed did nothing and the panel kept showing the FIRST send's
+   * timestamps — a failed PDF looked identical to one never attempted.
+   */
+  it('says out loud when the PDF fails on a resend', async () => {
+    const { chart, send } = await sentCase();
+    uploadDocument.mockRejectedValueOnce(new OdError('http', 'rate limited', 429));
+
+    await resendAndConfirm(chart);
+
+    // The artifact record is deliberately untouched — the freeze is what
+    // stops a third irreversible write authorising itself.
+    expect(send.pdf.status).toBe('sent');
+
+    const text = chart.resultLines.value.map((l) => l.text).join(' ');
+    expect(text).toMatch(/Second copy · PDF failed/);
+    expect(text).toMatch(/rate limited/);
+    expect(chart.resultLines.value.some((l) => l.tone === 'fail')).toBe(true);
+  });
+
+  it('reports a resend that worked, rather than staying silent', async () => {
+    const { chart } = await sentCase();
+
+    await resendAndConfirm(chart);
+
+    const text = chart.resultLines.value.map((l) => l.text).join(' ');
+    expect(text).toMatch(/Second copy · Note text written/);
+    expect(text).toMatch(/Second copy · PDF written/);
+  });
+
+  it('warns that the first copy is still there when a resend part-fails', async () => {
+    const { chart } = await sentCase();
+    uploadDocument.mockRejectedValueOnce(new OdError('http', 'rejected', 400));
+
+    await resendAndConfirm(chart);
+
+    expect(chart.resultLines.value.map((l) => l.text).join(' ')).toMatch(
+      /first copy is still in the chart/i,
+    );
+  });
+
+  it('shows only the latest resend, not every attempt ever made', async () => {
+    const { chart } = await sentCase();
+    uploadDocument.mockRejectedValueOnce(new OdError('http', 'rejected', 400));
+    await resendAndConfirm(chart);
+
+    await resendAndConfirm(chart);
+
+    const pdfLines = chart.resultLines.value.filter((l) => /Second copy · PDF/.test(l.text));
+    expect(pdfLines).toHaveLength(1);
+    expect(pdfLines[0]?.tone).toBe('ok');
+  });
+
+  /**
+   * The likely cause of the live failure. A second tap while the first
+   * resend is in flight ran an overlapping lookup/commlog/PDF cycle; two
+   * cycles at once exceed Open Dental's 1 req/sec limit, and the PDF is
+   * last in each.
+   */
+  it('ignores a second tap while a resend is already running', async () => {
+    const { chart } = await sentCase();
+
+    await chart.requestResend();
+    const inFlight = chart.confirmSend();
+    // The operator taps again before the first cycle settles.
+    await chart.requestResend();
+    await inFlight;
+
+    expect(postCommlog).toHaveBeenCalledTimes(1);
+    expect(uploadDocument).toHaveBeenCalledTimes(1);
+  });
+});

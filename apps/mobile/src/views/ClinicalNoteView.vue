@@ -154,13 +154,18 @@ async function shareNote() {
         {{ line.text }}
       </UiBanner>
 
+      <!-- Disabled while a send is in flight. Without this, a second tap
+           starts an overlapping lookup/commlog/PDF cycle and the two blow
+           Open Dental's 1 req/sec limit — the PDF, last in each cycle, is
+           what gets rejected. -->
       <UiButton
         v-if="chart.canResend.value"
         tone="neutral"
         class="chart-secondary"
+        :disabled="chart.busy.value"
         @click="openResend"
       >
-        Send another copy to the chart
+        {{ chart.busy.value ? 'Working…' : 'Send another copy to the chart' }}
       </UiButton>
     </section>
 
