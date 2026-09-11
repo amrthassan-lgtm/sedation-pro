@@ -144,6 +144,14 @@ describe('live inventory data invariants', () => {
     expect(sources.map((i) => i.id)).toEqual(['lidocaine-cardiac']);
   });
 
+  it('equipment never maps to a protocol callout (pads are not drugs)', () => {
+    for (const inv of EMERGENCY_INVENTORY) {
+      if (inv.category === 'equipment') {
+        expect(inv.protocolDrugNames, `${inv.id} must not map`).toBeUndefined();
+      }
+    }
+  });
+
   it('the protocol gap list is exactly the two open purchasing decisions', () => {
     // Tripwire: a future protocol edit that adds a new drug callout (or a
     // mapping typo that orphans an existing one) fails here on purpose.

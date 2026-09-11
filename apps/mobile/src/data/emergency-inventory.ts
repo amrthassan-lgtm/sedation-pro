@@ -1,6 +1,7 @@
 /**
- * Emergency medication inventory — the practice's physical crash-cart
- * stock, transcribed from the paper inventory sheet (2026-08).
+ * Emergency inventory — the practice's physical crash-cart stock: drugs,
+ * sedation-cart items, and the dated AED consumables, transcribed from
+ * the paper inventory sheet (2026-08).
  *
  * This file IS the source of truth, by the practice owner's choice:
  * stock changes are made here (via a Claude session or a GitHub edit),
@@ -23,6 +24,7 @@ export interface InventoryItem {
   readonly description: string;
   /** '' when not yet known (item on order or label unread). */
   readonly lot: string;
+  /** '' for equipment (no NDC assigned) and for drug stock unread. */
   readonly ndc: string;
   readonly quantity: number;
   /** 'YYYY-MM' (or 'YYYY-MM-DD'); '' when unknown. */
@@ -45,9 +47,14 @@ export interface InventoryItem {
   /**
    * 'sedation' marks sedation-cart stock (controlled substances + oral
    * premeds) tracked alongside the crash cart in this one list, per the
-   * owner's choice. Absent = emergency kit.
+   * owner's choice. 'equipment' marks dated non-drug stock — AED pads
+   * and battery — which expires like a drug and strands the defibrillator
+   * when it lapses, so it earns the same banner and reorder pressure.
+   * Equipment never carries `protocolDrugNames` (a vitest invariant):
+   * protocol callouts name drugs, and a pad must never satisfy one.
+   * Absent = emergency kit.
    */
-  readonly category?: 'sedation';
+  readonly category?: 'sedation' | 'equipment';
   /** Free-text action note for humans (NOT order tracking — see onOrder). */
   readonly notes?: string;
 }
@@ -381,5 +388,35 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     onOrder: { sku: 'DEXT5050V-E' },
     notes: 'New line item — fills the hypoglycemia IV-route gap',
     protocolDrugNames: ['D50W'],
+  },
+  {
+    id: 'aed-pads-adult',
+    drug: 'Defibtech Defibrillation Pads',
+    description: 'Adult AED electrode pads',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2027-08-22',
+    category: 'equipment',
+  },
+  {
+    id: 'aed-pads-pediatric',
+    drug: 'Defibtech Defibrillation Pads',
+    description: 'Pediatric AED electrode pads',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2027-08-22',
+    category: 'equipment',
+  },
+  {
+    id: 'aed-battery',
+    drug: 'Defibtech Battery Pack',
+    description: 'AED battery',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2030-08-22',
+    category: 'equipment',
   },
 ];
