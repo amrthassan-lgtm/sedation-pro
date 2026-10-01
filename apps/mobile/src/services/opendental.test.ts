@@ -10,6 +10,7 @@ import {
   OdError,
   postCommlog,
   toRawBase64,
+  toApiDateTime,
   uploadDocument,
   type FetchLike,
 } from './opendental';
@@ -84,7 +85,7 @@ describe('auth and request shape', () => {
       rawBase64: 'QUJD',
       extension: '.pdf',
       Description: 'Sedation note',
-      DateCreated: '2026-08-14',
+      DateCreated: '2026-08-14 00:00:00',
       DocCategory: DOC_CATEGORY_IV_SEDATION,
     });
     expect(result.docNum).toBe(42);
@@ -97,19 +98,61 @@ describe('auth and request shape', () => {
     expect(DOC_CATEGORY_IV_SEDATION).toBe(136);
   });
 
-  it('truncates a full timestamp to the bare date the API wants', async () => {
+  /**
+   * Open Dental's hosted API began rejecting a bare date with 400
+   * "DateCreated format must be yyyy-MM-dd HH:mm:ss." between 10 Sep and
+   * 1 Oct 2026. Every PDF upload failed while the commlog (which sends no
+   * date) kept landing.
+   */
+  it('sends DateCreated as yyyy-MM-dd HH:mm:ss', async () => {
     const { fetch, calls } = stubFetch([{ status: 201, body: '{}' }]);
+    // Built from local components so the expectation holds in any timezone.
+    const instant = new Date(2026, 9, 1, 14, 7, 3).toISOString();
+
     await uploadDocument(
-      {
-        patNum: 7,
-        rawBase64: 'QUJD',
-        description: 'd',
-        dateCreated: '2026-08-14T13:30:00.000Z',
-      },
+      { patNum: 7, rawBase64: 'QUJD', description: 'd', dateCreated: instant },
       CREDS,
       fetch,
     );
-    expect(bodyOf(calls[0])['DateCreated']).toBe('2026-08-14');
+
+    expect(bodyOf(calls[0])['DateCreated']).toBe('2026-10-01 14:07:03');
+    expect(bodyOf(calls[0])['DateCreated']).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+  });
+});
+
+describe('toApiDateTime', () => {
+  /**
+   * Must be matched before any Date parsing: new Date('2026-10-01') is UTC
+   * midnight, which is the previous evening in Eastern time.
+   */
+  it('turns a bare date into local midnight without shifting the day', () => {
+    expect(toApiDateTime('2026-10-01')).toBe('2026-10-01 00:00:00');
+  });
+
+  it('converts an ISO string ending in Z to local wall-clock time', () => {
+    const local = new Date(2026, 9, 1, 9, 30, 0);
+    expect(toApiDateTime(local.toISOString())).toBe('2026-10-01 09:30:00');
+  });
+
+  /**
+   * The case the old caller got wrong: 9pm Eastern on 1 Oct is already
+   * 2 Oct in UTC, and slicing the ISO string filed the note under tomorrow.
+   */
+  it('keeps an evening note on its own local day', () => {
+    const evening = new Date(2026, 9, 1, 21, 15, 0);
+    expect(toApiDateTime(evening.toISOString())).toBe('2026-10-01 21:15:00');
+  });
+
+  it('zero-pads every component', () => {
+    expect(toApiDateTime(new Date(2026, 0, 2, 3, 4, 5).toISOString())).toBe('2026-01-02 03:04:05');
+  });
+
+  it('trims surrounding whitespace', () => {
+    expect(toApiDateTime('  2026-10-01  ')).toBe('2026-10-01 00:00:00');
+  });
+
+  it('passes an unparseable value through rather than inventing a date', () => {
+    expect(toApiDateTime('not a date')).toBe('not a date');
   });
 });
 

@@ -308,11 +308,30 @@ export async function postCommlog(
   );
 }
 
-const ISO_DATE_PREFIX = /^(\d{4}-\d{2}-\d{2})/;
+const BARE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Open Dental wants a bare date; accept a full timestamp and trim it. */
-function toApiDate(value: string): string {
-  return ISO_DATE_PREFIX.exec(value.trim())?.[1] ?? value.trim();
+/**
+ * `/documents/Upload` requires DateCreated as "yyyy-MM-dd HH:mm:ss". A bare
+ * date used to be accepted and now returns 400 "DateCreated format must be
+ * yyyy-MM-dd HH:mm:ss." — a hosted-API change between 10 Sep and 1 Oct 2026,
+ * with the practice's Open Dental version unchanged. Commlogs send no date
+ * and were unaffected, which is why only the PDF started failing.
+ *
+ * LOCAL wall-clock, not UTC: Open Dental shows this date to the practice.
+ * A bare date is handled before any Date parsing, because
+ * `new Date('2026-10-01')` is UTC midnight and reads as the previous day in
+ * Eastern time.
+ */
+export function toApiDateTime(value: string): string {
+  const v = value.trim();
+  if (BARE_DATE.test(v)) return `${v} 00:00:00`;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return v;
+  const p = (n: number): string => String(n).padStart(2, '0');
+  return (
+    `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
+    `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+  );
 }
 
 /**
@@ -354,7 +373,7 @@ export async function uploadDocument(
         rawBase64,
         extension: '.pdf',
         Description: input.description,
-        DateCreated: toApiDate(input.dateCreated),
+        DateCreated: toApiDateTime(input.dateCreated),
         DocCategory: DOC_CATEGORY_IV_SEDATION,
       },
     },
