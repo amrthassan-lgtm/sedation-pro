@@ -308,7 +308,10 @@ export function useSendToChart(
               patNum: target.patNum,
               rawBase64: bytesToBase64(bytes),
               description: `Sedation note · ${note.value.header.date}`,
-              dateCreated: new Date().toISOString().slice(0, 10),
+              // The full instant, converted to local time downstream. Slicing the
+              // ISO string took the UTC date, so a note filed after ~8pm Eastern
+              // was dated tomorrow.
+              dateCreated: new Date().toISOString(),
             },
             creds,
           );
