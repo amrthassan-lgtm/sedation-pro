@@ -29,27 +29,17 @@
 }
 
 /*
- * Height the compact SedationDock occupies at the bottom of the viewport
- * (handle + two 56 px drug rows + padding + home-indicator inset). App.vue
- * pads the shell by this much while the dock is up, and the rail override
- * below subtracts it, so both stay in step when the dock layout changes.
- */
-:root {
-  --dock-reserve: calc(170px + env(safe-area-inset-bottom));
-}
-
-/*
  * When the SedationDock is on-screen on Phase 3 (App.vue adds `.has-dock`
- * to `.app-shell`), the bottom of the viewport is occupied. The
- * tablet-landscape rail sits to the right of the form column and otherwise
+ * to `.app-shell`), the bottom 250 px of the viewport is occupied. The
+ * iPad-landscape rail sits to the right of the form column and otherwise
  * extends nearly the full viewport height — without this override its
- * lower portion gets hidden behind the dock. Shorten the max-height while
- * the dock is up; the transition in PhaseLayout.vue keeps the change smooth
- * as the dock slides in or out.
+ * lower portion gets hidden behind the dock. Shorten the max-height by
+ * ~250 px while the dock is up; the transition in PhaseLayout.vue keeps
+ * the change smooth as the dock slides in or out.
  */
 @media (min-width: 1024px) {
   .app-shell.has-dock .phase-layout-rail {
-    max-height: calc(100vh - 72px - var(--dock-reserve) - env(safe-area-inset-top) - var(--sp-5));
+    max-height: calc(100vh - 72px - 250px - env(safe-area-inset-top) - var(--sp-5));
   }
 }
 

@@ -13,29 +13,18 @@ interface Props {
   tone: DrugTone;
   /** Visual status — drives border + background. */
   status?: TimerPillStatus;
-  /**
-   * Single-line variant for dense rows (the SedationDock). Count and hint
-   * sit side by side at body size, and the label is kept for screen readers
-   * only — the row the pill lives in already names the drug.
-   */
-  inline?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   hint: undefined,
   status: 'cooling',
-  inline: false,
 });
 </script>
 
 <template>
   <div
     class="ui-timer-pill"
-    :class="[
-      `ui-timer-pill--${props.status}`,
-      `ui-timer-pill--${props.tone}`,
-      { 'is-inline': props.inline },
-    ]"
+    :class="[`ui-timer-pill--${props.status}`, `ui-timer-pill--${props.tone}`]"
   >
     <div class="ui-timer-pill-label">{{ props.label }}</div>
     <div class="ui-timer-pill-count">{{ props.count }}</div>
@@ -76,36 +65,6 @@ const props = withDefaults(defineProps<Props>(), {
   margin-top: 6px;
   letter-spacing: 0.2px;
   opacity: 0.9;
-}
-
-/* Inline: one 40 px-tall line, count then hint. The label stays in the DOM
-   for assistive tech but takes no space. */
-.ui-timer-pill.is-inline {
-  position: relative;
-  flex: 0 0 auto;
-  flex-direction: row;
-  justify-content: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 6px 12px;
-  border-radius: var(--r-sm);
-}
-.ui-timer-pill.is-inline .ui-timer-pill-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  margin: 0;
-}
-.ui-timer-pill.is-inline .ui-timer-pill-count {
-  font-size: var(--type-heading);
-}
-.ui-timer-pill.is-inline .ui-timer-pill-hint {
-  margin-top: 0;
-  font-size: var(--type-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
 }
 /* Idle = no dose given yet. Neutral surface; the count + tone colours
    below also fall back to a quiet grey so the pill doesn't pretend to

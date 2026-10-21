@@ -14,11 +14,9 @@ import type { Severity, TimerPillStatus } from '@sedation-pro/ui';
  *
  * Premium iOS pattern: a frosted-glass surface that sits above the home
  * indicator with two states:
- *  - **compact** — one row per drug: mg given / ceiling with its bar, the
- *    live half-life timer, and the "next-dose" button (Versed +2 mg,
- *    Fentanyl +25 mcg) on the same line. One tap = log. Two rows is the
- *    whole footprint (~150 px), which matters most on the portrait tablet
- *    the practice runs on — the form above it stays usable mid-titration.
+ *  - **compact** — drug status row (mg given / ceiling, live half-life timer,
+ *    redose-window status) plus two "next-dose" buttons (Versed +1 mg,
+ *    Fentanyl +25). One tap = log.
  *  - **expanded** — full per-class dose grid (sedation, anti-emetic, reversal).
  *    Reversal is visually demoted (red section heading, separated grid) so
  *    muscle memory doesn't mis-tap it.
@@ -129,86 +127,77 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
         <span class="dock-grip" aria-hidden="true" />
       </button>
 
-      <!-- Status rows (always visible). One line per drug: load + ceiling bar,
-           live timer, and — in compact mode — the next-dose button, so the
-           whole cockpit is two 56 px rows instead of a stack of cards. The
-           expanded grid below replaces the inline buttons. -->
+      <!-- Compact-mode status row (always visible). -->
       <div class="dock-status">
         <!-- Versed row -->
         <div class="dock-drug-row">
-          <div class="dock-drug-meta">
-            <div class="dock-drug-head">
-              <span class="dock-swatch dock-swatch--versed" aria-hidden="true" />
-              <span class="dock-drug-name">Versed</span>
-              <span class="dock-drug-load">
-                <strong>{{ versedStatus.given.toFixed(1) }}</strong>
-                /
-                {{ versedStatus.ceiling.toFixed(1) }} mg
-              </span>
-            </div>
-            <UiPercentBar
-              :percent="versedStatus.percent"
-              thickness="sm"
-              :class="severityClass(versedStatus.severity)"
+          <div class="dock-drug-head">
+            <span class="dock-swatch dock-swatch--versed" aria-hidden="true" />
+            <span class="dock-drug-name">Versed</span>
+            <span class="dock-drug-load">
+              <strong>{{ versedStatus.given.toFixed(1) }}</strong>
+              /
+              {{ versedStatus.ceiling.toFixed(1) }} mg
+            </span>
+            <UiTimerPill
+              label="Versed"
+              tone="versed"
+              :count="versedPill.count"
+              :hint="versedPill.hint"
+              :status="versedPill.status"
             />
           </div>
-          <UiTimerPill
-            inline
-            label="Versed"
-            tone="versed"
-            :count="versedPill.count"
-            :hint="versedPill.hint"
-            :status="versedPill.status"
-          />
-          <UiDrugButton
-            v-if="!expanded"
-            class="dock-dose-btn"
-            compact
-            tone="versed"
-            name="Versed"
-            dose="+2 mg"
-            :disabled="!dosing.readiness.value.ready"
-            @click="dosing.logIvVersed(2, 'dock')"
+          <UiPercentBar
+            :percent="versedStatus.percent"
+            thickness="sm"
+            :class="severityClass(versedStatus.severity)"
           />
         </div>
 
         <!-- Fentanyl row -->
         <div class="dock-drug-row">
-          <div class="dock-drug-meta">
-            <div class="dock-drug-head">
-              <span class="dock-swatch dock-swatch--fentanyl" aria-hidden="true" />
-              <span class="dock-drug-name">Fent</span>
-              <span class="dock-drug-load">
-                <strong>{{ fentanylStatus.given.toFixed(0) }}</strong>
-                /
-                {{ fentanylStatus.ceiling.toFixed(0) }} mcg
-              </span>
-            </div>
-            <UiPercentBar
-              :percent="fentanylStatus.percent"
-              thickness="sm"
-              :class="severityClass(fentanylStatus.severity)"
+          <div class="dock-drug-head">
+            <span class="dock-swatch dock-swatch--fentanyl" aria-hidden="true" />
+            <span class="dock-drug-name">Fent</span>
+            <span class="dock-drug-load">
+              <strong>{{ fentanylStatus.given.toFixed(0) }}</strong>
+              /
+              {{ fentanylStatus.ceiling.toFixed(0) }} mcg
+            </span>
+            <UiTimerPill
+              label="Fent"
+              tone="fentanyl"
+              :count="fentanylPill.count"
+              :hint="fentanylPill.hint"
+              :status="fentanylPill.status"
             />
           </div>
-          <UiTimerPill
-            inline
-            label="Fent"
-            tone="fentanyl"
-            :count="fentanylPill.count"
-            :hint="fentanylPill.hint"
-            :status="fentanylPill.status"
-          />
-          <UiDrugButton
-            v-if="!expanded"
-            class="dock-dose-btn"
-            compact
-            tone="fentanyl"
-            name="Fent"
-            dose="+25 mcg"
-            :disabled="!dosing.readiness.value.ready"
-            @click="dosing.logIvFentanyl(25, 'dock')"
+          <UiPercentBar
+            :percent="fentanylStatus.percent"
+            thickness="sm"
+            :class="severityClass(fentanylStatus.severity)"
           />
         </div>
+      </div>
+
+      <!-- Compact-mode quick buttons (hidden when expanded). -->
+      <div v-if="!expanded" class="dock-quick-row">
+        <UiDrugButton
+          compact
+          tone="versed"
+          name="Versed"
+          dose="+2 mg"
+          :disabled="!dosing.readiness.value.ready"
+          @click="dosing.logIvVersed(2, 'dock')"
+        />
+        <UiDrugButton
+          compact
+          tone="fentanyl"
+          name="Fent"
+          dose="+25 mcg"
+          :disabled="!dosing.readiness.value.ready"
+          @click="dosing.logIvFentanyl(25, 'dock')"
+        />
       </div>
 
       <!-- Expanded-mode grid. Grouped by drug class so reversal is never -->
@@ -393,36 +382,16 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   background: var(--color-border-strong);
 }
 
-/* Status rows — [name · load · bar] [timer] [+dose], one line per drug. */
+/* Status rows — drug name, mg load, timer pill, then the progress bar. */
 .dock-status {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.dock-drug-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.dock-drug-meta {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-.dock-dose-btn {
-  flex: 0 0 112px;
-}
-/* Phone portrait: the row still has to hold load, timer and button, so the
-   fixed columns give a little back to the load text. */
-@media (max-width: 420px) {
-  .dock-drug-row {
-    gap: 8px;
-  }
-  .dock-dose-btn {
-    flex-basis: 96px;
-  }
+.dock-drug-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .dock-drug-head {
   display: flex;
@@ -472,6 +441,18 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   background: var(--color-danger);
 }
 
+/* Quick-tap row — two big buttons in compact mode. */
+.dock-quick-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Shared button styling — used in both compact + expanded layouts.
+   Mirrors UiButton: layered highlight over the elevated surface for the
+   iOS-polished glass look. Tone variants below add the drug-soft fill
+   underneath (highlight stays on top in every case). */
 /* Expanded grid. */
 .dock-expanded {
   margin-top: 10px;

@@ -207,7 +207,7 @@ if (typeof window !== 'undefined') {
 
 /* Reserve room at the bottom for the fixed Sedation Dock so the footer and
    the last Phase 3 card both scroll past it instead of being obscured.
-   `--dock-reserve` (utilities.css) is the compact dock's height; the
+   ~250 px covers the compact dock at its largest comfortable height; the
    expanded sheet floats over content so no extra padding needed for that.
    Transitions match the dock's slide-in/out timing so toggling `has-dock`
    when the dock reveals or hides doesn't make the form content snap. */
@@ -215,6 +215,6 @@ if (typeof window !== 'undefined') {
   transition: padding-bottom var(--dur-250) var(--ease-standard);
 }
 .app-shell.has-dock {
-  padding-bottom: var(--dock-reserve);
+  padding-bottom: calc(250px + env(safe-area-inset-bottom));
 }
 </style>
