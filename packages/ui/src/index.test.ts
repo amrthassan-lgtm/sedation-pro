@@ -84,6 +84,13 @@ describe('@sedation-pro/ui', () => {
     w(UiStatusPill, { severity: 'empty' });
     w(UiTimerPill, { label: 'Versed', count: '1:23', tone: 'versed', status: 'cooling' });
     w(UiTimerPill, { label: 'Fentanyl', count: '✓', tone: 'fentanyl', status: 'ready' });
+    w(UiTimerPill, {
+      label: 'Versed',
+      count: '0:45',
+      hint: 'Waiting',
+      tone: 'versed',
+      inline: true,
+    });
     w(UiBanner, { tone: 'caution', title: 'Elevated baseline BP', icon: '⚠' });
     w(UiBanner, { tone: 'info' });
     w(UiDrugSwatch, { tone: 'versed' });
