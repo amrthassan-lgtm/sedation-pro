@@ -91,6 +91,12 @@ export const useRecoveryStore = defineStore('recovery', () => {
 
   const ivOutAt = ref<number | null>(null);
   const releasedAt = ref<number | null>(null);
+  /**
+   * Id of this encounter's frozen note, once it has one. Per-CASE, so it
+   * clears with the case and the next encounter freezes its own note rather
+   * than inheriting the last one's.
+   */
+  const noteFrozenId = ref<string | null>(null);
   // Persisted so a reload mid-discharge doesn't silently drop the
   // blocker rings — symmetric with patient.phase1ValidationAttempted.
   const releaseAttempted = ref(false);
@@ -166,6 +172,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     ivOutAt.value = null;
     releasedAt.value = null;
     releaseAttempted.value = false;
+    noteFrozenId.value = null;
   }
 
   const companionDocumented = computed(
@@ -211,6 +218,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     returnVisitDate,
     ivOutAt,
     releasedAt,
+    noteFrozenId,
     releaseAttempted,
   });
 
@@ -242,6 +250,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     returnVisitDate,
     ivOutAt,
     releasedAt,
+    noteFrozenId,
     releaseAttempted,
 
     // derived

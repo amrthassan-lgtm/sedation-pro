@@ -19,8 +19,14 @@ export interface Phase1FieldSpec {
 }
 
 /**
- * The 20 unconditional required fields, plus `baseline_glucose` which is
+ * The 19 unconditional required fields, plus `baseline_glucose` which is
  * required only when `diabetic === 'yes'`.
+ *
+ * `ekg_placed` is deliberately NOT here. Most of this practice's cases run
+ * as two visits, and on the assessment visit no leads are placed — so
+ * requiring it forced the clinician to assert a monitoring step that never
+ * happened just to reach the note. It is gated instead at the first IV
+ * sedative, where it is actually load-bearing; see `ivSedationReadiness`.
  *
  * `allergies` is required because the printed note previously rendered a
  * blank allergy field as "NKDA" — turning "nobody asked" into a positive
@@ -52,7 +58,6 @@ export const PHASE1_REQUIRED_FIELDS: ReadonlyArray<Phase1FieldSpec> = [
   { id: 'asa_class', label: 'ASA classification', step: 6 },
   { id: 'npo_confirmed', label: 'NPO confirmation', step: 6 },
   { id: 'consent_obtained', label: 'Informed consent obtained', step: 6 },
-  { id: 'ekg_placed', label: 'EKG leads placed', step: 6 },
   { id: 'emergency_drugs_available', label: 'Emergency drugs available', step: 6 },
   { id: 'monitoring_equipment_checked', label: 'Monitors functional', step: 6 },
 ];

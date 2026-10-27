@@ -13,6 +13,7 @@ import { useAlarms, unlockAudio } from '@/composables/useAlarms';
 import { useDockVisibility } from '@/composables/useDockVisibility';
 import { useWakeLock } from '@/composables/useWakeLock';
 import { useCaseReset } from '@/composables/useCaseReset';
+import { useNoteFreeze } from '@/composables/useNoteFreeze';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
 import { readPersistedSavedAt, isStaleSession } from '@/stores/persistence';
@@ -39,6 +40,10 @@ const showSedationDock = computed(() => route.path === '/phase/3');
 const patient = usePatientStore();
 const eventLog = useEventLogStore();
 const { reset: resetCase } = useCaseReset();
+
+// Turns a signed, concluded encounter into a record that survives the next
+// case opening on this tablet.
+useNoteFreeze();
 
 const resumeGateOpen = ref(false);
 const resumeSavedDate = ref('');

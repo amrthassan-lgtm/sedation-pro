@@ -187,6 +187,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
           tone="versed"
           name="Versed"
           dose="+2 mg"
+          :disabled="!dosing.readiness.value.ready"
           @click="dosing.logIvVersed(2, 'dock')"
         />
         <UiDrugButton
@@ -194,6 +195,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
           tone="fentanyl"
           name="Fent"
           dose="+25 mcg"
+          :disabled="!dosing.readiness.value.ready"
           @click="dosing.logIvFentanyl(25, 'dock')"
         />
       </div>
@@ -208,6 +210,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
             tone="versed"
             name="Versed"
             dose="+0.5 mg"
+            :disabled="!dosing.readiness.value.ready"
             @click="dosing.logIvVersed(0.5, 'dock')"
           />
           <UiDrugButton
@@ -215,6 +218,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
             tone="versed"
             name="Versed"
             dose="+1.0 mg"
+            :disabled="!dosing.readiness.value.ready"
             @click="dosing.logIvVersed(1, 'dock')"
           />
           <UiDrugButton
@@ -222,6 +226,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
             tone="versed"
             name="Versed"
             dose="+2.0 mg"
+            :disabled="!dosing.readiness.value.ready"
             @click="dosing.logIvVersed(2, 'dock')"
           />
           <UiDrugButton
@@ -229,6 +234,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
             tone="fentanyl"
             name="Fent"
             dose="+25 mcg"
+            :disabled="!dosing.readiness.value.ready"
             @click="dosing.logIvFentanyl(25, 'dock')"
           />
           <UiDrugButton
@@ -236,6 +242,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
             tone="fentanyl"
             name="Fent"
             dose="+50 mcg"
+            :disabled="!dosing.readiness.value.ready"
             @click="dosing.logIvFentanyl(50, 'dock')"
           />
           <UiDrugButton
@@ -243,6 +250,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
             tone="fentanyl"
             name="Fent"
             dose="+100 mcg"
+            :disabled="!dosing.readiness.value.ready"
             @click="dosing.logIvFentanyl(100, 'dock')"
           />
         </div>

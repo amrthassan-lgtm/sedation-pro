@@ -17,7 +17,28 @@ const now = useNow(15_000);
 
 const { currentPhase } = storeToRefs(session);
 const { canUndo, count: undoCount } = storeToRefs(undo);
-const { completeness, isPhase1Complete, safetyAlerts } = storeToRefs(patient);
+const { completeness, isPhase1Complete, safetyAlerts, ekgPlaced } = storeToRefs(patient);
+
+/** The phases where a sedative can actually be given. */
+const SEDATION_PHASES: ReadonlySet<Phase> = new Set<Phase>(['phase2', 'phase3']);
+
+/**
+ * Readiness is not a patient risk, so it is kept out of `safetyAlerts` —
+ * those describe the patient, this describes the room. It renders in the
+ * same strip because that strip is the only thing on screen at all times in
+ * portrait, where the Phase 3 rail never renders at all.
+ *
+ * Scoped to the sedation phases so a case that has only just opened is not
+ * nagged about leads nobody has had a chance to place yet.
+ */
+const readinessAlerts = computed(() =>
+  SEDATION_PHASES.has(currentPhase.value) && !ekgPlaced.value
+    ? ([{ code: 'ekg', label: 'EKG not confirmed', tone: 'danger' }] as const)
+    : ([] as const),
+);
+
+/** Readiness first — it is the one the clinician can act on right now. */
+const barAlerts = computed(() => [...readinessAlerts.value, ...safetyAlerts.value]);
 
 /**
  * "Saved · HH:MM" pill text. Hides itself until the first autosave fires so
@@ -36,7 +57,8 @@ const savedLabel = computed<string | null>(() => {
 const phaseMeta: Record<Phase, { label: string; sub: string }> = {
   quickref: { label: 'Quick Reference', sub: 'Emergency protocols + drug doses' },
   inventory: { label: 'Drug Inventory', sub: 'Emergency medication stock & expiry' },
-  settings: { label: 'Settings', sub: 'Open Dental connection' },
+  settings: { label: 'Settings', sub: 'Practice setup' },
+  notes: { label: 'Saved Notes', sub: 'Signed encounters' },
   phase1: { label: 'Phase 1 · Assessment', sub: 'Pre-sedation clearance' },
   phase2: { label: 'Phase 2 · Oral Meds', sub: 'Pre-op anxiolytic' },
   phase3: { label: 'Phase 3 · IV Sedation', sub: 'Drug administration' },
@@ -141,9 +163,9 @@ function emergency() {
           <span class="sticky-bar-phase-sub">{{ meta.sub }}</span>
         </template>
       </div>
-      <div v-if="safetyAlerts.length" class="sticky-bar-alerts">
+      <div v-if="barAlerts.length" class="sticky-bar-alerts">
         <span
-          v-for="alert in safetyAlerts"
+          v-for="alert in barAlerts"
           :key="alert.code"
           class="sticky-bar-alert"
           :class="`sticky-bar-alert--${alert.tone}`"

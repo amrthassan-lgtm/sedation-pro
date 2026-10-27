@@ -67,10 +67,17 @@ function rowTone(c: ClassifiedItem): SectionTone {
   return 'good';
 }
 
-function formatExpiryMonth(expiresOn: string): string {
-  const match = /^(\d{4})-(\d{2})/.exec(expiresOn);
+// Drug stock is labelled to the month; AED consumables carry a printed
+// day. Render whichever precision the row actually has — widening a dated
+// pad to its whole month would claim nine days the manufacturer didn't.
+function formatExpiry(expiresOn: string): string {
+  const match = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(expiresOn);
   if (!match) return '—';
-  return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1)).toLocaleDateString(undefined, {
+  const day = match[3];
+  return new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, day === undefined ? 1 : Number(day)),
+  ).toLocaleDateString(undefined, {
+    ...(day === undefined ? {} : { day: 'numeric' }),
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',
@@ -81,7 +88,7 @@ function metaLine(item: InventoryItem): string {
   return [
     item.lot === '' ? 'Lot —' : `Lot ${item.lot}`,
     `Qty ${item.quantity}`,
-    `Exp ${formatExpiryMonth(item.expiresOn)}`,
+    `Exp ${formatExpiry(item.expiresOn)}`,
   ].join(' · ');
 }
 
@@ -225,6 +232,9 @@ function openProtocol(id: string): void {
                 <UiStatusPill v-if="entry.item.onOrder" severity="empty">On order</UiStatusPill>
                 <UiStatusPill v-if="entry.item.category === 'sedation'" severity="empty">
                   Sedation cart
+                </UiStatusPill>
+                <UiStatusPill v-if="entry.item.category === 'equipment'" severity="empty">
+                  AED
                 </UiStatusPill>
               </span>
               <span

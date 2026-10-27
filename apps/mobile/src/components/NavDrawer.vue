@@ -7,6 +7,8 @@ import { useAudioStore } from '@/stores/audio';
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
+import { useFormularyStore } from '@/stores/formulary';
+import { useNoteArchiveStore } from '@/stores/note-archive';
 import { useCaseReset } from '@/composables/useCaseReset';
 import { useTheme, type ThemeChoice } from '@/composables/useTheme';
 import { UiModal, UiStatusPill } from '@sedation-pro/ui';
@@ -18,7 +20,6 @@ import {
 } from '@/composables/useInventoryStatus';
 import { readChimeLog } from '@/composables/useAlarms';
 import { hasCredentials } from '@/services/od-credentials';
-import { DEFAULT_FORMULARY } from '@sedation-pro/clinical';
 import { snapDecision } from './navDrawerSwipe';
 
 interface NavPhaseEntry {
@@ -36,6 +37,7 @@ const route = useRoute();
 const session = useSessionStore();
 const patient = usePatientStore();
 const eventLog = useEventLogStore();
+const formulary = useFormularyStore();
 
 const { drawerOpen, currentPhase } = storeToRefs(session);
 const { name: patientName, mrn, age, completeness, isPhase1Complete } = storeToRefs(patient);
@@ -45,7 +47,7 @@ const { count: eventCount } = storeToRefs(eventLog);
 // no draw animation; the drawer is opened many times a day and a replaying
 // animation would be noise. BASE_URL for subpath/custom-domain safety.
 const logoSrc = `${import.meta.env.BASE_URL}logo-source.svg`;
-const practiceName = DEFAULT_FORMULARY.practiceName;
+const practiceName = computed(() => formulary.practiceName);
 
 const initial = computed(() => {
   const raw = patientName.value.trim();
@@ -129,6 +131,23 @@ async function goInventory() {
  * a store: the pairing changes about once, and the drawer opens fresh.
  */
 const settingsActive = computed(() => route.path === '/settings');
+
+/**
+ * Saved notes are records of finished encounters, so the row sits with
+ * Settings below the case rows rather than among the phases.
+ */
+const archive = useNoteArchiveStore();
+const notesActive = computed(() => route.path.startsWith('/notes'));
+const notesSub = computed(() =>
+  archive.count === 0
+    ? 'Nothing saved yet'
+    : `${archive.count} signed ${archive.count === 1 ? 'note' : 'notes'}`,
+);
+
+async function goNotes() {
+  await router.push('/notes');
+  session.closeDrawer();
+}
 const chartConnected = computed(() => hasCredentials());
 
 async function goSettings() {
@@ -474,6 +493,19 @@ function onTouchEnd() {
             severity="caution"
             :label="String(inventorySummary.expiringSoon)"
           />
+          <span class="nav-phase-chevron" aria-hidden="true">›</span>
+        </button>
+        <button
+          type="button"
+          class="nav-phase nav-phase--set"
+          :class="{ 'is-current': notesActive }"
+          @click="goNotes"
+        >
+          <span class="nav-phase-icon nav-phase-icon--set" aria-hidden="true">🗎</span>
+          <span class="nav-phase-main">
+            <span class="nav-phase-title">Saved Notes</span>
+            <span class="nav-phase-sub">{{ notesSub }}</span>
+          </span>
           <span class="nav-phase-chevron" aria-hidden="true">›</span>
         </button>
         <button

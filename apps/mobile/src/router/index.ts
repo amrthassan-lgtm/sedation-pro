@@ -17,6 +17,7 @@ const PHASE_ROUTES: Record<string, Phase> = {
   // they are on Settings, which is the one screen that then misreports where
   // they are.
   '/settings': 'settings',
+  '/notes': 'notes',
 };
 
 const GATED_PHASES: ReadonlySet<Phase> = new Set(['phase2', 'phase3', 'phase4']);
@@ -63,6 +64,20 @@ export const router = createRouter({
       path: '/inventory',
       name: 'inventory',
       component: () => import('@/views/InventoryView.vue'),
+    },
+    // Saved notes are records of FINISHED encounters, so they are not gated
+    // on the current case's signature — the note being viewed carries its
+    // own, from the day it was signed.
+    {
+      path: '/notes',
+      name: 'saved-notes',
+      component: () => import('@/views/SavedNotesView.vue'),
+    },
+    {
+      path: '/notes/:id',
+      name: 'saved-note',
+      component: () => import('@/views/ClinicalNoteView.vue'),
+      props: true,
     },
     {
       path: '/clinical-note',

@@ -16,6 +16,7 @@ import {
 } from '@sedation-pro/clinical';
 
 import { persistRefs } from './persistence';
+import { useFormularyStore } from './formulary';
 
 /**
  * A live safety alert surfaced in the sticky bar. Computed from the patient
@@ -63,16 +64,19 @@ export interface SafetyAlert {
  * Phase 4 will widen this to every form input.
  */
 export const usePatientStore = defineStore('patient', () => {
+  const formulary = useFormularyStore();
+  const seedProvider = (): string => formulary.picklists.providers[0] ?? '';
+  const seedAssistant = (): string => formulary.picklists.dentalAssistants[0] ?? '';
+
   const name = ref('');
   const mrn = ref('');
-  // Seeded to the practice's first roster entry (formulary
-  // picklists.providers[0] / dentalAssistants[0]); default.test.ts guards
-  // that these literals stay in sync with the shipped formulary.
-  const provider = ref('Dr. Amr Hassan');
+  // Seeded from the practice's own roster, not a literal: a doctor removed
+  // in Settings must not reappear on the next case. Empty roster seeds ''.
+  const provider = ref(seedProvider());
   /** "; "-separated dental assistant name(s) on the case (names embed a
    * ", Title", so they can't be comma-joined). Surfaces in the clinical
    * note's header block and the procedure narrative. */
-  const assistants = ref('Raycha Dobbins, EFDA');
+  const assistants = ref(seedAssistant());
   /** Procedure description — e.g. "EXT #19". Optional; surfaces in the note narrative. */
   const procedure = ref('');
   const careName = ref('');
@@ -450,8 +454,8 @@ export const usePatientStore = defineStore('patient', () => {
   function reset() {
     name.value = '';
     mrn.value = '';
-    provider.value = 'Dr. Amr Hassan';
-    assistants.value = 'Raycha Dobbins, EFDA';
+    provider.value = seedProvider();
+    assistants.value = seedAssistant();
     procedure.value = '';
     careName.value = '';
     carePhone.value = '';

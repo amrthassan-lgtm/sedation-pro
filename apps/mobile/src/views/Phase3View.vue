@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 import { useIVStore } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
 import { usePatientStore } from '@/stores/patient';
+import { useFormularyStore } from '@/stores/formulary';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
@@ -32,7 +33,7 @@ import {
   UiTextInput,
   UiTimerPill,
 } from '@sedation-pro/ui';
-import { DEFAULT_FORMULARY, premedWait } from '@sedation-pro/clinical';
+import { premedWait } from '@sedation-pro/clinical';
 import type { ActionState, BpValue, ChipOption, TimerPillStatus } from '@sedation-pro/ui';
 
 const iv = useIVStore();
@@ -40,6 +41,7 @@ const local = useLocalAnestheticStore();
 const patient = usePatientStore();
 const undo = useUndoStore();
 const eventLog = useEventLogStore();
+const formulary = useFormularyStore();
 const now = useNow(1000);
 
 const { weightLb, diabetic, safetyAlerts, baselineBp, baselineSpo2, baselineGlucose } =
@@ -111,17 +113,17 @@ const {
   options: siteOptions,
   isOther: siteIsOther,
   selectValue: siteValue,
-} = useOtherableSelect(ivSite, DEFAULT_FORMULARY.picklists.ivSites);
+} = useOtherableSelect(ivSite, () => formulary.picklists.ivSites);
 const {
   options: fluidOptions,
   isOther: fluidIsOther,
   selectValue: fluidValue,
-} = useOtherableSelect(ivFluid, DEFAULT_FORMULARY.picklists.ivFluids);
+} = useOtherableSelect(ivFluid, () => formulary.picklists.ivFluids);
 // Catheter gauge as a chip row — straight from the practice formulary
 // (default 18/20/22/24). No "Other" fall-back; the standard four cover
 // every dental sedation case and chips read at a glance vs a dropdown.
 const gaugeChipOptions = computed<ChipOption<string>[]>(() =>
-  DEFAULT_FORMULARY.picklists.catheterGauges.map((g) => ({ value: g, label: g })),
+  formulary.picklists.catheterGauges.map((g) => ({ value: g, label: g })),
 );
 
 // Venipuncture attempts: clinical reality says 1-3 is normal and 4+
@@ -309,7 +311,7 @@ const premedChip = computed(() => {
 // does *on top of* logging (opening the reversal process panel) stays
 // here as local UI state.
 
-const { logIvVersed, logIvFentanyl, logIvZofran } = useIvDosing();
+const { logIvVersed, logIvFentanyl, logIvZofran, readiness } = useIvDosing();
 
 // -------- Live drug timer pills (use the engine + now ticker) ---------------
 
@@ -624,6 +626,7 @@ function onNaloxone() {
           sub="0.2 ml"
           :state="versedTestState"
           :logged-at="fmtClock(lastVersedAt)"
+          :disabled="!readiness.ready"
           @click="logIvVersed(1, 'test dose')"
         />
       </div>
@@ -662,6 +665,7 @@ function onNaloxone() {
               name="Versed"
               dose="1 mg"
               sub="0.2 ml"
+              :disabled="!readiness.ready"
               @click="logIvVersed(1, 'additional')"
             />
             <UiDrugButton
@@ -669,6 +673,7 @@ function onNaloxone() {
               name="Versed"
               dose="2 mg"
               sub="0.4 ml"
+              :disabled="!readiness.ready"
               @click="logIvVersed(2, 'additional')"
             />
           </div>
@@ -680,6 +685,7 @@ function onNaloxone() {
               name="Fentanyl"
               dose="25 mcg"
               sub="0.5 ml"
+              :disabled="!readiness.ready"
               @click="logIvFentanyl(25, 'additional')"
             />
             <UiDrugButton
@@ -687,6 +693,7 @@ function onNaloxone() {
               name="Fentanyl"
               dose="50 mcg"
               sub="1.0 ml"
+              :disabled="!readiness.ready"
               @click="logIvFentanyl(50, 'additional')"
             />
           </div>

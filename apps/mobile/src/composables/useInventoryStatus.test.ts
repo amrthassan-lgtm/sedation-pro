@@ -144,6 +144,14 @@ describe('live inventory data invariants', () => {
     expect(sources.map((i) => i.id)).toEqual(['lidocaine-cardiac']);
   });
 
+  it('equipment never maps to a protocol callout (pads are not drugs)', () => {
+    for (const inv of EMERGENCY_INVENTORY) {
+      if (inv.category === 'equipment') {
+        expect(inv.protocolDrugNames, `${inv.id} must not map`).toBeUndefined();
+      }
+    }
+  });
+
   it('the protocol gap list is exactly the two open purchasing decisions', () => {
     // Tripwire: a future protocol edit that adds a new drug callout (or a
     // mapping typo that orphans an existing one) fails here on purpose.
@@ -153,11 +161,14 @@ describe('live inventory data invariants', () => {
     expect(protocolGapList()).toEqual(['Methylprednisolone (Solu-Medrol)', 'Phenylephrine']);
   });
 
-  it('controlled substances appear as callouts but are excluded from the gap list', () => {
+  it('controlled substances are covered by sedation-cart stock, not an exemption', () => {
     const callouts = protocolCalloutNames();
     for (const name of ['Midazolam', 'Fentanyl']) {
       expect(callouts).toContain(name);
       expect(protocolGapList()).not.toContain(name);
+      const sources = EMERGENCY_INVENTORY.filter((i) => i.protocolDrugNames?.includes(name));
+      expect(sources.length, `${name} has a stocked row`).toBeGreaterThan(0);
+      for (const src of sources) expect(src.category).toBe('sedation');
     }
     // Diazepam is no longer a callout at all — its seizure step was
     // demoted to a text aside (no IV diazepam stocked, owner 2026-08).

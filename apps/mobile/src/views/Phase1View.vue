@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import { alcoholBucketValue, usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
+import { useFormularyStore } from '@/stores/formulary';
 import { useCaseReset, PENDING_MRN_KEY } from '@/composables/useCaseReset';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
 import { useInventoryStatus } from '@/composables/useInventoryStatus';
@@ -48,6 +49,7 @@ import {
 } from '@sedation-pro/clinical';
 
 const router = useRouter();
+const formulary = useFormularyStore();
 const patient = usePatientStore();
 const undo = useUndoStore();
 const eventLog = useEventLogStore();
@@ -127,7 +129,7 @@ const {
   options: providerOptions,
   isOther: providerIsOther,
   selectValue: providerValue,
-} = useOtherableSelect(provider, DEFAULT_FORMULARY.picklists.providers);
+} = useOtherableSelect(provider, () => formulary.picklists.providers);
 
 // Dental assistants: a per-practice roster from the formulary (swapped at
 // setup), not free text. `assistants` stays a single string so the clinical
@@ -135,7 +137,7 @@ const {
 // ", Title" and would otherwise be unsplittable. Selection mirrors formulary
 // order for a stable, readable record.
 const ASSISTANT_SEP = '; ';
-const assistantRoster = DEFAULT_FORMULARY.picklists.dentalAssistants;
+const assistantRoster = computed(() => formulary.picklists.dentalAssistants);
 const selectedAssistants = computed<ReadonlySet<string>>(
   () =>
     new Set(
@@ -152,7 +154,7 @@ function toggleAssistant(nameTitle: string): void {
   const next = new Set(selectedAssistants.value);
   if (next.has(nameTitle)) next.delete(nameTitle);
   else next.add(nameTitle);
-  assistants.value = assistantRoster.filter((a) => next.has(a)).join(ASSISTANT_SEP);
+  assistants.value = assistantRoster.value.filter((a) => next.has(a)).join(ASSISTANT_SEP);
 }
 
 /**
@@ -445,10 +447,9 @@ const diabetesGuidance = computed(() => {
 // Caregiver relation — same picklist Phase 4's discharge companion uses.
 // Phase 4 auto-fills its companion fields from these caregiver entries on
 // mount so the responsible adult is typically only named once at intake.
-const careRelationOptions = DEFAULT_FORMULARY.picklists.companionRelations.map((r) => ({
-  value: r,
-  label: r,
-}));
+const careRelationOptions = computed(() =>
+  formulary.picklists.companionRelations.map((r) => ({ value: r, label: r })),
+);
 
 // -------- Live derived UI bits ---------------------------------------------
 

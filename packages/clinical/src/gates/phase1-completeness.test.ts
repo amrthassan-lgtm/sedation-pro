@@ -24,7 +24,6 @@ const ALL_FILLED: Record<string, unknown> = {
   asa_class: 'II',
   npo_confirmed: true,
   consent_obtained: true,
-  ekg_placed: true,
   emergency_drugs_available: true,
   monitoring_equipment_checked: true,
 };
@@ -48,8 +47,8 @@ describe('phase1Completeness', () => {
     ).toBe(true);
   });
 
-  it('ships exactly 20 unconditional required fields across 6 steps', () => {
-    expect(PHASE1_REQUIRED_FIELDS).toHaveLength(20);
+  it('ships exactly 19 unconditional required fields across 6 steps', () => {
+    expect(PHASE1_REQUIRED_FIELDS).toHaveLength(19);
     const steps = new Set(PHASE1_REQUIRED_FIELDS.map((f) => f.step));
     expect(steps.size).toBe(6);
   });
@@ -57,8 +56,8 @@ describe('phase1Completeness', () => {
   it('returns complete=true when all fields are filled', () => {
     const r = phase1Completeness({ values: ALL_FILLED });
     expect(r.complete).toBe(true);
-    expect(r.done).toBe(20);
-    expect(r.total).toBe(20);
+    expect(r.done).toBe(19);
+    expect(r.total).toBe(19);
     expect(r.percent).toBe(100);
     expect(r.missing).toEqual([]);
   });
@@ -67,7 +66,7 @@ describe('phase1Completeness', () => {
     const partial = { ...ALL_FILLED, pt: '', mrn: '   ' };
     const r = phase1Completeness({ values: partial });
     expect(r.complete).toBe(false);
-    expect(r.done).toBe(18);
+    expect(r.done).toBe(17);
     expect(r.missing.map((m) => m.id).sort()).toEqual(['mrn', 'pt']);
     const ptField = r.missing.find((m) => m.id === 'pt');
     expect(ptField?.step).toBe(1);
@@ -89,14 +88,12 @@ describe('phase1Completeness', () => {
     const r = phase1Completeness({
       values: {
         ...ALL_FILLED,
-        ekg_placed: false,
         emergency_drugs_available: false,
         monitoring_equipment_checked: false,
       },
     });
     expect(r.complete).toBe(false);
     expect(r.missing.map((m) => m.id).sort()).toEqual([
-      'ekg_placed',
       'emergency_drugs_available',
       'monitoring_equipment_checked',
     ]);
@@ -105,7 +102,7 @@ describe('phase1Completeness', () => {
   it('adds baseline_glucose to the required set when diabetic === yes', () => {
     const without = phase1Completeness({ values: ALL_FILLED, diabetic: 'yes' });
     expect(without.complete).toBe(false);
-    expect(without.total).toBe(21);
+    expect(without.total).toBe(20);
     expect(without.missing.some((m) => m.id === PHASE1_CONDITIONAL_GLUCOSE.id)).toBe(true);
 
     const withGlucose = phase1Completeness({
@@ -113,12 +110,12 @@ describe('phase1Completeness', () => {
       diabetic: 'yes',
     });
     expect(withGlucose.complete).toBe(true);
-    expect(withGlucose.total).toBe(21);
+    expect(withGlucose.total).toBe(20);
   });
 
   it('does not require glucose for non-diabetic patients', () => {
-    expect(phase1Completeness({ values: ALL_FILLED, diabetic: 'no' }).total).toBe(20);
-    expect(phase1Completeness({ values: ALL_FILLED, diabetic: null }).total).toBe(20);
+    expect(phase1Completeness({ values: ALL_FILLED, diabetic: 'no' }).total).toBe(19);
+    expect(phase1Completeness({ values: ALL_FILLED, diabetic: null }).total).toBe(19);
   });
 
   it('rounds the percent to the nearest integer', () => {

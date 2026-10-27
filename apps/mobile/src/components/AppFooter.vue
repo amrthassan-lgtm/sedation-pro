@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { CLINICAL_LIB_VERSION, DEFAULT_FORMULARY } from '@sedation-pro/clinical';
+import { computed } from 'vue';
+
+import { CLINICAL_LIB_VERSION } from '@sedation-pro/clinical';
 import { UI_LIB_VERSION } from '@sedation-pro/ui';
 
 import { INVENTORY_AS_OF } from '@/data/emergency-inventory';
+import { useFormularyStore } from '@/stores/formulary';
 
 /**
  * App footer: the single-source logo, brand name, and library versions.
@@ -13,7 +16,8 @@ import { INVENTORY_AS_OF } from '@/data/emergency-inventory';
  */
 const year = new Date().getFullYear();
 const logoSrc = `${import.meta.env.BASE_URL}logo-source.svg`;
-const practiceName = DEFAULT_FORMULARY.practiceName;
+const formulary = useFormularyStore();
+const practiceName = computed(() => formulary.practiceName);
 </script>
 
 <template>
