@@ -161,11 +161,14 @@ describe('live inventory data invariants', () => {
     expect(protocolGapList()).toEqual(['Methylprednisolone (Solu-Medrol)', 'Phenylephrine']);
   });
 
-  it('controlled substances appear as callouts but are excluded from the gap list', () => {
+  it('controlled substances are covered by sedation-cart stock, not an exemption', () => {
     const callouts = protocolCalloutNames();
     for (const name of ['Midazolam', 'Fentanyl']) {
       expect(callouts).toContain(name);
       expect(protocolGapList()).not.toContain(name);
+      const sources = EMERGENCY_INVENTORY.filter((i) => i.protocolDrugNames?.includes(name));
+      expect(sources.length, `${name} has a stocked row`).toBeGreaterThan(0);
+      for (const src of sources) expect(src.category).toBe('sedation');
     }
     // Diazepam is no longer a callout at all — its seizure step was
     // demoted to a text aside (no IV diazepam stocked, owner 2026-08).

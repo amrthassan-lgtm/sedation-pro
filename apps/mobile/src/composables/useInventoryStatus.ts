@@ -1,11 +1,7 @@
 import { EMERGENCY_PROTOCOLS, expiryStatus, type ExpiryStatus } from '@sedation-pro/clinical';
 import type { Severity } from '@sedation-pro/clinical';
 
-import {
-  CONTROLLED_EXCLUSIONS,
-  EMERGENCY_INVENTORY,
-  type InventoryItem,
-} from '@/data/emergency-inventory';
+import { EMERGENCY_INVENTORY, type InventoryItem } from '@/data/emergency-inventory';
 
 /**
  * Single source for every inventory-derived readout (drawer sub-line,
@@ -131,8 +127,9 @@ export function protocolCalloutNames(): ReadonlyArray<string> {
 }
 
 /**
- * Protocol callout drugs with no mapped inventory item and no
- * controlled-substance exemption — i.e. genuine purchasing decisions.
+ * Protocol callout drugs with no mapped inventory item — i.e. genuine
+ * purchasing decisions. Controlled substances need no exemption: the
+ * sedation-cart rows map them like any other stock.
  */
 export function protocolGapList(
   items: ReadonlyArray<InventoryItem> = EMERGENCY_INVENTORY,
@@ -141,9 +138,7 @@ export function protocolGapList(
   for (const item of items) {
     for (const name of item.protocolDrugNames ?? []) mapped.add(name);
   }
-  return protocolCalloutNames().filter(
-    (name) => !mapped.has(name) && !CONTROLLED_EXCLUSIONS.includes(name),
-  );
+  return protocolCalloutNames().filter((name) => !mapped.has(name));
 }
 
 export interface InventoryStatus {

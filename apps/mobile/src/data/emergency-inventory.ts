@@ -62,17 +62,6 @@ export interface InventoryItem {
 /** Vintage of the transcribed paper sheet — bump when re-verifying stock. */
 export const INVENTORY_AS_OF = '2026-08';
 
-/**
- * Protocol drug callouts that are deliberately NOT part of the stocked
- * emergency kit: controlled substances live in the sedation cart with
- * their own tracking. Excluded from the "not stocked" gap report so it
- * only surfaces genuine purchasing decisions. (Diazepam left this list
- * 2026-08 when its seizure callout was demoted to a text aside — the
- * practice stocks no IV diazepam. These two exclusions retire once the
- * sedation-cart rows land in this file with their own mappings.)
- */
-export const CONTROLLED_EXCLUSIONS: ReadonlyArray<string> = ['Midazolam', 'Fentanyl'];
-
 export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   {
     id: 'epi-autoinjector-015',
@@ -388,6 +377,102 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     onOrder: { sku: 'DEXT5050V-E' },
     notes: 'New line item — fills the hypoglycemia IV-route gap',
     protocolDrugNames: ['D50W'],
+  },
+  // Sedation cart (the safe), read from the packaging 2026-10. Quantity is
+  // one per box/bottle until the DA's count lands.
+  {
+    id: 'midazolam-10ml',
+    drug: 'Midazolam Injection',
+    description: '5 mg/mL — 10 × 10 mL multiple-dose vials',
+    lot: 'G1880032',
+    ndc: '23155-601-42',
+    quantity: 1,
+    expiresOn: '2028-05',
+    category: 'sedation',
+    notes: 'Vial count pending',
+    protocolDrugNames: ['Midazolam'],
+  },
+  {
+    id: 'fentanyl-2ml',
+    drug: 'Fentanyl Citrate Injection',
+    description: '50 mcg/mL — 25 × 2 mL single-dose vials',
+    lot: 'L25067',
+    ndc: '0641-6027-25',
+    quantity: 1,
+    expiresOn: '2028-11',
+    category: 'sedation',
+    notes: 'Vial count pending',
+    protocolDrugNames: ['Fentanyl'],
+  },
+  {
+    id: 'fentanyl-50ml',
+    drug: 'Fentanyl Citrate Injection',
+    description: '50 mcg/mL — 50 mL single-dose vial',
+    lot: 'K25113',
+    ndc: '0641-6030-01',
+    quantity: 1,
+    expiresOn: '2028-10',
+    category: 'sedation',
+    protocolDrugNames: ['Fentanyl'],
+  },
+  {
+    // Distinct from the crash-cart ondansetron row: the owner keeps one in
+    // each cart (part of the fentanyl protocol here).
+    id: 'ondansetron-20ml',
+    drug: 'Ondansetron Injection',
+    description: '2 mg/mL — 20 mL multiple-dose vial',
+    lot: 'G1830058',
+    ndc: '72266-124-01',
+    quantity: 1,
+    expiresOn: '2028-02',
+    category: 'sedation',
+    protocolDrugNames: ['Ondansetron'],
+  },
+  {
+    id: 'triazolam-025',
+    drug: 'Triazolam Tablets',
+    description: '0.25 mg — bottle of 100',
+    lot: 'MA04039A',
+    ndc: '70710-1289-1',
+    quantity: 1,
+    expiresOn: '2027-08',
+    category: 'sedation',
+    notes: 'Tablet count pending',
+  },
+  {
+    id: 'lorazepam-2',
+    drug: 'Lorazepam Tablets',
+    description: '2 mg — bottle of 100',
+    lot: '100071801',
+    ndc: '0093-3427-01',
+    quantity: 1,
+    expiresOn: '2027-04',
+    category: 'sedation',
+    notes: 'Tablet count pending',
+  },
+  {
+    id: 'diazepam-5',
+    drug: 'Diazepam Tablets',
+    description: '5 mg — bottle of 100',
+    lot: '100073178',
+    ndc: '0172-3926-60',
+    quantity: 1,
+    expiresOn: '2027-05',
+    category: 'sedation',
+    notes: 'Tablet count pending',
+  },
+  {
+    // The label prints its values one row low (serial on the EXP line);
+    // lot and expiry here are the values that belong to those fields.
+    id: 'hydroxyzine-50',
+    drug: 'Hydroxyzine HCl Tablets',
+    description: '50 mg — bottle of 100',
+    lot: '120166',
+    ndc: '16714-083-10',
+    quantity: 1,
+    expiresOn: '2028-04',
+    category: 'sedation',
+    notes: 'Tablet count pending',
   },
   {
     id: 'aed-pads-adult',
