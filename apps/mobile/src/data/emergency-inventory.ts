@@ -81,6 +81,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0115-1694-30',
     quantity: 1,
     expiresOn: '2026-08',
+    onOrder: { sku: 'AUVI3-R', substitution: 'Auvi-Q 0.3 mg auto-injector' },
     protocolDrugNames: ['Epinephrine'],
   },
   {
@@ -124,16 +125,6 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     protocolDrugNames: ['Adenosine'],
   },
   {
-    id: 'epi-vial-adrenalin',
-    drug: 'Adrenalin (epinephrine)',
-    description: '1 mg/mL vial',
-    lot: '80192',
-    ndc: '42023-159-01',
-    quantity: 2,
-    expiresOn: '2026-06',
-    protocolDrugNames: ['Epinephrine'],
-  },
-  {
     id: 'amiodarone-150-a',
     drug: 'Amiodarone HCl',
     description: '150 mg / 3 mL',
@@ -171,6 +162,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '68599-1311-3',
     quantity: 1,
     expiresOn: '2026-09',
+    onOrder: { sku: 'ASPI81-36O', substitution: '81 mg chewable ×36' },
     protocolDrugNames: ['Aspirin'],
   },
   {
@@ -211,6 +203,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0641-0376-21',
     quantity: 2,
     expiresOn: '2026-08',
+    onOrder: { sku: 'DIPH501V-R' },
     protocolDrugNames: ['Diphenhydramine'],
   },
   {
@@ -312,16 +305,6 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     protocolDrugNames: ['Naloxone'],
   },
   {
-    id: 'narcan-spray',
-    drug: 'Narcan (naloxone) Nasal Spray',
-    description: '4 mg',
-    lot: '230745',
-    ndc: '69547-627-02',
-    quantity: 2,
-    expiresOn: '2026-05',
-    protocolDrugNames: ['Naloxone'],
-  },
-  {
     id: 'nitroglycerin',
     drug: 'Nitroglycerin Sublingual Tablets',
     description: '0.4 mg — bottle of 25',
@@ -374,6 +357,31 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     onOrder: { sku: 'DEXT5050V-E' },
     notes: 'New line item — fills the hypoglycemia IV-route gap',
     protocolDrugNames: ['D50W'],
+  },
+  {
+    // Replaces the two 12 mg/4 mL vials as they expire (Nov/Dec 2026):
+    // a 12 mg protocol dose is two of these.
+    id: 'adenosine-6-order',
+    drug: 'Adenosine Injection',
+    description: '6 mg / 2 mL',
+    lot: '',
+    ndc: '',
+    quantity: 2,
+    expiresOn: '',
+    onOrder: { sku: 'ADEN32V-R' },
+    protocolDrugNames: ['Adenosine'],
+  },
+  {
+    id: 'solu-medrol',
+    drug: 'Solu-Medrol (methylprednisolone)',
+    description: '125 mg / 2 mL Act-O-Vial',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '',
+    onOrder: { sku: 'SOLU1252V-R' },
+    notes: 'New line item — fills the anaphylaxis steroid gap',
+    protocolDrugNames: ['Methylprednisolone (Solu-Medrol)'],
   },
   // Sedation cart (the safe), read from the packaging 2026-10. Quantity is
   // one per box/bottle until the DA's count lands.

@@ -418,8 +418,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Place EKG monitor / Check all vitals' },
       { text: 'After 2nd Nitro dose: Call 911', severity: 'critical' },
       {
-        text: 'Aspirin CHEWED',
-        drug: { name: 'Aspirin', dose: '325 mg', route: 'PO', notes: 'chewed, not swallowed' },
+        text: 'Aspirin 4 × 81 mg CHEWED',
+        drug: {
+          name: 'Aspirin',
+          dose: '324 mg',
+          route: 'PO',
+          notes: '4 × 81 mg chewable tablets, chewed, not swallowed',
+        },
       },
       {
         text: 'If pain continues: Fentanyl or N₂O',
@@ -440,15 +445,20 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'mi',
     category: 'cardiac-ischemia',
     name: 'Myocardial Infarction (HEART ATTACK)',
-    summary: 'Severe chest pain, diaphoresis, arm/jaw radiation · Call 911 + Aspirin 325mg',
+    summary: 'Severe chest pain, diaphoresis, arm/jaw radiation · Call 911 + Aspirin 4 × 81 mg',
     signs: ['severe chest pain', 'diaphoresis', 'arm radiation', 'jaw radiation'],
     steps: [
       { text: 'CALL 911 IMMEDIATELY', severity: 'critical' },
       { text: 'Supine position' },
       { text: 'O₂ 4L/min via nasal cannula (titrate to >94%)' },
       {
-        text: 'Aspirin CHEWED (not swallowed!)',
-        drug: { name: 'Aspirin', dose: '325 mg', route: 'PO', notes: 'chewed, not swallowed' },
+        text: 'Aspirin 4 × 81 mg CHEWED (not swallowed!)',
+        drug: {
+          name: 'Aspirin',
+          dose: '324 mg',
+          route: 'PO',
+          notes: '4 × 81 mg chewable tablets, chewed, not swallowed',
+        },
       },
       {
         text: 'Nitroglycerin SL (q5min, max 3 doses if no contraindication)',

@@ -152,13 +152,14 @@ describe('live inventory data invariants', () => {
     }
   });
 
-  it('the protocol gap list is exactly the two open purchasing decisions', () => {
+  it('the protocol gap list is exactly the open purchasing decisions', () => {
     // Tripwire: a future protocol edit that adds a new drug callout (or a
     // mapping typo that orphans an existing one) fails here on purpose.
     // Glucagon left this list 2026-08: the owner decided not to stock it
     // (IV office — the hypoglycemia protocol's no-IV branch is now
     // "establish access for D50W"), so it is no longer a callout at all.
-    expect(protocolGapList()).toEqual(['Methylprednisolone (Solu-Medrol)', 'Phenylephrine']);
+    // Solu-Medrol left this list 2026-11 when the owner ordered it.
+    expect(protocolGapList()).toEqual(['Phenylephrine']);
   });
 
   it('controlled substances are covered by sedation-cart stock, not an exemption', () => {
