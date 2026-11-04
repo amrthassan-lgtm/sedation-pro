@@ -1,7 +1,12 @@
 import { EMERGENCY_PROTOCOLS, expiryStatus, type ExpiryStatus } from '@sedation-pro/clinical';
 import type { Severity } from '@sedation-pro/clinical';
 
-import { EMERGENCY_INVENTORY, type InventoryItem } from '@/data/emergency-inventory';
+import {
+  EMERGENCY_INVENTORY,
+  PROTOCOL_COURSES,
+  type InventoryItem,
+  type ProtocolCourse,
+} from '@/data/emergency-inventory';
 
 /**
  * Single source for every inventory-derived readout (drawer sub-line,
@@ -96,6 +101,43 @@ export function protocolStockStatus(
   return best;
 }
 
+export interface CourseCoverage {
+  readonly drug: string;
+  readonly basis: string;
+  readonly needMg: number;
+  readonly haveMg: number;
+  readonly short: boolean;
+}
+
+/**
+ * In-date milligrams on hand for each protocol course, against what one
+ * full course needs. Expired and undated lots count as zero — they are
+ * not usable stock — and so do on-order rows, which carry no date until
+ * they arrive.
+ */
+export function protocolCourseCoverage(
+  classified: ReadonlyArray<ClassifiedItem>,
+  courses: ReadonlyArray<ProtocolCourse> = PROTOCOL_COURSES,
+): ReadonlyArray<CourseCoverage> {
+  return courses.map((course) => {
+    let haveMg = 0;
+    for (const c of classified) {
+      if (!c.item.protocolDrugNames?.includes(course.drug)) continue;
+      if (c.status.severity === 'limit') continue;
+      haveMg += c.item.quantity * (c.item.mgPerUnit ?? 0);
+    }
+    // Round away float dust (0.5 + 0.5 + 0.5) before comparing.
+    haveMg = Math.round(haveMg * 1000) / 1000;
+    return {
+      drug: course.drug,
+      basis: course.basis,
+      needMg: course.needMg,
+      haveMg,
+      short: haveMg < course.needMg,
+    };
+  });
+}
+
 export interface ProtocolRef {
   readonly id: string;
   readonly name: string;
@@ -148,6 +190,8 @@ export interface InventoryStatus {
   readonly expiringSoon: ReadonlyArray<ClassifiedItem>;
   readonly inDate: ReadonlyArray<ClassifiedItem>;
   readonly notStocked: ReadonlyArray<string>;
+  /** Protocol courses the in-date stock cannot complete. */
+  readonly courseShort: ReadonlyArray<CourseCoverage>;
   readonly subLine: string;
   statusFor(calloutName: string): Severity | null;
   usesFor(item: InventoryItem): ReadonlyArray<ProtocolRef>;
@@ -163,6 +207,7 @@ export function useInventoryStatus(now: number = Date.now()): InventoryStatus {
     expiringSoon: classified.filter((c) => c.status.severity === 'caution').sort(byUrgency),
     inDate: classified.filter((c) => c.status.severity === 'safe').sort(byUrgency),
     notStocked: protocolGapList(),
+    courseShort: protocolCourseCoverage(classified).filter((c) => c.short),
     subLine: inventorySubLine(summary),
     statusFor: (calloutName) => protocolStockStatus(calloutName, classified),
     usesFor: (item) => protocolsUsing(item.protocolDrugNames ?? []),

@@ -4,7 +4,11 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { UiBanner } from '@sedation-pro/ui';
 
-import { classifyInventory, summarizeInventory } from '@/composables/useInventoryStatus';
+import {
+  classifyInventory,
+  protocolCourseCoverage,
+  summarizeInventory,
+} from '@/composables/useInventoryStatus';
 
 /**
  * Launch-time expiry warning. Non-blocking by design — the launch
@@ -42,11 +46,16 @@ function dismissForToday(): void {
   }
 }
 
-const summary = computed(() => summarizeInventory(classifyInventory(nowMs)));
+const classified = classifyInventory(nowMs);
+const summary = computed(() => summarizeInventory(classified));
+// A drug can be in date yet too little to finish its protocol (one 1 mg
+// atropine syringe against a 3 mg course) — that must reach the same
+// banner, or it only surfaces to someone who opens the inventory screen.
+const shortCourses = computed(() => protocolCourseCoverage(classified).filter((c) => c.short));
 
 const visible = computed(
   () =>
-    summary.value.expired + summary.value.expiringSoon > 0 &&
+    summary.value.expired + summary.value.expiringSoon + shortCourses.value.length > 0 &&
     dismissedDay.value !== today &&
     // One warning per screen: the inventory view carries its own
     // always-on banner, Phase 1 renders the kit banner beside the
@@ -62,12 +71,17 @@ const title = computed(() => {
   const parts: string[] = [];
   if (expired > 0) parts.push(`${expired} emergency drug${expired === 1 ? '' : 's'} expired`);
   if (expiringSoon > 0) parts.push(`${expiringSoon} expiring soon`);
+  const short = shortCourses.value.length;
+  if (short > 0) parts.push(`${short} short of a full protocol course`);
   return parts.join(' · ');
 });
 
 const detail = computed(() => {
   const s = summary.value.soonest;
-  if (!s) return '';
+  if (!s) {
+    const names = shortCourses.value.map((c) => c.drug).join(', ');
+    return names ? `Reorder ${names}.` : '';
+  }
   const lead =
     s.daysLeft < 0 || !Number.isFinite(s.daysLeft)
       ? `${s.drug} needs replacement.`
@@ -90,7 +104,7 @@ function review(): void {
   <UiBanner
     v-if="visible"
     class="inv-alert no-print"
-    :tone="summary.expired > 0 ? 'limit' : 'caution'"
+    :tone="summary.expired + shortCourses.length > 0 ? 'limit' : 'caution'"
     icon="⚠"
     :title="title"
   >

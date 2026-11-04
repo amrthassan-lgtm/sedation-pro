@@ -58,12 +58,63 @@ export interface InventoryItem {
    * Absent = emergency kit.
    */
   readonly category?: 'sedation' | 'equipment';
+  /**
+   * Milligrams in one counted unit (one vial, syringe or bottle — whatever
+   * `quantity` counts). Only rows for a drug in `PROTOCOL_COURSES` need it;
+   * a vitest invariant enforces that, so the full-course check can never
+   * silently skip a lot.
+   */
+  readonly mgPerUnit?: number;
   /** Free-text action note for humans (NOT order tracking — see onOrder). */
   readonly notes?: string;
 }
 
 /** Vintage of the transcribed paper sheet — bump when re-verifying stock. */
 export const INVENTORY_AS_OF = '2026-08';
+
+/**
+ * What one full protocol course of a drug needs, so the inventory can say
+ * "in date, but not enough". Expiry alone missed this: a single in-date
+ * 1 mg atropine syringe reads OK while the bradycardia protocol can call
+ * for 3 mg. Each `protocolPhrase` must appear in that drug's protocol
+ * callout (a vitest tripwire), so a protocol edit that changes the course
+ * fails the suite instead of leaving a stale number here.
+ */
+export interface ProtocolCourse {
+  /** Protocol drug-callout name, exactly as in `protocolDrugNames`. */
+  readonly drug: string;
+  readonly needMg: number;
+  /** Shown to the clinician: how the protocol adds up to `needMg`. */
+  readonly basis: string;
+  readonly protocolPhrase: string;
+}
+
+export const PROTOCOL_COURSES: ReadonlyArray<ProtocolCourse> = [
+  {
+    drug: 'Atropine',
+    needMg: 3,
+    basis: '1 mg every 3–5 min, max 3 mg',
+    protocolPhrase: 'max 3 mg',
+  },
+  {
+    drug: 'Adenosine',
+    needMg: 30,
+    basis: '6 mg, then 12 mg, then 12 mg',
+    protocolPhrase: '12 mg (2nd/3rd dose)',
+  },
+  {
+    drug: 'Flumazenil',
+    needMg: 1,
+    basis: '0.2 mg increments, max 1.0 mg',
+    protocolPhrase: 'max 1.0 mg',
+  },
+  {
+    drug: 'Nitroglycerin',
+    needMg: 1.2,
+    basis: '0.4 mg every 5 min, max 3 doses',
+    protocolPhrase: 'max 3 doses',
+  },
+];
 
 export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   {
@@ -104,6 +155,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '16UA2714',
     ndc: '63323-651-23',
     quantity: 1,
+    mgPerUnit: 12,
     expiresOn: '2026-12',
     protocolDrugNames: ['Adenosine'],
   },
@@ -114,6 +166,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '6037350',
     ndc: '63323-651-00',
     quantity: 1,
+    mgPerUnit: 6,
     expiresOn: '2028-04',
     protocolDrugNames: ['Adenosine'],
   },
@@ -124,6 +177,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '6033978',
     ndc: '63323-651-01',
     quantity: 1,
+    mgPerUnit: 12,
     expiresOn: '2026-11',
     protocolDrugNames: ['Adenosine'],
   },
@@ -175,6 +229,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: 'A240543',
     ndc: '70069-641-01',
     quantity: 2,
+    mgPerUnit: 1,
     expiresOn: '2026-09',
     protocolDrugNames: ['Atropine'],
   },
@@ -185,6 +240,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: 'A25178',
     ndc: '64253-400-30',
     quantity: 1,
+    mgPerUnit: 1,
     expiresOn: '2027-02',
     protocolDrugNames: ['Atropine'],
   },
@@ -236,6 +292,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '24021511',
     ndc: '0143-9784-01',
     quantity: 1,
+    mgPerUnit: 0.5,
     expiresOn: '2027-07',
     protocolDrugNames: ['Flumazenil'],
   },
@@ -246,6 +303,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '25430221',
     ndc: '0143-9784-01',
     quantity: 2,
+    mgPerUnit: 0.5,
     expiresOn: '2028-05',
     protocolDrugNames: ['Flumazenil'],
   },
@@ -316,6 +374,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '51982GA1',
     ndc: '72888-139-32',
     quantity: 1,
+    mgPerUnit: 10,
     expiresOn: '2027-09',
     protocolDrugNames: ['Nitroglycerin'],
   },
@@ -371,6 +430,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '',
     ndc: '',
     quantity: 2,
+    mgPerUnit: 6,
     expiresOn: '',
     onOrder: { sku: 'ADEN32V-R' },
     protocolDrugNames: ['Adenosine'],

@@ -4,12 +4,19 @@ import {
   classifyInventory,
   inventorySubLine,
   protocolCalloutNames,
+  protocolCourseCoverage,
   protocolGapList,
   protocolStockStatus,
   protocolsUsing,
   summarizeInventory,
 } from './useInventoryStatus';
-import { EMERGENCY_INVENTORY, type InventoryItem } from '@/data/emergency-inventory';
+import { EMERGENCY_PROTOCOLS } from '@sedation-pro/clinical';
+
+import {
+  EMERGENCY_INVENTORY,
+  PROTOCOL_COURSES,
+  type InventoryItem,
+} from '@/data/emergency-inventory';
 
 const NOW = Date.UTC(2026, 7, 6); // 2026-08-06
 
@@ -182,6 +189,67 @@ describe('live inventory data invariants', () => {
       for (const name of inv.protocolDrugNames ?? []) {
         expect(callouts.has(name), `${inv.id} maps unknown callout '${name}'`).toBe(true);
       }
+    }
+  });
+});
+
+describe('protocolCourseCoverage', () => {
+  const ATROPINE = [{ drug: 'Atropine', needMg: 3, basis: '', protocolPhrase: '' }];
+
+  it('flags a single in-date 1 mg syringe as short of a 3 mg course', () => {
+    const classified = classifyInventory(NOW, [
+      item({ id: 'syringe', protocolDrugNames: ['Atropine'], mgPerUnit: 1, quantity: 1 }),
+    ]);
+    const [atropine] = protocolCourseCoverage(classified, ATROPINE);
+    expect(atropine).toMatchObject({ haveMg: 1, needMg: 3, short: true });
+  });
+
+  it('counts quantity × mg across in-date lots, and nothing that is expired or undated', () => {
+    const classified = classifyInventory(NOW, [
+      item({ id: 'ok', protocolDrugNames: ['Atropine'], mgPerUnit: 1, quantity: 2 }),
+      item({ id: 'soon', protocolDrugNames: ['Atropine'], mgPerUnit: 1, expiresOn: '2026-09' }),
+      item({ id: 'old', protocolDrugNames: ['Atropine'], mgPerUnit: 1, expiresOn: '2026-05' }),
+      item({ id: 'ordered', protocolDrugNames: ['Atropine'], mgPerUnit: 1, expiresOn: '' }),
+    ]);
+    const [atropine] = protocolCourseCoverage(classified, ATROPINE);
+    expect(atropine).toMatchObject({ haveMg: 3, short: false });
+  });
+
+  it('sums half-milligram vials without float dust', () => {
+    const classified = classifyInventory(NOW, [
+      item({ id: 'f', protocolDrugNames: ['Flumazenil'], mgPerUnit: 0.5, quantity: 2 }),
+    ]);
+    const [f] = protocolCourseCoverage(classified, [
+      { drug: 'Flumazenil', needMg: 1, basis: '', protocolPhrase: '' },
+    ]);
+    expect(f).toMatchObject({ haveMg: 1, short: false });
+  });
+});
+
+describe('live protocol-course data', () => {
+  it("each course phrase appears in that drug's protocol callout (course tripwire)", () => {
+    for (const course of PROTOCOL_COURSES) {
+      const texts: string[] = [];
+      for (const protocol of EMERGENCY_PROTOCOLS) {
+        for (const step of protocol.steps) {
+          if (step.drug?.name !== course.drug) continue;
+          texts.push(step.text, step.drug.notes ?? '');
+          for (const row of step.drug.drawTable ?? []) texts.push(row.label);
+        }
+      }
+      expect(texts.length, `${course.drug} is a protocol callout`).toBeGreaterThan(0);
+      expect(
+        texts.some((t) => t.replace(/\s+/g, ' ').includes(course.protocolPhrase)),
+        `${course.drug}: '${course.protocolPhrase}' not found in its protocol`,
+      ).toBe(true);
+    }
+  });
+
+  it('every row for a course drug carries mgPerUnit, so no lot is silently skipped', () => {
+    const courseDrugs = new Set(PROTOCOL_COURSES.map((c) => c.drug));
+    for (const inv of EMERGENCY_INVENTORY) {
+      if (!inv.protocolDrugNames?.some((n) => courseDrugs.has(n))) continue;
+      expect(inv.mgPerUnit, `${inv.id} needs mgPerUnit`).toBeGreaterThan(0);
     }
   });
 });
