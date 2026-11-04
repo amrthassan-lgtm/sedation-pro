@@ -67,7 +67,7 @@ function rowTone(c: ClassifiedItem): SectionTone {
   return 'good';
 }
 
-// Drug stock is labelled to the month; AED consumables carry a printed
+// Drug stock is labelled to the month; most equipment carries a printed
 // day. Render whichever precision the row actually has — widening a dated
 // pad to its whole month would claim nine days the manufacturer didn't.
 function formatExpiry(expiresOn: string): string {
@@ -234,7 +234,7 @@ function openProtocol(id: string): void {
                   Sedation cart
                 </UiStatusPill>
                 <UiStatusPill v-if="entry.item.category === 'equipment'" severity="empty">
-                  AED
+                  Equipment
                 </UiStatusPill>
               </span>
               <span
