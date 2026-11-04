@@ -231,6 +231,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 2,
     mgPerUnit: 1,
     expiresOn: '2026-09',
+    onOrder: { sku: 'on order #2000017881', substitution: '1 mg ×2' },
     protocolDrugNames: ['Atropine'],
   },
   {
