@@ -666,6 +666,16 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     category: 'equipment',
   },
   {
+    id: 'suction-pump-manual',
+    drug: 'Medsource Manual Suction Pump',
+    description: 'Hand-powered, with canister + tubing (MS-001PMP)',
+    lot: '1011479',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2028-12-17',
+    category: 'equipment',
+  },
+  {
     id: 'bvm-pediatric',
     drug: 'Ambu SPUR II Resuscitator',
     description: 'Pediatric bag-valve mask',
