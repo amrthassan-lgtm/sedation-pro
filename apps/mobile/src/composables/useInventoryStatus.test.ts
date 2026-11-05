@@ -206,9 +206,20 @@ describe('awaiting-photo rows', () => {
     expect(s.soonest?.drug).toBe('blank');
   });
 
+  it('no-expiry rows are on hand but never a warning or part of the total', () => {
+    const classified = classifyInventory(NOW, [
+      item({ id: 'scale', expiresOn: '', noExpiry: true }),
+      item({ id: 'fine', expiresOn: '2028-05' }),
+    ]);
+    const s = summarizeInventory(classified);
+    expect(s.expired).toBe(0);
+    expect(s.total).toBe(1);
+  });
+
   it('in the live data carry no date and never satisfy a protocol callout', () => {
     for (const inv of EMERGENCY_INVENTORY) {
-      if (!inv.awaitingPhoto) continue;
+      if (!inv.awaitingPhoto && !inv.noExpiry) continue;
+      expect(inv.awaitingPhoto && inv.noExpiry, `${inv.id} has both flags`).toBeFalsy();
       expect(inv.expiresOn, `${inv.id} has a date — drop awaitingPhoto`).toBe('');
       expect(inv.protocolDrugNames, `${inv.id} must not map`).toBeUndefined();
     }

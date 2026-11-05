@@ -52,7 +52,7 @@ export function summarizeInventory(classified: ReadonlyArray<ClassifiedItem>): I
   let onOrder = 0;
   let soonest: InventorySummary['soonest'] = null;
   for (const c of classified) {
-    if (c.item.awaitingPhoto) continue;
+    if (c.item.awaitingPhoto || c.item.noExpiry) continue;
     if (c.status.severity === 'limit') expired += 1;
     else if (c.status.severity === 'caution') expiringSoon += 1;
     else ok += 1;
@@ -63,7 +63,7 @@ export function summarizeInventory(classified: ReadonlyArray<ClassifiedItem>): I
       }
     }
   }
-  const total = classified.filter((c) => !c.item.awaitingPhoto).length;
+  const total = classified.filter((c) => !c.item.awaitingPhoto && !c.item.noExpiry).length;
   return { expired, expiringSoon, ok, onOrder, total, soonest };
 }
 
@@ -196,6 +196,8 @@ export interface InventoryStatus {
   readonly courseShort: ReadonlyArray<CourseCoverage>;
   /** Listed for completeness, date not yet read — never a warning. */
   readonly awaitingPhoto: ReadonlyArray<ClassifiedItem>;
+  /** On hand, no expiry by nature — never a warning. */
+  readonly noExpiry: ReadonlyArray<ClassifiedItem>;
   readonly subLine: string;
   statusFor(calloutName: string): Severity | null;
   usesFor(item: InventoryItem): ReadonlyArray<ProtocolRef>;
@@ -204,7 +206,7 @@ export interface InventoryStatus {
 export function useInventoryStatus(now: number = Date.now()): InventoryStatus {
   const classified = classifyInventory(now);
   const summary = summarizeInventory(classified);
-  const tracked = classified.filter((c) => !c.item.awaitingPhoto);
+  const tracked = classified.filter((c) => !c.item.awaitingPhoto && !c.item.noExpiry);
   return {
     classified,
     summary,
@@ -212,6 +214,7 @@ export function useInventoryStatus(now: number = Date.now()): InventoryStatus {
     expiringSoon: tracked.filter((c) => c.status.severity === 'caution').sort(byUrgency),
     inDate: tracked.filter((c) => c.status.severity === 'safe').sort(byUrgency),
     awaitingPhoto: classified.filter((c) => c.item.awaitingPhoto),
+    noExpiry: classified.filter((c) => c.item.noExpiry),
     notStocked: protocolGapList(),
     courseShort: protocolCourseCoverage(classified).filter((c) => c.short),
     subLine: inventorySubLine(summary),
