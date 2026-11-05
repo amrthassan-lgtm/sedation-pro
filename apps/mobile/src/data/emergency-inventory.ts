@@ -406,6 +406,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '72266-123-01',
     quantity: 1,
     expiresOn: '2027-02',
+    notes: 'Not being replaced — the sedation-cart 20 mL vial covers emergencies',
     protocolDrugNames: ['Ondansetron'],
   },
   {
