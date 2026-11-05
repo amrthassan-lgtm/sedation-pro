@@ -48,19 +48,73 @@ export interface InventoryItem {
    * 'sedation' marks sedation-cart stock (controlled substances + oral
    * premeds) tracked alongside the crash cart in this one list, per the
    * owner's choice. 'equipment' marks dated non-drug stock — AED pads
-   * and battery — which expires like a drug and strands the defibrillator
-   * when it lapses, so it earns the same banner and reorder pressure.
+   * and battery, airway and O₂ supplies, IV supplies — which expires like
+   * a drug and strands the rescue it serves when it lapses, so it earns
+   * the same banner and reorder pressure. A supply whose expiry has not
+   * been found yet is listed with an empty date on purpose (owner, 2026-11):
+   * it stays in "needs attention" until someone reads the outer box.
    * Equipment never carries `protocolDrugNames` (a vitest invariant):
    * protocol callouts name drugs, and a pad must never satisfy one.
    * Absent = emergency kit.
    */
   readonly category?: 'sedation' | 'equipment';
+  /**
+   * Milligrams in one counted unit (one vial, syringe or bottle — whatever
+   * `quantity` counts). Only rows for a drug in `PROTOCOL_COURSES` need it;
+   * a vitest invariant enforces that, so the full-course check can never
+   * silently skip a lot.
+   */
+  readonly mgPerUnit?: number;
   /** Free-text action note for humans (NOT order tracking — see onOrder). */
   readonly notes?: string;
 }
 
 /** Vintage of the transcribed paper sheet — bump when re-verifying stock. */
 export const INVENTORY_AS_OF = '2026-08';
+
+/**
+ * What one full protocol course of a drug needs, so the inventory can say
+ * "in date, but not enough". Expiry alone missed this: a single in-date
+ * 1 mg atropine syringe reads OK while the bradycardia protocol can call
+ * for 3 mg. Each `protocolPhrase` must appear in that drug's protocol
+ * callout (a vitest tripwire), so a protocol edit that changes the course
+ * fails the suite instead of leaving a stale number here.
+ */
+export interface ProtocolCourse {
+  /** Protocol drug-callout name, exactly as in `protocolDrugNames`. */
+  readonly drug: string;
+  readonly needMg: number;
+  /** Shown to the clinician: how the protocol adds up to `needMg`. */
+  readonly basis: string;
+  readonly protocolPhrase: string;
+}
+
+export const PROTOCOL_COURSES: ReadonlyArray<ProtocolCourse> = [
+  {
+    drug: 'Atropine',
+    needMg: 3,
+    basis: '1 mg every 3–5 min, max 3 mg',
+    protocolPhrase: 'max 3 mg',
+  },
+  {
+    drug: 'Adenosine',
+    needMg: 30,
+    basis: '6 mg, then 12 mg, then 12 mg',
+    protocolPhrase: '12 mg (2nd/3rd dose)',
+  },
+  {
+    drug: 'Flumazenil',
+    needMg: 1,
+    basis: '0.2 mg increments, max 1.0 mg',
+    protocolPhrase: 'max 1.0 mg',
+  },
+  {
+    drug: 'Nitroglycerin',
+    needMg: 1.2,
+    basis: '0.4 mg every 5 min, max 3 doses',
+    protocolPhrase: 'max 3 doses',
+  },
+];
 
 export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   {
@@ -81,6 +135,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0115-1694-30',
     quantity: 1,
     expiresOn: '2026-08',
+    onOrder: { sku: 'AUVI3-R', substitution: 'Auvi-Q 0.3 mg auto-injector' },
     protocolDrugNames: ['Epinephrine'],
   },
   {
@@ -100,6 +155,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '16UA2714',
     ndc: '63323-651-23',
     quantity: 1,
+    mgPerUnit: 12,
     expiresOn: '2026-12',
     protocolDrugNames: ['Adenosine'],
   },
@@ -110,6 +166,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '6037350',
     ndc: '63323-651-00',
     quantity: 1,
+    mgPerUnit: 6,
     expiresOn: '2028-04',
     protocolDrugNames: ['Adenosine'],
   },
@@ -120,24 +177,15 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '6033978',
     ndc: '63323-651-01',
     quantity: 1,
+    mgPerUnit: 12,
     expiresOn: '2026-11',
     protocolDrugNames: ['Adenosine'],
-  },
-  {
-    id: 'epi-vial-adrenalin',
-    drug: 'Adrenalin (epinephrine)',
-    description: '1 mg/mL vial',
-    lot: '80192',
-    ndc: '42023-159-01',
-    quantity: 2,
-    expiresOn: '2026-06',
-    protocolDrugNames: ['Epinephrine'],
   },
   {
     id: 'amiodarone-150-a',
     drug: 'Amiodarone HCl',
     description: '150 mg / 3 mL',
-    lot: '2050731',
+    lot: '25050731',
     ndc: '0143-9875-01',
     quantity: 1,
     expiresOn: '2027-04',
@@ -147,7 +195,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     id: 'amiodarone-150-b',
     drug: 'Amiodarone HCl',
     description: '150 mg / 3 mL',
-    lot: '2052641',
+    lot: '25052641',
     ndc: '0143-9875-01',
     quantity: 1,
     expiresOn: '2027-10',
@@ -171,6 +219,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '68599-1311-3',
     quantity: 1,
     expiresOn: '2026-09',
+    onOrder: { sku: 'ASPI81-36O', substitution: '81 mg chewable ×36' },
     protocolDrugNames: ['Aspirin'],
   },
   {
@@ -180,7 +229,9 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: 'A240543',
     ndc: '70069-641-01',
     quantity: 2,
+    mgPerUnit: 1,
     expiresOn: '2026-09',
+    onOrder: { sku: 'on order #2000017881', substitution: '1 mg ×2' },
     protocolDrugNames: ['Atropine'],
   },
   {
@@ -190,6 +241,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: 'A25178',
     ndc: '64253-400-30',
     quantity: 1,
+    mgPerUnit: 1,
     expiresOn: '2027-02',
     protocolDrugNames: ['Atropine'],
   },
@@ -211,6 +263,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0641-0376-21',
     quantity: 2,
     expiresOn: '2026-08',
+    onOrder: { sku: 'DIPH501V-R' },
     protocolDrugNames: ['Diphenhydramine'],
   },
   {
@@ -240,6 +293,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '24021511',
     ndc: '0143-9784-01',
     quantity: 1,
+    mgPerUnit: 0.5,
     expiresOn: '2027-07',
     protocolDrugNames: ['Flumazenil'],
   },
@@ -250,6 +304,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '25430221',
     ndc: '0143-9784-01',
     quantity: 2,
+    mgPerUnit: 0.5,
     expiresOn: '2028-05',
     protocolDrugNames: ['Flumazenil'],
   },
@@ -281,6 +336,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '55150-252-20',
     quantity: 1,
     expiresOn: '2028-02',
+    notes: 'Not used by any protocol — let expire and do not reorder',
   },
   {
     id: 'lidocaine-2pct',
@@ -290,6 +346,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0143-9594-01',
     quantity: 2,
     expiresOn: '2028-05',
+    notes: 'Not used by any protocol — let expire and do not reorder',
   },
   {
     id: 'lidocaine-cardiac',
@@ -297,7 +354,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     description: '100 mg / 5 mL — cardiac arrhythmias',
     lot: '6133763',
     ndc: '63323-208-01',
-    quantity: 1,
+    quantity: 25,
     expiresOn: '2027-12',
     protocolDrugNames: ['Cardiac Lidocaine'],
   },
@@ -309,16 +366,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '36000-308-01',
     quantity: 2,
     expiresOn: '2027-03',
-    protocolDrugNames: ['Naloxone'],
-  },
-  {
-    id: 'narcan-spray',
-    drug: 'Narcan (naloxone) Nasal Spray',
-    description: '4 mg',
-    lot: '230745',
-    ndc: '69547-627-02',
-    quantity: 2,
-    expiresOn: '2026-05',
+    notes:
+      "2 vials per owner (Nov 2026); only lot 305756 photographed — confirm the second vial's lot/exp",
     protocolDrugNames: ['Naloxone'],
   },
   {
@@ -328,6 +377,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '51982GA1',
     ndc: '72888-139-32',
     quantity: 1,
+    mgPerUnit: 10,
     expiresOn: '2027-09',
     protocolDrugNames: ['Nitroglycerin'],
   },
@@ -355,12 +405,11 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     id: 'succinylcholine',
     drug: 'Succinylcholine',
     description: '20 mg/mL — KEEP REFRIGERATED',
-    lot: '',
+    lot: 'AS1250127A',
     ndc: '',
     quantity: 1,
-    expiresOn: '',
-    notes:
-      'In the fridge but off the paper sheet — read lot + expiry from the vial and update here',
+    expiresOn: '2027-02',
+    notes: 'Red cap (Camber/Aspiro). Refrigerated; once out of the fridge, use within 14 days',
     protocolDrugNames: ['Succinylcholine'],
   },
   {
@@ -375,30 +424,57 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     notes: 'New line item — fills the hypoglycemia IV-route gap',
     protocolDrugNames: ['D50W'],
   },
-  // Sedation cart (the safe), read from the packaging 2026-10. Quantity is
-  // one per box/bottle until the DA's count lands.
+  {
+    // Replaces the two 12 mg/4 mL vials as they expire (Nov/Dec 2026):
+    // a 12 mg protocol dose is two of these.
+    id: 'adenosine-6-order',
+    drug: 'Adenosine Injection',
+    description: '6 mg / 2 mL',
+    lot: '',
+    ndc: '',
+    quantity: 2,
+    mgPerUnit: 6,
+    expiresOn: '',
+    onOrder: { sku: 'ADEN32V-R' },
+    protocolDrugNames: ['Adenosine'],
+  },
+  {
+    id: 'solu-medrol',
+    drug: 'Solu-Medrol (methylprednisolone)',
+    description: '125 mg / 2 mL Act-O-Vial',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '',
+    onOrder: { sku: 'SOLU1252V-R' },
+    notes: 'New line item — fills the anaphylaxis steroid gap',
+    protocolDrugNames: ['Methylprednisolone (Solu-Medrol)'],
+  },
+  // Sedation cart (the safe), read from the packaging 2026-10 and counted
+  // by the DA 2026-11. Quantity is vials for injectables, tablets for the
+  // oral bottles.
   {
     id: 'midazolam-10ml',
     drug: 'Midazolam Injection',
-    description: '5 mg/mL — 10 × 10 mL multiple-dose vials',
+    description: '5 mg/mL — 10 mL multiple-dose vial',
     lot: 'G1880032',
     ndc: '23155-601-42',
-    quantity: 1,
+    quantity: 8,
     expiresOn: '2028-05',
     category: 'sedation',
-    notes: 'Vial count pending',
+    notes: '7 sealed + 1 in use (counted Nov 2026)',
     protocolDrugNames: ['Midazolam'],
   },
   {
     id: 'fentanyl-2ml',
     drug: 'Fentanyl Citrate Injection',
-    description: '50 mcg/mL — 25 × 2 mL single-dose vials',
+    description: '50 mcg/mL — 2 mL single-dose vial',
     lot: 'L25067',
     ndc: '0641-6027-25',
-    quantity: 1,
+    quantity: 22,
     expiresOn: '2028-11',
     category: 'sedation',
-    notes: 'Vial count pending',
+    notes: '21 sealed + 1 in use (counted Nov 2026)',
     protocolDrugNames: ['Fentanyl'],
   },
   {
@@ -410,6 +486,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2028-10',
     category: 'sedation',
+    notes: 'Sealed (Nov 2026)',
     protocolDrugNames: ['Fentanyl'],
   },
   {
@@ -428,77 +505,330 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   {
     id: 'triazolam-025',
     drug: 'Triazolam Tablets',
-    description: '0.25 mg — bottle of 100',
+    description: '0.25 mg tablets — bottle of 100',
     lot: 'MA04039A',
     ndc: '70710-1289-1',
-    quantity: 1,
+    quantity: 88,
     expiresOn: '2027-08',
     category: 'sedation',
-    notes: 'Tablet count pending',
   },
   {
     id: 'lorazepam-2',
     drug: 'Lorazepam Tablets',
-    description: '2 mg — bottle of 100',
+    description: '2 mg tablets — bottle of 100',
     lot: '100071801',
     ndc: '0093-3427-01',
-    quantity: 1,
+    quantity: 100,
     expiresOn: '2027-04',
     category: 'sedation',
-    notes: 'Tablet count pending',
+    notes: 'Sealed bottle (Nov 2026)',
   },
   {
     id: 'diazepam-5',
     drug: 'Diazepam Tablets',
-    description: '5 mg — bottle of 100',
+    description: '5 mg tablets — bottle of 100',
     lot: '100073178',
     ndc: '0172-3926-60',
-    quantity: 1,
+    quantity: 99,
     expiresOn: '2027-05',
     category: 'sedation',
-    notes: 'Tablet count pending',
   },
   {
     // The label prints its values one row low (serial on the EXP line);
     // lot and expiry here are the values that belong to those fields.
     id: 'hydroxyzine-50',
     drug: 'Hydroxyzine HCl Tablets',
-    description: '50 mg — bottle of 100',
+    description: '50 mg tablets — bottle of 100',
     lot: '120166',
     ndc: '16714-083-10',
-    quantity: 1,
+    quantity: 98,
     expiresOn: '2028-04',
     category: 'sedation',
-    notes: 'Tablet count pending',
   },
   {
     id: 'aed-pads-adult',
     drug: 'Defibtech Defibrillation Pads',
     description: 'Adult AED electrode pads',
-    lot: '',
+    lot: 'D050225-08',
     ndc: '',
     quantity: 1,
-    expiresOn: '2027-08-22',
+    expiresOn: '2027-11-30',
     category: 'equipment',
   },
   {
     id: 'aed-pads-pediatric',
     drug: 'Defibtech Defibrillation Pads',
     description: 'Pediatric AED electrode pads',
-    lot: '',
+    lot: 'D022825-09',
     ndc: '',
     quantity: 1,
-    expiresOn: '2027-08-22',
+    expiresOn: '2027-08-31',
     category: 'equipment',
   },
   {
     id: 'aed-battery',
     drug: 'Defibtech Battery Pack',
-    description: 'AED battery',
-    lot: '',
+    description: 'AED battery — DBP-1400 non-rechargeable',
+    lot: 'SN 211175072',
     ndc: '',
     quantity: 1,
-    expiresOn: '2030-08-22',
+    expiresOn: '2030-12-31',
     category: 'equipment',
+  },
+  // Airway, O₂ and IV supplies, read from the packaging 2026-11.
+  {
+    id: 'bvm-adult',
+    drug: 'Ambu SPUR II Resuscitator',
+    description: 'Adult bag-valve mask (>30 kg)',
+    lot: '1001167791',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2028-04-11',
+    category: 'equipment',
+  },
+  {
+    id: 'ett-5',
+    drug: 'Curaplex Endotracheal Tube',
+    description: '5.0 mm cuffed, with stylette',
+    lot: '1013060',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2028-08-24',
+    category: 'equipment',
+  },
+  {
+    id: 'ett-6',
+    drug: 'Curaplex Endotracheal Tube',
+    description: '6.0 mm cuffed, with stylette',
+    lot: '1013060',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2028-08-24',
+    category: 'equipment',
+  },
+  {
+    id: 'ett-7',
+    drug: 'Curaplex Endotracheal Tube',
+    description: '7.0 mm cuffed, with stylette',
+    lot: '1013204',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2028-10-12',
+    category: 'equipment',
+  },
+  {
+    id: 'king-lts-d-4',
+    drug: 'King LTS-D Airway',
+    description: 'Size 4 (5–6 ft) supraglottic airway',
+    lot: 'JUL24-07',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2029-07-01',
+    category: 'equipment',
+  },
+  {
+    id: 'laryseal-inflator',
+    drug: 'LarySeal Cuff Inflator',
+    description: 'Colour-coded 50 mL cuff syringe',
+    lot: '231103838',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2028-10-01',
+    category: 'equipment',
+  },
+  {
+    id: 'berman-airways',
+    drug: 'Curaplex Berman Oral Airway Kit',
+    description: 'Sizes 00, 1, 3, 4, 5, 6',
+    lot: 'ASM0035900',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2027-11-29',
+    category: 'equipment',
+  },
+  {
+    id: 'nrb-adult',
+    drug: 'Curaplex Non-Rebreather Mask',
+    description: 'Adult, 7 ft tubing + reservoir',
+    lot: '1012868',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2029-06-07',
+    category: 'equipment',
+  },
+  {
+    id: 'nrb-pediatric',
+    drug: 'Hudson RCI Non-Rebreather Mask',
+    description: 'Pediatric, 7 ft tubing',
+    lot: '25A0A473',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2030-01-13',
+    category: 'equipment',
+  },
+  {
+    id: 'cannula-pediatric',
+    drug: 'Curaplex Nasal Cannula',
+    description: 'Pediatric, 7 ft tubing',
+    lot: '1012502',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2028-11-06',
+    category: 'equipment',
+  },
+  {
+    id: 'iv-catheter-22',
+    drug: 'BD Insyte Autoguard IV Catheter',
+    description: '22 G × 1.00 in',
+    lot: '4282305',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2027-09-30',
+    category: 'equipment',
+  },
+  {
+    id: 'iv-admin-set',
+    drug: 'Exelint IV Administration Set',
+    description: '15 drop/mL, Y-site, 78 in',
+    lot: '240304',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2029-02-04',
+    category: 'equipment',
+  },
+  {
+    id: 'iv-extension',
+    drug: 'Vygon Microbore Extension Set',
+    description: '7 in, luer lock, slide clamp',
+    lot: '240225BA',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2028-02-24',
+    category: 'equipment',
+  },
+  {
+    id: 'd5w-1000',
+    drug: '5% Dextrose Injection (D5W)',
+    description: '1000 mL bag',
+    lot: 'Y490603',
+    ndc: '0338-0017-04',
+    quantity: 1,
+    expiresOn: '2027-10',
+    category: 'equipment',
+    notes: 'IV carrier fluid — not a substitute for D50W in hypoglycemia',
+  },
+  {
+    id: 'lancets',
+    drug: 'Accu-Chek Softclix Lancets',
+    description: 'Box of 100',
+    lot: '10825038',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2029-02-28',
+    category: 'equipment',
+  },
+  {
+    id: 'suction-pump-manual',
+    drug: 'Medsource Manual Suction Pump',
+    description: 'Hand-powered, with canister + tubing (MS-001PMP)',
+    lot: '1011479',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2028-12-17',
+    category: 'equipment',
+  },
+  {
+    id: 'test-strips',
+    drug: 'Accu-Chek Guide Test Strips',
+    description: 'Vial of 50',
+    lot: '105969',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2027-04-26',
+    category: 'equipment',
+  },
+  {
+    id: 'yankauer',
+    drug: 'Yankauer Suction Instrument',
+    description: 'Bulb tip, control vent',
+    lot: '202511141',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2030-11-13',
+    category: 'equipment',
+  },
+  {
+    id: 'suction-tubing',
+    drug: 'ConMed Suction Connecting Tubing',
+    description: '6 ft, 1/4 in I.D.',
+    lot: '202508056',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2030-08-04',
+    category: 'equipment',
+  },
+  {
+    id: 'saline-500',
+    drug: '0.9% Sodium Chloride Injection (NS)',
+    description: '500 mL bag — IV grade',
+    lot: 'Y489546',
+    ndc: '0338-0049-03',
+    quantity: 1,
+    expiresOn: '2027-07',
+    category: 'equipment',
+  },
+  {
+    id: 'syringe-60',
+    drug: 'Terumo 60 mL Syringe',
+    description: 'Luer-lock, no needle — King LTS-D cuff (50–70 mL)',
+    lot: '230503H',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2028-04-30',
+    category: 'equipment',
+  },
+  {
+    id: 'cannula-adult',
+    drug: 'Dynarex Nasal Oxygen Cannula',
+    description: 'Adult, cushion tip, 7 ft tubing',
+    lot: '57609',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '',
+    category: 'equipment',
+    notes: 'No expiry on the pouch — check the outer box and update here',
+  },
+  {
+    id: 'bvm-pediatric',
+    drug: 'Ambu SPUR II Resuscitator',
+    description: 'Pediatric bag-valve mask',
+    lot: '1000639825',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '',
+    category: 'equipment',
+    notes: 'No expiry on the pouch — check the outer box or case and update here',
+  },
+  {
+    id: 'o2-mask-adult',
+    drug: 'Dynarex Oxygen Mask',
+    description: 'Adult medium-concentration, 7 ft tubing',
+    lot: '57611',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '',
+    category: 'equipment',
+    notes: 'No expiry on the pouch — check the outer box or case and update here',
+  },
+  {
+    id: 'suction-catheters',
+    drug: 'Cardinal Health Suction Catheter',
+    description: 'REF 30688 — 2 in kit',
+    lot: '',
+    ndc: '',
+    quantity: 2,
+    expiresOn: '',
+    category: 'equipment',
+    notes: 'No expiry on the pouch — check the outer box or case and update here',
   },
 ];

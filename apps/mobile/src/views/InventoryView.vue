@@ -67,7 +67,7 @@ function rowTone(c: ClassifiedItem): SectionTone {
   return 'good';
 }
 
-// Drug stock is labelled to the month; AED consumables carry a printed
+// Drug stock is labelled to the month; most equipment carries a printed
 // day. Render whichever precision the row actually has — widening a dated
 // pad to its whole month would claim nine days the manufacturer didn't.
 function formatExpiry(expiresOn: string): string {
@@ -146,7 +146,9 @@ function openProtocol(id: string): void {
     >
       Replace before the next sedation case.
       {{
-        inv.summary.onOrder > 0 ? `${inv.summary.onOrder} replacements are already on order.` : ''
+        inv.summary.onOrder > 0
+          ? `${inv.summary.onOrder} replacement${inv.summary.onOrder === 1 ? ' is' : 's are'} already on order.`
+          : ''
       }}
     </UiBanner>
     <UiBanner
@@ -178,6 +180,30 @@ function openProtocol(id: string): void {
         category="Tracked"
       />
     </div>
+
+    <UiCard v-if="inv.courseShort.length > 0" class="inv-card">
+      <header class="inv-head">
+        <span class="inv-swatch inv-swatch--danger" aria-hidden="true" />
+        <div class="inv-head-main">
+          <p class="inv-title">Not enough for a full protocol course</p>
+          <p class="inv-hint">In-date stock only — expired and on-order units don't count</p>
+        </div>
+        <span class="card-count">{{ inv.courseShort.length }}</span>
+      </header>
+      <UiStack :gap="1">
+        <div v-for="course in inv.courseShort" :key="course.drug" class="inv-row">
+          <span class="inv-bar inv-bar--danger" aria-hidden="true" />
+          <span class="inv-main">
+            <span class="inv-drug">{{ course.drug }}</span>
+            <span class="inv-desc">{{ course.basis }}</span>
+            <span class="inv-meta">Have {{ course.haveMg }} mg · need {{ course.needMg }} mg</span>
+          </span>
+          <span class="inv-pills">
+            <UiStatusPill severity="limit">Short</UiStatusPill>
+          </span>
+        </div>
+      </UiStack>
+    </UiCard>
 
     <template v-for="section in sections" :key="section.id">
       <UiCard v-if="section.entries.length > 0" class="inv-card">
@@ -234,7 +260,7 @@ function openProtocol(id: string): void {
                   Sedation cart
                 </UiStatusPill>
                 <UiStatusPill v-if="entry.item.category === 'equipment'" severity="empty">
-                  AED
+                  Equipment
                 </UiStatusPill>
               </span>
               <span
