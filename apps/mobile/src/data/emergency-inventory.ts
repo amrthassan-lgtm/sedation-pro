@@ -74,6 +74,14 @@ export interface InventoryItem {
    * never satisfies a protocol callout.
    */
   readonly awaitingPhoto?: boolean;
+  /**
+   * Confirmed on hand, and has no expiry by nature (a scale, a light, a CPR
+   * board). Listed for the kit's completeness, never a warning, and shown
+   * under "No expiry" rather than "In date". Same invariants as
+   * `awaitingPhoto`: empty `expiresOn`, no protocol mapping, and never both
+   * flags on one row.
+   */
+  readonly noExpiry?: boolean;
   /** Free-text action note for humans (NOT order tracking — see onOrder). */
   readonly notes?: string;
 }
@@ -897,24 +905,25 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   {
     id: 'o2-cylinder',
     drug: 'Oxygen Cylinder (portable)',
-    description: 'Positive-pressure O₂ backup — gauge reading + hydro-test date',
+    description: 'Positive-pressure O₂ backup',
     lot: '',
     ndc: '',
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
+    notes: 'Checked full Nov 2026; hydro-test stamp not yet read',
   },
   {
     id: 'laryngoscope',
-    drug: 'Laryngoscope',
-    description: 'Handle and blades',
+    drug: 'SunMed Standard Laryngoscope',
+    description: 'Handle with MAC 4 blade',
     lot: '',
     ndc: '',
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   {
     id: 'laryngoscope-spares',
@@ -936,18 +945,18 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   {
     id: 'precordial-stethoscope',
-    drug: 'Precordial Stethoscope',
-    description: 'Chest-mounted bell for heart rate and ventilation',
+    drug: 'Backup Precordial Stethoscope',
+    description: 'Chest-mounted bell for heart rate and ventilation (11-400-00)',
     lot: '',
     ndc: '',
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   {
     id: 'thermometer',
@@ -969,7 +978,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   {
     id: 'patient-scale',
@@ -980,7 +989,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   {
     id: 'cpr-board',
@@ -991,7 +1000,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   {
     id: 'face-masks',
@@ -1031,17 +1040,6 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     id: 'nitrous-flowmeter',
     drug: 'Porter MXR Nitrous/O₂ Flowmeter',
     description: 'N₂O / O₂ delivery with cylinders',
-    lot: '',
-    ndc: '',
-    quantity: 1,
-    expiresOn: '',
-    category: 'equipment',
-    awaitingPhoto: true,
-  },
-  {
-    id: 'cpr-pocket-mask',
-    drug: 'Pocket CPR Mask',
-    description: 'Life Support Products, in white case',
     lot: '',
     ndc: '',
     quantity: 1,
