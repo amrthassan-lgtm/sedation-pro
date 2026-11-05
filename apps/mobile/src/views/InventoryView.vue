@@ -47,6 +47,13 @@ const sections: ReadonlyArray<{
     entries: inv.expiringSoon,
   },
   { id: 'ok', label: 'In date', hint: '', tone: 'good', entries: inv.inDate },
+  {
+    id: 'awaiting',
+    label: 'Awaiting photo',
+    hint: 'Required kit, date not read yet — not counted as a warning',
+    tone: 'slate',
+    entries: inv.awaitingPhoto,
+  },
 ];
 
 function pillSeverity(c: ClassifiedItem): Severity | 'empty' {
@@ -55,6 +62,7 @@ function pillSeverity(c: ClassifiedItem): Severity | 'empty' {
 }
 
 function pillLabel(c: ClassifiedItem): string {
+  if (c.item.awaitingPhoto) return 'Awaiting photo';
   if (!c.status.valid) return 'No date';
   if (c.status.daysLeft < 0) return 'Expired';
   if (c.status.severity === 'caution') return `${c.status.daysLeft} d`;
@@ -62,6 +70,7 @@ function pillLabel(c: ClassifiedItem): string {
 }
 
 function rowTone(c: ClassifiedItem): SectionTone {
+  if (c.item.awaitingPhoto) return 'slate';
   if (c.status.severity === 'limit') return 'danger';
   if (c.status.severity === 'caution') return 'warn';
   return 'good';
@@ -114,7 +123,7 @@ function usesOf(item: InventoryItem) {
 
 // "In date" is the longest, least-actionable section — collapsed by
 // default so attention lands on the sections that need it.
-const collapsed = ref(new Set<string>(['ok']));
+const collapsed = ref(new Set<string>(['ok', 'awaiting']));
 function toggleSection(id: string): void {
   const next = new Set(collapsed.value);
   if (next.has(id)) next.delete(id);

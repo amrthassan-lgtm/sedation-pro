@@ -193,6 +193,28 @@ describe('live inventory data invariants', () => {
   });
 });
 
+describe('awaiting-photo rows', () => {
+  it('are left out of every warning count and the tracked total', () => {
+    const classified = classifyInventory(NOW, [
+      item({ id: 'pending', expiresOn: '', awaitingPhoto: true }),
+      item({ id: 'blank', expiresOn: '' }),
+      item({ id: 'fine', expiresOn: '2028-05' }),
+    ]);
+    const s = summarizeInventory(classified);
+    expect(s.expired).toBe(1); // only the un-flagged blank
+    expect(s.total).toBe(2);
+    expect(s.soonest?.drug).toBe('blank');
+  });
+
+  it('in the live data carry no date and never satisfy a protocol callout', () => {
+    for (const inv of EMERGENCY_INVENTORY) {
+      if (!inv.awaitingPhoto) continue;
+      expect(inv.expiresOn, `${inv.id} has a date — drop awaitingPhoto`).toBe('');
+      expect(inv.protocolDrugNames, `${inv.id} must not map`).toBeUndefined();
+    }
+  });
+});
+
 describe('protocolCourseCoverage', () => {
   const ATROPINE = [{ drug: 'Atropine', needMg: 3, basis: '', protocolPhrase: '' }];
 
