@@ -52,6 +52,7 @@ export function summarizeInventory(classified: ReadonlyArray<ClassifiedItem>): I
   let onOrder = 0;
   let soonest: InventorySummary['soonest'] = null;
   for (const c of classified) {
+    if (c.item.awaitingPhoto) continue;
     if (c.status.severity === 'limit') expired += 1;
     else if (c.status.severity === 'caution') expiringSoon += 1;
     else ok += 1;
@@ -62,7 +63,8 @@ export function summarizeInventory(classified: ReadonlyArray<ClassifiedItem>): I
       }
     }
   }
-  return { expired, expiringSoon, ok, onOrder, total: classified.length, soonest };
+  const total = classified.filter((c) => !c.item.awaitingPhoto).length;
+  return { expired, expiringSoon, ok, onOrder, total, soonest };
 }
 
 /** Drawer/link-row sub-line — one shared phrasing for stock at a glance. */
@@ -192,6 +194,8 @@ export interface InventoryStatus {
   readonly notStocked: ReadonlyArray<string>;
   /** Protocol courses the in-date stock cannot complete. */
   readonly courseShort: ReadonlyArray<CourseCoverage>;
+  /** Listed for completeness, date not yet read — never a warning. */
+  readonly awaitingPhoto: ReadonlyArray<ClassifiedItem>;
   readonly subLine: string;
   statusFor(calloutName: string): Severity | null;
   usesFor(item: InventoryItem): ReadonlyArray<ProtocolRef>;
@@ -200,12 +204,14 @@ export interface InventoryStatus {
 export function useInventoryStatus(now: number = Date.now()): InventoryStatus {
   const classified = classifyInventory(now);
   const summary = summarizeInventory(classified);
+  const tracked = classified.filter((c) => !c.item.awaitingPhoto);
   return {
     classified,
     summary,
-    needsAttention: classified.filter((c) => c.status.severity === 'limit').sort(byUrgency),
-    expiringSoon: classified.filter((c) => c.status.severity === 'caution').sort(byUrgency),
-    inDate: classified.filter((c) => c.status.severity === 'safe').sort(byUrgency),
+    needsAttention: tracked.filter((c) => c.status.severity === 'limit').sort(byUrgency),
+    expiringSoon: tracked.filter((c) => c.status.severity === 'caution').sort(byUrgency),
+    inDate: tracked.filter((c) => c.status.severity === 'safe').sort(byUrgency),
+    awaitingPhoto: classified.filter((c) => c.item.awaitingPhoto),
     notStocked: protocolGapList(),
     courseShort: protocolCourseCoverage(classified).filter((c) => c.short),
     subLine: inventorySubLine(summary),
