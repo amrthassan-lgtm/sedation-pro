@@ -844,7 +844,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   {
     id: 'cric-kit',
@@ -877,7 +877,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   {
     id: 'suction-catheters',
@@ -888,7 +888,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 2,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   // Required by Florida 64B5-14.009 (Aug 2026); listed before the DA's
   // photos arrive so the kit is complete.
@@ -968,7 +968,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   {
     id: 'backup-light',
@@ -1012,7 +1012,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
+    notes: 'Come attached to the Ambu SPUR II bag-valve masks (adult and toddler)',
   },
   {
     id: 'ekg-electrodes',
@@ -1034,7 +1035,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
     notes: 'Service/inspection date: ask Sedation Resource (800-753-6376)',
   },
   {
@@ -1046,7 +1047,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
   {
     id: 'glucometer',
@@ -1057,6 +1058,6 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
-    awaitingPhoto: true,
+    noExpiry: true,
   },
 ];
