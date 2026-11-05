@@ -878,6 +878,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
+    notes: 'Not reordered — the adult non-rebreather replaces it',
   },
   {
     id: 'suction-catheters',
@@ -1014,6 +1015,18 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     category: 'equipment',
     noExpiry: true,
     notes: 'Come attached to the Ambu SPUR II bag-valve masks (adult and toddler)',
+  },
+  {
+    id: 'capno-cannulas',
+    drug: 'Capnography Sampling Cannulas',
+    description: 'EtCO₂ nasal sampling line for the Edan X10 — one per case',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '',
+    category: 'equipment',
+    awaitingPhoto: true,
+    notes: 'Photo of the box: brand, lot, expiry and how many left',
   },
   {
     id: 'ekg-electrodes',
