@@ -123,6 +123,8 @@ export interface FormularyTimings {
   readonly releaseWaitMin: number;
   /** Extended wait when flumazenil reversal was given. */
   readonly flumazenilDischargeWaitMin: number;
+  /** Extended wait when naloxone reversal was given (it can wear off before the opioid). */
+  readonly naloxoneDischargeWaitMin: number;
 }
 
 /**

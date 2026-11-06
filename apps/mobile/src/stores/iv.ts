@@ -130,6 +130,7 @@ export const useIVStore = defineStore('iv', () => {
   const lastFentanylAt = computed(() => lastDoseAt('fentanyl'));
   const lastZofranAt = computed(() => lastDoseAt('zofran'));
   const lastFlumazenilAt = computed(() => lastDoseAt('flumazenil'));
+  const lastNaloxoneAt = computed(() => lastDoseAt('naloxone'));
   const lastIvMedAt = computed(() => {
     if (doses.value.length === 0) return null;
     return doses.value[doses.value.length - 1]?.at ?? null;
@@ -356,6 +357,7 @@ export const useIVStore = defineStore('iv', () => {
     lastFentanylAt,
     lastZofranAt,
     lastFlumazenilAt,
+    lastNaloxoneAt,
     lastIvMedAt,
     lastIvSedativeAt,
     versedTimerAt,

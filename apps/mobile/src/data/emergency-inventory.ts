@@ -302,7 +302,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   {
     id: 'epi-vial',
     drug: 'Epinephrine Injection',
-    description: '1 mg/mL vial',
+    description: '1 mg/mL single-use ampule',
     lot: '251561',
     ndc: '54288-103-01',
     quantity: 3,

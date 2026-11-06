@@ -121,8 +121,17 @@ function open(id: string) {
  * that turns a 10× mix into a dose, so it renders in bold — missing it means
  * pushing ten times the intended dose.
  */
-function mixSegments(mix: string): ReadonlyArray<{ text: string; key: boolean }> {
-  return mix.split('; ').map((text) => ({ text, key: /^WASTE DOWN/.test(text) }));
+// A recipe is "<header>; step; step; ...": the header names the syringe, each
+// step renders on its own numbered line so it can be read across the room.
+function mixHead(mix: string): string {
+  return mix.split('; ')[0] ?? mix;
+}
+
+function mixSteps(mix: string): ReadonlyArray<{ text: string; key: boolean }> {
+  return mix
+    .split('; ')
+    .slice(1)
+    .map((text) => ({ text, key: /^WASTE DOWN/.test(text) }));
 }
 
 function routeLine(drug: EmergencyDrugCallout): string {
@@ -207,14 +216,15 @@ function syringeFor(drug: EmergencyDrugCallout) {
                   </span>
                   <span class="drug-dose">{{ step.drug.dose }}</span>
                 </div>
-                <p v-if="step.drug.mixFirst" class="drug-mix">
-                  ⚠
-                  <template v-for="(seg, i) in mixSegments(step.drug.mixFirst)" :key="i">
-                    <template v-if="i > 0">; </template>
-                    <strong v-if="seg.key" class="drug-mix-key">{{ seg.text }}</strong>
-                    <template v-else>{{ seg.text }}</template>
-                  </template>
-                </p>
+                <div v-if="step.drug.mixFirst" class="drug-mix">
+                  <p class="drug-mix-head">⚠ {{ mixHead(step.drug.mixFirst) }}</p>
+                  <ol class="drug-mix-steps">
+                    <li v-for="(seg, i) in mixSteps(step.drug.mixFirst)" :key="i">
+                      <strong v-if="seg.key" class="drug-mix-key">{{ seg.text }}</strong>
+                      <template v-else>{{ seg.text }}</template>
+                    </li>
+                  </ol>
+                </div>
                 <div v-if="step.drug.volume" class="drug-draw">
                   <span class="drug-draw-label">Draw</span>
                   <span class="drug-draw-vol">{{ step.drug.volume }}</span>
@@ -460,6 +470,16 @@ function syringeFor(drug: EmergencyDrugCallout) {
   font-weight: var(--weight-bold);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+.drug-mix-head {
+  margin: 0;
+}
+.drug-mix-steps {
+  margin: 2px 0 0;
+  padding-left: 1.4em;
+}
+.drug-mix-steps li {
+  padding: 1px 0;
 }
 .drug-mix {
   margin: 4px 0 0;

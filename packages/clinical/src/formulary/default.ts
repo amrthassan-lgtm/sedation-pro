@@ -201,6 +201,7 @@ const DEFAULT_TIMINGS: FormularyTimings = {
   premedWaitMin: 30,
   releaseWaitMin: 20,
   flumazenilDischargeWaitMin: 120,
+  naloxoneDischargeWaitMin: 120,
 };
 
 /**

@@ -7,9 +7,9 @@ const MIN = 60_000;
 
 /**
  * The release anchor is IV sedatives only (Versed/Fentanyl) plus the
- * flumazenil reversal window. Oral pre-med, Zofran, and naloxone are not
- * inputs to this gate at all — "they don't extend the wait" is enforced
- * structurally here and behaviourally in the mobile alarm tests.
+ * flumazenil and naloxone reversal windows. Oral pre-med and Zofran are
+ * not inputs to this gate at all — "they don't extend the wait" is
+ * enforced structurally here and behaviourally in the mobile alarm tests.
  */
 describe('releaseEligibility', () => {
   it('is vacuously eligible when no IV sedative and no reversal was given', () => {
@@ -123,10 +123,47 @@ describe('releaseEligibility', () => {
         premedWaitMin: 30,
         releaseWaitMin: 20,
         flumazenilDischargeWaitMin: 60,
+        naloxoneDischargeWaitMin: 120,
       },
     );
     expect(r.eligible).toBe(true);
     expect(r.waitMin).toBe(60);
+  });
+
+  it('holds discharge 120 min after naloxone (owner decision 2026-11)', () => {
+    const blocked = releaseEligibility({
+      lastIvSedativeAt: T0,
+      lastNaloxoneAt: T0 + 10 * MIN,
+      now: T0 + 60 * MIN,
+    });
+    expect(blocked.eligible).toBe(false);
+    expect(blocked.reason).toBe('naloxone-reversal');
+    expect(blocked.waitMin).toBe(120);
+    expect(blocked.remainingMin).toBe(70);
+    const clear = releaseEligibility({
+      lastIvSedativeAt: T0,
+      lastNaloxoneAt: T0 + 10 * MIN,
+      now: T0 + 130 * MIN,
+    });
+    expect(clear.eligible).toBe(true);
+  });
+
+  it('names whichever reversal sets the later deadline', () => {
+    const r = releaseEligibility({
+      lastIvSedativeAt: T0,
+      lastFlumazenilAt: T0 + 5 * MIN,
+      lastNaloxoneAt: T0 + 15 * MIN,
+      now: T0 + 30 * MIN,
+    });
+    expect(r.reason).toBe('naloxone-reversal');
+    expect(r.remainingMin).toBe(105);
+    const f = releaseEligibility({
+      lastIvSedativeAt: T0,
+      lastFlumazenilAt: T0 + 15 * MIN,
+      lastNaloxoneAt: T0 + 5 * MIN,
+      now: T0 + 30 * MIN,
+    });
+    expect(f.reason).toBe('flumazenil-reversal');
   });
 });
 

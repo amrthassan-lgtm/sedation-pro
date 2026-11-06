@@ -18,6 +18,8 @@ export interface ReleaseInputs {
   readonly lastIvSedativeAt?: Millis | null;
   /** When flumazenil reversal was given, if at all. */
   readonly lastFlumazenilAt?: Millis | null;
+  /** When naloxone reversal was given, if at all (owner decision 2026-11). */
+  readonly lastNaloxoneAt?: Millis | null;
   /** "Now" — epoch ms when the check is being made. */
   readonly now: Millis;
 }
@@ -30,7 +32,7 @@ export interface ReleaseEligibility {
   /** Total wait window applied to this case — 20 or 120 min by default. */
   readonly waitMin: number;
   /** Reason the wait window was extended, if applicable. */
-  readonly reason: 'standard' | 'flumazenil-reversal' | 'no-iv-sedative';
+  readonly reason: 'standard' | 'flumazenil-reversal' | 'naloxone-reversal' | 'no-iv-sedative';
 }
 
 /**
@@ -55,10 +57,11 @@ export function releaseEligibility(
   inputs: ReleaseInputs,
   timings: FormularyTimings = DEFAULT_FORMULARY.timings,
 ): ReleaseEligibility {
-  const { lastIvSedativeAt, lastFlumazenilAt, now } = inputs;
+  const { lastIvSedativeAt, lastFlumazenilAt, lastNaloxoneAt, now } = inputs;
   const sedativeGiven = lastIvSedativeAt !== null && lastIvSedativeAt !== undefined;
   const flumazenilGiven = lastFlumazenilAt !== null && lastFlumazenilAt !== undefined;
-  if (!sedativeGiven && !flumazenilGiven) {
+  const naloxoneGiven = lastNaloxoneAt !== null && lastNaloxoneAt !== undefined;
+  if (!sedativeGiven && !flumazenilGiven && !naloxoneGiven) {
     return {
       eligible: true,
       remainingMin: 0,
@@ -72,13 +75,26 @@ export function releaseEligibility(
   const flumazenilDeadline = flumazenilGiven
     ? lastFlumazenilAt + timings.flumazenilDischargeWaitMin * 60_000
     : Number.NEGATIVE_INFINITY;
-  const deadline = Math.max(standardDeadline, flumazenilDeadline);
+  const naloxoneDeadline = naloxoneGiven
+    ? lastNaloxoneAt + timings.naloxoneDischargeWaitMin * 60_000
+    : Number.NEGATIVE_INFINITY;
+  const deadline = Math.max(standardDeadline, flumazenilDeadline, naloxoneDeadline);
   const remainingMs = deadline - now;
   const eligible = remainingMs <= 0;
+  // The reason names whichever window sets the deadline; a reversal wins ties
+  // so the screen explains the longer watch.
   const reason: ReleaseEligibility['reason'] =
-    flumazenilGiven && flumazenilDeadline >= standardDeadline ? 'flumazenil-reversal' : 'standard';
+    naloxoneGiven && naloxoneDeadline === deadline && naloxoneDeadline >= flumazenilDeadline
+      ? 'naloxone-reversal'
+      : flumazenilGiven && flumazenilDeadline === deadline
+        ? 'flumazenil-reversal'
+        : 'standard';
   const waitMin =
-    reason === 'flumazenil-reversal' ? timings.flumazenilDischargeWaitMin : timings.releaseWaitMin;
+    reason === 'flumazenil-reversal'
+      ? timings.flumazenilDischargeWaitMin
+      : reason === 'naloxone-reversal'
+        ? timings.naloxoneDischargeWaitMin
+        : timings.releaseWaitMin;
   return {
     eligible,
     remainingMin: eligible ? 0 : Math.ceil(remainingMs / 60_000),

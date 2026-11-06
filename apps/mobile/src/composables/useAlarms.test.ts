@@ -311,7 +311,7 @@ describe('useAlarms', () => {
     scope.stop();
   });
 
-  it('naloxone does not defer the release chime', async () => {
+  it('naloxone defers the END chime to 120 min after the reversal (owner decision 2026-11)', async () => {
     const iv = useIVStore();
     iv.logDose({ drug: 'versed', mg: 2 });
     vi.advanceTimersByTime(4 * 60_000);
@@ -321,12 +321,38 @@ describe('useAlarms', () => {
     await nextTick();
 
     vi.advanceTimersByTime(6 * 60_000); // t+10: naloxone given
-    iv.logDose({ drug: 'naloxone', mg: 0.4 });
+    iv.logDose({ drug: 'naloxone', mg: 0.2 });
     vi.advanceTimersByTime(10 * 60_000 + 2_000); // crosses t+20
     await nextTick();
+    // The Versed-anchored t+20 crossing stays silent: the reversal owns the clock.
+    expect(playCount).toBe(0);
 
-    // END fired on the Versed-anchored deadline, not deferred to t+30.
+    // Reversal + 120 min = t+130 → the single END chime.
+    vi.advanceTimersByTime(110 * 60_000);
+    await nextTick();
     expect(playCount).toBe(1);
+    scope.stop();
+  });
+
+  it('undoing a mis-tapped naloxone stays silent', async () => {
+    const iv = useIVStore();
+    iv.logDose({ drug: 'versed', mg: 2 });
+    vi.advanceTimersByTime(30 * 60_000);
+
+    const scope = effectScope();
+    scope.run(() => useAlarms());
+    await nextTick();
+
+    // Past the 20-min wait: tap naloxone by mistake, then undo it.
+    const naloxone = iv.logDose({ drug: 'naloxone', mg: 0.2 });
+    vi.advanceTimersByTime(2_000);
+    await nextTick();
+    iv.removeDoseById(naloxone.id);
+    vi.advanceTimersByTime(2_000);
+    await nextTick();
+    // The undo flips eligibility back, but it is a data edit, not time
+    // passing, so no phantom END chime.
+    expect(playCount).toBe(0);
     scope.stop();
   });
 
