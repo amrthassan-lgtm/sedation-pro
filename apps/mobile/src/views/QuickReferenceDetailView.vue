@@ -116,6 +116,15 @@ function open(id: string) {
  * Builds the route line shown under the dose: e.g. `IV · 1.0 ml · 1 mg/ml (1:1000)`.
  * Pieces drop out cleanly when the formulary doesn't carry that field.
  */
+/**
+ * MIX FIRST recipes are "; "-separated steps. The waste-down step is the one
+ * that turns a 10× mix into a dose, so it renders in bold — missing it means
+ * pushing ten times the intended dose.
+ */
+function mixSegments(mix: string): ReadonlyArray<{ text: string; key: boolean }> {
+  return mix.split('; ').map((text) => ({ text, key: /^WASTE DOWN/.test(text) }));
+}
+
 function routeLine(drug: EmergencyDrugCallout): string {
   // Volume is deliberately absent here — it renders on its own prominent
   // Draw line; this line carries only route and concentration.
@@ -198,7 +207,14 @@ function syringeFor(drug: EmergencyDrugCallout) {
                   </span>
                   <span class="drug-dose">{{ step.drug.dose }}</span>
                 </div>
-                <p v-if="step.drug.mixFirst" class="drug-mix">⚠ {{ step.drug.mixFirst }}</p>
+                <p v-if="step.drug.mixFirst" class="drug-mix">
+                  ⚠
+                  <template v-for="(seg, i) in mixSegments(step.drug.mixFirst)" :key="i">
+                    <template v-if="i > 0">; </template>
+                    <strong v-if="seg.key" class="drug-mix-key">{{ seg.text }}</strong>
+                    <template v-else>{{ seg.text }}</template>
+                  </template>
+                </p>
                 <div v-if="step.drug.volume" class="drug-draw">
                   <span class="drug-draw-label">Draw</span>
                   <span class="drug-draw-vol">{{ step.drug.volume }}</span>
@@ -440,6 +456,11 @@ function syringeFor(drug: EmergencyDrugCallout) {
 }
 /* MIX FIRST band — dilution recipes render as a danger-tinted warning
    ABOVE the draw line; drawing these from the stock vial is a 100× error. */
+.drug-mix-key {
+  font-weight: var(--weight-bold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .drug-mix {
   margin: 4px 0 0;
   padding: 4px 8px;

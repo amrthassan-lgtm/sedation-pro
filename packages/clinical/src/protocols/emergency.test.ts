@@ -140,6 +140,14 @@ describe('emergency protocols', () => {
     }
     expect(byName('Phenylephrine')?.concentration).toContain('after dilution');
     expect(byName('Push-dose Epinephrine')?.concentration).toContain('never draw stock');
+    // The practice stocks 500 ml bags only, so every two-step recipe works in
+    // one 10 ml syringe and names the waste-down step the screen emphasises.
+    for (const name of ['Phenylephrine', 'Push-dose Epinephrine']) {
+      const mix = byName(name)?.mixFirst ?? '';
+      expect(mix, `${name} mixFirst`).toContain('one 10 ml syringe');
+      expect(mix, `${name} mixFirst`).toContain('WASTE DOWN TO 1 ml');
+      expect(mix, `${name} mixFirst`).not.toContain('100 ml NS');
+    }
   });
 
   it('reversal agents state the stocked concentration', () => {
