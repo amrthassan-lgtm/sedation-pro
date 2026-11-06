@@ -50,7 +50,7 @@ const now = useNow(1000);
 
 const eventLog = useEventLogStore();
 const { events } = storeToRefs(eventLog);
-const { lastIvMedAt, lastIvSedativeAt, lastFlumazenilAt } = storeToRefs(iv);
+const { lastIvMedAt, lastIvSedativeAt, lastFlumazenilAt, lastNaloxoneAt } = storeToRefs(iv);
 
 // Oral pre-med lives only in the event log; bedtime ('Bedtime
 // Premedication') is take-home and deliberately not counted. Feeds the
@@ -217,6 +217,7 @@ const releaseStatus = computed(() =>
   releaseEligibility({
     lastIvSedativeAt: lastIvSedativeAt.value,
     lastFlumazenilAt: lastFlumazenilAt.value,
+    lastNaloxoneAt: lastNaloxoneAt.value,
     now: now.value,
   }),
 );
@@ -245,14 +246,20 @@ const ivOutChipHeadline = computed(() => {
       ? 'Oral pre-med only — no IV sedative given. Observation clock not started.'
       : 'No sedative given. Observation not required.';
   }
+  const reversal =
+    releaseStatus.value.reason === 'flumazenil-reversal'
+      ? 'flumazenil'
+      : releaseStatus.value.reason === 'naloxone-reversal'
+        ? 'naloxone'
+        : null;
   if (releaseStatus.value.eligible) {
-    return releaseStatus.value.reason === 'flumazenil-reversal'
+    return reversal !== null
       ? `Post-reversal monitoring complete (${releaseStatus.value.waitMin} min).`
       : `${releaseStatus.value.waitMin}-minute observation complete.`;
   }
-  return releaseStatus.value.reason === 'flumazenil-reversal'
-    ? `Post-flumazenil monitoring · ${releaseStatus.value.remainingMin} min remaining (120 min total).`
-    : `${releaseStatus.value.remainingMin} min remaining of the 20-min observation wait.`;
+  return reversal !== null
+    ? `Post-${reversal} monitoring · ${releaseStatus.value.remainingMin} min remaining (${releaseStatus.value.waitMin} min total).`
+    : `${releaseStatus.value.remainingMin} min remaining of the ${releaseStatus.value.waitMin}-min observation wait.`;
 });
 
 // -------- Discharge safety guard (card 13) ---------------------------------

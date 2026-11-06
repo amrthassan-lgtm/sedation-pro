@@ -69,6 +69,7 @@ describe('DEFAULT_FORMULARY', () => {
     expect(DEFAULT_FORMULARY.timings.premedWaitMin).toBe(30);
     expect(DEFAULT_FORMULARY.timings.releaseWaitMin).toBe(20);
     expect(DEFAULT_FORMULARY.timings.flumazenilDischargeWaitMin).toBe(120);
+    expect(DEFAULT_FORMULARY.timings.naloxoneDischargeWaitMin).toBe(120);
   });
 
   it('ships the practice name used on the note letterhead + prose', () => {

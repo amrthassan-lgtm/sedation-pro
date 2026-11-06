@@ -62,12 +62,51 @@ describe('emergency protocols', () => {
     }
   });
 
-  it('both hypertension protocols carry hydralazine as a second-line callout', () => {
-    for (const id of ['hypertension', 'hypertensive_crisis']) {
-      const proto = findProtocol(id);
-      const hydralazine = proto?.steps.find((s) => s.drug?.name === 'Hydralazine');
-      expect(hydralazine, `${id} missing hydralazine`).toBeDefined();
-      expect(hydralazine?.drug?.concentration).toBe('20 mg/ml');
+  it('hypertensive crisis carries labetalol then hydralazine as second-line', () => {
+    const proto = findProtocol('hypertensive_crisis');
+    const names = proto?.steps.map((s) => s.drug?.name).filter(Boolean);
+    expect(names).toEqual(['Labetalol', 'Hydralazine']);
+    const hydralazine = proto?.steps.find((s) => s.drug?.name === 'Hydralazine');
+    expect(hydralazine?.drug?.concentration).toBe('20 mg/ml');
+    expect(proto?.steps.some((s) => s.text.includes('no more than 25%'))).toBe(true);
+  });
+
+  it('asymptomatic hypertension gives no IV BP drug (2025 AHA/ACC)', () => {
+    // Severe BP without target-organ symptoms is not lowered acutely; the
+    // symptom check routes to the crisis protocol instead.
+    const proto = findProtocol('hypertension');
+    const names = proto?.steps.map((s) => s.drug?.name).filter(Boolean);
+    expect(names).toEqual(['Midazolam']);
+    expect(proto?.steps.some((s) => s.text.includes('go to Hypertensive Crisis'))).toBe(true);
+  });
+
+  it('nitroglycerin protocols carry the PDE5 windows and the 5-minute 911 rule', () => {
+    for (const id of ['angina', 'mi']) {
+      const c = findProtocol(id)?.contraindications?.join(' ') ?? '';
+      expect(c, id).toContain('in last 24 hr');
+      expect(c, id).toContain('Tadalafil (Cialis) in last 48 hr');
+    }
+    expect(
+      findProtocol('angina')?.steps.some((s) =>
+        s.text.startsWith('Pain not gone 5 min after 1st nitro'),
+      ),
+    ).toBe(true);
+  });
+
+  it('hypotension never suggests vagal maneuvers and covers HR 50-100 with ephedrine', () => {
+    const proto = findProtocol('hypotension');
+    expect(proto?.steps.some((s) => /vagal maneuver/i.test(s.text))).toBe(false);
+    const eph = proto?.steps.find((s) => s.drug?.name === 'Ephedrine');
+    expect(eph?.text).toContain('HR 50-100');
+  });
+
+  it('every injectable callout tells the team to label the syringe', () => {
+    // Two clear syringes on a crash tray look identical; an unlabelled one is
+    // how a 1 mg/ml vial gets pushed instead of a 10 mcg/ml mix.
+    for (const drug of injectables()) {
+      expect(`${drug.notes ?? ''} ${drug.mixFirst ?? ''}`, drug.name).toMatch(
+        /label the syringe|Label it /,
+      );
     }
   });
 
@@ -139,11 +178,11 @@ describe('emergency protocols', () => {
       expect(drug?.mixFirst, `${name} mixFirst`).toMatch(/^MIX FIRST:/);
     }
     expect(byName('Phenylephrine')?.concentration).toContain('after dilution');
-    expect(byName('Push-dose Epinephrine')?.concentration).toContain('never draw stock');
+    expect(byName('Push-dose Epinephrine')?.concentration).toContain('after mixing');
     // The practice stocks 500 ml bags only, so every two-step recipe works in
     // one 10 ml syringe and names the waste-down step the screen emphasises.
     for (const name of ['Phenylephrine', 'Push-dose Epinephrine', 'Ephedrine']) {
-      expect(byName(name)?.mixFirst, `${name} guard`).toContain('never inject from the stock vial');
+      expect(byName(name)?.mixFirst, `${name} guard`).toContain('Never inject from the stock vial');
     }
     for (const name of ['Phenylephrine', 'Push-dose Epinephrine']) {
       const mix = byName(name)?.mixFirst ?? '';
@@ -153,13 +192,52 @@ describe('emergency protocols', () => {
     }
   });
 
+  it('every MIX FIRST recipe reads as numbered steps ending with a label and the stock-vial guard', () => {
+    for (const drug of allCallouts().filter((d) => d.mixFirst)) {
+      const parts = drug.mixFirst!.split('; ');
+      expect(parts[0], drug.name).toBe('MIX FIRST: one 10 ml syringe, saline from the IV bag port');
+      expect(parts[1], drug.name).toMatch(/^Draw 1 ml .* \+ 9 ml saline = /);
+      expect(parts.at(-2), drug.name).toMatch(/^Label it /);
+      expect(parts.at(-1), drug.name).toBe('Never inject from the stock vial');
+    }
+  });
+
+  it('anaphylaxis gives epinephrine IM, and IV only as the diluted push-dose', () => {
+    const steps = findProtocol('anaphylaxis')?.steps ?? [];
+    const im = steps.find((s) => s.drug?.name === 'Epinephrine');
+    expect(im?.drug?.route).toBe('IM');
+    expect(im?.text).toContain('NEVER 1 mg/ml IV');
+    const push = steps.find((s) => s.drug?.name === 'Push-dose Epinephrine');
+    expect(push?.drug?.concentration).toBe('10 mcg/ml (after mixing)');
+    expect(push?.drug?.mixFirst).toContain('WASTE DOWN TO 1 ml');
+    // Epinephrine first, 911 in parallel, and every case leaves for the ER.
+    expect(steps[0]?.drug?.name).toBe('Epinephrine');
+    expect(steps[1]?.text).toContain('calls 911');
+    expect(steps.at(-1)?.text).toContain('goes to the ER');
+  });
+
   it('reversal agents state the stocked concentration', () => {
     const flumazenil = allCallouts().find((d) => d.name === 'Flumazenil');
     expect(flumazenil?.concentration).toContain('0.1 mg/ml');
     const naloxone = allCallouts().find((d) => d.name === 'Naloxone');
     expect(naloxone?.concentration).toBe('0.4 mg/ml');
+    // Owner's ACLS-trained protocol: 0.4 mg per vial, up to 2 mg drawn.
     const twoMg = naloxone?.drawTable?.find((r) => r.label.startsWith('2 mg'));
     expect(twoMg?.ml).toBe('5.0 ml');
+    expect(flumazenil?.notes).toContain('repeat 0.2 mg every 1 min');
+    expect(flumazenil?.notes).toContain('max 1.0 mg');
+  });
+
+  it('both oversedation protocols open with the airway and give naloxone first when both drugs were used', () => {
+    for (const id of ['oversedation_benzo', 'oversedation_opioid']) {
+      const steps = findProtocol(id)?.steps ?? [];
+      expect(steps[0]?.text, id).toBe('Stop sedatives. N₂O off, 100% O₂');
+      expect(
+        steps.some((s) => s.text.includes('Naloxone first')),
+        id,
+      ).toBe(true);
+      expect(steps.at(-1)?.text, id).toContain('watch');
+    }
   });
 
   it('all three cardiac lidocaine callouts carry the identical weight table', () => {

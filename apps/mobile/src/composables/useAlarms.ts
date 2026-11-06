@@ -68,9 +68,9 @@ import { premedWait, releaseEligibility } from '@sedation-pro/clinical';
  *    data edit, not time elapsing). Guards are per-chime so logging a
  *    Versed dose on the exact tick the Fentanyl timer goes ready cannot
  *    swallow the Fentanyl chime. The release chime's inputs are
- *    `lastIvSedativeAt` + `lastFlumazenilAt` only — Zofran/naloxone are
- *    not inputs to the release computation, so their logs and undos
- *    cannot flip it at all.
+ *    `lastIvSedativeAt` + `lastFlumazenilAt` + `lastNaloxoneAt` — a
+ *    reversal log or undo is a data edit and suppresses that tick; Zofran
+ *    is not an input, so its logs and undos cannot flip it at all.
  *
  * Note: this does not defeat the iPhone hardware Ring/Silent switch (iOS
  * routes web audio through the ringer channel; only a native AVAudioSession
@@ -408,6 +408,7 @@ export function useAlarms(): void {
     const r = releaseEligibility({
       lastIvSedativeAt: iv.lastIvSedativeAt,
       lastFlumazenilAt: iv.lastFlumazenilAt,
+      lastNaloxoneAt: iv.lastNaloxoneAt,
       now: now.value,
     });
     if (r.reason === 'no-iv-sedative') return null;
@@ -437,6 +438,7 @@ export function useAlarms(): void {
   let prevFentanylAt = iv.lastFentanylAt;
   let prevIvSedativeAt = iv.lastIvSedativeAt;
   let prevFlumazenilAt = iv.lastFlumazenilAt;
+  let prevNaloxoneAt = iv.lastNaloxoneAt;
   let prevPremedAt = lastOralPremedAt.value;
   // Arming clock for the grace gate — reset at mount, on any stale tick,
   // and on hidden→visible. See "Silent catch-up" in the header.
@@ -457,12 +459,15 @@ export function useAlarms(): void {
       const currFentanylAt = iv.lastFentanylAt;
       const currIvSedativeAt = iv.lastIvSedativeAt;
       const currFlumazenilAt = iv.lastFlumazenilAt;
+      const currNaloxoneAt = iv.lastNaloxoneAt;
       const currPremedAt = lastOralPremedAt.value;
       const versedFresh = currVersedAt === prevVersedAt;
       const fentanylFresh = currFentanylAt === prevFentanylAt;
       const premedFresh = currPremedAt === prevPremedAt;
       const releaseFresh =
-        currIvSedativeAt === prevIvSedativeAt && currFlumazenilAt === prevFlumazenilAt;
+        currIvSedativeAt === prevIvSedativeAt &&
+        currFlumazenilAt === prevFlumazenilAt &&
+        currNaloxoneAt === prevNaloxoneAt;
 
       const v = versedState.value;
       const f = fentanylState.value;
@@ -485,6 +490,7 @@ export function useAlarms(): void {
       prevFentanylAt = currFentanylAt;
       prevIvSedativeAt = currIvSedativeAt;
       prevFlumazenilAt = currFlumazenilAt;
+      prevNaloxoneAt = currNaloxoneAt;
       prevPremedAt = currPremedAt;
     },
     { flush: 'sync' },
