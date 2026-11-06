@@ -628,7 +628,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '1.0 ml',
           concentration: '100 mcg/ml (after dilution)',
           mixFirst:
-            'MIX FIRST: dilute 1 ml of 10 mg/ml phenylephrine into 100 ml NS → 100 mcg/ml; never draw from the stock vial',
+            'MIX FIRST: in one 10 ml syringe, 9 ml saline + 1 ml of 10 mg/ml → 1 mg/ml; WASTE DOWN TO 1 ml; add 9 ml saline → 100 mcg/ml; never inject from the stock vial',
+          notes: 'saline from the IV bag port; label the syringe; discard after 4 hr',
         },
       },
       { text: 'Monitor vitals' },
@@ -671,7 +672,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '0.5-1.0 ml',
           concentration: '10 mcg/ml (after mixing — never draw stock 1 mg/ml)',
-          mixFirst: 'MIX FIRST: 1 mg epi (1 ml of 1 mg/ml, 1:1000) into 100 ml NS → 10 mcg/ml',
+          mixFirst:
+            'MIX FIRST: in one 10 ml syringe, 9 ml saline + 1 ml of 1 mg/ml (1:1000) → 100 mcg/ml; WASTE DOWN TO 1 ml; add 9 ml saline → 10 mcg/ml; never inject from the stock vial',
           drawTable: [
             { label: '5 mcg', ml: '0.5 ml' },
             { label: '10 mcg', ml: '1.0 ml' },

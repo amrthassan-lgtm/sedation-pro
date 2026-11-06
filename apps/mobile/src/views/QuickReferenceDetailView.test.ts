@@ -30,6 +30,14 @@ describe('QuickReferenceDetailView draw rendering', () => {
     wrapper.unmount();
   });
 
+  it('emphasises the waste-down step inside a two-step MIX FIRST recipe', () => {
+    const wrapper = mountDetail('hypotension'); // Phenylephrine
+    const keys = wrapper.findAll('.drug-mix-key');
+    expect(keys.length).toBe(1);
+    expect(keys[0]!.text()).toBe('WASTE DOWN TO 1 ml');
+    wrapper.unmount();
+  });
+
   it('renders the MIX FIRST band above the draw line for dilution callouts', () => {
     const wrapper = mountDetail('bradycardia'); // Push-dose Epinephrine
     const mix = wrapper.find('.drug-mix');
