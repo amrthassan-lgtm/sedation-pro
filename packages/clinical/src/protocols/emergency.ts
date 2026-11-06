@@ -611,7 +611,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '0.5-1.0 ml',
           concentration: '5 mg/ml (after dilution)',
-          mixFirst: 'MIX FIRST: 1 ml of 50 mg/ml + 9 ml saline → 5 mg/ml',
+          mixFirst:
+            'MIX FIRST: in one 10 ml syringe, 9 ml saline + 1 ml of 50 mg/ml → 5 mg/ml; never inject from the stock vial',
           drawTable: [
             { label: '2.5 mg', ml: '0.5 ml' },
             { label: '5 mg', ml: '1.0 ml' },

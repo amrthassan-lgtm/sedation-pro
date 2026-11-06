@@ -142,6 +142,9 @@ describe('emergency protocols', () => {
     expect(byName('Push-dose Epinephrine')?.concentration).toContain('never draw stock');
     // The practice stocks 500 ml bags only, so every two-step recipe works in
     // one 10 ml syringe and names the waste-down step the screen emphasises.
+    for (const name of ['Phenylephrine', 'Push-dose Epinephrine', 'Ephedrine']) {
+      expect(byName(name)?.mixFirst, `${name} guard`).toContain('never inject from the stock vial');
+    }
     for (const name of ['Phenylephrine', 'Push-dose Epinephrine']) {
       const mix = byName(name)?.mixFirst ?? '';
       expect(mix, `${name} mixFirst`).toContain('one 10 ml syringe');
