@@ -444,9 +444,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '',
     quantity: 1,
     expiresOn: '',
-    onOrder: { sku: 'DEXT5050V-E' },
     notes:
-      'Backordered at Young Surgical (Nov 2026) — source from another distributor; Florida requires an antihypoglycemic',
+      'Vial backordered at Young (Nov 2026); 50 mL prefilled syringe (SKU DEXT5050S-E) is on the January order',
     protocolDrugNames: ['D50W'],
   },
   {
