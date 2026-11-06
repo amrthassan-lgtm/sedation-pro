@@ -103,18 +103,20 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'laryngospasm',
     category: 'airway',
     name: 'Laryngospasm (Crowing/Stridor)',
-    summary: 'Bucking respiratory pattern, crowing sounds · BVM + Succinylcholine 20-40mg',
+    summary:
+      'Crowing, stridor, no air movement · Jaw thrust + CPAP, then Succinylcholine 20-40mg IV',
     signs: ['crowing', 'stridor', 'bucking respiratory pattern'],
     steps: [
-      { text: 'Call 911', severity: 'critical' },
-      { text: 'Remove objects, suction airway (also with Laryngoscope if possible)' },
+      { text: 'Stop the procedure. Remove packs and gauze, suction the throat' },
       {
-        text: 'Semi-supine, positive pressure O₂ with BVM (100% at 6L/min)',
+        text: "Jaw thrust plus firm pressure at the laryngospasm notch (Larson's: behind the earlobe, between jaw and mastoid)",
+      },
+      {
+        text: 'Tight mask seal, 100% O₂ at 15 L/min with the BVM, steady gentle pressure (CPAP)',
         severity: 'critical',
       },
-      { text: 'If no relief: 1-2 ml Normal Saline transtracheal' },
       {
-        text: 'Last resort: Succinylcholine IV (1 mg/kg IM), then assist ventilation with BVM',
+        text: 'No relief and SpO₂ falling: Succinylcholine IV, then ventilate with the BVM until breathing on their own',
         drug: {
           name: 'Succinylcholine',
           dose: '20-40 mg',
@@ -125,17 +127,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '20 mg', ml: '1.0 ml' },
             { label: '40 mg', ml: '2.0 ml' },
           ],
-          notes: 'IM alternative 1 mg/kg (≈0.45 mg/lb); keep refrigerated',
+          notes: '0.25-0.5 mg/kg; keep refrigerated; have atropine ready for a slow heart rate',
         },
         severity: 'critical',
       },
-      { text: 'Maintain Airway / Continue to assist ventilation' },
-      { text: 'Prepare to intubate / Intubate if necessary (advanced airway)' },
-      {
-        text: 'If unable to intubate or ventilate, prepare to perform emergency cricothyrotomy',
-        severity: 'final',
-      },
-      { text: 'Prepare to manage bradycardia (due to hypoxia)' },
+      { text: 'Call 911', severity: 'critical' },
+      { text: 'Cannot ventilate: LMA or King, then cricothyrotomy', severity: 'final' },
     ],
     critical: true,
   },
