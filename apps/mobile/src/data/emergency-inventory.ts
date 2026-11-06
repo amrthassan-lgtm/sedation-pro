@@ -153,6 +153,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2026-08',
     onOrder: { sku: 'AUVI3-R', substitution: 'Auvi-Q 0.3 mg auto-injector' },
+    notes: 'Shipped (inv 3747995): Auvi-Q lot G001-000011714486, exp 2028-01-17, NDC 71872-7329-01',
     protocolDrugNames: ['Epinephrine'],
   },
   {
@@ -237,6 +238,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2026-09',
     onOrder: { sku: 'ASPI81-36O', substitution: '81 mg chewable ×36' },
+    notes:
+      'Shipped (inv 3747995): 81 mg chewable ×36, lot 6GE1743, exp 2029-04-30, NDC 70677-1134-01',
     protocolDrugNames: ['Aspirin'],
   },
   {
@@ -249,6 +252,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     mgPerUnit: 1,
     expiresOn: '2026-09',
     onOrder: { sku: 'on order #2000017881', substitution: '1 mg ×2' },
+    notes:
+      'Shipped ×2 (inv 3748160): 1 mg/mL 1 mL vials, lot F985-A250596, exp 2027-11-30, NDC 71872-7340-01',
     protocolDrugNames: ['Atropine'],
   },
   {
@@ -281,6 +286,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 2,
     expiresOn: '2026-08',
     onOrder: { sku: 'DIPH501V-R' },
+    notes: 'Shipped ×2 (inv 3747995): lot AB071-E109A012, exp 2028-02-29, NDC 71872-7373-01',
     protocolDrugNames: ['Diphenhydramine'],
   },
   {
@@ -439,7 +445,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     onOrder: { sku: 'DEXT5050V-E' },
-    notes: 'New line item — fills the hypoglycemia IV-route gap',
+    notes:
+      'Backordered at Young Surgical (Nov 2026) — source from another distributor; Florida requires an antihypoglycemic',
     protocolDrugNames: ['D50W'],
   },
   {
@@ -454,6 +461,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     mgPerUnit: 6,
     expiresOn: '',
     onOrder: { sku: 'ADEN32V-R' },
+    notes: 'Shipped ×2 (inv 3747995): lot F933-A4640039, exp 2027-11-30, NDC 71872-7335-01',
     protocolDrugNames: ['Adenosine'],
   },
   {
@@ -465,7 +473,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     onOrder: { sku: 'SOLU1252V-R' },
-    notes: 'New line item — fills the anaphylaxis steroid gap',
+    notes: 'Shipped (inv 3747995): lot E014-RA5974, exp 2029-01-31, NDC 71872-7061-01',
     protocolDrugNames: ['Methylprednisolone (Solu-Medrol)'],
   },
   // Sedation cart (the safe), read from the packaging 2026-10 and counted
@@ -906,6 +914,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     awaitingPhoto: true,
+    notes: 'On the January order: NasoSafe 6 mm, 7.5 mm, 8 mm + water-based lubricant',
   },
   {
     id: 'o2-cylinder',
