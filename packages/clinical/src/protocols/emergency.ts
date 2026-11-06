@@ -198,14 +198,33 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'hyperventilation',
     category: 'airway',
     name: 'Hyperventilation',
-    summary: 'Rapid breathing, lightheaded, tingling hands · Reassure + paper bag',
+    summary: 'Rapid breathing, lightheaded, tingling hands · Check SpO₂, coach slow breathing',
     signs: ['rapid breathing', 'lightheaded', 'tingling hands'],
     steps: [
-      { text: 'Terminate procedure' },
-      { text: 'Remove objects from oral cavity' },
-      { text: 'Attempt to calm the patient, DO NOT GIVE O₂' },
+      { text: 'Stop the procedure, remove objects, sit upright' },
       {
-        text: 'Have patient breathe into their cupped hands over the mouth and nose to reduce CO₂ elimination, if unresolved after 10 minutes',
+        text: 'Check SpO₂ and BP first: low SpO₂, chest pain or wheeze means it is not anxiety (see Hypoventilation, Bronchospasm, Angina)',
+        severity: 'critical',
+      },
+      {
+        text: 'Coach slow breathing: in through the nose, out through pursed lips or cupped hands. No paper bag',
+      },
+      { text: 'O₂ only if SpO₂ under 94%' },
+      {
+        text: 'Not settling after 10 min: Midazolam IV slowly (office protocol)',
+        drug: {
+          name: 'Midazolam',
+          dose: '1-2 mg',
+          route: 'IV',
+          volume: '0.2-0.4 ml',
+          concentration: '5 mg/ml',
+          drawTable: [
+            { label: '1 mg', ml: '0.2 ml' },
+            { label: '2 mg', ml: '0.4 ml' },
+          ],
+          notes: 'titrate slowly; watch for oversedation',
+        },
+        severity: 'final',
       },
     ],
   },
@@ -216,16 +235,17 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary: 'SpO₂ dropping, slow/shallow breaths · BVM + Flumazenil or Naloxone',
     signs: ['SpO₂ dropping', 'slow breaths', 'shallow breaths'],
     steps: [
-      { text: "Call patient's name" },
+      { text: 'Turn off N₂O, 100% O₂. Stop giving sedatives', severity: 'critical' },
+      { text: 'Stimulate: say their name loudly, shake the shoulder' },
+      { text: 'Jaw thrust or chin lift, suction, oral airway or NPA' },
       {
-        text: "Head tilt/chin lift/jaw thrust, analyze patient's breathing (ensure monitors are properly placed)",
-      },
-      { text: 'Suction (use OPA/NPA if needed)' },
-      {
-        text: 'If not breathing adequately: Use BVM to assist',
+        text: 'Still breathing poorly (SpO₂ falling, EtCO₂ waveform flat or rising): BVM, 1 breath every 6 seconds',
         severity: 'critical',
       },
-      { text: 'Reverse sedative if needed: Flumazenil for Versed; Naloxone for Fentanyl' },
+      {
+        text: 'Reverse: Naloxone for fentanyl, Flumazenil for midazolam (see Oversedation protocols)',
+      },
+      { text: 'No pulse: start CPR (Cardiac Arrest protocol)', severity: 'final' },
     ],
     relatedProtocols: ['oversedation_benzo', 'oversedation_opioid'],
   },
