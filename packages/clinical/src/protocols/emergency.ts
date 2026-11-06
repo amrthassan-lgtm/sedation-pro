@@ -590,15 +590,15 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'O₂ to >94%' },
       { text: 'Check heart rate' },
       {
-        text: 'If Bradycardic (HR <60): Atropine IV (q3-5min, max 3mg)',
+        text: 'If Bradycardic (HR <50): Atropine IV (q3-5min, max 3mg)',
         drug: {
           name: 'Atropine',
-          dose: '0.5 mg',
+          dose: '1 mg',
           route: 'IV',
           concentration: '1 mg/ml vial or 1 mg/10 ml prefilled',
           drawTable: [
-            { label: '1 mg/ml vial', ml: '0.5 ml' },
-            { label: '1 mg/10 ml prefilled', ml: '5.0 ml' },
+            { label: '1 mg/ml vial', ml: '1.0 ml' },
+            { label: '1 mg/10 ml prefilled (full syringe)', ml: '10.0 ml' },
           ],
           notes: 'q3-5 min, max 3 mg',
         },
@@ -642,16 +642,16 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'bradycardia',
     category: 'cardiac-arrhythmia',
     name: 'Symptomatic Bradycardia (<50 BPM)',
-    summary: 'HR <50 BPM, low BP · Atropine 0.5mg IV',
+    summary: 'HR under 50 with low BP or confusion · Ventilate, then Atropine 1mg IV',
     signs: ['HR <50 BPM', 'low BP'],
     steps: [
-      { text: 'Evaluate ABCs / ECG monitor' },
-      { text: 'Secure Airway if needed' },
-      { text: 'Open IV all the way to allow fluids to run in' },
-      { text: 'Give Supplemental O₂ titrate to >94%' },
-      { text: 'Determine Rhythm (Sinus Brady? Heart Blocks?)' },
       {
-        text: 'If Symptomatic Bradycardia (with hypotension), Treat the Heart Rate: Atropine IV, repeat q3-5 min, max 3mg total',
+        text: 'Ventilate first: jaw thrust, O₂, BVM if breathing is poor (hypoxia is the usual cause in sedation)',
+        severity: 'critical',
+      },
+      { text: 'Monitor EKG, BP, SpO₂. IV open' },
+      {
+        text: 'Low BP, confusion, chest pain or shock: Atropine IV, repeat q3-5 min, max 3 mg',
         drug: {
           name: 'Atropine',
           dose: '1 mg',
@@ -666,7 +666,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       { text: 'Call 911', severity: 'critical' },
       {
-        text: 'If unresponsive to Atropine — Push-dose Epinephrine (bridge to EMS)',
+        text: 'Atropine not working: Push-dose Epinephrine (office bridge to EMS; AHA uses pacing or an infusion)',
         drug: {
           name: 'Push-dose Epinephrine',
           dose: '5-10 mcg',
@@ -690,13 +690,15 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'sinus_tach',
     category: 'cardiac-arrhythmia',
     name: 'Sinus Tachycardia (>150 adult, >180 pediatric)',
-    summary: 'HR >150, chest pain, hypotension · O₂ + treat underlying cause',
+    summary: 'HR over 150, usually a response to pain, anxiety or fluids · Treat the cause',
     signs: ['HR >150', 'chest pain', 'hypotension'],
     steps: [
-      { text: 'Give supplemental O₂' },
-      { text: 'Consider cause (hypovolemia, epinephrine reaction)' },
-      { text: 'Monitor and reassure patient' },
-      { text: 'Give fluids' },
+      {
+        text: 'Find the cause: pain, anxiety, hypoxia, low fluids, epinephrine in the local anesthetic',
+      },
+      { text: 'Stop procedure. O₂ if SpO₂ under 94%. Reassure and monitor' },
+      { text: 'Low fluids or low BP: NS bolus (not D5W)' },
+      { text: 'Chest pain, low BP or confusion: Call 911', severity: 'critical' },
     ],
   },
   {
@@ -710,9 +712,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
         severity: 'critical',
       },
-      { text: 'Give Supplemental O₂' },
+      { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
       {
-        text: 'Amiodarone IV over 10 minutes',
+        text: 'Amiodarone IV over 10 minutes (office protocol; not an AHA pathway)',
         drug: {
           name: 'Amiodarone',
           dose: '150 mg',
@@ -722,6 +724,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           notes: 'give over 10 minutes',
         },
       },
+      { text: 'Call 911', severity: 'critical' },
     ],
   },
   {
@@ -738,7 +741,6 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       {
         text: 'Modified Valsalva: blow into a 10 ml syringe for 15 seconds, then lay flat with legs raised for 15 seconds (avoid carotid massage)',
       },
-      { text: 'Supplemental O₂' },
       {
         text: 'Adenosine Rapid IV Push: 6 mg, then 12 mg after 1-2 minutes if not converted',
         drug: {
@@ -752,11 +754,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '12 mg (2nd dose)', ml: '4.0 ml' },
           ],
           notes:
-            'rapid IV push (1-2 seconds); avoid in asthma; never for irregular or polymorphic rhythms',
+            'push in 1-2 seconds, then a rapid 20 ml NS flush; avoid in asthma; never for irregular or polymorphic rhythms',
         },
         severity: 'critical',
       },
-      { text: 'Flush Adenosine with 10 ml of NS in IV line immediately' },
+      { text: 'Still in SVT: Call 911', severity: 'critical' },
     ],
   },
   {
@@ -770,9 +772,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
         severity: 'critical',
       },
-      { text: 'Give Supplemental O₂' },
+      { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
       {
-        text: 'Amiodarone IV over 10 minutes',
+        text: 'Amiodarone IV over 10 minutes (office protocol; AHA uses rate control first)',
         drug: {
           name: 'Amiodarone',
           dose: '150 mg',
@@ -782,6 +784,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           notes: 'give over 10 minutes',
         },
       },
+      { text: 'Call 911', severity: 'critical' },
     ],
   },
   {
@@ -795,20 +798,20 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
         severity: 'critical',
       },
-      { text: 'Give Supplemental O₂' },
+      { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
       {
-        text: 'Amiodarone IV over 10 minutes',
+        text: 'Amiodarone IV over 10 minutes; repeat once if it recurs',
         drug: {
           name: 'Amiodarone',
           dose: '150 mg',
           route: 'IV',
           volume: '3.0 ml',
           concentration: '50 mg/ml',
-          notes: 'give over 10 minutes',
+          notes: 'give over 10 minutes; repeat 150 mg if it recurs',
         },
       },
       {
-        text: 'If amiodarone unavailable: Cardiac Lidocaine IV push, repeat in 5-10 minutes',
+        text: 'If amiodarone unavailable: Cardiac Lidocaine IV push; second dose is half',
         drug: {
           name: 'Cardiac Lidocaine',
           dose: '0.6 mg/lb',
@@ -819,9 +822,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '200 lb (120 mg)', ml: '6.0 ml' },
             { label: '250 lb (150 mg)', ml: '7.5 ml' },
           ],
-          notes: 'over 165 lb needs a second 100 mg/5 ml vial',
+          notes:
+            'second dose 0.3 mg/lb in 5-10 min; max 1.4 mg/lb total; over 165 lb needs a second 100 mg/5 ml vial',
         },
       },
+      { text: 'Call 911', severity: 'critical' },
     ],
   },
   {
@@ -835,39 +840,35 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
         severity: 'critical',
       },
-      { text: 'Give Supplemental O₂' },
+      { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
       {
-        text: 'Amiodarone IV over 10 minutes',
+        text: 'Amiodarone IV over 10 minutes; repeat once if it recurs',
         drug: {
           name: 'Amiodarone',
           dose: '150 mg',
           route: 'IV',
           volume: '3.0 ml',
           concentration: '50 mg/ml',
-          notes: 'give over 10 minutes',
+          notes: 'give over 10 minutes; repeat 150 mg if it recurs',
         },
       },
+      { text: 'Call 911', severity: 'critical' },
     ],
   },
   {
     id: 'vfib_vtach',
     category: 'cardiac-arrest',
     name: 'V-Fib / Pulseless V-Tach (CARDIAC ARREST)',
-    summary: 'CPR + AED · Epinephrine 1mg IV',
+    summary: 'CPR + AED · Epinephrine 1mg IV after 2nd shock',
     signs: ['no pulse', 'shockable rhythm', 'V-Fib', 'pulseless V-Tach'],
     steps: [
-      { text: 'Call for Help and Call for AED', severity: 'critical' },
+      { text: 'Call for help, AED and 911', severity: 'critical' },
       {
-        text: 'CPR + AED (100-120/min; 30:2 until an LMA/King/ET tube is placed). Lower chair, lay patient flat, place CPR Board, begin 2-person CPR',
+        text: 'CPR on the CPR board: 100-120/min, 30:2 until an LMA/King/ET tube is placed, then 1 breath every 6 seconds with continuous compressions',
         severity: 'critical',
       },
-      { text: 'Turn on the AED and follow instructions' },
-      {
-        text: 'If shockable rhythm: Shock, then IMMEDIATE CPR for 2 min',
-        severity: 'critical',
-      },
-      { text: 'Establish Airway and appropriate ventilation' },
-      { text: 'Start IV' },
+      { text: 'AED: shock when advised, then CPR for 2 minutes right away', severity: 'critical' },
+      { text: 'IV access without stopping compressions' },
       {
         text: 'After 2nd shock: Epinephrine IV push, repeat q3-5min',
         drug: {
@@ -881,19 +882,20 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         severity: 'critical',
       },
       {
-        text: 'After 3rd shock: Amiodarone IV PUSH, then 150mg in 3-5min',
+        text: 'After 3rd shock: Amiodarone 300 mg IV push; second dose 150 mg',
         drug: {
           name: 'Amiodarone',
           dose: '300 mg',
           route: 'IV',
           volume: '6.0 ml',
           concentration: '50 mg/ml',
-          notes: 'IV PUSH; 300 mg = two 150 mg/3 ml vials; follow with 150 mg (3.0 ml) in 3-5 min',
+          notes:
+            'IV PUSH; 300 mg = two 150 mg/3 ml vials; second dose 150 mg (3.0 ml) at the next cycle',
         },
         severity: 'critical',
       },
       {
-        text: 'If amiodarone unavailable: Cardiac Lidocaine IV push, repeat in 3-5 minutes',
+        text: 'If amiodarone unavailable: Cardiac Lidocaine IV push; second dose is half',
         drug: {
           name: 'Cardiac Lidocaine',
           dose: '0.6 mg/lb',
@@ -904,16 +906,14 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '200 lb (120 mg)', ml: '6.0 ml' },
             { label: '250 lb (150 mg)', ml: '7.5 ml' },
           ],
-          notes: 'over 165 lb needs a second 100 mg/5 ml vial',
+          notes:
+            'second dose 0.3 mg/lb at the next cycle; over 165 lb needs a second 100 mg/5 ml vial',
         },
-      },
-      {
-        text: 'Continue with CPR and AED instructions until EMS arrives',
-        severity: 'final',
       },
       {
         text: "Treatable causes (H's and T's), most likely in sedation first: Hypoxia, Toxins (sedatives: reverse with Naloxone / Flumazenil), Hypovolemia, Hydrogen ion (acidosis), Hypo/Hyperkalemia, Hypothermia, Tamponade, Tension pneumothorax, Thrombosis (coronary), Thrombosis (pulmonary)",
       },
+      { text: 'Continue CPR and AED until EMS takes over', severity: 'final' },
     ],
     critical: true,
     relatedProtocols: ['pea_asystole'],
@@ -925,35 +925,29 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary: 'CPR → Epinephrine 1mg IV q3-5min',
     signs: ['no pulse', 'non-shockable rhythm', 'PEA', 'asystole'],
     steps: [
-      { text: 'Confirm Rhythm / ensure monitors properly connected' },
-      { text: 'Call for Help and Call for AED', severity: 'critical' },
-      { text: 'Begin Chest Compressions (CPR)', severity: 'critical' },
+      { text: 'Call for help, AED and 911', severity: 'critical' },
       {
-        text: 'Lower chair, lay patient flat, place CPR Board, begin two-person CPR (100-120/min; 30:2 until an LMA/King/ET tube is placed, then 1 breath every 6 seconds with continuous compressions)',
+        text: 'CPR on the CPR board: 100-120/min, 30:2 until an LMA/King/ET tube is placed, then 1 breath every 6 seconds with continuous compressions',
         severity: 'critical',
       },
-      { text: 'Turn on the AED and follow instructions' },
-      { text: 'Establish Airway and appropriate ventilation' },
-      { text: 'Start IV and administer Bolus 500 ml NS' },
+      { text: 'AED on: follow its prompts (shock only if advised)' },
+      { text: 'IV access; bolus 500 ml NS' },
       {
-        text: "Review possible causes (H's and T's): Hypoxia and sedative Toxins first (reverse with Naloxone / Flumazenil)",
-      },
-      {
-        text: 'Epinephrine IV push, repeat q3-5 min',
+        text: 'Epinephrine IV push as soon as possible, repeat q3-5 min',
         drug: {
           name: 'Epinephrine',
           dose: '1 mg',
           route: 'IV',
           volume: '1.0 ml',
           concentration: '1 mg/ml (1:1000)',
-          notes: 'draw entire 1 ml ampule; give as soon as IV access established; repeat q3-5 min',
+          notes: 'draw entire 1 ml ampule; repeat q3-5 min',
         },
         severity: 'critical',
       },
       {
-        text: 'Atropine is NOT indicated for PEA/Asystole (removed from ACLS since 2010; Epinephrine only per AHA 2025)',
-        severity: 'final',
+        text: "Review possible causes (H's and T's): Hypoxia and sedative Toxins first (reverse with Naloxone / Flumazenil)",
       },
+      { text: 'No atropine for PEA or asystole', severity: 'final' },
     ],
     relatedProtocols: ['vfib_vtach'],
   },

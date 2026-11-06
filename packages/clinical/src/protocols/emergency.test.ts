@@ -235,6 +235,19 @@ describe('emergency protocols', () => {
       }
     });
 
+    it('atropine is 1 mg wherever it appears (AHA 2025)', () => {
+      const atropines = allCallouts().filter((d) => d.name === 'Atropine');
+      expect(atropines.length).toBeGreaterThan(0);
+      for (const d of atropines) expect(d.dose).toBe('1 mg');
+    });
+
+    it('lidocaine second dose is half the first in arrest and stable VT', () => {
+      for (const id of ['vfib_vtach', 'stable_vtach']) {
+        const lido = findProtocol(id)?.steps.find((st) => st.drug?.name === 'Cardiac Lidocaine');
+        expect(lido?.drug?.notes, id).toContain('second dose 0.3 mg/lb');
+      }
+    });
+
     it('SVT uses the modified Valsalva and 6 mg then 12 mg adenosine', () => {
       const svt = textOf('svt');
       expect(svt).toContain('Modified Valsalva');
