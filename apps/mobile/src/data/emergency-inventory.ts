@@ -115,9 +115,9 @@ export const PROTOCOL_COURSES: ReadonlyArray<ProtocolCourse> = [
   },
   {
     drug: 'Adenosine',
-    needMg: 30,
-    basis: '6 mg, then 12 mg, then 12 mg',
-    protocolPhrase: '12 mg (2nd/3rd dose)',
+    needMg: 18,
+    basis: '6 mg, then 12 mg (AHA 2025)',
+    protocolPhrase: '12 mg (2nd dose)',
   },
   {
     drug: 'Flumazenil',

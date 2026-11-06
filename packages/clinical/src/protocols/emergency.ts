@@ -706,6 +706,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary: 'Regular narrow tachycardia, HR 100-180 · Amiodarone 150mg IV over 10min',
     signs: ['regular narrow tachycardia', 'HR 100-180'],
     steps: [
+      {
+        text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
+        severity: 'critical',
+      },
       { text: 'Give Supplemental O₂' },
       {
         text: 'Amiodarone IV over 10 minutes',
@@ -724,15 +728,19 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'svt',
     category: 'cardiac-arrhythmia',
     name: 'SVT / PSVT (>150 BPM)',
-    summary: 'Sudden HR >150, palpitations · Vagal maneuver → Adenosine 6mg IV',
+    summary: 'Sudden HR >150, palpitations · Modified Valsalva, then Adenosine 6mg IV',
     signs: ['sudden HR >150', 'palpitations'],
     steps: [
       {
-        text: 'Attempt Vagal Maneuver (Carotid Massage, bear down, cold water to face)',
+        text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
+        severity: 'critical',
+      },
+      {
+        text: 'Modified Valsalva: blow into a 10 ml syringe for 15 seconds, then lay flat with legs raised for 15 seconds (avoid carotid massage)',
       },
       { text: 'Supplemental O₂' },
       {
-        text: 'Adenosine Rapid IV Push, repeat every 30 seconds, with 12mg as 2nd and 3rd dose',
+        text: 'Adenosine Rapid IV Push: 6 mg, then 12 mg after 1-2 minutes if not converted',
         drug: {
           name: 'Adenosine',
           dose: '6 mg',
@@ -741,9 +749,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           concentration: '3 mg/ml',
           drawTable: [
             { label: '6 mg (1st dose)', ml: '2.0 ml' },
-            { label: '12 mg (2nd/3rd dose)', ml: '4.0 ml' },
+            { label: '12 mg (2nd dose)', ml: '4.0 ml' },
           ],
-          notes: 'rapid IV push (1-2 seconds)',
+          notes:
+            'rapid IV push (1-2 seconds); avoid in asthma; never for irregular or polymorphic rhythms',
         },
         severity: 'critical',
       },
@@ -757,6 +766,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary: 'Irregular HR, palpitations, hypotension · Amiodarone 150mg IV over 10min',
     signs: ['irregular HR', 'palpitations', 'hypotension'],
     steps: [
+      {
+        text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
+        severity: 'critical',
+      },
       { text: 'Give Supplemental O₂' },
       {
         text: 'Amiodarone IV over 10 minutes',
@@ -778,6 +791,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary: 'Wide complex tachycardia, pulse present · Amiodarone 150mg IV over 10min',
     signs: ['wide complex tachycardia', 'pulse present'],
     steps: [
+      {
+        text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
+        severity: 'critical',
+      },
       { text: 'Give Supplemental O₂' },
       {
         text: 'Amiodarone IV over 10 minutes',
@@ -791,7 +808,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         },
       },
       {
-        text: 'Cardiac Lidocaine IV push, repeat in 5-10 minutes',
+        text: 'If amiodarone unavailable: Cardiac Lidocaine IV push, repeat in 5-10 minutes',
         drug: {
           name: 'Cardiac Lidocaine',
           dose: '0.6 mg/lb',
@@ -802,7 +819,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '200 lb (120 mg)', ml: '6.0 ml' },
             { label: '250 lb (150 mg)', ml: '7.5 ml' },
           ],
-          notes: 'over 165 lb exceeds one 100 mg/5 ml vial — only 1 stocked',
+          notes: 'over 165 lb needs a second 100 mg/5 ml vial',
         },
       },
     ],
@@ -814,6 +831,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary: 'Wide QRS, HR >100, unknown origin · Amiodarone 150mg IV over 10min',
     signs: ['wide QRS', 'HR >100', 'unknown origin'],
     steps: [
+      {
+        text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
+        severity: 'critical',
+      },
       { text: 'Give Supplemental O₂' },
       {
         text: 'Amiodarone IV over 10 minutes',
@@ -837,7 +858,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     steps: [
       { text: 'Call for Help and Call for AED', severity: 'critical' },
       {
-        text: 'CPR + AED (30:2, 100-120/min). Lower chair, lay patient flat, place CPR Board, begin 2-person CPR',
+        text: 'CPR + AED (100-120/min; 30:2 until an LMA/King/ET tube is placed). Lower chair, lay patient flat, place CPR Board, begin 2-person CPR',
         severity: 'critical',
       },
       { text: 'Turn on the AED and follow instructions' },
@@ -872,7 +893,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         severity: 'critical',
       },
       {
-        text: 'Cardiac Lidocaine IV push, repeat in 3-5 minutes',
+        text: 'If amiodarone unavailable: Cardiac Lidocaine IV push, repeat in 3-5 minutes',
         drug: {
           name: 'Cardiac Lidocaine',
           dose: '0.6 mg/lb',
@@ -883,7 +904,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '200 lb (120 mg)', ml: '6.0 ml' },
             { label: '250 lb (150 mg)', ml: '7.5 ml' },
           ],
-          notes: 'over 165 lb exceeds one 100 mg/5 ml vial — only 1 stocked',
+          notes: 'over 165 lb needs a second 100 mg/5 ml vial',
         },
       },
       {
@@ -891,7 +912,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         severity: 'final',
       },
       {
-        text: "Treatable causes (H's and T's): Hydrogen ion (acidosis), Hyperkalemia, Hypothermia, Hypovolemia, Tamponade, Tension pneumothorax, Thrombosis (coronary), Thrombosis (pulmonary)",
+        text: "Treatable causes (H's and T's), most likely in sedation first: Hypoxia, Toxins (sedatives: reverse with Naloxone / Flumazenil), Hypovolemia, Hydrogen ion (acidosis), Hypo/Hyperkalemia, Hypothermia, Tamponade, Tension pneumothorax, Thrombosis (coronary), Thrombosis (pulmonary)",
       },
     ],
     critical: true,
@@ -908,13 +929,15 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Call for Help and Call for AED', severity: 'critical' },
       { text: 'Begin Chest Compressions (CPR)', severity: 'critical' },
       {
-        text: 'Lower chair, lay patient flat, place CPR Board, Begin two person CPR (100-120 bpm, One breath every 5-6 seconds)',
+        text: 'Lower chair, lay patient flat, place CPR Board, begin two-person CPR (100-120/min; 30:2 until an LMA/King/ET tube is placed, then 1 breath every 6 seconds with continuous compressions)',
         severity: 'critical',
       },
       { text: 'Turn on the AED and follow instructions' },
       { text: 'Establish Airway and appropriate ventilation' },
       { text: 'Start IV and administer Bolus 500 ml NS' },
-      { text: "Review possible causes (H's and T's)" },
+      {
+        text: "Review possible causes (H's and T's): Hypoxia and sedative Toxins first (reverse with Naloxone / Flumazenil)",
+      },
       {
         text: 'Epinephrine IV push, repeat q3-5 min',
         drug: {
@@ -1197,7 +1220,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '250 lb (150 mg)', ml: '7.5 ml' },
           ],
           notes:
-            'give slowly through catheter to relieve arterial spasm; over 165 lb exceeds one 100 mg/5 ml vial — only 1 stocked',
+            'give slowly through catheter to relieve arterial spasm; over 165 lb needs a second 100 mg/5 ml vial',
         },
       },
       { text: 'Remove needle' },
