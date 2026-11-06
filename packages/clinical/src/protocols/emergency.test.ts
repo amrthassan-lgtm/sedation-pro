@@ -206,4 +206,40 @@ describe('emergency protocols', () => {
       expect(conc.indexOf('4 mg/ml')).toBeLessThan(conc.indexOf('10 mg/ml'));
     }
   });
+
+  describe('2025 AHA adult ALS alignment', () => {
+    const textOf = (id: string) => (findProtocol(id)?.steps ?? []).map((st) => st.text).join(' | ');
+
+    it('every tachycardia protocol escalates an unstable patient to 911 first', () => {
+      // The office AED cannot deliver synchronized cardioversion.
+      for (const id of ['junctional_tach', 'svt', 'afib', 'stable_vtach', 'wide_complex']) {
+        const first = findProtocol(id)?.steps[0];
+        expect(first?.text, id).toMatch(/^Unstable .*Call 911/);
+        expect(first?.severity, id).toBe('critical');
+      }
+    });
+
+    it('lidocaine is the alternative to amiodarone, never an add-on', () => {
+      for (const p of EMERGENCY_PROTOCOLS) {
+        for (const st of p.steps) {
+          if (st.drug?.name !== 'Cardiac Lidocaine' || p.id === 'intraarterial') continue;
+          expect(st.text, p.id).toMatch(/^If amiodarone unavailable/);
+        }
+      }
+    });
+
+    it("arrest protocols put Hypoxia and sedative Toxins in the H's and T's", () => {
+      for (const id of ['vfib_vtach', 'pea_asystole']) {
+        expect(textOf(id), id).toContain('Hypoxia');
+        expect(textOf(id), id).toMatch(/Toxins|Toxins first/);
+      }
+    });
+
+    it('SVT uses the modified Valsalva and 6 mg then 12 mg adenosine', () => {
+      const svt = textOf('svt');
+      expect(svt).toContain('Modified Valsalva');
+      expect(svt).not.toMatch(/Carotid Massage/);
+      expect(svt).toContain('6 mg, then 12 mg after 1-2 minutes');
+    });
+  });
 });
