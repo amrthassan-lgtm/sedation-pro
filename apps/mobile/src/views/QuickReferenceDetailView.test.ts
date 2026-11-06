@@ -60,7 +60,7 @@ describe('QuickReferenceDetailView draw rendering', () => {
     expect(atropineTable).toBeDefined();
     expect(atropineTable!.findAll('dt').length).toBe(2);
     expect(atropineTable!.findAll('dd').length).toBe(2);
-    expect(atropineTable!.text()).toContain('5.0 ml');
+    expect(atropineTable!.text()).toContain('10.0 ml'); // AHA 2025: 1 mg = whole prefilled syringe
     wrapper.unmount();
   });
 });
