@@ -66,7 +66,11 @@ describe('summarizeInventory', () => {
       item({ id: 'expired-ignored', expiresOn: '2026-04' }),
       item({ id: 'safe-on-order', expiresOn: '2028-05', onOrder: { sku: 'X2' } }),
     ]);
-    expect(summarizeInventory(classified).onOrder).toBe(1);
+    const s = summarizeInventory(classified);
+    expect(s.onOrder).toBe(1);
+    expect(s.shipped).toBe(1);
+    // A shipped replacement is not a purchasing decision: only the ignored one counts.
+    expect(s.expired).toBe(1);
   });
 });
 
@@ -76,9 +80,13 @@ describe('inventorySubLine', () => {
     const expired = summarizeInventory(
       classifyInventory(NOW, [at('2026-01', 'a'), at('2026-09', 'b')]),
     );
-    expect(inventorySubLine(expired)).toBe('1 expired · 1 expiring soon');
+    expect(inventorySubLine(expired)).toBe('1 needs ordering · 1 expiring soon');
+    const shipped = summarizeInventory(
+      classifyInventory(NOW, [item({ id: 's', expiresOn: '', onOrder: { sku: 'X' } })]),
+    );
+    expect(inventorySubLine(shipped)).toBe('1 shipped');
     const soonOnly = summarizeInventory(classifyInventory(NOW, [at('2026-09', 'a')]));
-    expect(inventorySubLine(soonOnly)).toBe('1 expiring within 60 days');
+    expect(inventorySubLine(soonOnly)).toBe('1 expiring soon');
     const clean = summarizeInventory(
       classifyInventory(NOW, [at('2028-01', 'a'), at('2028-02', 'b')]),
     );

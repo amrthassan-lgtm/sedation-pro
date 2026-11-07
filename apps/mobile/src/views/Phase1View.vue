@@ -71,12 +71,11 @@ const kitAlert = computed<{ tone: 'limit' | 'caution'; detail: string } | null>(
   const trulyExpired = bad.some((c) => c.status.valid && c.status.daysLeft < 0);
   const names = bad.slice(0, 3).map((c) => c.item.drug);
   const more = bad.length > names.length ? ` +${bad.length - names.length} more` : '';
-  const onOrder = kitStatus.summary.onOrder;
-  const orderNote =
-    onOrder > 0 ? ` · ${onOrder} replacement${onOrder === 1 ? '' : 's'} on order` : '';
+  const shipped = kitStatus.summary.shipped;
+  const shippedNote = shipped > 0 ? ` · ${shipped} other${shipped === 1 ? '' : 's'} shipped` : '';
   return {
     tone: trulyExpired ? 'limit' : 'caution',
-    detail: `${names.join(', ')}${more} — expired or missing a readable date${orderNote}.`,
+    detail: `${names.join(', ')}${more} — expired or missing, nothing on the way${shippedNote}.`,
   };
 });
 
