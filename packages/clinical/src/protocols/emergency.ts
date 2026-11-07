@@ -177,7 +177,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '2.0 ml',
           concentration: '62.5 mg/ml',
-          notes: 'Mix-O-Vial: press top, mix, swirl, draw; give full vial; label the syringe',
+          notes:
+            'Act-O-Vial: press the top to release the liquid, swirl, draw all 2 ml; label the syringe',
         },
       },
       {
@@ -610,13 +611,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'If Tachycardic (HR >100): Phenylephrine IV',
         drug: {
           name: 'Phenylephrine',
-          dose: '0.1 mg (100 mcg)',
+          dose: '100 mcg',
           route: 'IV',
           volume: '1.0 ml',
           concentration: '100 mcg/ml (after dilution)',
           mixFirst:
             'MIX FIRST: one 10 ml syringe, saline from the IV bag port; Draw 1 ml phenylephrine 10 mg/ml + 9 ml saline = 1 mg/ml; WASTE DOWN TO 1 ml; Draw saline back up to 10 ml = 100 mcg/ml; Label it PHENYLEPHRINE 100 mcg/ml; Never inject from the stock vial',
-          notes: 'discard after 4 hr',
         },
       },
       { text: 'Phenylephrine not in stock: fluids, legs up, call 911 if SBP stays <90' },
@@ -658,7 +658,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '5-10 mcg',
           route: 'IV',
           volume: '0.5-1.0 ml',
-          concentration: '10 mcg/ml (after mixing)',
+          concentration: '10 mcg/ml (after dilution)',
           mixFirst:
             'MIX FIRST: one 10 ml syringe, saline from the IV bag port; Draw 1 ml epinephrine 1 mg/ml + 9 ml saline = 100 mcg/ml; WASTE DOWN TO 1 ml; Draw saline back up to 10 ml = 10 mcg/ml; Label it EPI 10 mcg/ml; Never inject from the stock vial',
           drawTable: [
@@ -983,7 +983,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '10-20 mcg',
           route: 'IV',
           volume: '1.0-2.0 ml',
-          concentration: '10 mcg/ml (after mixing)',
+          concentration: '10 mcg/ml (after dilution)',
           mixFirst:
             'MIX FIRST: one 10 ml syringe, saline from the IV bag port; Draw 1 ml epinephrine 1 mg/ml + 9 ml saline = 100 mcg/ml; WASTE DOWN TO 1 ml; Draw saline back up to 10 ml = 10 mcg/ml; Label it EPI 10 mcg/ml; Never inject from the stock vial',
           drawTable: [
@@ -1017,7 +1017,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '2.0 ml',
           concentration: '62.5 mg/ml',
-          notes: 'Mix-O-Vial: press top, mix, swirl, draw; give full vial; label the syringe',
+          notes:
+            'Act-O-Vial: press the top to release the liquid, swirl, draw all 2 ml; label the syringe',
         },
       },
       {
