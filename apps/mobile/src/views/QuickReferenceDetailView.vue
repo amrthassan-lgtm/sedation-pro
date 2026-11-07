@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import {
   EMERGENCY_PROTOCOLS,
+  PROTOCOLS_REVIEWED,
   findProtocol,
   type EmergencyCategory,
   type EmergencyDrugCallout,
@@ -113,7 +114,23 @@ function open(id: string) {
 }
 
 /**
- * Builds the route line shown under the dose: e.g. `IV · 1.0 ml · 1 mg/ml (1:1000)`.
+ * "One course" line for drugs the practice tracks as a course (atropine,
+ * adenosine, flumazenil, nitro): in-date mg on hand against one full
+ * course, with pending orders named so a shipped box is never read as a
+ * gap. Drugs without a course render nothing.
+ */
+function courseLine(name: string): { text: string; short: boolean } | null {
+  const course = inventory.courses.find((c) => c.drug === name);
+  if (!course) return null;
+  const order = course.onOrderMg > 0 ? ` · ${course.onOrderMg} mg on order` : '';
+  return {
+    text: `In date: ${course.haveMg} mg · one course: ${course.needMg} mg${order}`,
+    short: course.short,
+  };
+}
+
+/**
+ * Builds the route line shown under the dose: e.g. `IV · 1.0 ml · 1 mg/ml`.
  * Pieces drop out cleanly when the formulary doesn't carry that field.
  */
 /**
@@ -237,6 +254,13 @@ function syringeFor(drug: EmergencyDrugCallout) {
                 </dl>
                 <p class="drug-route">{{ routeLine(step.drug) }}</p>
                 <p v-if="step.drug.notes" class="drug-notes">{{ step.drug.notes }}</p>
+                <p
+                  v-if="courseLine(step.drug.name)"
+                  class="drug-course"
+                  :class="{ 'drug-course--short': courseLine(step.drug.name)!.short }"
+                >
+                  {{ courseLine(step.drug.name)!.text }}
+                </p>
                 <UiSyringe
                   v-if="syringeFor(step.drug)"
                   compact
@@ -252,6 +276,8 @@ function syringeFor(drug: EmergencyDrugCallout) {
           </li>
         </ol>
       </UiCard>
+
+      <p class="reviewed caption">{{ PROTOCOLS_REVIEWED }}</p>
 
       <UiCard v-if="related.length > 0" class="related-card">
         <p class="heading related-heading">Related protocols</p>
@@ -471,6 +497,15 @@ function syringeFor(drug: EmergencyDrugCallout) {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+.drug-course {
+  margin: 2px 0 0;
+  font-size: var(--type-caption);
+  color: var(--color-text-secondary);
+}
+.drug-course--short {
+  color: var(--color-danger);
+  font-weight: var(--weight-semibold);
+}
 .drug-mix-head {
   margin: 0;
 }
@@ -550,6 +585,12 @@ function syringeFor(drug: EmergencyDrugCallout) {
   font-size: var(--type-caption);
   color: var(--color-text-secondary);
   line-height: 1.4;
+}
+
+.reviewed {
+  margin: 0;
+  padding-inline: var(--sp-1);
+  color: var(--color-text-secondary);
 }
 
 /* Related */

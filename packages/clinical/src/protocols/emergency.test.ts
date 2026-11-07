@@ -278,6 +278,21 @@ describe('emergency protocols', () => {
     expect(steps.at(-1)?.text).toContain('Accompany the patient');
   });
 
+  it('MH and LAST name the unstocked rescue drugs in text only (owner decision 2026-11)', () => {
+    // Dantrolene and 20% lipid are not stocked; a callout would point the
+    // team at a drug the cart does not carry, so EMS is named instead.
+    const mh = findProtocol('malignant_hyperthermia');
+    expect(mh?.steps.some((s) => s.drug?.name === 'Dantrolene')).toBe(false);
+    expect(mh?.steps.some((s) => s.text.includes('Dantrolene not stocked'))).toBe(true);
+    expect(mh?.steps.some((s) => s.text.includes('MALIGNANT HYPERTHERMIA'))).toBe(true);
+    const last = findProtocol('last');
+    expect(last?.steps.some((s) => /lipid/i.test(s.drug?.name ?? ''))).toBe(false);
+    expect(last?.steps.some((s) => s.text.includes('Lipid emulsion 20% not stocked'))).toBe(true);
+    // Lidocaine is the toxin: it must never be the antiarrhythmic here.
+    expect(last?.steps.some((s) => s.text.includes('NO lidocaine'))).toBe(true);
+    expect(last?.steps.find((s) => s.drug)?.drug?.name).toBe('Midazolam');
+  });
+
   it('hypoglycemia carries no glucagon callout but keeps the knowledge in step text', () => {
     // Owner decision 2026-08: glucagon is deliberately not stocked (IV
     // office — immediate access + D50W is the no-IV branch). A structured

@@ -2,6 +2,7 @@ export { nicotineProtocol, type NicotineProtocol, type NicotineProtocolTier } fr
 export {
   CRITICAL_PROTOCOL_IDS,
   EMERGENCY_PROTOCOLS,
+  PROTOCOLS_REVIEWED,
   findProtocol,
   protocolsByCategory,
   type EmergencyCategory,

@@ -143,6 +143,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2027-04',
     protocolDrugNames: ['Epinephrine'],
+    notes: 'Adults only (no pediatric sedation): keep until expiry, do not reorder',
   },
   {
     id: 'epi-autoinjector-03',
@@ -589,6 +590,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2027-08-31',
     category: 'equipment',
+    notes: 'Adults only (no pediatric sedation): keep until expiry, do not reorder',
   },
   {
     id: 'aed-battery',
@@ -720,6 +722,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2030-01-13',
     category: 'equipment',
+    notes: 'Adults only (no pediatric sedation): keep until expiry, do not reorder',
   },
   {
     id: 'cannula-pediatric',
@@ -731,7 +734,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
-    notes: 'Everyday sedation supply — stock tracked, expiry not',
+    notes:
+      'Adults only (no pediatric sedation): keep until expiry, do not reorder. Everyday sedation supply — stock tracked, expiry not',
   },
   {
     id: 'iv-catheter-22',
@@ -876,7 +880,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     awaitingPhoto: true,
-    notes: 'Read the expiry at the next emergency training',
+    notes:
+      'Adults only (no pediatric sedation): keep until expiry, do not reorder. Read the expiry at the next emergency training',
   },
   {
     id: 'o2-mask-adult',

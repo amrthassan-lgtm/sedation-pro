@@ -25,7 +25,7 @@ const inventorySummary = summarizeInventory(classifyInventory(Date.now()));
 
 const query = ref('');
 /**
- * Debounced mirror of `query`. The search filter runs against 32 protocols
+ * Debounced mirror of `query`. The search filter runs against 34 protocols
  * × ~8 steps each on every keystroke; debouncing collapses fast typing
  * bursts into a single recompute. 100 ms is below the perceptual threshold
  * so the search still feels live.
@@ -84,7 +84,8 @@ const DRUG_REF_SEEDS: ReadonlyArray<DrugRefSeed> = [
     doses: [25, 50],
     doseUnit: 'mcg',
     note: 'Titrate 25-50 mcg q5 min. Lowers BP slightly; use judiciously.',
-    warning: 'Allergy to codeine → no fentanyl.',
+    warning:
+      'Codeine allergy: ask what the reaction was. Nausea or itching is not an allergy; fentanyl does not cross-react.',
   },
   {
     id: 'zofran',
@@ -101,8 +102,8 @@ const DRUG_REF_SEEDS: ReadonlyArray<DrugRefSeed> = [
     tapeLabel: 'Flumazenil',
     doses: [0.2],
     doseUnit: 'mg',
-    note: 'Draw 2 ml per dose. Repeat q3 min. Max 1.0 mg total (5 doses).',
-    warning: 'Wait 3 min between doses · monitor 120 min post-reversal.',
+    note: 'Draw 2 ml per dose over 15 sec. Repeat q1 min. Max 1.0 mg total (5 doses).',
+    warning: 'Sleepiness can return · discharge held 120 min after any reversal.',
   },
   {
     id: 'naloxone',
@@ -110,7 +111,8 @@ const DRUG_REF_SEEDS: ReadonlyArray<DrugRefSeed> = [
     tapeLabel: 'Naloxone',
     doses: [0.4],
     doseUnit: 'mg',
-    note: 'Single-dose vial = 1 ml. Repeat q2-3 min PRN. Give over 2-3 min.',
+    note: 'Single-dose vial = 1 ml. Give over 2-3 min. Repeat q3 min PRN.',
+    warning: 'Discharge held 120 min after any reversal.',
   },
 ];
 

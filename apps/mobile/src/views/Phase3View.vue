@@ -884,8 +884,8 @@ function onNaloxone() {
     <UiCard tint="ph3">
       <p class="heading"><span class="heading-step">10</span>Reversal Agents</p>
       <UiBanner tone="limit" class="mt-2">
-        <strong>Emergency use only.</strong> Flumazenil extends the post-reversal monitoring wait to
-        120 min.
+        <strong>Emergency use only.</strong> Either reversal holds discharge for 120 min after the
+        last dose.
       </UiBanner>
       <div class="drug-grid mt-2">
         <UiDrugButton
@@ -917,9 +917,10 @@ function onNaloxone() {
         <ol class="reversal-steps">
           <li>Draw 2 ml (0.2 mg) into a 3 cc syringe; label &ldquo;Flumazenil&rdquo;.</li>
           <li>Open IV all the way; administer slowly over 15-20 seconds.</li>
-          <li><strong>Wait 3 minutes</strong>, then re-assess respiration and arousal.</li>
+          <li><strong>Wait 1 minute</strong>, then re-assess respiration and arousal.</li>
           <li>If improving → <strong>stop.</strong> Do not give more.</li>
-          <li>If no improvement → repeat 0.2 mg every 3 min, max 1.0 mg total (5 doses).</li>
+          <li>If no improvement → repeat 0.2 mg every 1 min, max 1.0 mg total (5 doses).</li>
+          <li>Fentanyl given too? Naloxone first.</li>
           <li>
             Continue to monitor for <strong>120 minutes</strong>. Flumazenil half-life is shorter
             than the benzodiazepine it reverses; patient may re-sedate.
@@ -950,8 +951,8 @@ function onNaloxone() {
             encephalopathy).
           </li>
           <li>
-            Monitor continuously for 1-2 hours after the last dose. Patient may re-sedate as
-            naloxone clears.
+            Monitor continuously for 2 hours after the last dose (the app holds discharge 120 min).
+            Patient may re-sedate as naloxone clears.
           </li>
         </ol>
       </div>

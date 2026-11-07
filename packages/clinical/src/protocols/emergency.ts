@@ -36,7 +36,7 @@ export interface EmergencyDrugCallout {
    * (annotation)".
    */
   readonly volume?: string;
-  /** Concentration as labelled — e.g. `"1 mg/ml (1:1000)"`. Optional. */
+  /** Concentration as labelled — e.g. `"1 mg/ml"`. Optional. */
   readonly concentration?: string;
   /**
    * Dilution recipe rendered as a warning band ABOVE the draw line.
@@ -89,6 +89,13 @@ export interface EmergencyProtocol {
  * row — the ones most likely to be opened in a crisis. Keep this list short
  * (~6) so the row stays one-line on iPhone portrait.
  */
+/**
+ * Shown under every protocol so an inspector (and the team) can see how
+ * current the written protocols are. Bump it when a review lands.
+ */
+export const PROTOCOLS_REVIEWED =
+  'Reviewed Nov 2026 against AHA 2025 and current specialty guidelines';
+
 export const CRITICAL_PROTOCOL_IDS: ReadonlyArray<string> = [
   'laryngospasm',
   'hypotension',
@@ -157,7 +164,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '0.3-0.5 mg',
           route: 'IM',
           volume: '0.3-0.5 ml',
-          concentration: '1 mg/ml (1:1000)',
+          concentration: '1 mg/ml',
           notes: 'thigh; repeat q5-15 min; label the syringe',
         },
         severity: 'critical',
@@ -855,7 +862,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '1 mg',
           route: 'IV',
           volume: '1.0 ml',
-          concentration: '1 mg/ml (1:1000)',
+          concentration: '1 mg/ml',
           notes: 'draw entire 1 ml ampule; repeat q3-5 min; label the syringe',
         },
         severity: 'critical',
@@ -890,7 +897,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         },
       },
       {
-        text: "Treatable causes (H's and T's), most likely in sedation first: Hypoxia, Toxins (sedatives: reverse with Naloxone / Flumazenil), Hypovolemia, Hydrogen ion (acidosis), Hypo/Hyperkalemia, Hypothermia, Tamponade, Tension pneumothorax, Thrombosis (coronary), Thrombosis (pulmonary)",
+        text: 'Most likely cause here: Hypoxia (ventilate) or sedative Toxins (reverse with Naloxone / Flumazenil)',
+        severity: 'critical',
+      },
+      {
+        text: "Other H's and T's: Hypovolemia, Hydrogen ion (acidosis), Hypo/Hyperkalemia, Hypothermia, Tamponade, Tension pneumothorax, Thrombosis (coronary or pulmonary)",
       },
       { text: 'Continue CPR and AED until EMS takes over', severity: 'final' },
     ],
@@ -918,13 +929,17 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           dose: '1 mg',
           route: 'IV',
           volume: '1.0 ml',
-          concentration: '1 mg/ml (1:1000)',
+          concentration: '1 mg/ml',
           notes: 'draw entire 1 ml ampule; repeat q3-5 min; label the syringe',
         },
         severity: 'critical',
       },
       {
-        text: "Review possible causes (H's and T's): Hypoxia and sedative Toxins first (reverse with Naloxone / Flumazenil)",
+        text: 'Most likely cause here: Hypoxia (ventilate) or sedative Toxins (reverse with Naloxone / Flumazenil)',
+        severity: 'critical',
+      },
+      {
+        text: "Other H's and T's: Hypovolemia, Hydrogen ion (acidosis), Hypo/Hyperkalemia, Hypothermia, Tamponade, Tension pneumothorax, Thrombosis (coronary or pulmonary)",
       },
       { text: 'No atropine for PEA or asystole', severity: 'final' },
     ],
@@ -1099,6 +1114,84 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
     ],
     relatedProtocols: ['oversedation_benzo', 'hypoventilation'],
+  },
+  {
+    id: 'malignant_hyperthermia',
+    category: 'allergic',
+    name: 'Malignant Hyperthermia (after Succinylcholine)',
+    summary:
+      'EtCO₂ climbing, jaw rigid, HR fast, temp rising · Stop, cool, 911: dantrolene not stocked',
+    signs: [
+      'EtCO₂ rising for no reason',
+      'masseter / jaw rigidity',
+      'tachycardia',
+      'rigid muscles',
+      'temperature rising',
+    ],
+    steps: [
+      { text: 'Stop succinylcholine. 100% O₂ at 15 L/min, bag fast (2x normal rate)' },
+      { text: 'Call 911. Say the words MALIGNANT HYPERTHERMIA', severity: 'critical' },
+      {
+        text: 'MHAUS hotline 1-800-644-9737 (24 hr) while waiting',
+        severity: 'critical',
+      },
+      {
+        // Deliberate: no drug callout. Dantrolene is not stocked (owner
+        // decision 2026-11); EMS and the hospital give it.
+        text: 'Dantrolene not stocked: EMS gives it (2.5 mg/kg IV). Only the airway and cooling are ours',
+      },
+      { text: 'Cool: ice packs to neck, armpits and groin. Cold saline IV wide open' },
+      { text: 'Monitor EtCO₂, temperature, HR and rhythm every 5 min' },
+      { text: 'Arrhythmia: treat by its protocol. No calcium channel blockers' },
+      { text: 'Hand over to EMS: time of succinylcholine, dose, first sign', severity: 'final' },
+    ],
+    relatedProtocols: ['laryngospasm', 'vfib_vtach'],
+  },
+  {
+    id: 'last',
+    category: 'allergic',
+    name: 'Local Anesthetic Toxicity (LAST)',
+    summary: 'Ringing ears, metallic taste, confusion, then seizure · Stop, O₂, Midazolam, 911',
+    signs: [
+      'tinnitus',
+      'metallic taste',
+      'numb lips',
+      'agitation',
+      'confusion',
+      'seizure',
+      'arrhythmia',
+    ],
+    steps: [
+      { text: 'Stop the injection. Note cartridges given' },
+      { text: 'N₂O off, 100% O₂. Check the airway', severity: 'critical' },
+      { text: 'Monitor: EKG, SpO₂, BP, EtCO₂' },
+      { text: 'Call 911 early: it can progress to arrest', severity: 'critical' },
+      {
+        text: 'Seizure: Midazolam IV, repeat once',
+        drug: {
+          name: 'Midazolam',
+          dose: '5 mg',
+          route: 'IV',
+          volume: '1.0 ml',
+          concentration: '5 mg/ml',
+          notes: 'push slowly; repeat once after 5 min; BVM ready; label the syringe',
+        },
+      },
+      {
+        // Deliberate: no drug callout. 20% lipid emulsion is not stocked
+        // (owner decision 2026-11); EMS and the hospital give it.
+        text: 'Lipid emulsion 20% not stocked: EMS gives it. Tell them LAST',
+      },
+      {
+        text: 'Arrhythmia or arrest: CPR, AED, small epinephrine doses. NO lidocaine as the antiarrhythmic',
+        severity: 'critical',
+      },
+      {
+        text: 'Prevent: aspirate, count cartridges, stay under the max dose for weight',
+        severity: 'final',
+      },
+    ],
+    relatedProtocols: ['seizure', 'vfib_vtach'],
   },
   {
     id: 'seizure',
