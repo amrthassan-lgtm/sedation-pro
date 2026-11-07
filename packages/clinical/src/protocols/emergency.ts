@@ -29,7 +29,7 @@ export interface DrawTableRow {
 export interface EmergencyDrugCallout {
   readonly name: string;
   readonly dose: string;
-  readonly route: 'IV' | 'IM' | 'SubQ' | 'SL' | 'IN' | 'PO' | 'inhaled';
+  readonly route: 'IV' | 'IM' | 'IA' | 'SubQ' | 'SL' | 'IN' | 'PO' | 'inhaled';
   /**
    * Volume to draw — the hero line. "N.N ml", a range "N.N-N.N ml" with
    * endpoints positionally aligned to the dose range, or "N.N ml
@@ -1104,77 +1104,87 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'seizure',
     category: 'neurological',
     name: 'Seizure',
-    summary: 'Tonic-clonic movements, LOC · Protect airway + Midazolam 5mg IM if >5min',
+    summary: 'Tonic-clonic movements, LOC · Protect, O₂; 5 min: Midazolam 5mg IV + 911',
     signs: ['tonic-clonic movements', 'loss of consciousness'],
     steps: [
-      { text: 'Remove objects / Protect patient from injury' },
-      { text: 'Supine position' },
+      { text: 'Note the time. Stop, clear the mouth' },
+      { text: 'N₂O off, 100% O₂' },
+      { text: 'Protect from injury. Do not restrain, nothing in the mouth' },
       {
-        text: 'If seizure >5min: Midazolam IM/IV',
+        text: 'Seizure 5 min or more: Midazolam IV, repeat once after 5 min (IV diazepam not stocked)',
         drug: {
           name: 'Midazolam',
           dose: '5 mg',
-          route: 'IM',
+          route: 'IV',
           volume: '1.0 ml',
           concentration: '5 mg/ml',
-          notes: 'label the syringe',
+          notes: 'push slowly; repeat once after 5 min; BVM ready; label the syringe',
         },
       },
+      { text: 'Call 911 at 5 minutes', severity: 'critical' },
+      { text: 'After: on the side, suction, O₂. Check glucose' },
       {
-        // Deliberate: no drug callout. The practice stocks no IV diazepam
-        // (owner confirmation 2026-08) — midazolam above is the office
-        // agent; the diazepam mention stays as textbook knowledge only.
-        text: 'If continues: repeat midazolam. (IV diazepam 5-10 mg is the textbook alternative — not stocked; midazolam is the office agent.)',
-      },
-      { text: 'Call 911', severity: 'critical' },
-      {
-        text: 'Post-ictal: Head to side, suction, O₂, monitor, comfort patient. Observe 1 hour before discharge. Do NOT allow patient to drive home. Refer to PCP for follow-up.',
+        text: 'First seizure, or needed midazolam: ER. Known epileptic, short, fully recovered: watch 1 hr, escort home, no driving',
         severity: 'final',
       },
     ],
+    relatedProtocols: ['hypoglycemia'],
   },
   {
     id: 'syncope',
     category: 'neurological',
     name: 'Syncope (Fainting)',
-    summary: 'Sudden unconsciousness, dizziness, pallor · Ammonia Capsule',
+    summary: 'Sudden unconsciousness, dizziness, pallor · Flat, legs up, O₂',
     signs: ['sudden unconsciousness', 'dizziness', 'pallor'],
     steps: [
-      { text: 'Supine / Trendelenburg' },
-      { text: 'Remove objects' },
-      { text: 'O₂ to >94%' },
-      { text: 'Ammonia capsule / sternal rub' },
-      { text: 'Monitor vitals' },
-      { text: 'Cold towel to forehead / reassure patient' },
-      { text: 'If not conscious within 120 seconds: Call 911', severity: 'critical' },
-      { text: 'Give patient 20 minutes to recover before discharge', severity: 'final' },
+      { text: 'Check breathing and pulse. No pulse: CPR + AED', severity: 'critical' },
+      { text: 'Flat, legs up (not head-down)' },
+      { text: 'N₂O off, 100% O₂. Sedated patient? Think oversedation' },
+      { text: 'Loosen tight clothing. Cool cloth to the forehead' },
+      { text: 'Stimulate: call their name, sternal rub' },
+      { text: 'Monitor vitals. Slow to wake or diabetic: check glucose' },
+      { text: 'Not conscious within 120 seconds: Call 911', severity: 'critical' },
+      { text: 'Sit up slowly. 20 minutes to recover before discharge', severity: 'final' },
     ],
+    relatedProtocols: ['oversedation_benzo', 'oversedation_opioid', 'hypoglycemia'],
   },
   {
     id: 'stroke',
     category: 'neurological',
     name: 'Stroke',
-    summary: 'FAST: Face droop, Arm weakness, Speech · Call 911 — Time = Brain',
-    signs: ['face droop', 'arm weakness', 'speech difficulty', 'FAST'],
-    steps: [
-      { text: 'CALL 911 IMMEDIATELY', severity: 'critical' },
-      { text: 'Supine or recovery position' },
-      { text: 'O₂ as needed' },
-      { text: 'Monitor vitals' },
-      { text: 'Note time of symptom onset (critical for treatment)', severity: 'final' },
+    summary: 'BE-FAST: Balance, Eyes, Face, Arm, Speech, Time · Call 911, check glucose',
+    signs: [
+      'face droop',
+      'arm weakness',
+      'speech difficulty',
+      'balance loss',
+      'vision loss',
+      'BE-FAST',
     ],
+    steps: [
+      { text: 'BE-FAST: Balance, Eyes, Face droop, Arm weakness, Speech, Time' },
+      { text: 'CALL 911 IMMEDIATELY', severity: 'critical' },
+      { text: 'Write down the last known well time', severity: 'critical' },
+      { text: 'Check glucose. Under 70: treat as hypoglycemia (it can look like a stroke)' },
+      { text: 'Nothing by mouth' },
+      { text: 'O₂ only if SpO₂ <94%' },
+      { text: 'Vomiting: recovery position, suction' },
+      { text: 'No aspirin, no BP drugs: the hospital decides after a scan' },
+      { text: 'Monitor vitals until EMS arrives', severity: 'final' },
+    ],
+    relatedProtocols: ['hypoglycemia'],
   },
   {
     id: 'hypoglycemia',
     category: 'other',
     name: 'Hypoglycemia (Diabetic - Sweaty, Confused, Shaky)',
-    summary: 'Sweaty, dizzy, confused · D50W 25g IV if unconscious',
+    summary: 'Sweaty, confused, glucose <70 · Gel 15 g if awake, D50W 25g IV if not',
     signs: ['sweaty', 'dizzy', 'confused', 'shaky'],
     steps: [
-      { text: 'Check blood glucose with Glucometer' },
-      { text: 'Conscious: Oral glucose / orange juice' },
+      { text: 'Check blood glucose with Glucometer. Under 70 = low' },
+      { text: 'Awake and can swallow: 1 glucose gel pouch (15 g)' },
       {
-        text: 'Unconscious + IV: D50W IV',
+        text: 'Not awake: nothing by mouth. D50W IV',
         drug: {
           name: 'D50W',
           dose: '25 g',
@@ -1184,20 +1194,19 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           notes:
             'use 50 ml prefilled syringe or draw entire vial into 60 cc syringe; label the syringe if drawn from a vial',
         },
-      },
-      {
-        // Deliberate: no drug callout here. The practice decided (2026-08)
-        // not to stock glucagon — an IV sedation office always has line
-        // skills and D50W at hand, so the office path for the no-IV branch
-        // is immediate access, not an IM injection the cart doesn't carry.
-        text: 'Unconscious + No IV: establish IV access immediately for D50W — call 911 if unable. (Glucagon 1 mg IM is the no-IV alternative; deliberately not stocked — office protocol is immediate IV access.)',
         severity: 'critical',
       },
       {
-        text: 'Recheck Blood Glucose after 15 minutes (target: 70-110mg/dl), repeat if needed',
+        // Deliberate: no glucagon callout. Owner decision (2026-08, confirmed
+        // 2026-11): sedation patients already have an IV, so the office path
+        // is D50W; when D50W is out of stock the step below is 911.
+        text: 'D50W not in stock, or no IV: Call 911 now (Glucagon not stocked)',
+        severity: 'critical',
       },
-      { text: 'Once blood glucose normal, patient should eat a small snack', severity: 'final' },
+      { text: 'Recheck glucose in 15 min. Still under 70: repeat' },
+      { text: 'Once 70 or more: a small snack', severity: 'final' },
     ],
+    relatedProtocols: ['stroke', 'syncope'],
   },
   {
     id: 'phlebitis',
@@ -1208,12 +1217,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     steps: [
       { text: 'Remove all rings immediately' },
       { text: 'Remove catheter' },
-      { text: 'Elevate the extremity / limit use in affected limb' },
-      { text: 'Warm moist towel to the area 20 min, 3-4 times per day' },
+      { text: 'Elevate the limb. Limit use' },
+      { text: 'Warm moist towel 20 min, 3-4 times a day' },
       { text: 'NSAID for pain' },
-      { text: 'Few days resolution to full resolution in 3-4 weeks' },
+      { text: 'Settles in days; full resolution in 3-4 weeks' },
       {
-        text: 'Fever or malaise or general patient dissatisfaction are indication to consult / refer to a vascular surgeon',
+        text: 'Fever, spreading redness, pus or a hard cord: refer to their physician',
         severity: 'final',
       },
     ],
@@ -1222,7 +1231,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'intraarterial',
     category: 'other',
     name: 'Intra-arterial Injection',
-    summary: 'Pulsatile red blood, severe pain · Cardiac Lidocaine IV',
+    summary:
+      'Pulsatile red blood, severe pain · Leave needle in, Cardiac Lidocaine into artery, 911',
     signs: [
       'pulsatile cherry red blood',
       'severe pain radiating toward fingers',
@@ -1230,29 +1240,32 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       'possible loss of radial pulse',
     ],
     steps: [
-      { text: 'If NO medications have been given: Remove needle immediately' },
-      { text: 'Apply pressure dressing' },
-      { text: 'No further treatment needed — monitor patient' },
-      { text: 'If medications HAVE been given: Leave needle/catheter in place' },
+      { text: 'Check radial pulse. Compare color and temperature with the other hand' },
+      { text: 'No drug given yet: remove needle, pressure 10 minutes. No damage done' },
       {
-        text: 'Give slow Cardiac Lidocaine IV through catheter to relieve arterial spasm',
+        text: 'Drug given: LEAVE NEEDLE IN PLACE. It is used to give the treatment',
+        severity: 'critical',
+      },
+      {
+        text: 'Cardiac Lidocaine slowly into the artery through the needle, to break the spasm',
         drug: {
           name: 'Cardiac Lidocaine',
-          dose: '0.6 mg/lb',
-          route: 'IV',
-          concentration: '20 mg/ml',
+          dose: '20-100 mg',
+          route: 'IA',
+          volume: '1.0-5.0 ml',
+          concentration: '20 mg/ml (2%)',
           drawTable: [
-            { label: '150 lb (90 mg)', ml: '4.5 ml' },
-            { label: '200 lb (120 mg)', ml: '6.0 ml' },
-            { label: '250 lb (150 mg)', ml: '7.5 ml' },
+            { label: '20 mg', ml: '1.0 ml' },
+            { label: '50 mg', ml: '2.5 ml' },
+            { label: '100 mg (whole vial)', ml: '5.0 ml' },
           ],
           notes:
-            'give slowly through catheter to relieve arterial spasm; over 165 lb needs a second 100 mg/5 ml vial; label the syringe',
+            'plain lidocaine only, never with epinephrine; DOCS manual: procaine 1% 2-10 ml (20-100 mg), same mg with the stocked cardiac lidocaine; label the syringe',
         },
       },
-      { text: 'Remove needle' },
-      { text: 'Apply ice pack to area' },
-      { text: 'Transport patient to ED immediately', severity: 'final' },
+      { text: 'Keep the needle in. Tape it, label it ARTERIAL' },
+      { text: 'Call 911: hospitalization is mandatory', severity: 'critical' },
+      { text: 'Accompany the patient to the hospital', severity: 'final' },
     ],
   },
 ];
