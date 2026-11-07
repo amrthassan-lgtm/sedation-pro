@@ -113,6 +113,15 @@
   --color-purple-soft: rgba(139, 92, 246, 0.12);
   --color-red: #ef4444;
   --color-red-soft: rgba(239, 68, 68, 0.12);
+
+  /* Emergency protocol categories: one colour each, read by every surface
+     (landing chips, swatches, detail hero, related rows) through `--cat`. */
+  --cat-airway: #38bdf8;
+  --cat-cardiac: var(--color-danger);
+  --cat-cardiac-soft: var(--color-crisis-soft);
+  --cat-allergic: var(--color-purple);
+  --cat-neuro: var(--color-warn);
+  --cat-other: var(--color-slate);
   --color-gold: #facc15;
   --color-gold-soft: rgba(250, 204, 21, 0.12);
   --color-tan: #d4a574;
@@ -218,6 +227,7 @@
   --color-purple-soft: rgba(109, 40, 217, 0.1);
   --color-red: #b91c1c;
   --color-red-soft: rgba(185, 28, 28, 0.1);
+  --cat-airway: #0284c7;
   --color-gold: #a16207;
   --color-gold-soft: rgba(161, 98, 7, 0.1);
   --color-tan: #92400e;

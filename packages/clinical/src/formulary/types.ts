@@ -36,8 +36,12 @@ export interface DrugEntry {
   readonly concentration: Concentration;
   /** Default administration route. */
   readonly route: Route;
-  /** Optional UI tint (CSS color string). */
+  /** Optional UI tint (CSS color string, usually a `var(--color-*)` token so it follows the theme). */
   readonly color?: string;
+  /** Barrel the practice trays this drug in, in ml. Drives every syringe drawing and the reference card. */
+  readonly syringeMl?: number;
+  /** Tape colour on the trayed syringe, as the practice names it (e.g. `'ORANGE'`). */
+  readonly tape?: string;
   /** Optional human notes — printed labels, tape colour, etc. */
   readonly notes?: string;
   /** Scannable selection attributes rendered on the drug card. */

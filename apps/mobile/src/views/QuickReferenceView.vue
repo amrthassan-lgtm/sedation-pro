@@ -6,7 +6,6 @@ import {
   CRITICAL_PROTOCOL_IDS,
   DEFAULT_FORMULARY,
   EMERGENCY_PROTOCOLS,
-  type EmergencyCategory,
   type EmergencyProtocol,
 } from '@sedation-pro/clinical';
 import { UiBanner, UiCard, UiStack, UiSyringe, UiTextInput } from '@sedation-pro/ui';
@@ -16,6 +15,8 @@ import {
   inventorySubLine,
   summarizeInventory,
 } from '@/composables/useInventoryStatus';
+import { IV_DRUG_REFERENCE } from '@/data/ivDrugReference';
+import { CARDIAC_SUBHEADS, CATEGORY_GROUPS, swatchFor } from '@/data/protocolCategories';
 
 const router = useRouter();
 const route = useRoute();
@@ -25,7 +26,7 @@ const inventorySummary = summarizeInventory(classifyInventory(Date.now()));
 
 const query = ref('');
 /**
- * Debounced mirror of `query`. The search filter runs against 34 protocols
+ * Debounced mirror of `query`. The search filter runs against every protocol
  * × ~8 steps each on every keystroke; debouncing collapses fast typing
  * bursts into a single recompute. 100 ms is below the perceptual threshold
  * so the search still feels live.
@@ -48,78 +49,10 @@ onScopeDispose(() => {
 
 const searchInputRef = useTemplateRef<{ focus: () => void }>('searchInputRef');
 
-/**
- * IV drug reference table — restores the legacy app's drawing-up chart so a
- * clinician can grab the Emergency button and see "Versed 1 mg → 0.2 ml"
- * without leaving the screen. Doses + notes are presentation data; the
- * concentration / colour / formal name come from the formulary so practices
- * that override the formulary get this card free.
- */
-interface DrugRefSeed {
-  readonly id: string;
-  readonly syringeMl: number;
-  readonly tapeLabel: string;
-  readonly tapeColor?: string;
-  readonly doses: ReadonlyArray<number>;
-  readonly doseUnit: 'mg' | 'mcg';
-  readonly note: string;
-  readonly warning?: string;
-}
-
-const DRUG_REF_SEEDS: ReadonlyArray<DrugRefSeed> = [
-  {
-    id: 'versed',
-    syringeMl: 1,
-    tapeLabel: 'ORANGE',
-    tapeColor: '#f97316',
-    doses: [1, 2],
-    doseUnit: 'mg',
-    note: 'Test dose 1 mg always. Titrate 1-2 mg q3-5 min to effect. Max typically 5-8 mg.',
-  },
-  {
-    id: 'fentanyl',
-    syringeMl: 3,
-    tapeLabel: 'BLUE',
-    tapeColor: '#3b82f6',
-    doses: [25, 50],
-    doseUnit: 'mcg',
-    note: 'Titrate 25-50 mcg q5 min. Lowers BP slightly; use judiciously.',
-    warning:
-      'Codeine allergy: ask what the reaction was. Nausea or itching is not an allergy; fentanyl does not cross-react.',
-  },
-  {
-    id: 'zofran',
-    syringeMl: 3,
-    tapeLabel: 'WHITE',
-    tapeColor: '#94a3b8',
-    doses: [4],
-    doseUnit: 'mg',
-    note: 'At onset of nausea, prior history, or end of appointment. Give over 2-5 min.',
-  },
-  {
-    id: 'flumazenil',
-    syringeMl: 3,
-    tapeLabel: 'Flumazenil',
-    doses: [0.2],
-    doseUnit: 'mg',
-    note: 'Draw 2 ml per dose over 15 sec. Repeat q1 min. Max 1.0 mg total (5 doses).',
-    warning: 'Sleepiness can return · discharge held 120 min after any reversal.',
-  },
-  {
-    id: 'naloxone',
-    syringeMl: 3,
-    tapeLabel: 'Naloxone',
-    doses: [0.4],
-    doseUnit: 'mg',
-    note: 'Single-dose vial = 1 ml. Give over 2-3 min. Repeat q3 min PRN.',
-    warning: 'Discharge held 120 min after any reversal.',
-  },
-];
-
 const drugRefs = computed(() => {
-  return DRUG_REF_SEEDS.map((seed) => {
+  return IV_DRUG_REFERENCE.map((seed) => {
     const drug = DEFAULT_FORMULARY.iv.find((d) => d.id === seed.id);
-    if (!drug) return null;
+    if (!drug || drug.syringeMl === undefined) return null;
     const conc = drug.concentration;
     const rows = seed.doses.map((dose) => ({
       doseLabel: `${dose} ${seed.doseUnit}`,
@@ -130,8 +63,10 @@ const drugRefs = computed(() => {
     return {
       seed,
       drug,
+      syringeMl: drug.syringeMl,
+      color: drug.color ?? 'var(--color-slate)',
       rows,
-      drawnMl: Math.min(seed.syringeMl, drawnMl),
+      drawnMl: Math.min(drug.syringeMl, drawnMl),
     };
   }).filter((x): x is NonNullable<typeof x> => x !== null);
 });
@@ -140,43 +75,6 @@ const expandedDrugId = ref<string | null>(null);
 function toggleDrug(id: string) {
   expandedDrugId.value = expandedDrugId.value === id ? null : id;
 }
-
-interface CategoryGroup {
-  id: string;
-  label: string;
-  swatch: string;
-  // Subset of EmergencyCategory values that roll up under this display group.
-  categories: ReadonlyArray<EmergencyCategory>;
-}
-
-/**
- * Display-time grouping — the engine carries 7 fine-grained categories,
- * the view rolls cardiac sub-categories under one card so the screen stays
- * scannable.
- */
-const GROUPS: ReadonlyArray<CategoryGroup> = [
-  { id: 'airway', label: 'Airway', swatch: 'airway', categories: ['airway'] },
-  {
-    id: 'cardiac',
-    label: 'Cardiac',
-    swatch: 'cardiac',
-    categories: ['cardiac-ischemia', 'cardiac-arrhythmia', 'cardiac-arrest'],
-  },
-  {
-    id: 'allergic',
-    label: 'Allergic & Toxicity',
-    swatch: 'allergic',
-    categories: ['allergic'],
-  },
-  { id: 'neuro', label: 'Neurological', swatch: 'neuro', categories: ['neurological'] },
-  { id: 'other', label: 'Other', swatch: 'other', categories: ['other'] },
-];
-
-const CARDIAC_SUBHEADS: Partial<Record<EmergencyCategory, string>> = {
-  'cardiac-ischemia': 'Ischemia & pressure',
-  'cardiac-arrhythmia': 'Arrhythmias',
-  'cardiac-arrest': 'Cardiac arrest',
-};
 
 const criticalProtocols = computed<ReadonlyArray<EmergencyProtocol>>(() =>
   CRITICAL_PROTOCOL_IDS.map((id) => EMERGENCY_PROTOCOLS.find((p) => p.id === id)).filter(
@@ -205,7 +103,7 @@ const filtered = computed<ReadonlyArray<EmergencyProtocol>>(() => {
 });
 
 const grouped = computed(() => {
-  return GROUPS.map((group) => {
+  return CATEGORY_GROUPS.map((group) => {
     const protocols = filtered.value.filter((p) => group.categories.includes(p.category));
     return { ...group, protocols };
   });
@@ -270,20 +168,14 @@ onMounted(() => {
             :aria-expanded="expandedDrugId === ref.seed.id"
             @click="toggleDrug(ref.seed.id)"
           >
-            <span
-              class="drug-swatch"
-              :style="{ background: ref.drug.color ?? '#94a3b8' }"
-              aria-hidden="true"
-            />
+            <span class="drug-swatch" :style="{ background: ref.color }" aria-hidden="true" />
             <span class="drug-pill-info">
               <span class="drug-pill-name">{{ ref.drug.name }}</span>
               <span class="drug-pill-meta">
                 {{ ref.drug.concentration.value }} {{ ref.drug.concentration.unit }} ·
-                {{ ref.seed.syringeMl }} cc syringe ·
-                <span :style="{ color: ref.seed.tapeColor ?? '#cbd5e1' }">{{
-                  ref.seed.tapeLabel
-                }}</span>
-                tape
+                {{ ref.syringeMl }} ml syringe<template v-if="ref.drug.tape">
+                  · <span :style="{ color: ref.color }">{{ ref.drug.tape }}</span> tape</template
+                >
               </span>
             </span>
             <span class="drug-pill-chevron" aria-hidden="true">
@@ -294,16 +186,16 @@ onMounted(() => {
           <div v-if="expandedDrugId === ref.seed.id" class="drug-pill-detail">
             <UiSyringe
               :label="ref.drug.shortName"
-              :capacity-ml="ref.seed.syringeMl"
+              :capacity-ml="ref.syringeMl"
               :drawn-ml="ref.drawnMl"
-              :color="ref.drug.color ?? '#94a3b8'"
+              :color="ref.color"
               :concentration="`${ref.drug.concentration.value} ${ref.drug.concentration.unit}`"
               :caption="`${ref.rows[0]?.doseLabel ?? ''} · ${ref.rows[0]?.ml.toFixed(1) ?? ''} ml`"
               compact
             />
             <div class="drug-dose-list">
               <div v-for="(row, i) in ref.rows" :key="i" class="drug-dose-row">
-                <span class="drug-dose-amt" :style="{ color: ref.drug.color }">
+                <span class="drug-dose-amt" :style="{ color: ref.color }">
                   {{ row.doseLabel }}
                 </span>
                 <span class="drug-dose-vol">{{ row.ml.toFixed(1) }} ml</span>
@@ -326,7 +218,10 @@ onMounted(() => {
           :key="proto.id"
           type="button"
           class="shortcut"
-          :class="`shortcut--${proto.category}`"
+          :class="[
+            `cat-${swatchFor(proto.category)}`,
+            { 'shortcut--arrest': proto.category === 'cardiac-arrest' },
+          ]"
           @click="open(proto.id)"
         >
           <span class="shortcut-name">{{ proto.name }}</span>
@@ -362,14 +257,10 @@ onMounted(() => {
     <UiCard
       v-for="group in grouped"
       :key="group.id"
-      :class="`category-card category-card--${group.swatch}`"
+      :class="['category-card', `cat-${group.swatch}`]"
     >
       <header class="category-head">
-        <span
-          class="category-swatch"
-          :class="`category-swatch--${group.swatch}`"
-          aria-hidden="true"
-        />
+        <span class="category-swatch" aria-hidden="true" />
         <p class="heading category-title">{{ group.label }}</p>
         <span class="card-count">{{ group.protocols.length }}</span>
       </header>
@@ -596,26 +487,12 @@ onMounted(() => {
   line-height: 1.35;
 }
 
-/* Per-category border-left + soft tint */
-.shortcut--airway {
-  border-left-color: #38bdf8;
+/* Category colour comes from the .cat-* class; arrest chips also tint. */
+.shortcut {
+  border-left-color: var(--cat);
 }
-.shortcut--cardiac-ischemia,
-.shortcut--cardiac-arrhythmia,
-.shortcut--cardiac-arrest {
-  border-left-color: var(--color-danger);
-}
-.shortcut--cardiac-arrest {
-  background: var(--color-crisis-soft);
-}
-.shortcut--allergic {
-  border-left-color: var(--color-purple);
-}
-.shortcut--neurological {
-  border-left-color: var(--color-warn);
-}
-.shortcut--other {
-  border-left-color: var(--color-slate);
+.shortcut--arrest {
+  background: var(--cat-soft);
 }
 
 /* ----------------- Search ------------------------------------------- */
@@ -653,21 +530,7 @@ onMounted(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-}
-.category-swatch--airway {
-  background: #38bdf8;
-}
-.category-swatch--cardiac {
-  background: var(--color-danger);
-}
-.category-swatch--allergic {
-  background: var(--color-purple);
-}
-.category-swatch--neuro {
-  background: var(--color-warn);
-}
-.category-swatch--other {
-  background: var(--color-slate);
+  background: var(--cat);
 }
 .category-title {
   flex: 1;

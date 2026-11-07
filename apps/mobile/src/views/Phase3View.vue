@@ -10,6 +10,7 @@ import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
 import { useIvDosing } from '@/composables/useIvDosing';
+import { syringeConfig } from '@/composables/useSyringeConfig';
 import { useNow } from '@/composables/useNow';
 import { useOtherableSelect } from '@/composables/useOtherableSelect';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
@@ -312,6 +313,11 @@ const premedChip = computed(() => {
 // here as local UI state.
 
 const { logIvVersed, logIvFentanyl, logIvZofran, readiness } = useIvDosing();
+// Reversal syringes read the practice tray from the formulary (one source
+// with the Quick Reference card and the protocol drawings).
+const FALLBACK_SYRINGE = { capacityMl: 3, color: 'var(--color-danger)', concentration: '' };
+const flumazenilSyringe = syringeConfig('Flumazenil') ?? FALLBACK_SYRINGE;
+const naloxoneSyringe = syringeConfig('Naloxone') ?? FALLBACK_SYRINGE;
 
 // -------- Live drug timer pills (use the engine + now ticker) ---------------
 
@@ -908,11 +914,11 @@ function onNaloxone() {
         <p class="caption">Flumazenil · process</p>
         <UiSyringe
           label="Flumazenil"
-          :capacity-ml="3"
+          :capacity-ml="flumazenilSyringe.capacityMl"
           :drawn-ml="2"
-          color="#ef4444"
-          concentration="0.1 mg/mL"
-          caption="0.2 mg · 2.0 mL"
+          :color="flumazenilSyringe.color"
+          :concentration="flumazenilSyringe.concentration"
+          caption="0.2 mg · 2.0 ml"
         />
         <ol class="reversal-steps">
           <li>Draw 2 ml (0.2 mg) into a 3 cc syringe; label &ldquo;Flumazenil&rdquo;.</li>
@@ -932,11 +938,11 @@ function onNaloxone() {
         <p class="caption">Naloxone · process</p>
         <UiSyringe
           label="Naloxone"
-          :capacity-ml="3"
+          :capacity-ml="naloxoneSyringe.capacityMl"
           :drawn-ml="1"
-          color="#ef4444"
-          concentration="0.4 mg/mL"
-          caption="0.4 mg · 1.0 mL"
+          :color="naloxoneSyringe.color"
+          :concentration="naloxoneSyringe.concentration"
+          caption="0.4 mg · 1.0 ml"
         />
         <ol class="reversal-steps">
           <li>

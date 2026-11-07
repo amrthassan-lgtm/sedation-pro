@@ -75,7 +75,10 @@ describe('useSyringeConfig', () => {
     expect(parseVolumeMl('2.0 ml')).toBe(2.0);
   });
 
-  it('flumazenil renders the practice 3 cc barrel', () => {
+  it('reads the practice barrels from the formulary', () => {
     expect(syringeConfig('Flumazenil')?.capacityMl).toBe(3);
+    expect(syringeConfig('Midazolam')?.capacityMl).toBe(1);
+    expect(syringeConfig('Push-dose Epinephrine')).toBeNull();
+    expect(syringeConfig('Naloxone')?.color).toBe('var(--color-danger)');
   });
 });

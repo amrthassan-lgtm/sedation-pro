@@ -6,7 +6,6 @@ import {
   EMERGENCY_PROTOCOLS,
   PROTOCOLS_REVIEWED,
   findProtocol,
-  type EmergencyCategory,
   type EmergencyDrugCallout,
   type EmergencyProtocol,
   type ProtocolStep,
@@ -15,6 +14,7 @@ import { UiBanner, UiButton, UiCard, UiStatusPill, UiSyringe } from '@sedation-p
 
 import { parseVolumeMl, syringeConfig } from '@/composables/useSyringeConfig';
 import { useInventoryStatus } from '@/composables/useInventoryStatus';
+import { CATEGORY_LABEL, swatchFor } from '@/data/protocolCategories';
 
 interface Props {
   id: string;
@@ -24,25 +24,6 @@ const props = defineProps<Props>();
 const router = useRouter();
 
 const protocol = computed<EmergencyProtocol | undefined>(() => findProtocol(props.id));
-
-/** Maps the seven engine categories down to the five display swatches. */
-function swatchFor(category: EmergencyCategory): string {
-  if (category.startsWith('cardiac')) return 'cardiac';
-  if (category === 'allergic') return 'allergic';
-  if (category === 'neurological') return 'neuro';
-  if (category === 'airway') return 'airway';
-  return 'other';
-}
-
-const categoryLabel: Record<EmergencyCategory, string> = {
-  airway: 'Airway',
-  'cardiac-ischemia': 'Cardiac · Ischemia',
-  'cardiac-arrhythmia': 'Cardiac · Arrhythmia',
-  'cardiac-arrest': 'Cardiac · Arrest',
-  allergic: 'Allergic & Toxicity',
-  neurological: 'Neurological',
-  other: 'Other',
-};
 
 const related = computed<ReadonlyArray<EmergencyProtocol>>(() => {
   const ids = protocol.value?.relatedProtocols;
@@ -162,6 +143,7 @@ function routeLine(drug: EmergencyDrugCallout): string {
   // Draw line; this line carries only route and concentration.
   const parts: string[] = [drug.route];
   if (drug.concentration) parts.push(drug.concentration);
+  if (drug.syringeMl !== undefined) parts.push(`${drug.syringeMl} ml syringe`);
   return parts.join(' · ');
 }
 
@@ -176,7 +158,9 @@ function syringeFor(drug: EmergencyDrugCallout) {
   const drawnMl = parseVolumeMl(drug.volume);
   if (drawnMl === null) return null;
   return {
-    capacityMl: cfg.capacityMl,
+    // The callout's own syringe wins over the formulary tray (a 1 ml
+    // midazolam draw is drawn in the 1 ml barrel it is given from).
+    capacityMl: drug.syringeMl ?? cfg.capacityMl,
     drawnMl,
     color: cfg.color,
     concentration: drug.concentration ?? cfg.concentration,
@@ -194,8 +178,8 @@ function syringeFor(drug: EmergencyDrugCallout) {
     </header>
 
     <template v-if="protocol">
-      <header class="hero" :class="`hero--${swatchFor(protocol.category)}`">
-        <p class="caption">{{ categoryLabel[protocol.category] }}</p>
+      <header class="hero" :class="`cat-${swatchFor(protocol.category)}`">
+        <p class="caption">{{ CATEGORY_LABEL[protocol.category] }}</p>
         <h1 class="title-display">{{ protocol.name }}</h1>
         <p class="hero-summary">{{ protocol.summary }}</p>
 
@@ -295,7 +279,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
             :key="rel.id"
             type="button"
             class="related-row"
-            :class="`related-row--${swatchFor(rel.category)}`"
+            :class="`cat-${swatchFor(rel.category)}`"
             @click="open(rel.id)"
           >
             <span class="related-name">{{ rel.name }}</span>
@@ -344,23 +328,9 @@ function syringeFor(drug: EmergencyDrugCallout) {
   border-radius: var(--r-md);
   border: 1px solid var(--color-border);
   border-left-width: 4px;
-  background: var(--color-surface);
-}
-.hero--airway {
-  border-left-color: #38bdf8;
-}
-.hero--cardiac {
-  border-left-color: var(--color-danger);
-  background: var(--color-crisis-soft);
-}
-.hero--allergic {
-  border-left-color: var(--color-purple);
-}
-.hero--neuro {
-  border-left-color: var(--color-warn);
-}
-.hero--other {
-  border-left-color: var(--color-slate);
+  border-left-color: var(--cat);
+  /* Only cardiac defines --cat-soft, so only cardiac heroes tint. */
+  background: var(--cat-soft, var(--color-surface));
 }
 .hero-summary {
   margin: 0;
@@ -644,21 +614,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
 }
 .related-row:active {
   background: var(--color-surface);
-}
-.related-row--airway {
-  border-left-color: #38bdf8;
-}
-.related-row--cardiac {
-  border-left-color: var(--color-danger);
-}
-.related-row--allergic {
-  border-left-color: var(--color-purple);
-}
-.related-row--neuro {
-  border-left-color: var(--color-warn);
-}
-.related-row--other {
-  border-left-color: var(--color-slate);
+  border-left-color: var(--cat);
 }
 .related-name {
   font-size: var(--type-footnote);
