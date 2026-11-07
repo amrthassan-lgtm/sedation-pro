@@ -177,8 +177,9 @@ describe('emergency protocols', () => {
       const drug = byName(name);
       expect(drug?.mixFirst, `${name} mixFirst`).toMatch(/^MIX FIRST:/);
     }
-    expect(byName('Phenylephrine')?.concentration).toContain('after dilution');
-    expect(byName('Push-dose Epinephrine')?.concentration).toContain('after mixing');
+    for (const name of ['Phenylephrine', 'Push-dose Epinephrine', 'Ephedrine']) {
+      expect(byName(name)?.concentration, name).toContain('after dilution');
+    }
     // The practice stocks 500 ml bags only, so every two-step recipe works in
     // one 10 ml syringe and names the waste-down step the screen emphasises.
     for (const name of ['Phenylephrine', 'Push-dose Epinephrine', 'Ephedrine']) {
@@ -208,7 +209,7 @@ describe('emergency protocols', () => {
     expect(im?.drug?.route).toBe('IM');
     expect(im?.text).toContain('NEVER 1 mg/ml IV');
     const push = steps.find((s) => s.drug?.name === 'Push-dose Epinephrine');
-    expect(push?.drug?.concentration).toBe('10 mcg/ml (after mixing)');
+    expect(push?.drug?.concentration).toBe('10 mcg/ml (after dilution)');
     expect(push?.drug?.mixFirst).toContain('WASTE DOWN TO 1 ml');
     // Epinephrine first, 911 in parallel, and every case leaves for the ER.
     expect(steps[0]?.drug?.name).toBe('Epinephrine');
