@@ -70,3 +70,23 @@
     display: none !important;
   }
 }
+
+/* Category colour classes: set `--cat` (and `--cat-soft` where a tint is
+   wanted) so a surface styles itself with one rule instead of one per
+   category. Values live in tokens.css; names in data/protocolCategories.ts. */
+.cat-airway {
+  --cat: var(--cat-airway);
+}
+.cat-cardiac {
+  --cat: var(--cat-cardiac);
+  --cat-soft: var(--cat-cardiac-soft);
+}
+.cat-allergic {
+  --cat: var(--cat-allergic);
+}
+.cat-neuro {
+  --cat: var(--cat-neuro);
+}
+.cat-other {
+  --cat: var(--cat-other);
+}

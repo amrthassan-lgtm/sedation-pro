@@ -124,4 +124,19 @@ describe('DEFAULT_FORMULARY', () => {
     expect(p.companionRelations).toContain('Spouse');
     expect(p.companionRelations).toContain('Other');
   });
+
+  it('trays the five IV drugs in the practice syringes, coloured by theme tokens', () => {
+    const tray = Object.fromEntries(
+      DEFAULT_FORMULARY.iv.map((d) => [d.id, { ml: d.syringeMl, tape: d.tape, color: d.color }]),
+    );
+    expect(tray['versed']).toEqual({ ml: 1, tape: 'ORANGE', color: 'var(--color-orange)' });
+    expect(tray['fentanyl']).toEqual({ ml: 3, tape: 'BLUE', color: 'var(--color-blue)' });
+    expect(tray['zofran']).toEqual({ ml: 3, tape: 'WHITE', color: 'var(--color-slate)' });
+    expect(tray['flumazenil']).toMatchObject({ ml: 3, color: 'var(--color-warn)' });
+    expect(tray['naloxone']).toMatchObject({ ml: 3, color: 'var(--color-danger)' });
+    // Sedation drugs carry no raw hex: a hex colour cannot follow the light theme.
+    for (const d of [...DEFAULT_FORMULARY.iv, ...DEFAULT_FORMULARY.oral]) {
+      if (d.color !== undefined) expect(d.color, d.id).toMatch(/^var\(--color-/);
+    }
+  });
 });

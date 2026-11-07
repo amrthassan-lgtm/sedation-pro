@@ -115,8 +115,9 @@ describe('emergency protocols', () => {
     // 10 ml for anything over 3 ml and every mix. D50W is prefilled.
     for (const drug of injectables()) {
       if (drug.name === 'D50W') continue;
-      const text = `${drug.notes ?? ''} ${drug.mixFirst ?? ''}`;
-      expect(text, drug.name).toMatch(/\b(1|3|10) ml syringe/);
+      expect([1, 3, 10], drug.name).toContain(drug.syringeMl);
+      if (drug.mixFirst) expect(drug.syringeMl, drug.name).toBe(10);
+      if (drug.name === 'Midazolam') expect(drug.syringeMl).toBe(1);
     }
   });
 

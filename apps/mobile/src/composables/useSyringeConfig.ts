@@ -1,50 +1,55 @@
-/**
- * Maps a drug name to its canonical syringe rendering parameters — the colour
- * the brand is most commonly associated with on the trayed-up sedation cart
- * plus the standard barrel capacity drawn for IV push.
- *
- * Five drugs ship with hand-tuned syringes: Versed (Midazolam), Fentanyl,
- * Zofran (Ondansetron), Flumazenil, Naloxone. Other drugs fall back to a
- * neutral slate barrel so the UI doesn't break — but only the named five are
- * intended to render with a syringe in production surfaces.
- */
+import { DEFAULT_FORMULARY, type Formulary } from '@sedation-pro/clinical';
 
+/**
+ * Syringe drawing parameters for a drug, read from the formulary: the barrel
+ * the practice trays it in (`syringeMl`), its tint (`color`) and its
+ * concentration. The formulary is the single source, so the dock buttons, the
+ * reference card and every syringe drawing agree. Drugs without a trayed
+ * syringe return `null` and the caller hides the illustration.
+ */
 export interface SyringeConfig {
-  /** Capacity of the chosen barrel in mL (3, 5, 10, etc.). */
+  /** Capacity of the chosen barrel in ml. */
   readonly capacityMl: number;
-  /** Brand-tinted CSS colour for the fluid + hub. */
+  /** CSS colour for the fluid and the cap band. */
   readonly color: string;
-  /** Concentration on the vial label — printed under the syringe. */
+  /** Concentration on the vial label, printed under the syringe. */
   readonly concentration: string;
 }
 
-const SYRINGES: Readonly<Record<string, SyringeConfig>> = {
-  // 1 cc matches the practice's orange-tape midazolam syringe and the
-  // Quick Reference landing card (owner decision 2026-11).
-  versed: { capacityMl: 1, color: '#f59e0b', concentration: '5 mg/ml' },
-  midazolam: { capacityMl: 1, color: '#f59e0b', concentration: '5 mg/ml' },
-  fentanyl: { capacityMl: 3, color: '#3b82f6', concentration: '50 mcg/ml' },
-  ondansetron: { capacityMl: 3, color: '#10b981', concentration: '2 mg/ml' },
-  zofran: { capacityMl: 3, color: '#10b981', concentration: '2 mg/ml' },
-  // 3 cc matches the practice's trayed barrel and the Quick Reference
-  // landing card; the old 10 came from the 10 ml MAX dose, but the
-  // per-dose draw is 2.0 ml.
-  flumazenil: { capacityMl: 3, color: '#ef4444', concentration: '0.1 mg/ml' },
-  naloxone: { capacityMl: 3, color: '#ef4444', concentration: '0.4 mg/ml' },
-};
+function buildIndex(formulary: Formulary): ReadonlyMap<string, SyringeConfig> {
+  const index = new Map<string, SyringeConfig>();
+  for (const drug of formulary.iv) {
+    if (drug.syringeMl === undefined || drug.color === undefined) continue;
+    const cfg: SyringeConfig = {
+      capacityMl: drug.syringeMl,
+      color: drug.color,
+      concentration: `${drug.concentration.value} ${drug.concentration.unit}`,
+    };
+    // Every word of the id, name and short name ("Midazolam (Versed)" →
+    // midazolam, versed) resolves a protocol callout name to this drug.
+    for (const token of `${drug.id} ${drug.name} ${drug.shortName}`
+      .toLowerCase()
+      .split(/[^a-z]+/)) {
+      if (token.length > 2) index.set(token, cfg);
+    }
+  }
+  return index;
+}
 
-/**
- * Look up syringe params from a drug name. Returns `null` if the drug isn't
- * one of the recognised five — the caller should hide the illustration in
- * that case rather than show a misleading generic barrel.
- */
-export function syringeConfig(drugName: string): SyringeConfig | null {
+const DEFAULT_INDEX = buildIndex(DEFAULT_FORMULARY);
+
+/** Look up syringe params from a drug name; `null` when the drug has no trayed syringe. */
+export function syringeConfig(
+  drugName: string,
+  formulary: Formulary = DEFAULT_FORMULARY,
+): SyringeConfig | null {
+  const index = formulary === DEFAULT_FORMULARY ? DEFAULT_INDEX : buildIndex(formulary);
   const key = drugName
     .toLowerCase()
     .replace(/[()]/g, ' ')
     .split(/\s+/)
-    .find((w) => SYRINGES[w] !== undefined);
-  return key !== undefined ? (SYRINGES[key] ?? null) : null;
+    .find((w) => index.has(w));
+  return key !== undefined ? (index.get(key) ?? null) : null;
 }
 
 /**
