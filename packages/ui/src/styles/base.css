@@ -101,7 +101,8 @@ a {
   font-weight: var(--weight-medium);
   letter-spacing: var(--tracking-normal);
   color: var(--color-text-tertiary);
-  margin-right: var(--sp-2);
+  /* A real space follows in the markup (so copied text reads "12 IV Out"); this just widens it. */
+  margin-right: var(--sp-1);
 }
 
 .body {

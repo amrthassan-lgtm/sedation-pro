@@ -90,10 +90,18 @@ function fmtDate(s: string | null | undefined): string {
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+/**
+ * A few details read as one dotted line; the Phase 1 snapshot carries
+ * dozens, which becomes one unreadable cell. Past four entries each pair
+ * takes its own line (the table cell preserves line breaks; the text
+ * export rejoins them).
+ */
+const DETAIL_LINES_FROM = 5;
 function fmtDetail(details: Readonly<Record<string, string>>): string {
   const entries = Object.entries(details).filter(([, v]) => v && v !== '—');
   if (entries.length === 0) return '';
-  return entries.map(([k, v]) => `${k}: ${v}`).join(' · ');
+  const pairs = entries.map(([k, v]) => `${k}: ${v}`);
+  return pairs.join(entries.length >= DETAIL_LINES_FROM ? '\n' : ' · ');
 }
 
 const OSA_LABELS: Record<string, string> = {
@@ -183,12 +191,14 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       ['Past surgeries', patient.surgeries.trim() || '—'],
       ['Anesthesia history', patient.anesthesiaHistory.trim() || '—'],
       ['Family history', patient.familyHistory.trim() || '—'],
-      [
-        'Cigarettes / day',
-        patient.smokingStatus === 'current' && patient.cigarettesPerDay !== null
-          ? `${patient.cigarettesPerDay}`
-          : '—',
-      ],
+      ...(patient.smokingStatus === 'current'
+        ? [
+            [
+              'Cigarettes / day',
+              patient.cigarettesPerDay !== null ? `${patient.cigarettesPerDay}` : '—',
+            ] as const,
+          ]
+        : []),
       ['Alcohol (drinks/week)', formatAlcoholBucket(patient.alcoholPerWeek)],
       ['Recreational drugs', patient.recreationalDrugs.trim() || 'Denies'],
       ['EKG placed', patient.ekgPlaced ? 'Yes' : '—'],

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+
+import { formatUsPhone, phoneIncomplete } from '@/composables/phone';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 
@@ -121,6 +123,13 @@ const {
   isPhase1Complete,
   phase1ValidationAttempted,
 } = storeToRefs(patient);
+
+// Caregiver phone reads (555) 123-4567 as soon as ten digits are in; a
+// partial number is left alone so typing is never fought.
+watch(carePhone, (v) => {
+  const formatted = formatUsPhone(v);
+  if (formatted !== v) carePhone.value = formatted;
+});
 
 // Provider: a per-practice roster from the formulary, with an "Other…"
 // escape so a covering/locum dentist is still chartable (required +
@@ -758,8 +767,13 @@ const diazepamModalCopy = computed(() => {
               block
             />
           </UiField>
-          <UiField id="field-care_phone" label="Phone" required :invalid="isMissing('care_phone')">
-            <UiTextInput v-model="carePhone" inputmode="tel" />
+          <UiField
+            id="field-care_phone"
+            label="Phone"
+            required
+            :invalid="isMissing('care_phone') || phoneIncomplete(carePhone)"
+          >
+            <UiTextInput v-model="carePhone" inputmode="tel" placeholder="(555) 123-4567" />
           </UiField>
         </UiRow>
       </UiStack>

@@ -60,9 +60,10 @@ const phaseMeta: Record<Phase, { label: string; sub: string }> = {
   settings: { label: 'Settings', sub: 'Practice setup' },
   notes: { label: 'Saved Notes', sub: 'Signed encounters' },
   phase1: { label: 'Phase 1 · Assessment', sub: 'Pre-sedation clearance' },
-  phase2: { label: 'Phase 2 · Oral Meds', sub: 'Pre-op anxiolytic' },
+  phase2: { label: 'Phase 2 · Oral Sedation', sub: 'Pre-op anxiolytic' },
   phase3: { label: 'Phase 3 · IV Sedation', sub: 'Drug administration' },
   phase4: { label: 'Phase 4 · Recovery', sub: 'Discharge & note' },
+  note: { label: 'Clinical Note', sub: 'Signed record' },
 };
 
 const meta = computed(() => phaseMeta[currentPhase.value]);
@@ -119,6 +120,7 @@ function emergency() {
       type="button"
       class="sticky-bar-nav"
       aria-label="Open navigation"
+      :aria-expanded="session.drawerOpen"
       @click="session.toggleDrawer"
     >
       <span class="sticky-bar-nav-icon" aria-hidden="true">
@@ -399,14 +401,15 @@ function emergency() {
 .sticky-bar-emerg {
   font-size: var(--type-footnote);
   font-weight: var(--weight-semibold);
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: var(--r-sm);
   border: none;
   background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
   white-space: nowrap;
-  min-height: 38px;
+  /* 44px is the touch minimum; Emergency is the one button that must never miss. */
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 4px;

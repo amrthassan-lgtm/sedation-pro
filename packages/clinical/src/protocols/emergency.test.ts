@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CRITICAL_PROTOCOL_IDS,
+  DURING_SEDATION_PROTOCOL_IDS,
   EMERGENCY_PROTOCOLS,
   findProtocol,
   protocolsByCategory,
@@ -21,6 +22,12 @@ function injectables(): ReadonlyArray<EmergencyDrugCallout> {
 }
 
 describe('emergency protocols', () => {
+  it('the during-sedation shortcuts are a subset of the critical list', () => {
+    for (const id of DURING_SEDATION_PROTOCOL_IDS) {
+      expect(CRITICAL_PROTOCOL_IDS, id).toContain(id);
+    }
+  });
+
   it('every CRITICAL_PROTOCOL_IDS entry resolves to a protocol flagged critical', () => {
     for (const id of CRITICAL_PROTOCOL_IDS) {
       const proto = findProtocol(id);

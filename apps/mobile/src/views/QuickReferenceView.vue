@@ -5,10 +5,11 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   CRITICAL_PROTOCOL_IDS,
   DEFAULT_FORMULARY,
+  DURING_SEDATION_PROTOCOL_IDS,
   EMERGENCY_PROTOCOLS,
   type EmergencyProtocol,
 } from '@sedation-pro/clinical';
-import { UiBanner, UiCard, UiStack, UiSyringe, UiTextInput } from '@sedation-pro/ui';
+import { UiBanner, UiButton, UiCard, UiStack, UiSyringe, UiTextInput } from '@sedation-pro/ui';
 
 import {
   classifyInventory,
@@ -17,6 +18,7 @@ import {
 } from '@/composables/useInventoryStatus';
 import { IV_DRUG_REFERENCE } from '@/data/ivDrugReference';
 import { CARDIAC_SUBHEADS, CATEGORY_GROUPS, swatchFor } from '@/data/protocolCategories';
+import { CASE_PHASE_ROUTE, CASE_PHASE_SHORT, useSessionStore } from '@/stores/session';
 
 const router = useRouter();
 const route = useRoute();
@@ -76,11 +78,23 @@ function toggleDrug(id: string) {
   expandedDrugId.value = expandedDrugId.value === id ? null : id;
 }
 
-const criticalProtocols = computed<ReadonlyArray<EmergencyProtocol>>(() =>
-  CRITICAL_PROTOCOL_IDS.map((id) => EMERGENCY_PROTOCOLS.find((p) => p.id === id)).filter(
-    (p): p is EmergencyProtocol => Boolean(p),
-  ),
+function byIds(ids: ReadonlyArray<string>): ReadonlyArray<EmergencyProtocol> {
+  return ids
+    .map((id) => EMERGENCY_PROTOCOLS.find((p) => p.id === id))
+    .filter((p): p is EmergencyProtocol => Boolean(p));
+}
+// The chair-side emergencies sit first: the app is open mid-procedure.
+const duringSedation = computed(() => byIds(DURING_SEDATION_PROTOCOL_IDS));
+const criticalProtocols = computed(() =>
+  byIds(CRITICAL_PROTOCOL_IDS.filter((id) => !DURING_SEDATION_PROTOCOL_IDS.includes(id))),
 );
+
+// One tap back to wherever the case was, at the same scroll position.
+const session = useSessionStore();
+const backToCaseLabel = computed(() => `Back to case · ${CASE_PHASE_SHORT[session.lastCasePhase]}`);
+function goCase() {
+  void router.push(CASE_PHASE_ROUTE[session.lastCasePhase]);
+}
 
 const normalizedQuery = computed(() => debouncedQuery.value.trim().toLowerCase());
 
@@ -102,14 +116,14 @@ const filtered = computed<ReadonlyArray<EmergencyProtocol>>(() => {
   return EMERGENCY_PROTOCOLS.filter((p) => protocolMatches(p, q));
 });
 
+const isSearching = computed(() => normalizedQuery.value !== '');
+
 const grouped = computed(() => {
   return CATEGORY_GROUPS.map((group) => {
     const protocols = filtered.value.filter((p) => group.categories.includes(p.category));
     return { ...group, protocols };
-  });
+  }).filter((group) => !isSearching.value || group.protocols.length > 0);
 });
-
-const isSearching = computed(() => normalizedQuery.value !== '');
 
 function open(id: string) {
   void router.push(`/quick-reference/${id}`);
@@ -146,6 +160,8 @@ onMounted(() => {
       <p class="caption">Quick Reference</p>
       <h1 class="title-display">Emergency Protocols</h1>
     </header>
+
+    <UiButton tone="primary" block @click="goCase">‹ {{ backToCaseLabel }}</UiButton>
 
     <!-- IV Drug Reference — collapsible pills showing draw-up chart per drug. -->
 
@@ -209,6 +225,23 @@ onMounted(() => {
     </UiCard>
 
     <!-- Critical shortcuts: 6 chips in one wrap row, big tap targets. -->
+
+    <section class="shortcuts">
+      <p class="caption">During sedation</p>
+      <div class="shortcut-row">
+        <button
+          v-for="proto in duringSedation"
+          :key="proto.id"
+          type="button"
+          class="shortcut"
+          :class="`cat-${swatchFor(proto.category)}`"
+          @click="open(proto.id)"
+        >
+          <span class="shortcut-name">{{ proto.name }}</span>
+          <span class="shortcut-summary">{{ proto.summary }}</span>
+        </button>
+      </div>
+    </section>
 
     <section class="shortcuts">
       <p class="caption">Critical</p>
