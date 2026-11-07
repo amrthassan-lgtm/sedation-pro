@@ -87,24 +87,34 @@ export interface EmergencyProtocol {
 }
 
 /**
- * Pre-canned list of protocols that show in the Quick Reference shortcut
- * row — the ones most likely to be opened in a crisis. Keep this list short
- * (~6) so the row stays one-line on iPhone portrait.
- */
-/**
  * Shown under every protocol so an inspector (and the team) can see how
  * current the written protocols are. Bump it when a review lands.
  */
 export const PROTOCOLS_REVIEWED =
   'Reviewed Nov 2026 against AHA 2025 and current specialty guidelines';
 
+/**
+ * Protocols that show in the Quick Reference shortcut grid — the ones most
+ * likely to be opened in a crisis. The landing page splits them into the
+ * mid-procedure group (`DURING_SEDATION_PROTOCOL_IDS`) and the rest.
+ */
 export const CRITICAL_PROTOCOL_IDS: ReadonlyArray<string> = [
+  'oversedation_benzo',
+  'oversedation_opioid',
+  'hypoventilation',
   'laryngospasm',
-  'hypotension',
-  'bradycardia',
   'anaphylaxis',
   'vfib_vtach',
+  'hypotension',
+  'bradycardia',
+];
+
+/** The emergencies that happen with the patient in the chair, mid-sedation. */
+export const DURING_SEDATION_PROTOCOL_IDS: ReadonlyArray<string> = [
   'oversedation_benzo',
+  'oversedation_opioid',
+  'hypoventilation',
+  'laryngospasm',
 ];
 
 export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
@@ -267,6 +277,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'No pulse: start CPR (Cardiac Arrest protocol)', severity: 'final' },
     ],
     relatedProtocols: ['oversedation_benzo', 'oversedation_opioid'],
+    critical: true,
   },
   {
     id: 'emesis_aspiration',
@@ -1157,6 +1168,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
     ],
     relatedProtocols: ['oversedation_benzo', 'hypoventilation'],
+    critical: true,
   },
   {
     id: 'malignant_hyperthermia',

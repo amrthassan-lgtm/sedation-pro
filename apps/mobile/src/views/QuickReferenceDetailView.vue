@@ -10,7 +10,20 @@ import {
   type EmergencyProtocol,
   type ProtocolStep,
 } from '@sedation-pro/clinical';
-import { UiBanner, UiButton, UiCard, UiStatusPill, UiSyringe } from '@sedation-pro/ui';
+import {
+  UiBanner,
+  UiButton,
+  UiCard,
+  UiDrugButton,
+  UiStatusPill,
+  UiSyringe,
+} from '@sedation-pro/ui';
+import { storeToRefs } from 'pinia';
+
+import { useIvDosing } from '@/composables/useIvDosing';
+import { useIVStore } from '@/stores/iv';
+import { usePatientStore } from '@/stores/patient';
+import { CASE_PHASE_ROUTE, CASE_PHASE_SHORT, useSessionStore } from '@/stores/session';
 
 import { parseVolumeMl, syringeConfig } from '@/composables/useSyringeConfig';
 import { useInventoryStatus } from '@/composables/useInventoryStatus';
@@ -75,6 +88,58 @@ function goBack() {
 
 function goList() {
   void router.push('/quick-reference');
+}
+
+// -------- Back to case --------------------------------------------------------
+const session = useSessionStore();
+const backToCaseLabel = computed(() => `Back to case · ${CASE_PHASE_SHORT[session.lastCasePhase]}`);
+function goCase() {
+  void router.push(CASE_PHASE_ROUTE[session.lastCasePhase]);
+}
+
+// -------- Call 911 ----------------------------------------------------------
+// Any protocol whose steps say to call 911 gets the banner: large enough to
+// read aloud across the room, and a tel: link where the device can dial.
+const call911 = computed(() => protocol.value?.steps.some((s) => /911/.test(s.text)) ?? false);
+
+// -------- Give and log ------------------------------------------------------
+// The oversedation protocols end in a reversal dose. Logging it from here
+// runs the same code as the Phase 3 buttons: the dose lands in the record,
+// the undo toast appears, and discharge is held 120 min. Only while a case
+// is open, so a reference lookup can never write into an empty chart.
+type ReversalDrug = 'flumazenil' | 'naloxone';
+const PROTOCOL_REVERSALS: Readonly<Record<string, ReadonlyArray<ReversalDrug>>> = {
+  oversedation_benzo: ['flumazenil'],
+  oversedation_opioid: ['naloxone'],
+  hypoventilation: ['naloxone', 'flumazenil'],
+};
+const REVERSAL_BUTTON: Readonly<Record<ReversalDrug, { name: string; dose: string; sub: string }>> =
+  {
+    flumazenil: {
+      name: 'Flumazenil',
+      dose: '0.2 mg IV',
+      sub: 'logs the dose · holds discharge 120 min',
+    },
+    naloxone: {
+      name: 'Naloxone',
+      dose: '0.4 mg IV',
+      sub: 'logs the dose · holds discharge 120 min',
+    },
+  };
+const reversals = computed(() => PROTOCOL_REVERSALS[props.id] ?? []);
+const patient = usePatientStore();
+const { isPhase1Complete } = storeToRefs(patient);
+const iv = useIVStore();
+const { lastFlumazenilAt, lastNaloxoneAt } = storeToRefs(iv);
+const dosing = useIvDosing();
+function giveReversal(drug: ReversalDrug) {
+  if (drug === 'flumazenil') dosing.logIvFlumazenil();
+  else dosing.logIvNaloxone();
+}
+function lastGiven(drug: ReversalDrug): string | undefined {
+  const at = drug === 'flumazenil' ? lastFlumazenilAt.value : lastNaloxoneAt.value;
+  if (at === null) return undefined;
+  return new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 /**
@@ -173,7 +238,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
   <main class="phase-view">
     <header class="toolbar">
       <UiButton tone="neutral" @click="goBack">‹ Back</UiButton>
-      <span class="toolbar-crumb caption">Quick Reference</span>
+      <UiButton tone="primary" class="toolbar-case" @click="goCase">{{ backToCaseLabel }}</UiButton>
       <UiButton tone="neutral" @click="goList">All protocols</UiButton>
     </header>
 
@@ -188,6 +253,33 @@ function syringeFor(drug: EmergencyDrugCallout) {
           <span v-for="sign in protocol.signs" :key="sign" class="sign-pill">{{ sign }}</span>
         </div>
       </header>
+
+      <a v-if="call911" class="call-911" href="tel:911">
+        <span class="call-911-main">CALL 911</span>
+        <span class="call-911-sub"
+          >Say the address, the emergency, and that a patient is sedated</span
+        >
+      </a>
+
+      <UiCard v-if="reversals.length > 0" class="give-card">
+        <p class="heading give-heading">Give and log</p>
+        <p v-if="!isPhase1Complete" class="give-hint">
+          Open the patient's case (Phase 1) to log a dose from here.
+        </p>
+        <div v-else class="give-grid">
+          <UiDrugButton
+            v-for="drug in reversals"
+            :key="drug"
+            :tone="drug"
+            :name="REVERSAL_BUTTON[drug].name"
+            :dose="REVERSAL_BUTTON[drug].dose"
+            :sub="REVERSAL_BUTTON[drug].sub"
+            :state="lastGiven(drug) ? 'logged' : 'idle'"
+            :logged-at="lastGiven(drug)"
+            @click="giveReversal(drug)"
+          />
+        </div>
+      </UiCard>
 
       <UiBanner
         v-if="protocol.contraindications && protocol.contraindications.length > 0"
@@ -312,10 +404,57 @@ function syringeFor(drug: EmergencyDrugCallout) {
   justify-content: space-between;
   gap: var(--sp-2);
 }
-.toolbar-crumb {
+.toolbar-case {
   flex: 1;
+  min-width: 0;
+}
+
+/* Call 911: readable from across the room; a tel: link where the device dials. */
+.call-911 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--color-crisis);
+  color: white;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.call-911:active {
+  filter: brightness(0.9);
+}
+.call-911-main {
+  font-size: 28px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+.call-911-sub {
+  font-size: var(--type-caption);
+  opacity: 0.9;
   text-align: center;
+}
+
+.give-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.give-heading {
+  margin: 0;
+}
+.give-hint {
+  margin: 0;
+  font-size: var(--type-footnote);
   color: var(--color-text-tertiary);
+}
+.give-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-2);
 }
 
 /* Hero: a category-tinted block that anchors the page. The left border colour

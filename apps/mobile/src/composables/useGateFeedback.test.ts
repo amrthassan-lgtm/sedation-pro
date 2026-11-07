@@ -51,4 +51,19 @@ describe('useGateFeedback', () => {
     attempted.value = true;
     expect(g.isInvalid('a')).toBe(true);
   });
+
+  it('onlyFailing is true only when that entry is the sole blocker', () => {
+    const entries = computed<GateEntry[]>(() => [
+      { anchorId: 'a', failing: false },
+      { anchorId: 'wait', failing: true },
+    ]);
+    const g = useGateFeedback({ entries, scrollTo: () => {} });
+    expect(g.onlyFailing('wait')).toBe(true);
+    expect(g.onlyFailing('a')).toBe(false);
+    const two = computed<GateEntry[]>(() => [
+      { anchorId: 'a', failing: true },
+      { anchorId: 'wait', failing: true },
+    ]);
+    expect(useGateFeedback({ entries: two, scrollTo: () => {} }).onlyFailing('wait')).toBe(false);
+  });
 });

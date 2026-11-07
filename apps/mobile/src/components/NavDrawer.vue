@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type CSSProperties } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, type CSSProperties } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
@@ -301,6 +301,14 @@ const overlayStyle = computed<CSSProperties | undefined>(() => {
 
 const overlayVisible = computed(() => drawerOpen.value || dragging.value);
 
+// Escape closes the drawer, as it does any sheet. Registered on window so
+// it works wherever focus is; a no-op while the drawer is closed.
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && drawerOpen.value) session.closeDrawer();
+}
+onMounted(() => window.addEventListener('keydown', onKeydown));
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
+
 function beginDrag(mode: 'open' | 'close', x: number, y: number, t: number) {
   dragMode.value = mode;
   dragAxis.value = 'undecided';
@@ -415,6 +423,23 @@ function onTouchEnd() {
       @touchcancel="onTouchEnd"
     >
       <div class="nav-brand">
+        <!-- Sits where the sticky bar's hamburger is: the open drawer slides
+             over that button, so the same spot has to close it. -->
+        <button
+          type="button"
+          class="nav-close"
+          aria-label="Close navigation"
+          @click="session.closeDrawer()"
+        >
+          <svg viewBox="0 0 26 26" width="22" height="22" fill="none" aria-hidden="true">
+            <path
+              d="M6 6l14 14M20 6L6 20"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
         <img class="nav-brand-logo" :src="logoSrc" alt="" width="28" height="28" />
         <div class="nav-brand-text">
           <span class="nav-brand-name">Sedation Pro</span>
@@ -665,7 +690,23 @@ function onTouchEnd() {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 18px 10px;
+  padding: 6px 18px 10px 8px;
+}
+.nav-close {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-md);
+  color: var(--color-accent);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-close:active {
+  background: var(--color-surface-subtle);
 }
 .nav-brand-logo {
   width: 28px;
@@ -740,9 +781,7 @@ function onTouchEnd() {
   font-family: var(--font-mono);
   margin-top: 2px;
   letter-spacing: 0.3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
 }
 
 .nav-sum-pills {
@@ -947,9 +986,7 @@ function onTouchEnd() {
   font-size: var(--type-caption);
   color: var(--color-text-disabled);
   letter-spacing: 0.2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
   max-width: 200px;
 }
 .nav-utility-icon {

@@ -18,6 +18,7 @@ const PHASE_ROUTES: Record<string, Phase> = {
   // they are.
   '/settings': 'settings',
   '/notes': 'notes',
+  '/clinical-note': 'note',
 };
 
 const GATED_PHASES: ReadonlySet<Phase> = new Set(['phase2', 'phase3', 'phase4']);
@@ -27,6 +28,21 @@ export const router = createRouter({
   // '/sedation-pro/' on GitHub Pages. Letting the router know keeps deep
   // links and redirects honest under both hosts.
   history: createWebHistory(import.meta.env.BASE_URL),
+  // Browser back/forward restore their own position. Returning to a case
+  // phase by any other route (the Back to case button, the drawer) lands at
+  // the scroll position captured when the clinician left it. Everything
+  // else starts at the top. The restore waits a frame for the phase view to
+  // render at full height.
+  scrollBehavior(to, _from, savedPosition) {
+    if (savedPosition) return savedPosition;
+    const phase = PHASE_ROUTES[to.path];
+    const session = useSessionStore();
+    const top = phase ? session.caseScroll[phase as keyof typeof session.caseScroll] : undefined;
+    if (top === undefined) return { top: 0 };
+    return new Promise((resolve) => {
+      setTimeout(() => resolve({ top }), 60);
+    });
+  },
   routes: [
     { path: '/', redirect: '/phase/1' },
     {
@@ -114,8 +130,13 @@ export const router = createRouter({
  * parallel — both surfaces read the same `usePatientStore.isPhase1Complete`,
  * so they can't disagree.
  */
-router.beforeEach((to: RouteLocationNormalized) => {
+router.beforeEach((to: RouteLocationNormalized, from: RouteLocationNormalized) => {
   const patient = usePatientStore();
+
+  const leaving = PHASE_ROUTES[from.path];
+  if (leaving && typeof window !== 'undefined') {
+    useSessionStore().rememberScroll(leaving, window.scrollY);
+  }
 
   /**
    * An unsigned note is not a record, so it must not be reachable — not by

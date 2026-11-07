@@ -65,6 +65,37 @@ describe('QuickReferenceDetailView draw rendering', () => {
   });
 });
 
+describe('QuickReferenceDetailView emergency actions', () => {
+  it('shows a tel:911 banner only on protocols whose steps call 911', () => {
+    const w = mountDetail('anaphylaxis');
+    const link = w.find('a.call-911');
+    expect(link.exists()).toBe(true);
+    expect(link.attributes('href')).toBe('tel:911');
+    w.unmount();
+    const quiet = mountDetail('phlebitis');
+    expect(quiet.find('a.call-911').exists()).toBe(false);
+    quiet.unmount();
+  });
+
+  it('offers to log the reversal only on the oversedation protocols, and only with a case open', () => {
+    const w = mountDetail('oversedation_benzo');
+    expect(w.find('.give-card').exists()).toBe(true);
+    // No Phase 1 on a fresh store: the hint shows instead of the dose buttons.
+    expect(w.find('.give-hint').exists()).toBe(true);
+    expect(w.findAll('.ui-drug-btn').length).toBe(0);
+    w.unmount();
+    const other = mountDetail('anaphylaxis');
+    expect(other.find('.give-card').exists()).toBe(false);
+    other.unmount();
+  });
+
+  it('puts Back to case in the toolbar on every protocol', () => {
+    const w = mountDetail('seizure');
+    expect(w.find('.toolbar-case').text()).toContain('Back to case');
+    w.unmount();
+  });
+});
+
 describe('useSyringeConfig', () => {
   it('rejects range volumes so the illustration never shows an arbitrary endpoint', () => {
     expect(parseVolumeMl('0.5-1.0 ml')).toBeNull();

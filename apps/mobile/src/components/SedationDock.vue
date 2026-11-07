@@ -344,12 +344,13 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   pointer-events: auto;
   z-index: 91;
   padding: 6px 12px calc(10px + env(safe-area-inset-bottom)) 12px;
-  /* Layered top-edge highlight over the themed frosted-bg (matches the
-     sticky bar). Two-layer upward shadow expresses depth instead of a
-     hairline border-top — same iOS pattern as the cards / modal. */
-  background: var(--surface-highlight), var(--color-frosted-bg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  /* Opaque: the dose buttons sit over scrolling text, and a frosted dock let
+     the page ghost through them on the tablet. Two-layer upward shadow
+     expresses depth instead of a hairline border-top — same iOS pattern as
+     the cards / modal. */
+  /* --color-bg is the one opaque surface token; the elevated surfaces are
+     translucent tints and let the page show through. */
+  background: var(--surface-highlight), var(--color-bg);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow:
     0 -1px 2px rgba(0, 0, 0, 0.1),

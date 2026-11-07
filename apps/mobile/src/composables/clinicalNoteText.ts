@@ -66,7 +66,7 @@ export function clinicalNoteToText(note: ClinicalNote): string {
     lines.push('CHRONOLOGICAL RECORD');
     lines.push(minor);
     for (const row of note.chronology) {
-      const detail = row.detail ? `  —  ${row.detail}` : '';
+      const detail = row.detail ? `  —  ${row.detail.replace(/\n/g, '; ')}` : '';
       lines.push(`${row.time}  ${row.event}${detail}`);
     }
   }

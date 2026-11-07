@@ -416,7 +416,7 @@ function onProcedureStart() {
   iv.startProcedure();
   undo.stamp({
     event: 'Procedure Start',
-    details: {},
+    details: { Procedure: patient.procedure.trim() || 'As planned at the pre-sedation assessment' },
     toast: { label: '✓ Procedure started', tone: 'safe' },
     revert: () => iv.clearProcedureStart(),
   });
@@ -506,7 +506,7 @@ function onNaloxone() {
     <!-- Card 1 — Pre-Op Vitals ------------------------------------------ -->
 
     <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">1</span>Pre-Op Vitals</p>
+      <p class="heading"><span class="heading-step">1</span> Pre-Op Vitals</p>
       <!-- Comparing against Phase 1's baseline is the whole point of
            re-taking vitals — surface it where the eyes already are. -->
       <p v-if="baselineLine" class="caption baseline-line">{{ baselineLine }}</p>
@@ -547,7 +547,7 @@ function onNaloxone() {
     <!-- Card 2 — N₂O / O₂ ON ------------------------------------------- -->
 
     <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">2</span>N₂O / O₂ ON</p>
+      <p class="heading"><span class="heading-step">2</span> N₂O / O₂ ON</p>
       <UiButton
         tone="primary"
         block
@@ -564,7 +564,7 @@ function onNaloxone() {
     <!-- Card 3 — IV Start --------------------------------------------- -->
 
     <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">3</span>IV Start</p>
+      <p class="heading"><span class="heading-step">3</span> IV Start</p>
       <UiStack :gap="3" class="mt-2">
         <UiField label="Catheter" hint="gauge">
           <UiChipGroup v-model="ivCatheterGauge" :options="gaugeChipOptions" size="tap-target" />
@@ -605,7 +605,7 @@ function onNaloxone() {
     <!-- Card 4 — N₂O OFF -> O₂ 100% ------------------------------------ -->
 
     <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">4</span>N₂O OFF → O₂ 100%</p>
+      <p class="heading"><span class="heading-step">4</span> N₂O OFF → O₂ 100%</p>
       <UiButton
         tone="primary"
         block
@@ -623,7 +623,7 @@ function onNaloxone() {
     <!-- Card 5 — Initial test dose. -->
 
     <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">5</span>Initial Test Dose</p>
+      <p class="heading"><span class="heading-step">5</span> Initial Test Dose</p>
       <div class="drug-grid mt-2">
         <UiDrugButton
           tone="versed"
@@ -645,7 +645,7 @@ function onNaloxone() {
 
     <div ref="dockSentinelRef">
       <UiCard tint="ph3">
-        <p class="heading"><span class="heading-step">6</span>Additional Doses</p>
+        <p class="heading"><span class="heading-step">6</span> Additional Doses</p>
         <UiStack :gap="3" class="mt-2">
           <UiRow :gap="3" wrap>
             <UiTimerPill
@@ -755,7 +755,7 @@ function onNaloxone() {
     <!-- Card 7 — Sedation Level Vitals ---------------------------------- -->
 
     <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">7</span>Sedation Level Achieved</p>
+      <p class="heading"><span class="heading-step">7</span> Sedation Level Achieved</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
@@ -793,7 +793,7 @@ function onNaloxone() {
     <!-- Card 8 — Procedure Start ----------------------------------------- -->
 
     <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">8</span>Procedure Start</p>
+      <p class="heading"><span class="heading-step">8</span> Procedure Start</p>
       <UiButton
         tone="primary"
         block
@@ -810,7 +810,7 @@ function onNaloxone() {
     <!-- Card 9 — Local Anesthesia + live Malamed combined-% -------------- -->
 
     <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">9</span>Local Anesthesia</p>
+      <p class="heading"><span class="heading-step">9</span> Local Anesthesia</p>
 
       <UiBanner v-if="!weightLb" tone="caution" icon="⚖️" class="mt-2">
         Patient weight is required for the per-drug max-dose math. Fill weight in Phase 1.
@@ -888,7 +888,7 @@ function onNaloxone() {
     <!-- Card 10 — Reversal Agents (emergency use only) ------------------ -->
 
     <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">10</span>Reversal Agents</p>
+      <p class="heading"><span class="heading-step">10</span> Reversal Agents</p>
       <UiBanner tone="limit" class="mt-2">
         <strong>Emergency use only.</strong> Either reversal holds discharge for 120 min after the
         last dose.

@@ -49,6 +49,12 @@ export function useGateFeedback(opts: GateFeedbackOptions) {
     return opts.entries.value.find((e) => e.failing)?.anchorId ?? null;
   }
 
+  /** True when this is the one and only unsatisfied entry. */
+  function onlyFailing(anchorId: string): boolean {
+    const failing = opts.entries.value.filter((e) => e.failing);
+    return failing.length === 1 && failing[0]?.anchorId === anchorId;
+  }
+
   /** Red-ring this field — but only once the user has attempted. */
   function isInvalid(anchorId: string): boolean {
     if (!attempted.value) return false;
@@ -77,5 +83,5 @@ export function useGateFeedback(opts: GateFeedbackOptions) {
     return false;
   }
 
-  return { attempted, isInvalid, firstFailing, scrollToFirst, attempt };
+  return { attempted, isInvalid, onlyFailing, firstFailing, scrollToFirst, attempt };
 }

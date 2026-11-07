@@ -11,6 +11,7 @@ import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { useNow } from '@/composables/useNow';
+import { useToastStore } from '@/stores/toast';
 import { monitorAttestationLabel } from '@/config/site';
 import { useGateFeedback, type GateEntry } from '@/composables/useGateFeedback';
 import { haptic } from '@/composables/useHaptics';
@@ -317,9 +318,26 @@ const gateEntries = computed<GateEntry[]>(() => {
   ];
 });
 const gate = useGateFeedback({ entries: gateEntries, attempted: releaseAttempted });
+const toast = useToastStore();
 
 function releasePatient() {
   if (!canConclude.value) {
+    // Every checklist item is done and only the clock is left: say when,
+    // instead of scrolling the clinician up to a countdown they can't change.
+    if (gate.onlyFailing('gate-ivout')) {
+      const readyAt = now.value + releaseStatus.value.remainingMin * 60_000;
+      toast.show(
+        {
+          id: `release-wait-${Date.now()}`,
+          label: `Observation wait · ${releaseStatus.value.remainingMin} min left`,
+          sub: `Release available at ${fmtClock(readyAt) ?? ''}`,
+          tone: 'caution',
+        },
+        6000,
+      );
+      haptic('error');
+      return;
+    }
     void gate.attempt();
     haptic('error');
     return;
@@ -379,7 +397,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 11 — Recovery Vitals -->
 
     <UiCard v-if="!isAssessment" tint="ph4">
-      <p class="heading"><span class="heading-step">11</span>Recovery Vitals</p>
+      <p class="heading"><span class="heading-step">11</span> Recovery Vitals</p>
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" wrap>
           <UiField label="HR" hint="bpm">
@@ -417,7 +435,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 12 — IV Out -->
 
     <UiCard v-if="!isAssessment" tint="ph4" id="gate-ivout">
-      <p class="heading"><span class="heading-step">12</span>IV Out</p>
+      <p class="heading"><span class="heading-step">12</span> IV Out</p>
 
       <UiBanner :tone="ivOutChipTone" icon="⏱" class="mt-2">
         <strong>{{ ivOutChipHeadline }}</strong>
@@ -453,7 +471,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 13 — Discharge Readiness (release-blocker gates + companion) -->
 
     <UiCard tint="ph4">
-      <p class="heading"><span class="heading-step">13</span>Discharge Readiness</p>
+      <p class="heading"><span class="heading-step">13</span> Discharge Readiness</p>
       <UiStack :gap="3" class="mt-2">
         <p class="caption">Patient readiness</p>
         <UiStack :gap="2">
@@ -529,7 +547,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 14 — Discharge Handoff (post-op confirmations + prescriptions) -->
 
     <UiCard tint="ph4">
-      <p class="heading"><span class="heading-step">14</span>Discharge Handoff</p>
+      <p class="heading"><span class="heading-step">14</span> Discharge Handoff</p>
       <UiStack :gap="3" class="mt-2">
         <p class="caption">Post-op confirmations</p>
         <UiStack :gap="1">
@@ -565,7 +583,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 15 — Provider Sign-off / Procedure Notes -->
 
     <UiCard tint="ph4">
-      <p class="heading"><span class="heading-step">15</span>Provider Sign-off</p>
+      <p class="heading"><span class="heading-step">15</span> Provider Sign-off</p>
 
       <UiStack :gap="3" class="mt-2">
         <p class="caption">Quality</p>
@@ -621,7 +639,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <!-- Card 16 — Provider Signature -->
 
     <UiCard tint="ph4">
-      <p class="heading"><span class="heading-step">16</span>Provider Signature</p>
+      <p class="heading"><span class="heading-step">16</span> Provider Signature</p>
       <UiStack :gap="3" class="mt-2">
         <UiField
           id="gate-signature"
@@ -638,8 +656,8 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
 
     <UiCard tint="ph4">
       <p class="heading">
-        <span class="heading-step">17</span
-        >{{ isAssessment ? 'Complete Assessment' : 'Release Patient' }}
+        <span class="heading-step">17</span>
+        {{ isAssessment ? 'Complete Assessment' : 'Release Patient' }}
       </p>
 
       <template v-if="isAssessment">

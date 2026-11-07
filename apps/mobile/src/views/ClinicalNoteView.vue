@@ -252,6 +252,11 @@ async function shareNote() {
         </table>
       </section>
 
+      <footer class="print-footer" aria-hidden="true">
+        <span>{{ note.header.patient }} · MRN {{ note.header.mrn }}</span>
+        <span>{{ note.header.date }} · Sedation Pro clinical note</span>
+      </footer>
+
       <section class="note-section signatures">
         <h2>Signature</h2>
         <div class="sig-grid">
@@ -510,6 +515,7 @@ async function shareNote() {
 }
 .note-table .details {
   color: #374151;
+  white-space: pre-line;
 }
 
 .signatures .sig-grid {
@@ -573,7 +579,18 @@ async function shareNote() {
   text-align: center;
 }
 
+/* Screen: the running footer exists only on paper. Declared before the
+   print block so the print rule below wins. */
+.print-footer {
+  display: none;
+}
 @media print {
+  /* Scoped styles never match html/body without :global; the dark app
+     background would otherwise print around the paper. */
+  :global(html),
+  :global(body) {
+    background: #fff;
+  }
   .no-print {
     display: none !important;
   }
@@ -584,11 +601,40 @@ async function shareNote() {
   .note-paper {
     box-shadow: none;
     border-radius: 0;
-    padding: 0.5in;
+    /* Room at the foot of every page for the running footer below. */
+    padding: 0.5in 0.5in 0.45in;
+  }
+  /* A chronology row never splits across pages, and the Time / Event /
+     Details header repeats on every continuation page. */
+  .note-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .note-table thead {
+    display: table-header-group;
+  }
+  /* Running footer: a fixed element repeats on every printed page, so a
+     loose sheet can always be matched to its chart. */
+  .print-footer {
+    display: flex;
+    justify-content: space-between;
+    position: fixed;
+    left: 0.5in;
+    right: 0.5in;
+    bottom: 0.15in;
+    font-size: 8pt;
+    color: #6b7280;
+    border-top: 1px solid #d1d5db;
+    padding-top: 3pt;
   }
   @page {
     margin: 0.5in;
     size: letter;
+    @bottom-right {
+      content: 'Page ' counter(page) ' of ' counter(pages);
+      font-size: 8pt;
+      color: #6b7280;
+    }
   }
 }
 
