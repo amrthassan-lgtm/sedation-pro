@@ -394,7 +394,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'angina',
     category: 'cardiac-ischemia',
     name: 'Angina / Chest Pain',
-    summary: 'MONA: Morphine (fentanyl / N₂O), O₂, Nitro, Aspirin · give A, N, O, M',
+    summary: 'Crushing chest pain, arm or jaw ache · MONA, given A, N, O, M',
     signs: ['crushing chest pain', 'arm radiation', 'jaw radiation'],
     steps: [
       { text: 'Stop procedure. N₂O off' },
@@ -449,7 +449,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'mi',
     category: 'cardiac-ischemia',
     name: 'Myocardial Infarction (HEART ATTACK)',
-    summary: 'Call 911 · MONA: give A, N, O, M · AED pads on',
+    summary: 'Chest pain with sweating, nausea or short of breath · Call 911, MONA, AED pads on',
     signs: ['severe chest pain', 'diaphoresis', 'arm radiation', 'jaw radiation'],
     steps: [
       { text: 'CALL 911 IMMEDIATELY', severity: 'critical' },
@@ -870,7 +870,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'vfib_vtach',
     category: 'cardiac-arrest',
     name: 'V-Fib / Pulseless V-Tach (CARDIAC ARREST)',
-    summary: 'CPR + AED · Epinephrine 1mg IV after 2nd shock',
+    summary: 'No pulse, not breathing · CPR + AED, Epinephrine 1mg IV after 2nd shock',
     signs: ['no pulse', 'shockable rhythm', 'V-Fib', 'pulseless V-Tach'],
     steps: [
       { text: 'Call for help, AED and 911', severity: 'critical' },
@@ -941,7 +941,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'pea_asystole',
     category: 'cardiac-arrest',
     name: 'PEA and Asystole (Non-Shockable Rhythms)',
-    summary: 'CPR → Epinephrine 1mg IV q3-5min',
+    summary: 'No pulse, AED says no shock · CPR, Epinephrine 1mg IV q3-5min',
     signs: ['no pulse', 'non-shockable rhythm', 'PEA', 'asystole'],
     steps: [
       { text: 'Call for help, AED and 911', severity: 'critical' },
