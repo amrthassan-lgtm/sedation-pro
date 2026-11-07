@@ -248,6 +248,24 @@ describe('protocolCourseCoverage', () => {
     expect(atropine).toMatchObject({ haveMg: 3, short: false });
   });
 
+  it('reports on-order milligrams separately, never as usable stock', () => {
+    const classified = classifyInventory(NOW, [
+      item({ id: 'ok', protocolDrugNames: ['Adenosine'], mgPerUnit: 6, quantity: 1 }),
+      item({
+        id: 'ordered',
+        protocolDrugNames: ['Adenosine'],
+        mgPerUnit: 6,
+        quantity: 2,
+        expiresOn: '',
+        onOrder: { sku: 'X' },
+      }),
+    ]);
+    const [adenosine] = protocolCourseCoverage(classified, [
+      { drug: 'Adenosine', needMg: 18, basis: '', protocolPhrase: '' },
+    ]);
+    expect(adenosine).toMatchObject({ haveMg: 6, onOrderMg: 12, short: true });
+  });
+
   it('sums half-milligram vials without float dust', () => {
     const classified = classifyInventory(NOW, [
       item({ id: 'f', protocolDrugNames: ['Flumazenil'], mgPerUnit: 0.5, quantity: 2 }),

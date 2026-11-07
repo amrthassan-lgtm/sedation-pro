@@ -108,6 +108,8 @@ export interface CourseCoverage {
   readonly basis: string;
   readonly needMg: number;
   readonly haveMg: number;
+  /** Milligrams on order (shipped or not): not usable yet, shown so a pending order is not mistaken for a gap. */
+  readonly onOrderMg: number;
   readonly short: boolean;
 }
 
@@ -123,18 +125,23 @@ export function protocolCourseCoverage(
 ): ReadonlyArray<CourseCoverage> {
   return courses.map((course) => {
     let haveMg = 0;
+    let onOrderMg = 0;
     for (const c of classified) {
       if (!c.item.protocolDrugNames?.includes(course.drug)) continue;
+      const mg = c.item.quantity * (c.item.mgPerUnit ?? 0);
+      if (c.item.onOrder) onOrderMg += mg;
       if (c.status.severity === 'limit') continue;
-      haveMg += c.item.quantity * (c.item.mgPerUnit ?? 0);
+      haveMg += mg;
     }
     // Round away float dust (0.5 + 0.5 + 0.5) before comparing.
     haveMg = Math.round(haveMg * 1000) / 1000;
+    onOrderMg = Math.round(onOrderMg * 1000) / 1000;
     return {
       drug: course.drug,
       basis: course.basis,
       needMg: course.needMg,
       haveMg,
+      onOrderMg,
       short: haveMg < course.needMg,
     };
   });
@@ -194,6 +201,8 @@ export interface InventoryStatus {
   readonly notStocked: ReadonlyArray<string>;
   /** Protocol courses the in-date stock cannot complete. */
   readonly courseShort: ReadonlyArray<CourseCoverage>;
+  /** Every protocol course, for the per-callout "one course" line. */
+  readonly courses: ReadonlyArray<CourseCoverage>;
   /** Listed for completeness, date not yet read — never a warning. */
   readonly awaitingPhoto: ReadonlyArray<ClassifiedItem>;
   /** On hand, no expiry by nature — never a warning. */
@@ -216,6 +225,7 @@ export function useInventoryStatus(now: number = Date.now()): InventoryStatus {
     awaitingPhoto: classified.filter((c) => c.item.awaitingPhoto),
     noExpiry: classified.filter((c) => c.item.noExpiry),
     notStocked: protocolGapList(),
+    courses: protocolCourseCoverage(classified),
     courseShort: protocolCourseCoverage(classified).filter((c) => c.short),
     subLine: inventorySubLine(summary),
     statusFor: (calloutName) => protocolStockStatus(calloutName, classified),
