@@ -110,6 +110,16 @@ describe('emergency protocols', () => {
     }
   });
 
+  it('every injectable callout names its syringe (1, 3 or 10 ml)', () => {
+    // Owner's kit plan (2026-11): 1 ml for midazolam, 3 ml for most draws,
+    // 10 ml for anything over 3 ml and every mix. D50W is prefilled.
+    for (const drug of injectables()) {
+      if (drug.name === 'D50W') continue;
+      const text = `${drug.notes ?? ''} ${drug.mixFirst ?? ''}`;
+      expect(text, drug.name).toMatch(/\b(1|3|10) ml syringe/);
+    }
+  });
+
   it('every injectable callout carries a draw volume or a draw table', () => {
     // The callouts exist so the clinician never does mg→ml math in a
     // crisis. Non-injectable routes (inhaled/PO/SL) are exempt.

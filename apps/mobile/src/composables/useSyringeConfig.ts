@@ -19,8 +19,10 @@ export interface SyringeConfig {
 }
 
 const SYRINGES: Readonly<Record<string, SyringeConfig>> = {
-  versed: { capacityMl: 5, color: '#f59e0b', concentration: '5 mg/ml' },
-  midazolam: { capacityMl: 5, color: '#f59e0b', concentration: '5 mg/ml' },
+  // 1 cc matches the practice's orange-tape midazolam syringe and the
+  // Quick Reference landing card (owner decision 2026-11).
+  versed: { capacityMl: 1, color: '#f59e0b', concentration: '5 mg/ml' },
+  midazolam: { capacityMl: 1, color: '#f59e0b', concentration: '5 mg/ml' },
   fentanyl: { capacityMl: 3, color: '#3b82f6', concentration: '50 mcg/ml' },
   ondansetron: { capacityMl: 3, color: '#10b981', concentration: '2 mg/ml' },
   zofran: { capacityMl: 3, color: '#10b981', concentration: '2 mg/ml' },

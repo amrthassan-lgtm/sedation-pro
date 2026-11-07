@@ -135,7 +135,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '40 mg', ml: '2.0 ml' },
           ],
           notes:
-            '0.25-0.5 mg/kg; keep refrigerated; have atropine ready for a slow heart rate; label the syringe',
+            '3 ml syringe; 0.25-0.5 mg/kg; keep refrigerated; have atropine ready for a slow heart rate; label the syringe',
         },
         severity: 'critical',
       },
@@ -165,7 +165,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IM',
           volume: '0.3-0.5 ml',
           concentration: '1 mg/ml',
-          notes: 'thigh; repeat q5-15 min; label the syringe',
+          notes: '3 ml syringe; thigh; repeat q5-15 min; label the syringe',
         },
         severity: 'critical',
       },
@@ -178,7 +178,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '2.0 ml',
           concentration: '62.5 mg/ml',
           notes:
-            'Act-O-Vial: press the top to release the liquid, swirl, draw all 2 ml; label the syringe',
+            '3 ml syringe; Act-O-Vial: press the top to release the liquid, swirl, draw all 2 ml; label the syringe',
         },
       },
       {
@@ -194,7 +194,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '10 mg/ml: 8 mg', ml: '0.8 ml' },
             { label: '10 mg/ml: 12 mg', ml: '1.2 ml' },
           ],
-          notes: 'label the syringe',
+          notes: '3 ml syringe; label the syringe',
         },
       },
       {
@@ -232,7 +232,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '1 mg', ml: '0.2 ml' },
             { label: '2 mg', ml: '0.4 ml' },
           ],
-          notes: 'titrate slowly; watch for oversedation; label the syringe',
+          notes: '1 ml syringe; titrate slowly; watch for oversedation; label the syringe',
         },
         severity: 'final',
       },
@@ -279,7 +279,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '2.0 ml',
           concentration: '2 mg/ml',
-          notes: 'give over 2-5 minutes; label the syringe',
+          notes: '3 ml syringe; give over 2-5 minutes; label the syringe',
         },
       },
       {
@@ -421,7 +421,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '0.5 ml',
           concentration: '50 mcg/ml',
-          notes: 'already sedated: watch breathing; label the syringe',
+          notes: '3 ml syringe; already sedated: watch breathing; label the syringe',
         },
       },
       { text: 'No pulse: CPR + AED', severity: 'final' },
@@ -475,7 +475,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '0.5 ml',
           concentration: '50 mcg/ml',
-          notes: 'repeat q10-20 min; already sedated: watch breathing; label the syringe',
+          notes:
+            '3 ml syringe; repeat q10-20 min; already sedated: watch breathing; label the syringe',
         },
       },
       { text: 'No pulse: CPR + AED', severity: 'final' },
@@ -511,7 +512,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '1 mg', ml: '0.2 ml' },
             { label: '2 mg', ml: '0.4 ml' },
           ],
-          notes: 'label the syringe',
+          notes: '1 ml syringe; label the syringe',
         },
       },
       { text: 'No symptoms: no IV BP drug. Urgent care only. Refer to their physician today' },
@@ -540,22 +541,20 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '4.0 ml',
           concentration: '5 mg/ml',
-          notes: 'over 2 minutes; repeat 20-40 mg q10 min up to 300 mg total; label the syringe',
+          notes:
+            '10 ml syringe; over 2 minutes; repeat 20-40 mg q10 min up to 300 mg total; label the syringe',
         },
       },
       {
         text: 'Second-line: Hydralazine IV (if labetalol unavailable or contraindicated, e.g. asthma/bradycardia)',
         drug: {
           name: 'Hydralazine',
-          dose: '5-10 mg',
+          dose: '10 mg',
           route: 'IV',
-          volume: '0.25-0.5 ml',
+          volume: '0.5 ml',
           concentration: '20 mg/ml',
-          drawTable: [
-            { label: '5 mg', ml: '0.25 ml' },
-            { label: '10 mg', ml: '0.5 ml' },
-          ],
-          notes: 'may repeat in ~20 min; label the syringe',
+          notes:
+            '3 ml syringe; over 1-2 min; one dose, works in 10-20 min; EMS decides the next; label the syringe',
         },
       },
       { text: 'Lower BP no more than 25% in the first hour' },
@@ -587,7 +586,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '1 mg/ml vial', ml: '1.0 ml' },
             { label: '1 mg/10 ml prefilled (full syringe)', ml: '10.0 ml' },
           ],
-          notes: 'q3-5 min, max 3 mg; label the syringe if drawn from a vial',
+          notes: '3 ml syringe; q3-5 min, max 3 mg; label the syringe if drawn from a vial',
         },
       },
       {
@@ -647,7 +646,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '1 mg/ml vial', ml: '1.0 ml' },
             { label: '1 mg/10 ml prefilled (full syringe)', ml: '10.0 ml' },
           ],
-          notes: 'repeat q3-5 min, max 3 mg total; label the syringe if drawn from a vial',
+          notes:
+            '3 ml syringe; repeat q3-5 min, max 3 mg total; label the syringe if drawn from a vial',
         },
       },
       { text: 'Call 911', severity: 'critical' },
@@ -707,7 +707,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '3.0 ml',
           concentration: '50 mg/ml',
-          notes: 'give over 10 minutes; label the syringe',
+          notes: '10 ml syringe; give over 10 minutes; label the syringe',
         },
       },
       { text: 'Call 911', severity: 'critical' },
@@ -740,7 +740,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '12 mg (2nd dose)', ml: '4.0 ml' },
           ],
           notes:
-            'push in 1-2 seconds, then a rapid 20 ml NS flush; avoid in asthma; never for irregular or polymorphic rhythms; label the syringe if drawn from a vial',
+            '3 ml syringe for 6 mg, 10 ml for 12 mg; push in 1-2 seconds, then a rapid 20 ml NS flush; avoid in asthma; never for irregular or polymorphic rhythms; label the syringe if drawn from a vial',
         },
         severity: 'critical',
       },
@@ -767,7 +767,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '3.0 ml',
           concentration: '50 mg/ml',
-          notes: 'give over 10 minutes; label the syringe',
+          notes: '10 ml syringe; give over 10 minutes; label the syringe',
         },
       },
       { text: 'Call 911', severity: 'critical' },
@@ -793,7 +793,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '3.0 ml',
           concentration: '50 mg/ml',
-          notes: 'give over 10 minutes; repeat 150 mg if it recurs; label the syringe',
+          notes:
+            '10 ml syringe; give over 10 minutes; repeat 150 mg if it recurs; label the syringe',
         },
       },
       {
@@ -809,7 +810,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '250 lb (150 mg)', ml: '7.5 ml' },
           ],
           notes:
-            'second dose 0.3 mg/lb in 5-10 min; max 1.4 mg/lb total; over 165 lb needs a second 100 mg/5 ml vial; label the syringe',
+            '10 ml syringe; second dose 0.3 mg/lb in 5-10 min; max 1.4 mg/lb total; over 165 lb needs a second 100 mg/5 ml vial; label the syringe',
         },
       },
       { text: 'Call 911', severity: 'critical' },
@@ -835,7 +836,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '3.0 ml',
           concentration: '50 mg/ml',
-          notes: 'give over 10 minutes; repeat 150 mg if it recurs; label the syringe',
+          notes:
+            '10 ml syringe; give over 10 minutes; repeat 150 mg if it recurs; label the syringe',
         },
       },
       { text: 'Call 911', severity: 'critical' },
@@ -863,7 +865,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '1.0 ml',
           concentration: '1 mg/ml',
-          notes: 'draw entire 1 ml ampule; repeat q3-5 min; label the syringe',
+          notes: '3 ml syringe; draw entire 1 ml ampule; repeat q3-5 min; label the syringe',
         },
         severity: 'critical',
       },
@@ -876,7 +878,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '6.0 ml',
           concentration: '50 mg/ml',
           notes:
-            'IV PUSH; 300 mg = two 150 mg/3 ml vials; second dose 150 mg (3.0 ml) at the next cycle; label the syringe',
+            '10 ml syringe; IV PUSH; 300 mg = two 150 mg/3 ml vials; second dose 150 mg (3.0 ml) at the next cycle; label the syringe',
         },
         severity: 'critical',
       },
@@ -893,7 +895,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '250 lb (150 mg)', ml: '7.5 ml' },
           ],
           notes:
-            'second dose 0.3 mg/lb at the next cycle; over 165 lb needs a second 100 mg/5 ml vial; label the syringe',
+            '10 ml syringe; second dose 0.3 mg/lb at the next cycle; over 165 lb needs a second 100 mg/5 ml vial; label the syringe',
         },
       },
       {
@@ -930,7 +932,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '1.0 ml',
           concentration: '1 mg/ml',
-          notes: 'draw entire 1 ml ampule; repeat q3-5 min; label the syringe',
+          notes: '3 ml syringe; draw entire 1 ml ampule; repeat q3-5 min; label the syringe',
         },
         severity: 'critical',
       },
@@ -964,7 +966,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '0.3 mg', ml: '0.3 ml' },
             { label: '0.5 mg', ml: '0.5 ml' },
           ],
-          notes: 'repeat q5-15 min if not better; label the syringe if drawn from the ampule',
+          notes:
+            '3 ml syringe; repeat q5-15 min if not better; label the syringe if drawn from the ampule',
         },
         severity: 'critical',
       },
@@ -1006,7 +1009,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '25 mg', ml: '0.5 ml' },
             { label: '50 mg', ml: '1.0 ml' },
           ],
-          notes: 'label the syringe',
+          notes: '3 ml syringe; label the syringe',
         },
       },
       {
@@ -1018,7 +1021,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '2.0 ml',
           concentration: '62.5 mg/ml',
           notes:
-            'Act-O-Vial: press the top to release the liquid, swirl, draw all 2 ml; label the syringe',
+            '3 ml syringe; Act-O-Vial: press the top to release the liquid, swirl, draw all 2 ml; label the syringe',
         },
       },
       {
@@ -1034,7 +1037,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '10 mg/ml: 8 mg', ml: '0.8 ml' },
             { label: '10 mg/ml: 12 mg', ml: '1.2 ml' },
           ],
-          notes: 'label the syringe',
+          notes: '3 ml syringe; label the syringe',
         },
       },
       { text: 'Monitor vitals continuously' },
@@ -1066,7 +1069,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '2.0 ml',
           concentration: '0.1 mg/ml (0.5 mg/5 ml vial)',
           notes:
-            'over 15 sec; repeat 0.2 mg every 1 min; max 1.0 mg (10 ml); if sleepiness returns, repeat no sooner than 20 min; label the syringe',
+            '3 ml syringe; over 15 sec; repeat 0.2 mg every 1 min; max 1.0 mg (10 ml); if sleepiness returns, repeat no sooner than 20 min; label the syringe',
         },
       },
       {
@@ -1103,7 +1106,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '0.4 mg', ml: '1.0 ml' },
             { label: '2 mg (five 1 ml vials, 2 stocked)', ml: '5.0 ml' },
           ],
-          notes: 'give slowly over 2-3 minutes; titrate q2-3 min; label the syringe',
+          notes: '3 ml syringe; give slowly over 2-3 minutes; titrate q2-3 min; label the syringe',
         },
       },
       {
@@ -1175,7 +1178,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '1.0 ml',
           concentration: '5 mg/ml',
-          notes: 'push slowly; repeat once after 5 min; BVM ready; label the syringe',
+          notes: '1 ml syringe; push slowly; repeat once after 5 min; BVM ready; label the syringe',
         },
       },
       {
@@ -1212,7 +1215,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IV',
           volume: '1.0 ml',
           concentration: '5 mg/ml',
-          notes: 'push slowly; repeat once after 5 min; BVM ready; label the syringe',
+          notes: '1 ml syringe; push slowly; repeat once after 5 min; BVM ready; label the syringe',
         },
       },
       { text: 'Call 911 at 5 minutes', severity: 'critical' },
@@ -1354,7 +1357,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '100 mg (whole vial)', ml: '5.0 ml' },
           ],
           notes:
-            'plain lidocaine only, never with epinephrine; DOCS manual: procaine 1% 2-10 ml (20-100 mg), same mg with the stocked cardiac lidocaine; label the syringe',
+            '10 ml syringe; plain lidocaine only, never with epinephrine; DOCS manual: procaine 1% 2-10 ml (20-100 mg), same mg with the stocked cardiac lidocaine; label the syringe',
         },
       },
       { text: 'Keep the needle in. Tape it, label it ARTERIAL' },
