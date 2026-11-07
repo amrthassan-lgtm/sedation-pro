@@ -187,6 +187,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Dexamethasone',
           dose: '8-12 mg',
           route: 'IV',
+          volume: '2.0-3.0 ml (4 mg/ml stock)',
           concentration: '4 mg/ml (in-office stock) or 10 mg/ml',
           drawTable: [
             { label: '4 mg/ml: 8 mg', ml: '2.0 ml' },
@@ -581,6 +582,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Atropine',
           dose: '1 mg',
           route: 'IV',
+          volume: '1.0 ml (vial)',
           concentration: '1 mg/ml vial or 1 mg/10 ml prefilled',
           drawTable: [
             { label: '1 mg/ml vial', ml: '1.0 ml' },
@@ -641,6 +643,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Atropine',
           dose: '1 mg',
           route: 'IV',
+          volume: '1.0 ml (vial)',
           concentration: '1 mg/ml vial or 1 mg/10 ml prefilled',
           drawTable: [
             { label: '1 mg/ml vial', ml: '1.0 ml' },
@@ -803,6 +806,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Cardiac Lidocaine',
           dose: '0.6 mg/lb',
           route: 'IV',
+          volume: '4.5-7.5 ml (by weight)',
           concentration: '20 mg/ml',
           drawTable: [
             { label: '150 lb (90 mg)', ml: '4.5 ml' },
@@ -888,6 +892,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Cardiac Lidocaine',
           dose: '0.6 mg/lb',
           route: 'IV',
+          volume: '4.5-7.5 ml (by weight)',
           concentration: '20 mg/ml',
           drawTable: [
             { label: '150 lb (90 mg)', ml: '4.5 ml' },
@@ -1030,6 +1035,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Dexamethasone',
           dose: '8-12 mg',
           route: 'IV',
+          volume: '2.0-3.0 ml (4 mg/ml stock)',
           concentration: '4 mg/ml (in-office stock) or 10 mg/ml',
           drawTable: [
             { label: '4 mg/ml: 8 mg', ml: '2.0 ml' },

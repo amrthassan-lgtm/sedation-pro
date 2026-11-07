@@ -70,23 +70,29 @@ function severityClass(step: ProtocolStep): string {
  * the label recompute when related-protocol taps reuse this component.
  */
 const route = useRoute();
-const backContext = computed<{ label: string; hasHistory: boolean }>(() => {
+const hasHistory = computed<boolean>(() => {
   void route.fullPath;
   const prev =
     typeof window !== 'undefined'
       ? (router.options.history.state?.back as string | null | undefined)
       : null;
-  if (typeof prev !== 'string') return { label: '← Quick Reference', hasHistory: false };
-  if (prev === '/inventory') return { label: '← Drug Inventory', hasHistory: true };
-  if (prev.startsWith('/quick-reference/')) return { label: '← Back', hasHistory: true };
-  return { label: '← Quick Reference', hasHistory: true };
+  return typeof prev === 'string';
 });
 
+/**
+ * The toolbar is the same on every protocol: Back on the left (wherever
+ * you came from: the list, another protocol, the inventory), All protocols
+ * on the right. A deep link with no history treats Back as the list.
+ */
 function goBack() {
-  if (backContext.value.hasHistory) {
+  if (hasHistory.value) {
     router.back();
     return;
   }
+  void router.push('/quick-reference');
+}
+
+function goList() {
   void router.push('/quick-reference');
 }
 
@@ -182,7 +188,9 @@ function syringeFor(drug: EmergencyDrugCallout) {
 <template>
   <main class="phase-view">
     <header class="toolbar">
-      <UiButton tone="neutral" @click="goBack">{{ backContext.label }}</UiButton>
+      <UiButton tone="neutral" @click="goBack">‹ Back</UiButton>
+      <span class="toolbar-crumb caption">Quick Reference</span>
+      <UiButton tone="neutral" @click="goList">All protocols</UiButton>
     </header>
 
     <template v-if="protocol">
@@ -316,6 +324,14 @@ function syringeFor(drug: EmergencyDrugCallout) {
 
 .toolbar {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.toolbar-crumb {
+  flex: 1;
+  text-align: center;
+  color: var(--color-text-tertiary);
 }
 
 /* Hero: a category-tinted block that anchors the page. The left border colour
@@ -409,15 +425,17 @@ function syringeFor(drug: EmergencyDrugCallout) {
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-2) var(--sp-2) calc(var(--sp-2) + 2px);
   border-radius: var(--r-md);
-  border: 1px solid transparent;
+  /* A left accent bar carries the severity; a full red frame around a
+     long step read as an error box rather than an instruction. */
+  border-left: 3px solid transparent;
 }
 .step--critical {
   background: var(--color-crisis-soft);
-  border-color: var(--color-crisis);
+  border-left-color: var(--color-crisis);
 }
 .step--final {
   background: var(--color-surface-elevated);
-  border-color: var(--color-border);
+  border-left-color: var(--color-border);
 }
 .step-num {
   width: 28px;
