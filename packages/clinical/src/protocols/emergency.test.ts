@@ -14,7 +14,7 @@ function allCallouts(): ReadonlyArray<EmergencyDrugCallout> {
     .filter((d): d is EmergencyDrugCallout => d !== undefined);
 }
 
-const INJECTABLE_ROUTES = new Set(['IV', 'IM', 'SubQ']);
+const INJECTABLE_ROUTES = new Set(['IV', 'IM', 'IA', 'SubQ']);
 
 function injectables(): ReadonlyArray<EmergencyDrugCallout> {
   return allCallouts().filter((d) => INJECTABLE_ROUTES.has(d.route));
@@ -240,9 +240,10 @@ describe('emergency protocols', () => {
     }
   });
 
-  it('all three cardiac lidocaine callouts carry the identical weight table', () => {
-    const lidos = allCallouts().filter((d) => d.name === 'Cardiac Lidocaine');
-    expect(lidos.length).toBe(3);
+  it('both rhythm cardiac lidocaine callouts carry the identical weight table', () => {
+    // The intra-arterial callout uses a fixed 20-100 mg range, not the weight table.
+    const lidos = allCallouts().filter((d) => d.name === 'Cardiac Lidocaine' && d.route === 'IV');
+    expect(lidos.length).toBe(2);
     const tables = lidos.map((d) => JSON.stringify(d.drawTable));
     expect(tables[0]).toBeDefined();
     expect(new Set(tables).size).toBe(1);
@@ -263,6 +264,18 @@ describe('emergency protocols', () => {
     expect(proto?.steps.some((s) => s.drug?.name === 'Diazepam')).toBe(false);
     expect(proto?.steps.some((s) => s.text.includes('diazepam'))).toBe(true);
     expect(proto?.steps.some((s) => s.drug?.name === 'Midazolam')).toBe(true);
+  });
+
+  it('intra-arterial follows the DOCS manual: needle stays in, plain lidocaine into the artery, hospital', () => {
+    const steps = findProtocol('intraarterial')?.steps ?? [];
+    const drug = steps.find((s) => s.drug)?.drug;
+    expect(drug?.name).toBe('Cardiac Lidocaine');
+    expect(drug?.dose).toBe('20-100 mg');
+    expect(drug?.route).toBe('IA');
+    expect(drug?.notes).toContain('never with epinephrine');
+    expect(steps.some((s) => s.text.startsWith('Drug given: LEAVE NEEDLE IN PLACE'))).toBe(true);
+    expect(steps.some((s) => /ice/i.test(s.text))).toBe(false);
+    expect(steps.at(-1)?.text).toContain('Accompany the patient');
   });
 
   it('hypoglycemia carries no glucagon callout but keeps the knowledge in step text', () => {
