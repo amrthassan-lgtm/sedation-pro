@@ -23,12 +23,17 @@ export interface ClassifiedItem {
 }
 
 export interface InventorySummary {
-  /** 'limit' bucket — truly expired OR blank/unreadable expiry. */
+  /**
+   * 'limit' bucket with nothing on the way — truly expired OR blank
+   * expiry, and no replacement ordered. The number that needs a decision.
+   */
   readonly expired: number;
   readonly expiringSoon: number;
   readonly ok: number;
-  /** Non-safe items whose replacement is already on order. */
+  /** Non-safe items whose replacement is already on order (same as `shipped`). */
   readonly onOrder: number;
+  /** Non-safe items with a replacement ordered: check them in when the box arrives. */
+  readonly shipped: number;
   readonly total: number;
   /** Most urgent non-safe item; unknown-expiry (−∞) sorts first. */
   readonly soonest: { readonly drug: string; readonly daysLeft: number } | null;
@@ -53,8 +58,9 @@ export function summarizeInventory(classified: ReadonlyArray<ClassifiedItem>): I
   let soonest: InventorySummary['soonest'] = null;
   for (const c of classified) {
     if (c.item.awaitingPhoto || c.item.noExpiry) continue;
-    if (c.status.severity === 'limit') expired += 1;
-    else if (c.status.severity === 'caution') expiringSoon += 1;
+    if (c.status.severity === 'limit') {
+      if (!c.item.onOrder) expired += 1;
+    } else if (c.status.severity === 'caution') expiringSoon += 1;
     else ok += 1;
     if (c.status.severity !== 'safe') {
       if (c.item.onOrder) onOrder += 1;
@@ -64,14 +70,16 @@ export function summarizeInventory(classified: ReadonlyArray<ClassifiedItem>): I
     }
   }
   const total = classified.filter((c) => !c.item.awaitingPhoto && !c.item.noExpiry).length;
-  return { expired, expiringSoon, ok, onOrder, total, soonest };
+  return { expired, expiringSoon, ok, onOrder, shipped: onOrder, total, soonest };
 }
 
 /** Drawer/link-row sub-line — one shared phrasing for stock at a glance. */
 export function inventorySubLine(summary: InventorySummary): string {
-  if (summary.expired > 0)
-    return `${summary.expired} expired · ${summary.expiringSoon} expiring soon`;
-  if (summary.expiringSoon > 0) return `${summary.expiringSoon} expiring within 60 days`;
+  const parts: string[] = [];
+  if (summary.expired > 0) parts.push(`${summary.expired} needs ordering`);
+  if (summary.shipped > 0) parts.push(`${summary.shipped} shipped`);
+  if (summary.expiringSoon > 0) parts.push(`${summary.expiringSoon} expiring soon`);
+  if (parts.length > 0) return parts.join(' · ');
   return `${summary.total} items · all in date`;
 }
 
@@ -195,7 +203,10 @@ export function protocolGapList(
 export interface InventoryStatus {
   readonly classified: ReadonlyArray<ClassifiedItem>;
   readonly summary: InventorySummary;
+  /** Expired or undated with nothing on the way: a purchasing decision. */
   readonly needsAttention: ReadonlyArray<ClassifiedItem>;
+  /** Expired or not yet in the cart, replacement ordered: check in on arrival. */
+  readonly shipped: ReadonlyArray<ClassifiedItem>;
   readonly expiringSoon: ReadonlyArray<ClassifiedItem>;
   readonly inDate: ReadonlyArray<ClassifiedItem>;
   readonly notStocked: ReadonlyArray<string>;
@@ -219,7 +230,10 @@ export function useInventoryStatus(now: number = Date.now()): InventoryStatus {
   return {
     classified,
     summary,
-    needsAttention: tracked.filter((c) => c.status.severity === 'limit').sort(byUrgency),
+    needsAttention: tracked
+      .filter((c) => c.status.severity === 'limit' && !c.item.onOrder)
+      .sort(byUrgency),
+    shipped: tracked.filter((c) => c.status.severity !== 'safe' && c.item.onOrder),
     expiringSoon: tracked.filter((c) => c.status.severity === 'caution').sort(byUrgency),
     inDate: tracked.filter((c) => c.status.severity === 'safe').sort(byUrgency),
     awaitingPhoto: classified.filter((c) => c.item.awaitingPhoto),

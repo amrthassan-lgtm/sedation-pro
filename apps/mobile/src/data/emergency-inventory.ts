@@ -177,6 +177,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     mgPerUnit: 12,
     expiresOn: '2026-12',
     protocolDrugNames: ['Adenosine'],
+    notes: 'Not reordered: the 6 mg vials cover the 18 mg course',
   },
   {
     id: 'adenosine-6',
@@ -199,6 +200,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     mgPerUnit: 12,
     expiresOn: '2026-11',
     protocolDrugNames: ['Adenosine'],
+    notes: 'Not reordered: the 6 mg vials cover the 18 mg course',
   },
   {
     id: 'amiodarone-150-a',
