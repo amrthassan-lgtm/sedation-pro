@@ -863,6 +863,32 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     notes: 'Everyday sedation supply — stock tracked, expiry not',
   },
   {
+    id: 'syringe-3ml-25g',
+    drug: '3 mL Syringe with 25 G × 5/8 in Needle',
+    description:
+      'Luer-lock, needle attached — every 3 ml emergency draw, and IM epinephrine — Box of 100',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '',
+    category: 'equipment',
+    noExpiry: true,
+    notes:
+      'Everyday sedation supply — stock tracked, expiry not. The one needle for the whole kit: draw and give with it. IM epinephrine: auto-injector length, push firmly into the outer thigh',
+  },
+  {
+    id: 'syringe-1ml-25g',
+    drug: '1 mL Syringe with 25 G × 5/8 in Needle',
+    description: 'Luer-lock, needle attached — midazolam only (orange tape) — Box of 100',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '',
+    category: 'equipment',
+    noExpiry: true,
+    notes: 'Everyday sedation supply — stock tracked, expiry not',
+  },
+  {
     id: 'cric-kit',
     drug: 'Chinook TMM-CR Cricothyrotomy Kit',
     description: 'Cuffed 6.0 trach tube, Kelly, #10 scalpel, 10 mL syringe, tracheal hook',
