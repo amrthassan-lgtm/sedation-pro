@@ -121,6 +121,17 @@ describe('emergency protocols', () => {
     }
   });
 
+  it('every summary reads "signs · first action" so the list and the Critical chips scan the same way', () => {
+    for (const p of EMERGENCY_PROTOCOLS) {
+      const [signs, ...rest] = p.summary.split(' · ');
+      expect(rest.length, `${p.id} summary has no " · "`).toBeGreaterThan(0);
+      expect(signs?.trim().length ?? 0, `${p.id} summary has no signs part`).toBeGreaterThan(0);
+      // The signs part names what you see, never the first drug or step.
+      expect(signs, p.id).not.toMatch(/^(CPR|Call 911|MONA|Give|Stop)/);
+      expect(p.summary, p.id).not.toContain('→');
+    }
+  });
+
   it('every injectable callout carries a draw volume or a draw table', () => {
     // The callouts exist so the clinician never does mg→ml math in a
     // crisis. Non-injectable routes (inhaled/PO/SL) are exempt.
