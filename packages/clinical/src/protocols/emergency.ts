@@ -180,7 +180,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '0.3-0.5 ml',
           concentration: '1 mg/ml',
           notes:
-            'draw with a filter needle, give with a 22-25G 1-1.5 inch needle, outer thigh, through clothing is fine; repeat q5-15 min; label the syringe',
+            'same syringe and needle to draw and give, outer thigh, push firmly, through clothing is fine; repeat q5-15 min; label the syringe',
         },
         severity: 'critical',
       },
@@ -901,8 +901,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 3,
           volume: '1.0 ml',
           concentration: '1 mg/ml',
-          notes:
-            'draw the entire 1 ml ampule with a filter needle; repeat q3-5 min; label the syringe',
+          notes: 'draw the entire 1 ml ampule; repeat q3-5 min; label the syringe',
         },
         severity: 'critical',
       },
@@ -973,8 +972,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 3,
           volume: '1.0 ml',
           concentration: '1 mg/ml',
-          notes:
-            'draw the entire 1 ml ampule with a filter needle; repeat q3-5 min; label the syringe',
+          notes: 'draw the entire 1 ml ampule; repeat q3-5 min; label the syringe',
         },
         severity: 'critical',
       },
@@ -1010,7 +1008,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '0.5 mg', ml: '0.5 ml' },
           ],
           notes:
-            'draw with a filter needle, give with a 22-25G 1-1.5 inch needle, outer thigh, through clothing is fine; repeat q5-15 min if not better; label the syringe if drawn from the ampule',
+            'same syringe and needle to draw and give, outer thigh, push firmly, through clothing is fine; repeat q5-15 min if not better; label the syringe if drawn from the ampule',
         },
         severity: 'critical',
       },
