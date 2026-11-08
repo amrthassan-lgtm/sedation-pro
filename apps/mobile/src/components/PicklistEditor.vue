@@ -240,15 +240,18 @@ function move(index: number, delta: number): void {
 /* Text button, iOS list-header idiom — no chrome, accent colour, right-aligned. */
 .pl-edit {
   flex-shrink: 0;
-  background: none;
   border: 0;
-  padding: var(--sp-2);
-  margin: calc(var(--sp-2) * -1);
   font: inherit;
-  font-size: var(--type-body);
-  color: var(--color-accent);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+  padding: 0 16px;
+  margin: 0;
+  border-radius: var(--r-pill);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-semibold);
 }
 .pl-body {
   display: flex;

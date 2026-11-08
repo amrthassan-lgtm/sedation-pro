@@ -101,7 +101,6 @@ const renderState = computed<ActionState>(() => {
   font-weight: var(--weight-semibold);
   letter-spacing: 0.2px;
   border-radius: var(--r-md);
-  border: 1px solid var(--color-border-strong);
   /* Faint top-edge highlight for the iOS-polished glass look. */
   background: var(--surface-highlight), var(--color-surface-elevated);
   color: var(--color-text-primary);
@@ -113,6 +112,7 @@ const renderState = computed<ActionState>(() => {
     border-color var(--dur-150) var(--ease-standard),
     box-shadow var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
+  border: 1px solid transparent;
 }
 .ui-btn.is-block {
   width: 100%;
@@ -136,12 +136,12 @@ const renderState = computed<ActionState>(() => {
   font-weight: var(--weight-bold);
 }
 .ui-btn--danger {
-  border-color: rgba(251, 113, 133, 0.4);
+  border-color: transparent;
   background: var(--surface-highlight), var(--color-danger-soft);
   color: var(--color-danger);
 }
 .ui-btn--success {
-  border-color: rgba(74, 222, 128, 0.35);
+  border-color: transparent;
   background: var(--surface-highlight), var(--color-good-soft);
   color: var(--color-good);
 }

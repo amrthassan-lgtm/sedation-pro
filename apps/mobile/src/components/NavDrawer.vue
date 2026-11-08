@@ -670,9 +670,9 @@ function onTouchEnd() {
   background: transparent;
   border: 0;
   border-radius: var(--r-md);
-  color: var(--color-accent);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  color: var(--color-text-primary);
 }
 .nav-close:active {
   background: var(--color-surface-subtle);
@@ -769,6 +769,7 @@ function onTouchEnd() {
   gap: 1px;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  border-color: transparent;
 }
 .nav-sum-pill-label {
   font-size: var(--type-caption);

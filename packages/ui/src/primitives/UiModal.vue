@@ -156,13 +156,13 @@ onUnmounted(() => {
   font-size: var(--type-body);
   font-weight: var(--weight-semibold);
   cursor: pointer;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
   transition:
     background var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
   -webkit-tap-highlight-color: transparent;
+  border: 1px solid transparent;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
 }
 .ui-modal-btn:active {
   transform: scale(0.98);
@@ -177,18 +177,19 @@ onUnmounted(() => {
 }
 .ui-modal-btn--danger {
   background: var(--color-danger-soft);
-  border-color: rgba(251, 113, 133, 0.4);
   color: var(--color-danger);
+  border-color: transparent;
 }
 .ui-modal-btn--primary {
   /* Same surface as the cancel/neutral default — primary hierarchy is
      conveyed by weight + copy, not a bright fill. */
-  color: var(--color-text-primary);
+  background: var(--color-text-primary);
+  color: var(--color-bg);
   font-weight: var(--weight-bold);
 }
 .ui-modal-btn--neutral {
-  background: var(--color-surface-overlay);
-  border-color: var(--color-border-strong);
+  background: var(--color-surface-elevated);
+  border-color: transparent;
   color: var(--color-text-primary);
 }
 
