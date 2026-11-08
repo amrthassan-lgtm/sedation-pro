@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 
 import { useIVStore } from '@/stores/iv';
 import { useDockVisibility } from '@/composables/useDockVisibility';
+import { fmtDuration } from '@/composables/format';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
 import { UiDrugButton, UiPercentBar, UiTimerPill } from '@sedation-pro/ui';
@@ -52,13 +53,6 @@ function toggle() {
 
 function collapse() {
   expanded.value = false;
-}
-
-function fmtDuration(sec: number): string {
-  const s = Math.max(0, sec);
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${r.toString().padStart(2, '0')}`;
 }
 
 // -------- Timer pill state (mirrors the in-card pills) --------------------

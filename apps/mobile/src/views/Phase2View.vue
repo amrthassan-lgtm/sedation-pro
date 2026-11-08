@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { haptic } from '@/composables/useHaptics';
+import { nowClock } from '@/composables/format';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
@@ -46,7 +47,7 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
     },
     toast: {
       label: `✓ ${drug} ${doseMg} ${unit} PO`,
-      sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      sub: nowClock(),
       tone: 'safe',
     },
   });

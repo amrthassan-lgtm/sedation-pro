@@ -60,7 +60,7 @@ const IV_DRUGS: ReadonlyArray<IVDrug> = [
     route: 'IV',
     color: 'var(--color-warn)',
     syringeMl: 3,
-    minWaitMin: 3,
+    minWaitMin: 1,
     isReversal: true,
     notes: 'Repeat every 1 min · max 1.0 mg total',
   },

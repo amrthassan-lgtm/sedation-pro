@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onScopeDispose, ref, useTemplateRef, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed, onScopeDispose, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 import {
   CRITICAL_PROTOCOL_IDS,
@@ -21,7 +21,6 @@ import { CARDIAC_SUBHEADS, CATEGORY_GROUPS, swatchFor } from '@/data/protocolCat
 import { CASE_PHASE_ROUTE, CASE_PHASE_SHORT, useSessionStore } from '@/stores/session';
 
 const router = useRouter();
-const route = useRoute();
 
 // Mount-time stock summary for the inventory link row (day granularity).
 const inventorySummary = summarizeInventory(classifyInventory(Date.now()));
@@ -48,8 +47,6 @@ onScopeDispose(() => {
     debounceTimer = null;
   }
 });
-
-const searchInputRef = useTemplateRef<{ focus: () => void }>('searchInputRef');
 
 const drugRefs = computed(() => {
   return IV_DRUG_REFERENCE.map((seed) => {
@@ -138,20 +135,6 @@ function clearSearch() {
   query.value = '';
   debouncedQuery.value = '';
 }
-
-/**
- * Autofocus the search input when the user lands here via the sticky bar's
- * Emergency button. The button pushes `?focus=search`; we consume the flag
- * and `router.replace` it away so a refresh doesn't keep stealing focus.
- * Direct navigation (nav drawer, deep link) leaves the input unfocused so
- * a visual scan of the category cards comes first.
- */
-onMounted(() => {
-  if (route.query.focus === 'search') {
-    searchInputRef.value?.focus();
-    void router.replace({ path: route.path, query: {} });
-  }
-});
 </script>
 
 <template>
@@ -163,68 +146,9 @@ onMounted(() => {
 
     <UiButton tone="primary" block @click="goCase">‹ {{ backToCaseLabel }}</UiButton>
 
-    <!-- IV Drug Reference — collapsible pills showing draw-up chart per drug. -->
-
-    <UiCard class="drug-ref-card">
-      <header class="drug-ref-head">
-        <p class="heading">IV Drug Reference</p>
-        <span class="card-count">{{ drugRefs.length }}</span>
-      </header>
-      <UiStack :gap="1">
-        <div
-          v-for="ref in drugRefs"
-          :key="ref.seed.id"
-          class="drug-pill-wrap"
-          :class="{ 'is-open': expandedDrugId === ref.seed.id }"
-        >
-          <button
-            type="button"
-            class="drug-pill"
-            :class="`drug-pill--${ref.seed.id}`"
-            :aria-expanded="expandedDrugId === ref.seed.id"
-            @click="toggleDrug(ref.seed.id)"
-          >
-            <span class="drug-swatch" :style="{ background: ref.color }" aria-hidden="true" />
-            <span class="drug-pill-info">
-              <span class="drug-pill-name">{{ ref.drug.name }}</span>
-              <span class="drug-pill-meta">
-                {{ ref.drug.concentration.value }} {{ ref.drug.concentration.unit }} ·
-                {{ ref.syringeMl }} ml syringe<template v-if="ref.drug.tape">
-                  · <span :style="{ color: ref.color }">{{ ref.drug.tape }}</span> tape</template
-                >
-              </span>
-            </span>
-            <span class="drug-pill-chevron" aria-hidden="true">
-              {{ expandedDrugId === ref.seed.id ? '▾' : '▸' }}
-            </span>
-          </button>
-
-          <div v-if="expandedDrugId === ref.seed.id" class="drug-pill-detail">
-            <UiSyringe
-              :label="ref.drug.shortName"
-              :capacity-ml="ref.syringeMl"
-              :drawn-ml="ref.drawnMl"
-              :color="ref.color"
-              :concentration="`${ref.drug.concentration.value} ${ref.drug.concentration.unit}`"
-              :caption="`${ref.rows[0]?.doseLabel ?? ''} · ${ref.rows[0]?.ml.toFixed(1) ?? ''} ml`"
-              compact
-            />
-            <div class="drug-dose-list">
-              <div v-for="(row, i) in ref.rows" :key="i" class="drug-dose-row">
-                <span class="drug-dose-amt" :style="{ color: ref.color }">
-                  {{ row.doseLabel }}
-                </span>
-                <span class="drug-dose-vol">{{ row.ml.toFixed(1) }} ml</span>
-              </div>
-            </div>
-            <p class="drug-dose-note">{{ ref.seed.note }}</p>
-            <p v-if="ref.seed.warning" class="drug-dose-warn">⚠ {{ ref.seed.warning }}</p>
-          </div>
-        </div>
-      </UiStack>
-    </UiCard>
-
-    <!-- Critical shortcuts: 6 chips in one wrap row, big tap targets. -->
+    <!-- Crisis first: the two shortcut grids lead the screen so the Emergency
+         button lands on them with no scrolling. The routine drug reference
+         sits below the protocol cards. -->
 
     <section class="shortcuts">
       <p class="caption">During sedation</p>
@@ -267,7 +191,6 @@ onMounted(() => {
 
     <section class="search">
       <UiTextInput
-        ref="searchInputRef"
         v-model="query"
         type="search"
         inputmode="search"
@@ -338,6 +261,67 @@ onMounted(() => {
           </button>
         </UiStack>
       </template>
+    </UiCard>
+
+    <!-- IV Drug Reference — collapsible pills showing draw-up chart per drug. -->
+
+    <UiCard v-if="!isSearching" class="drug-ref-card">
+      <header class="drug-ref-head">
+        <p class="heading">IV Drug Reference</p>
+        <span class="card-count">{{ drugRefs.length }}</span>
+      </header>
+      <UiStack :gap="1">
+        <div
+          v-for="ref in drugRefs"
+          :key="ref.seed.id"
+          class="drug-pill-wrap"
+          :class="{ 'is-open': expandedDrugId === ref.seed.id }"
+        >
+          <button
+            type="button"
+            class="drug-pill"
+            :class="`drug-pill--${ref.seed.id}`"
+            :aria-expanded="expandedDrugId === ref.seed.id"
+            @click="toggleDrug(ref.seed.id)"
+          >
+            <span class="drug-swatch" :style="{ background: ref.color }" aria-hidden="true" />
+            <span class="drug-pill-info">
+              <span class="drug-pill-name">{{ ref.drug.name }}</span>
+              <span class="drug-pill-meta">
+                {{ ref.drug.concentration.value }} {{ ref.drug.concentration.unit }} ·
+                {{ ref.syringeMl }} ml syringe<template v-if="ref.drug.tape">
+                  · <span :style="{ color: ref.color }">{{ ref.drug.tape }}</span> tape</template
+                >
+              </span>
+            </span>
+            <span class="drug-pill-chevron" aria-hidden="true">
+              {{ expandedDrugId === ref.seed.id ? '▾' : '▸' }}
+            </span>
+          </button>
+
+          <div v-if="expandedDrugId === ref.seed.id" class="drug-pill-detail">
+            <UiSyringe
+              :label="ref.drug.shortName"
+              :capacity-ml="ref.syringeMl"
+              :drawn-ml="ref.drawnMl"
+              :color="ref.color"
+              :concentration="`${ref.drug.concentration.value} ${ref.drug.concentration.unit}`"
+              :caption="`${ref.rows[0]?.doseLabel ?? ''} · ${ref.rows[0]?.ml.toFixed(1) ?? ''} ml`"
+              compact
+            />
+            <div class="drug-dose-list">
+              <div v-for="(row, i) in ref.rows" :key="i" class="drug-dose-row">
+                <span class="drug-dose-amt" :style="{ color: ref.color }">
+                  {{ row.doseLabel }}
+                </span>
+                <span class="drug-dose-vol">{{ row.ml.toFixed(1) }} ml</span>
+              </div>
+            </div>
+            <p class="drug-dose-note">{{ ref.seed.note }}</p>
+            <p v-if="ref.seed.warning" class="drug-dose-warn">⚠ {{ ref.seed.warning }}</p>
+          </div>
+        </div>
+      </UiStack>
     </UiCard>
 
     <!-- Discovery link to the standalone inventory. Hidden while searching

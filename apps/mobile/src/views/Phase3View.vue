@@ -9,6 +9,7 @@ import { useFormularyStore } from '@/stores/formulary';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
+import { fmtClock, fmtDuration, nowClock } from '@/composables/format';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { syringeConfig } from '@/composables/useSyringeConfig';
 import { useNow } from '@/composables/useNow';
@@ -179,11 +180,6 @@ const sedBp = computed<BpValue>({
   },
 });
 
-function fmtClock(ms: number | null): string | undefined {
-  if (ms === null) return undefined;
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
 // Derived states — each stamp button is "logged" iff its store flag is set.
 const preOpVitalsState = computed<ActionState>(() =>
   preOpStampedAt.value !== null ? 'logged' : 'idle',
@@ -232,7 +228,7 @@ function stampPreOpVitals() {
     },
     toast: {
       label: '✓ Pre-Op Vitals stamped',
-      sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      sub: nowClock(),
       tone: 'safe',
     },
     revert: () => iv.clearPreOpStamp(),
@@ -320,13 +316,6 @@ const flumazenilSyringe = syringeConfig('Flumazenil') ?? FALLBACK_SYRINGE;
 const naloxoneSyringe = syringeConfig('Naloxone') ?? FALLBACK_SYRINGE;
 
 // -------- Live drug timer pills (use the engine + now ticker) ---------------
-
-function fmtDuration(sec: number): string {
-  const s = Math.max(0, sec);
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${r.toString().padStart(2, '0')}`;
-}
 
 const versedTimerView = computed(() => {
   if (lastVersedAt.value === null) {
@@ -432,7 +421,7 @@ function logLocal(drugId: string, displayName: string) {
     details: { Agent: displayName, Amount: '1 carpule' },
     toast: {
       label: `✓ ${displayName} · 1 carpule`,
-      sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      sub: nowClock(),
       tone: 'caution',
     },
     revert: () => {

@@ -6,6 +6,7 @@ import { useIVStore } from '@/stores/iv';
 import { usePatientStore } from '@/stores/patient';
 import { useToastStore } from '@/stores/toast';
 import { useUndoStore } from '@/stores/undo';
+import { nowClock } from './format';
 
 /**
  * Shared IV-dose logging helpers. Phase 3 cards *and* the Sedation Dock both
@@ -59,10 +60,6 @@ export function useIvDosing() {
       );
     }
     return true;
-  }
-
-  function nowClock(): string {
-    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
   function logIvVersed(mg: number, sub: string) {

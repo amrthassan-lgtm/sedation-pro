@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 
 import { formatUsPhone, phoneIncomplete } from '@/composables/phone';
+import { nowClock } from '@/composables/format';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 
@@ -538,7 +539,7 @@ function logDiazepam(doseMg: number) {
     },
     toast: {
       label: `✓ Diazepam ${doseMg} mg PO (bedtime)`,
-      sub: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      sub: nowClock(),
       tone: 'safe',
     },
   });

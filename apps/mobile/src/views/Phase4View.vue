@@ -11,6 +11,7 @@ import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { useNow } from '@/composables/useNow';
+import { fmtClock } from '@/composables/format';
 import { useToastStore } from '@/stores/toast';
 import { monitorAttestationLabel } from '@/config/site';
 import { useGateFeedback, type GateEntry } from '@/composables/useGateFeedback';
@@ -175,11 +176,6 @@ const endBp = computed<BpValue>({
     endBpDia.value = v.dbp;
   },
 });
-
-function fmtClock(ms: number | null): string | undefined {
-  if (ms === null) return undefined;
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
 
 // -------- Recovery vitals (card 11) ----------------------------------------
 

@@ -21,6 +21,7 @@ import {
 import { storeToRefs } from 'pinia';
 
 import { useIvDosing } from '@/composables/useIvDosing';
+import { fmtClock } from '@/composables/format';
 import { useIVStore } from '@/stores/iv';
 import { usePatientStore } from '@/stores/patient';
 import { CASE_PHASE_ROUTE, CASE_PHASE_SHORT, useSessionStore } from '@/stores/session';
@@ -139,7 +140,7 @@ function giveReversal(drug: ReversalDrug) {
 function lastGiven(drug: ReversalDrug): string | undefined {
   const at = drug === 'flumazenil' ? lastFlumazenilAt.value : lastNaloxoneAt.value;
   if (at === null) return undefined;
-  return new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return fmtClock(at) ?? '';
 }
 
 /**

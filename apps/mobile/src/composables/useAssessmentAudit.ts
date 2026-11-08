@@ -8,6 +8,7 @@ import {
 } from '@/stores/event-log';
 import { formatAlcoholBucket, usePatientStore } from '@/stores/patient';
 import { useToastStore } from '@/stores/toast';
+import { fmtClock } from './format';
 
 const AMENDMENT_DEBOUNCE_MS = 3000;
 
@@ -226,10 +227,7 @@ export function useAssessmentAudit(): void {
       toast.show({
         id: entry.id,
         label: '✓ Phase 1 complete',
-        sub: new Date(entry.timestamp).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        sub: fmtClock(entry.timestamp) ?? '',
         tone: 'safe',
       });
     },
