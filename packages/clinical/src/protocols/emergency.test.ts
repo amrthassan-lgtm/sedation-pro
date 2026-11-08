@@ -61,6 +61,32 @@ describe('emergency protocols', () => {
     }
   });
 
+  it('step goTo links resolve, never point at their own protocol, and back every "go to" in the text', () => {
+    const ids = new Set(EMERGENCY_PROTOCOLS.map((p) => p.id));
+    for (const proto of EMERGENCY_PROTOCOLS) {
+      for (const step of proto.steps) {
+        for (const id of step.goTo ?? []) {
+          expect(ids.has(id), `${proto.id} step links unknown '${id}'`).toBe(true);
+          expect(id, `${proto.id} links to itself`).not.toBe(proto.id);
+        }
+        if (/\bgo to\b|No pulse/i.test(step.text)) {
+          expect(step.goTo?.length ?? 0, `${proto.id}: "${step.text}" has no link`).toBeGreaterThan(
+            0,
+          );
+        }
+      }
+    }
+  });
+
+  it('every protocol offers at least one related protocol', () => {
+    for (const proto of EMERGENCY_PROTOCOLS) {
+      expect(
+        proto.relatedProtocols?.length ?? 0,
+        `${proto.id} has no related protocols`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
   it('relatedProtocols ids all resolve', () => {
     for (const proto of EMERGENCY_PROTOCOLS) {
       for (const relId of proto.relatedProtocols ?? []) {

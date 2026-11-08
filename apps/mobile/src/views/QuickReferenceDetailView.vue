@@ -162,6 +162,12 @@ function stockPill(name: string): { severity: 'safe' | 'caution' | 'limit'; labe
   return { severity, label: STOCK_PILL[severity] };
 }
 
+/** Short name for a linked protocol: the part before any "(…)" or " - …". */
+function protocolName(id: string): string {
+  const name = EMERGENCY_PROTOCOLS.find((p) => p.id === id)?.name ?? id;
+  return name.split(/ \(| - /)[0] ?? name;
+}
+
 function open(id: string) {
   void router.push(`/quick-reference/${id}`);
 }
@@ -347,6 +353,17 @@ function syringeFor(drug: EmergencyDrugCallout) {
             <span class="step-num">{{ index + 1 }}</span>
             <div class="step-body">
               <p class="step-text">{{ step.text }}</p>
+              <div v-if="step.goTo && step.goTo.length > 0" class="step-links">
+                <button
+                  v-for="id in step.goTo"
+                  :key="id"
+                  type="button"
+                  class="step-link"
+                  @click="open(id)"
+                >
+                  Go to {{ protocolName(id) }} ›
+                </button>
+              </div>
               <div v-if="step.drug" class="drug-callout">
                 <div class="drug-head">
                   <span class="drug-name-group">
@@ -612,6 +629,28 @@ function syringeFor(drug: EmergencyDrugCallout) {
   flex-direction: column;
   gap: var(--sp-2);
   min-width: 0;
+}
+.step-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+/* Grey pill of the button family: an in-step jump, never a clinical action. */
+.step-link {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  border: 0;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.step-link:active {
+  background: var(--color-surface-overlay);
 }
 .step-text {
   margin: 0;
