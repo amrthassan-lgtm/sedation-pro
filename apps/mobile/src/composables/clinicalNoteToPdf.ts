@@ -328,35 +328,6 @@ export async function clinicalNoteToPdf(note: ClinicalNote): Promise<Uint8Array>
     color: INK,
   });
 
-  const cx = MARGIN + 260;
-  page.drawText('RESPONSIBLE COMPANION', {
-    x: cx,
-    y: sigTop - 8,
-    size: 6.8,
-    font: bold,
-    color: MUTED,
-  });
-  page.drawText('Signed on printed post-op form', {
-    x: cx,
-    y: sigTop - 40,
-    size: 9,
-    font: reg,
-    color: MUTED,
-  });
-  page.drawLine({
-    start: { x: cx, y: sigTop - 72 },
-    end: { x: cx + 210, y: sigTop - 72 },
-    thickness: 0.8,
-    color: INK,
-  });
-  page.drawText(winAnsi(note.signatures.companion || '—'), {
-    x: cx,
-    y: sigTop - 84,
-    size: 9,
-    font: reg,
-    color: INK,
-  });
-
   // ---- Footer on every page ----------------------------------------------
 
   const pages = pdf.getPages();

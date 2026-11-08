@@ -42,9 +42,12 @@ export interface ClinicalNote {
   readonly narrative: ReadonlyArray<string>;
   readonly sections: ReadonlyArray<ClinicalNoteSection>;
   readonly chronology: ReadonlyArray<ClinicalNoteRow>;
+  /**
+   * Provider only. The companion signs nothing in the app or on the note;
+   * who they are is recorded in the Recovery & Discharge section.
+   */
   readonly signatures: {
     readonly providerDataUrl: string | null;
-    readonly companion: string;
     readonly signedAt: string | null;
   };
   /**
@@ -516,7 +519,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       }
       if (recovery.companionDocumented) {
         sentences.push(
-          `Patient was discharged accompanied by ${recovery.companionName} (${recovery.companionRelation}). Verbal and written post-op instructions were given; companion co-signed the printed post-op-instructions form.`,
+          `Patient was discharged accompanied by ${recovery.companionName} (${recovery.companionRelation}). Verbal and written post-op instructions were given to the companion.`,
         );
       }
       if (recovery.releasedAt !== null) {
@@ -568,9 +571,6 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       chronology,
       signatures: {
         providerDataUrl: recovery.providerSignatureDataUrl,
-        companion: recovery.companionDocumented
-          ? `${recovery.companionName} (${recovery.companionRelation})`
-          : '—',
         signedAt: providerSignedAt !== null ? fmtClock(providerSignedAt) : null,
       },
       disposition: {

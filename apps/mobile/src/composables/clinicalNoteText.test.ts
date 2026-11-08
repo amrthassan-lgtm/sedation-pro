@@ -29,7 +29,6 @@ const BASE: ClinicalNote = {
   ],
   signatures: {
     providerDataUrl: 'data:image/jpeg;base64,abc',
-    companion: 'John Doe (spouse)',
     signedAt: '11:02',
   },
   disposition: { kind: 'sedation', released: true, at: '11:05' },
@@ -52,17 +51,17 @@ describe('clinicalNoteToText', () => {
     expect(text).toContain('09:15  IV Start');
     expect(text).not.toContain('09:15  IV Start  —');
     expect(text).toContain('Provider: signed · 11:02');
-    expect(text).toContain('Responsible companion: John Doe (spouse)');
+    // The companion signs nothing; no signature line for them.
+    expect(text).not.toContain('Responsible companion');
     expect(text).toContain('Generated 5/16/2026, 11:05:00 AM · Sedation Pro v0.1');
   });
 
   it('flags an unsigned note explicitly', () => {
     const text = clinicalNoteToText({
       ...BASE,
-      signatures: { providerDataUrl: null, companion: '', signedAt: null },
+      signatures: { providerDataUrl: null, signedAt: null },
     });
     expect(text).toContain('Provider: NOT SIGNED');
-    expect(text).toContain('Responsible companion: —');
   });
 
   it('omits empty narrative and chronology blocks', () => {
