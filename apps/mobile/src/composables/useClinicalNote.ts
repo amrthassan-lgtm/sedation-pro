@@ -14,6 +14,7 @@ import {
   type LocalCombinedResult,
 } from '@sedation-pro/clinical';
 import { monitorTraceDescription } from '@/config/site';
+import { fmtClock as clock } from './format';
 
 /** Single row in the chronological table of the printable note. */
 export interface ClinicalNoteRow {
@@ -79,8 +80,7 @@ export function patientIntro(name: string, age: number | null, mrn: string): str
 }
 
 function fmtClock(ms: number | null | undefined): string {
-  if (ms === null || ms === undefined) return '—';
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return clock(ms) ?? '—';
 }
 
 function fmtDate(s: string | null | undefined): string {

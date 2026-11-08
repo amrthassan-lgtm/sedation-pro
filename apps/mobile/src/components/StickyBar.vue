@@ -8,6 +8,7 @@ import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { lastSavedAt } from '@/stores/persistence';
 import { useNow } from '@/composables/useNow';
+import { fmtClock } from '@/composables/format';
 
 const router = useRouter();
 const session = useSessionStore();
@@ -51,7 +52,7 @@ const savedLabel = computed<string | null>(() => {
   if (ts === null) return null;
   const ageMs = now.value - ts;
   if (ageMs < 800) return 'Saving…';
-  return `Saved · ${new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  return `Saved · ${fmtClock(ts)}`;
 });
 
 const phaseMeta: Record<Phase, { label: string; sub: string }> = {
@@ -107,10 +108,10 @@ function jumpToMissing() {
 }
 
 function emergency() {
-  // `focus=search` signals the QR view to autofocus its input on mount.
-  // Direct navigation (nav drawer, deep link) won't carry the query param
-  // and lands without stealing focus from a visual scan.
-  void router.push({ path: '/quick-reference', query: { focus: 'search' } });
+  // Land on the crisis grids with the keyboard down. Autofocusing the
+  // search box raised the tablet keyboard over the protocol cards at the
+  // worst possible moment; search is one tap away for the rare lookup.
+  void router.push('/quick-reference');
 }
 </script>
 

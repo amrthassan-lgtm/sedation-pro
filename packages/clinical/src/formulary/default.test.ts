@@ -23,6 +23,10 @@ describe('DEFAULT_FORMULARY', () => {
     expect(versed?.minWaitMin).toBe(3);
     expect(versed?.readyAtMin).toBe(5);
     expect(fentanyl?.minWaitMin).toBe(5);
+    // Reversal is titrated every minute (protocol + panel text) — the
+    // formulary must not quietly say otherwise.
+    const flumazenil = DEFAULT_FORMULARY.iv.find((d) => d.id === 'flumazenil');
+    expect(flumazenil?.minWaitMin).toBe(1);
   });
 
   it('ships the five local anesthetics with max-dose and half-life data', () => {

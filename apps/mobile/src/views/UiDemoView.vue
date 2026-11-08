@@ -30,6 +30,7 @@ import {
   UiTimerPill,
 } from '@sedation-pro/ui';
 import type { ActionState, BpValue } from '@sedation-pro/ui';
+import { nowClock } from '@/composables/format';
 
 // Local component state — synthetic only, no clinical persistence.
 const patientName = ref('Jane Doe');
@@ -61,10 +62,7 @@ function fireVersed() {
   versedState.value = 'locked';
   setTimeout(() => {
     versedState.value = 'logged';
-    versedLoggedAt.value = new Date().toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    versedLoggedAt.value = nowClock();
   }, 1200);
 }
 </script>
