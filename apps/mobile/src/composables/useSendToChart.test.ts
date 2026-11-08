@@ -47,7 +47,7 @@ const NOTE: ClinicalNote = {
   narrative: ['Narrative.'],
   sections: [],
   chronology: [],
-  signatures: { providerDataUrl: null, companion: 'Companion', signedAt: '10:41' },
+  signatures: { providerDataUrl: null, signedAt: '10:41' },
   disposition: { kind: 'sedation', released: true, at: '10:40' },
   generatedAt: '2026-08-14 13:30',
 };

@@ -52,7 +52,7 @@ const NOTE: ClinicalNote = {
     { time: '08:42', event: 'Pre-op vitals', detail: 'BP 128/78, SpO₂ 99% RA' },
     { time: '09:01', event: 'Midazolam 2 mg', detail: 'Titrated, patient conversant' },
   ],
-  signatures: { providerDataUrl: null, companion: 'Companion (spouse)', signedAt: '10:41' },
+  signatures: { providerDataUrl: null, signedAt: '10:41' },
   disposition: { kind: 'sedation', released: true, at: '10:40' },
   generatedAt: '2026-08-14 13:30',
 };
@@ -111,7 +111,6 @@ function noteStrings(note: ClinicalNote): string[] {
     ...note.narrative,
     ...note.sections.flatMap((s) => [s.heading, ...s.rows.flatMap(([k, v]) => [k, v])]),
     ...note.chronology.flatMap((r) => [r.time, r.event, r.detail]),
-    note.signatures.companion,
     note.generatedAt,
   ];
 }

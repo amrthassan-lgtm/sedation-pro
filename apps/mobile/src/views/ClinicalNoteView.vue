@@ -271,11 +271,6 @@ async function shareNote() {
             <div v-else class="sig-empty">— unsigned —</div>
             <p class="sig-name">{{ note.header.provider }}</p>
           </div>
-          <div class="sig-block">
-            <p class="sig-label">Responsible companion</p>
-            <div class="sig-empty">Signed on printed post-op form</div>
-            <p class="sig-name">{{ note.signatures.companion }}</p>
-          </div>
         </div>
       </section>
 
@@ -520,7 +515,9 @@ async function shareNote() {
 
 .signatures .sig-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* Provider only: one block at half width, so the signature keeps the
+     proportions it had beside the old companion column. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--sp-5);
 }
 .sig-block {

@@ -72,13 +72,12 @@ export function clinicalNoteToText(note: ClinicalNote): string {
   }
 
   lines.push('');
-  lines.push('SIGNATURES');
+  lines.push('SIGNATURE');
   lines.push(minor);
   const providerState = note.signatures.providerDataUrl
     ? `signed${note.signatures.signedAt ? ` · ${note.signatures.signedAt}` : ''}`
     : 'NOT SIGNED';
   lines.push(`Provider: ${providerState}`);
-  lines.push(`Responsible companion: ${note.signatures.companion || '—'}`);
 
   lines.push('');
   lines.push(major);
