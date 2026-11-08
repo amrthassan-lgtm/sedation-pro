@@ -501,6 +501,7 @@ function openProtocol(id: string): void {
   display: flex;
   align-items: flex-start;
   gap: var(--sp-3);
+  min-height: 44px;
   padding: 10px 12px;
   border-radius: var(--r-md);
   transition: background var(--dur-150) var(--ease-standard);

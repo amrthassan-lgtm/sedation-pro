@@ -3,10 +3,8 @@ import { ref, watch, type Ref } from 'vue';
 /**
  * Minimal localStorage persistence for ref-shaped Pinia state. Pulled into a
  * small helper here so each store can opt in with a one-liner without
- * reinventing JSON guards. Phase 5 will replace this with a typed adapter
- * inside `@sedation-pro/persistence` (Capacitor Preferences in native, IDB
- * for web fallback). The contract — `read` / `write` keyed by string — stays
- * the same so swapping the impl out won't touch caller code.
+ * reinventing JSON guards. The contract — `read` / `write` keyed by string —
+ * is small on purpose, so a future storage swap won't touch caller code.
  */
 
 /**
