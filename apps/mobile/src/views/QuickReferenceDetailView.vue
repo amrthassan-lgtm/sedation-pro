@@ -27,7 +27,7 @@ import { usePatientStore } from '@/stores/patient';
 import { CASE_PHASE_ROUTE, CASE_PHASE_SHORT, useSessionStore } from '@/stores/session';
 
 import { parseVolumeMl, syringeConfig } from '@/composables/useSyringeConfig';
-import { useInventoryStatus } from '@/composables/useInventoryStatus';
+import { useInventoryStatus, type ClassifiedItem } from '@/composables/useInventoryStatus';
 import { CATEGORY_LABEL, swatchFor } from '@/data/protocolCategories';
 
 interface Props {
@@ -167,6 +167,28 @@ function open(id: string) {
 }
 
 /**
+ * The devices this protocol depends on (LMA sizes, King, NPAs), from the
+ * equipment rows linked to it by id. Same question as the drug pills:
+ * is there one in date to grab right now.
+ */
+const kit = computed(() => (protocol.value ? inventory.equipmentFor(protocol.value.id) : []));
+type KitPill = { severity: 'safe' | 'caution' | 'limit' | 'empty'; label: string };
+function kitPill(c: ClassifiedItem): KitPill {
+  if (c.item.awaitingPhoto) return { severity: 'empty', label: 'No date' };
+  if (c.item.noExpiry) return { severity: 'safe', label: 'In stock' };
+  if (c.item.onOrder && c.status.severity !== 'safe')
+    return { severity: 'empty', label: 'On order' };
+  const sev = c.status.severity === 'crisis' ? 'limit' : c.status.severity;
+  return { severity: sev, label: STOCK_PILL[sev] };
+}
+function kitExpiry(expiresOn: string): string {
+  const m = /^(\d{4})-(\d{2})/.exec(expiresOn);
+  if (!m) return '';
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, 1));
+  return `Exp ${d.toLocaleDateString(undefined, { month: 'short', year: 'numeric', timeZone: 'UTC' })}`;
+}
+
+/**
  * "One course" line for drugs the practice tracks as a course (atropine,
  * adenosine, flumazenil, nitro): in-date mg on hand against one full
  * course, with pending orders named so a shipped box is never read as a
@@ -279,6 +301,24 @@ function syringeFor(drug: EmergencyDrugCallout) {
             :logged-at="lastGiven(drug)"
             @click="giveReversal(drug)"
           />
+        </div>
+      </UiCard>
+
+      <UiCard v-if="kit.length > 0" class="kit-card">
+        <p class="heading kit-heading">Equipment</p>
+        <div class="kit-list">
+          <div v-for="c in kit" :key="c.item.id" class="kit-row">
+            <span class="kit-main">
+              <span class="kit-name">{{ c.item.drug }}</span>
+              <span class="kit-desc"
+                >{{ c.item.description
+                }}<template v-if="kitExpiry(c.item.expiresOn)">
+                  · {{ kitExpiry(c.item.expiresOn) }}</template
+                ></span
+              >
+            </span>
+            <UiStatusPill :severity="kitPill(c).severity">{{ kitPill(c).label }}</UiStatusPill>
+          </div>
         </div>
       </UiCard>
 
@@ -722,6 +762,45 @@ function syringeFor(drug: EmergencyDrugCallout) {
 }
 
 /* Related */
+.kit-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.kit-heading {
+  margin: 0;
+}
+/* Grouped inset list: hairline separators on the card's own surface. */
+.kit-list {
+  display: flex;
+  flex-direction: column;
+}
+.kit-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 44px;
+  padding: 8px 0;
+}
+.kit-row + .kit-row {
+  border-top: 1px solid var(--color-border);
+}
+.kit-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.kit-name {
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+.kit-desc {
+  font-size: var(--type-caption);
+  color: var(--color-text-tertiary);
+}
 .related-card {
   display: flex;
   flex-direction: column;

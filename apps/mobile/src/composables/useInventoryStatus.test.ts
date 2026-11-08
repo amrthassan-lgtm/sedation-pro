@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   classifyInventory,
+  equipmentFor,
   inventorySubLine,
   protocolCalloutNames,
   protocolCourseCoverage,
@@ -9,6 +10,7 @@ import {
   protocolStockStatus,
   protocolsUsing,
   summarizeInventory,
+  useInventoryStatus,
 } from './useInventoryStatus';
 import { EMERGENCY_PROTOCOLS } from '@sedation-pro/clinical';
 
@@ -165,6 +167,38 @@ describe('live inventory data invariants', () => {
         expect(inv.protocolDrugNames, `${inv.id} must not map`).toBeUndefined();
       }
     }
+  });
+
+  it('only equipment links to protocols by id, and every id is a real protocol', () => {
+    const ids = new Set(EMERGENCY_PROTOCOLS.map((p) => p.id));
+    for (const inv of EMERGENCY_INVENTORY) {
+      if (!inv.protocolIds) continue;
+      expect(inv.category, `${inv.id} links a protocol but is not equipment`).toBe('equipment');
+      for (const id of inv.protocolIds) {
+        expect(ids.has(id), `${inv.id} links unknown protocol '${id}'`).toBe(true);
+      }
+    }
+  });
+
+  it('the airway rescue protocols each have their device in the kit', () => {
+    const classified = classifyInventory(NOW);
+    for (const id of ['npa', 'lma', 'king_lt']) {
+      expect(equipmentFor(id, classified).length, `${id} has no linked equipment`).toBeGreaterThan(
+        0,
+      );
+    }
+    const lmaSizes = equipmentFor('lma', classified).map((c) => c.item.description);
+    expect(lmaSizes.join(' ')).toMatch(/Size 3.*Size 4.*Size 5/);
+  });
+
+  it('a linked device lists its protocol under "Used in"', () => {
+    const lma4 = EMERGENCY_INVENTORY.find((i) => i.id === 'lma-4');
+    expect(lma4).toBeDefined();
+    expect(
+      useInventoryStatus(NOW)
+        .usesFor(lma4!)
+        .map((r) => r.id),
+    ).toEqual(['lma']);
   });
 
   it('the protocol gap list is exactly the open purchasing decisions', () => {

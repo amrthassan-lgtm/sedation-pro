@@ -45,6 +45,13 @@ export interface InventoryItem {
    */
   readonly protocolDrugNames?: ReadonlyArray<string>;
   /**
+   * Equipment only: the emergency protocols (by id) this device is used in,
+   * so a protocol page can show whether its kit is in date. Kept separate
+   * from `protocolDrugNames` on purpose: a device must never satisfy a drug
+   * callout. Vitest invariants enforce equipment-only and real protocol ids.
+   */
+  readonly protocolIds?: ReadonlyArray<string>;
+  /**
    * 'sedation' marks sedation-cart stock (controlled substances + oral
    * premeds) tracked alongside the crash cart in this one list, per the
    * owner's choice. 'equipment' marks dated non-drug stock — AED pads
@@ -657,6 +664,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2029-07-01',
     category: 'equipment',
+    protocolIds: ['king_lt'],
   },
   {
     id: 'lma-3',
@@ -667,6 +675,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2028-11-01',
     category: 'equipment',
+    protocolIds: ['lma'],
   },
   {
     id: 'lma-4',
@@ -677,6 +686,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2029-07-01',
     category: 'equipment',
+    protocolIds: ['lma'],
   },
   {
     id: 'lma-5',
@@ -687,6 +697,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2029-09-01',
     category: 'equipment',
+    protocolIds: ['lma'],
   },
   {
     id: 'laryseal-inflator',
@@ -697,6 +708,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2028-10-01',
     category: 'equipment',
+    protocolIds: ['lma'],
   },
   {
     id: 'berman-airways',
@@ -853,6 +865,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2028-04-30',
     category: 'equipment',
+    protocolIds: ['king_lt'],
   },
   {
     id: 'cannula-adult',
@@ -951,6 +964,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     category: 'equipment',
+    protocolIds: ['npa'],
     awaitingPhoto: true,
     // Owner/purchasing note (kept out of the screen): On the January order: NasoSafe 6 mm, 7.5 mm, 8 mm + water-based lubricant
   },

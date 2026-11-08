@@ -125,15 +125,6 @@ function pillLabel(c: ClassifiedItem): string {
   return 'OK';
 }
 
-function rowTone(c: ClassifiedItem): SectionTone {
-  if (c.item.awaitingPhoto) return 'slate';
-  if (c.item.noExpiry) return 'good';
-  if (c.item.onOrder && c.status.severity !== 'safe') return 'warn';
-  if (c.status.severity === 'limit') return 'danger';
-  if (c.status.severity === 'caution') return 'warn';
-  return 'good';
-}
-
 function formatExpiry(expiresOn: string): string {
   const match = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(expiresOn);
   if (!match) return '—';
@@ -257,7 +248,6 @@ function openProtocol(id: string): void {
         </header>
         <UiStack :gap="1">
           <div v-for="course in inv.courseShort" :key="course.drug" class="inv-row">
-            <span class="inv-bar inv-bar--danger" aria-hidden="true" />
             <span class="inv-main">
               <span class="inv-drug">{{ course.drug }}</span>
               <span class="inv-desc">{{ course.basis }}</span>
@@ -335,11 +325,6 @@ function openProtocol(id: string): void {
                     "
                     @click="usesOf(entry.item).length > 0 && toggleExpanded(entry.item.id)"
                   >
-                    <span
-                      class="inv-bar"
-                      :class="`inv-bar--${rowTone(entry)}`"
-                      aria-hidden="true"
-                    />
                     <span class="inv-main">
                       <span class="inv-drug">{{ entry.item.drug }}</span>
                       <span class="inv-desc">{{ entry.item.description }}</span>
@@ -396,8 +381,8 @@ function openProtocol(id: string): void {
         <header class="inv-head">
           <span class="inv-swatch inv-swatch--slate" aria-hidden="true" />
           <div class="inv-head-main">
-            <p class="inv-title">Called for by protocols, not stocked</p>
-            <p class="inv-hint">A purchasing decision — not currently part of the kit</p>
+            <p class="inv-title">Named in a protocol, not in the kit</p>
+            <p class="inv-hint">The protocol gives an alternative</p>
           </div>
           <span class="card-count">{{ inv.notStocked.length }}</span>
         </header>
@@ -410,7 +395,6 @@ function openProtocol(id: string): void {
               :aria-label="`${name} — show protocols calling for it`"
               @click="toggleExpanded(name)"
             >
-              <span class="inv-bar inv-bar--slate" aria-hidden="true" />
               <span class="inv-main">
                 <span class="inv-drug">{{ name }}</span>
               </span>
@@ -440,10 +424,6 @@ function openProtocol(id: string): void {
             </div>
           </template>
         </UiStack>
-        <p class="inv-hint">
-          Controlled substances (Midazolam, Fentanyl, Diazepam) are stored and tracked separately
-          and are deliberately excluded here.
-        </p>
       </UiCard>
     </div>
   </main>
@@ -457,6 +437,12 @@ function openProtocol(id: string): void {
   padding: var(--sp-5) var(--sp-4) var(--sp-7);
   max-width: 760px;
   margin-inline: auto;
+}
+.inv-screen {
+  /* Same rhythm as Quick Reference: every card separated by --sp-4. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
 }
 .stat-row {
   display: grid;
@@ -592,25 +578,6 @@ button.inv-row {
   font-size: 14px;
   color: var(--color-text-disabled);
   line-height: 1;
-}
-.inv-bar {
-  flex-shrink: 0;
-  width: 10px;
-  height: 28px;
-  border-radius: 3px;
-  margin-top: 2px;
-}
-.inv-bar--danger {
-  background: var(--color-danger);
-}
-.inv-bar--warn {
-  background: var(--color-warn);
-}
-.inv-bar--good {
-  background: var(--color-good);
-}
-.inv-bar--slate {
-  background: var(--color-text-disabled);
 }
 .inv-main {
   display: block;
