@@ -7,6 +7,7 @@ import { useDockVisibility } from '@/composables/useDockVisibility';
 import { fmtDuration } from '@/composables/format';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
+import { useBackToClose } from '@/composables/useBackToClose';
 import { UiDrugButton, UiPercentBar, UiTimerPill } from '@sedation-pro/ui';
 import type { Severity, TimerPillStatus } from '@sedation-pro/ui';
 
@@ -46,6 +47,8 @@ const { lastVersedAt, lastFentanylAt, sedationStatus } = storeToRefs(iv);
 // is on-screen at all (driven by the card-6 IntersectionObserver in
 // Phase3View).
 const { expanded, dockOnScreen } = useDockVisibility();
+// Android Back collapses the expanded dock sheet first.
+useBackToClose(expanded, () => (expanded.value = false));
 
 function toggle() {
   expanded.value = !expanded.value;

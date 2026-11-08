@@ -12,6 +12,7 @@ import { useEventLogStore } from '@/stores/event-log';
 import { useFormularyStore } from '@/stores/formulary';
 import { useCaseReset, PENDING_MRN_KEY } from '@/composables/useCaseReset';
 import { useAssessmentAudit } from '@/composables/useAssessmentAudit';
+import { useBackToClose } from '@/composables/useBackToClose';
 import { useInventoryStatus } from '@/composables/useInventoryStatus';
 import { useGateFeedback } from '@/composables/useGateFeedback';
 import { useOtherableSelect } from '@/composables/useOtherableSelect';
@@ -480,6 +481,7 @@ const nicotineRec = computed(() => {
 // -------- Diazepam interlock modal -----------------------------------------
 
 const diazepamModalOpen = ref(false);
+useBackToClose(diazepamModalOpen, () => cancelDiazepamModal());
 const pendingDiazepamDose = ref<string | null>(null);
 const diazepamOptions = DEFAULT_FORMULARY.bedtime[0];
 

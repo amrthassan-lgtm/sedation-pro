@@ -6,6 +6,7 @@ import { useClinicalNote } from '@/composables/useClinicalNote';
 import { useNoteArchiveStore } from '@/stores/note-archive';
 import { clinicalNoteToText } from '@/composables/clinicalNoteText';
 import { useSendToChart } from '@/composables/useSendToChart';
+import { useBackToClose } from '@/composables/useBackToClose';
 import { UiBanner, UiButton, UiModal } from '@sedation-pro/ui';
 
 const router = useRouter();
@@ -29,6 +30,7 @@ const note = computed(() => archived.value?.note ?? liveNote.value);
  */
 const chart = useSendToChart(note);
 const resendOpen = ref(false);
+useBackToClose(resendOpen, () => (resendOpen.value = false));
 
 function goToSettings() {
   void router.push('/settings');

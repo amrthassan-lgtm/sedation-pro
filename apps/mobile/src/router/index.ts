@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router';
 
 import { CASE_PHASE_ROUTE, useSessionStore, type Phase } from '@/stores/session';
+import { layerDepth } from '@/composables/useBackToClose';
 import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 import { useToastStore } from '@/stores/toast';
@@ -29,8 +30,11 @@ export const router = createRouter({
   // the scroll position captured when the clinician left it. Everything
   // else starts at the top. The restore waits a frame for the phase view to
   // render at full height.
-  scrollBehavior(to, _from, savedPosition) {
+  scrollBehavior(to, from, savedPosition) {
     if (savedPosition) return savedPosition;
+    // Opening or closing an overlay only adds/removes a #layer step on the
+    // same screen: leave the page where it is.
+    if (to.path === from.path) return false;
     const phase = to.meta.phase;
     const session = useSessionStore();
     const top = phase ? session.caseScroll[phase as keyof typeof session.caseScroll] : undefined;
@@ -139,6 +143,18 @@ export const router = createRouter({
  */
 router.beforeEach((to: RouteLocationNormalized, from: RouteLocationNormalized) => {
   const patient = usePatientStore();
+
+  // Leaving a screen while an overlay is open (a drawer link): replace the
+  // overlay's #layer step instead of stacking on top of it, so one Back
+  // returns to the previous screen rather than to a dead overlay step.
+  if (
+    !to.redirectedFrom &&
+    layerDepth(from.hash) > 0 &&
+    to.path !== from.path &&
+    layerDepth(to.hash) === 0
+  ) {
+    return { path: to.path, query: to.query, hash: to.hash, replace: true };
+  }
 
   const leaving = from.meta.phase;
   if (leaving && typeof window !== 'undefined') {

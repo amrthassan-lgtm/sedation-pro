@@ -10,6 +10,7 @@ import { useEventLogStore } from '@/stores/event-log';
 import { useFormularyStore } from '@/stores/formulary';
 import { useNoteArchiveStore } from '@/stores/note-archive';
 import { useCaseReset } from '@/composables/useCaseReset';
+import { useBackToClose } from '@/composables/useBackToClose';
 import { UiModal, UiStatusPill } from '@sedation-pro/ui';
 
 import {
@@ -39,6 +40,8 @@ const eventLog = useEventLogStore();
 const formulary = useFormularyStore();
 
 const { drawerOpen, currentPhase } = storeToRefs(session);
+// Android Back closes the drawer before it leaves the screen.
+useBackToClose(drawerOpen, () => session.closeDrawer());
 const { name: patientName, mrn, age, completeness, isPhase1Complete } = storeToRefs(patient);
 const { count: eventCount } = storeToRefs(eventLog);
 
@@ -102,26 +105,32 @@ const phaseEntries = computed<NavPhaseEntry[]>(() => {
 
 const quickRefActive = computed(() => currentPhase.value === 'quickref');
 
+/**
+ * A drawer link to the screen already showing just closes the drawer:
+ * pushing the same path would leave its Back step behind.
+ */
+async function navigate(path: string): Promise<void> {
+  if (path !== route.path) await router.push(path);
+  session.closeDrawer();
+}
+
 async function go(target: NavPhaseEntry) {
   // Even on locked rows we let `router.push` run — the router's guard rewrites
   // the navigation back to `/phase/1`, fires the "Complete Phase 1 first"
   // toast, and flips `phase1ValidationAttempted` so the offending fields paint
   // red. A silent early-return here was a UX miss: tapping a 🔒 row produced
   // zero feedback.
-  await router.push(target.route);
-  session.closeDrawer();
+  await navigate(target.route);
 }
 
 async function goQuickRef() {
-  await router.push('/quick-reference');
-  session.closeDrawer();
+  await navigate('/quick-reference');
 }
 
 const inventoryActive = computed(() => currentPhase.value === 'inventory');
 
 async function goInventory() {
-  await router.push('/inventory');
-  session.closeDrawer();
+  await navigate('/inventory');
 }
 
 /**
@@ -144,14 +153,12 @@ const notesSub = computed(() =>
 );
 
 async function goNotes() {
-  await router.push('/notes');
-  session.closeDrawer();
+  await navigate('/notes');
 }
 const chartConnected = computed(() => hasCredentials());
 
 async function goSettings() {
-  await router.push('/settings');
-  session.closeDrawer();
+  await navigate('/settings');
 }
 
 /**
@@ -224,6 +231,7 @@ const lastUnlock = computed(() => {
 
 const { reset: resetCase } = useCaseReset();
 const newCaseModalOpen = ref(false);
+useBackToClose(newCaseModalOpen, () => cancelNewCase());
 
 function openNewCaseModal(): void {
   newCaseModalOpen.value = true;

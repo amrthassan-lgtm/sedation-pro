@@ -153,3 +153,30 @@ describe('route phase identity', () => {
     expect(session.currentPhase).toBe('quickref');
   });
 });
+
+describe('overlay history steps', () => {
+  beforeEach(async () => {
+    window.localStorage.clear();
+    setActivePinia(createPinia());
+    await router.replace('/settings');
+    await router.isReady();
+  });
+
+  it('a link from an open overlay replaces its step instead of stacking on it', async () => {
+    await router.push('/inventory');
+    await router.push({ path: '/inventory', hash: '#layer-1' });
+    const before = window.history.length;
+    await router.push('/settings');
+    expect(router.currentRoute.value.fullPath).toBe('/settings');
+    // Replaced, not pushed: one Back from Settings lands on Inventory, not on
+    // the dead #layer-1 step.
+    expect(window.history.length).toBe(before);
+  });
+
+  it('an ordinary link still adds a history entry', async () => {
+    await router.push('/inventory');
+    const before = window.history.length;
+    await router.push('/settings');
+    expect(window.history.length).toBe(before + 1);
+  });
+});
