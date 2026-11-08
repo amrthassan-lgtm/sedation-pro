@@ -198,6 +198,7 @@ function move(index: number, delta: number): void {
   gap: var(--sp-3);
   flex: 1;
   min-width: 0;
+  min-height: 44px;
   background: none;
   border: 0;
   padding: 0;

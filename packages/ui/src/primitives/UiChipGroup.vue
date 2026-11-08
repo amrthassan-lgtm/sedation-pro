@@ -117,7 +117,7 @@ const activeCaption = computed<string | undefined>(() => {
   display: flex;
   flex-wrap: nowrap;
   gap: 0;
-  padding: 3px;
+  padding: 2px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--r-pill);
@@ -125,6 +125,7 @@ const activeCaption = computed<string | undefined>(() => {
 .ui-chip {
   position: relative;
   min-width: 44px;
+  min-height: 44px;
   padding: 8px 14px;
   border-radius: var(--r-pill);
   border: 1px solid transparent;

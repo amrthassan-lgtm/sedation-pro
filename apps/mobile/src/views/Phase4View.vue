@@ -12,6 +12,7 @@ import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { useNow } from '@/composables/useNow';
 import { fmtClock } from '@/composables/format';
+import { vitalsDetails } from '@/composables/vitalsDetails';
 import { useToastStore } from '@/stores/toast';
 import { monitorAttestationLabel } from '@/config/site';
 import { useGateFeedback, type GateEntry } from '@/composables/useGateFeedback';
@@ -190,19 +191,16 @@ function stampRecoveryVitals() {
   recovery.stampRecoveryVitals();
   undo.stamp({
     event: 'Procedure End / Recovery Vitals',
-    details: {
-      HR: endHr.value !== null ? `${endHr.value} bpm` : '—',
-      BP:
-        endBpSys.value !== null && endBpDia.value !== null
-          ? `${endBpSys.value}/${endBpDia.value}`
-          : '—',
-      SpO2: endSpo2.value !== null ? `${endSpo2.value}%` : '—',
-      EtCO2: endEtco2.value !== null ? `${endEtco2.value} mmHg` : '—',
-      ...(diabetic.value && endGlucose.value !== null
-        ? { Glucose: `${endGlucose.value} mg/dL` }
-        : {}),
-      Response: endResponse.value,
-    },
+    details: vitalsDetails({
+      hr: endHr.value,
+      bpSys: endBpSys.value,
+      bpDia: endBpDia.value,
+      spo2: endSpo2.value,
+      etco2: endEtco2.value,
+      glucose: endGlucose.value,
+      diabetic: diabetic.value,
+      response: endResponse.value,
+    }),
     toast: { label: '✓ Recovery vitals stamped', tone: 'safe' },
     revert: () => recovery.clearRecoveryStamp(),
   });

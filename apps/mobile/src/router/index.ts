@@ -1,25 +1,21 @@
 import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router';
 
-import { useSessionStore, type Phase } from '@/stores/session';
+import { CASE_PHASE_ROUTE, useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 import { useToastStore } from '@/stores/toast';
 
-const PHASE_ROUTES: Record<string, Phase> = {
-  '/phase/1': 'phase1',
-  '/phase/2': 'phase2',
-  '/phase/3': 'phase3',
-  '/phase/4': 'phase4',
-  '/quick-reference': 'quickref',
-  '/inventory': 'inventory',
-  // Practice setup, not a sedation phase — but it still needs an identity,
-  // or the sticky bar keeps showing the phase the clinician came FROM while
-  // they are on Settings, which is the one screen that then misreports where
-  // they are.
-  '/settings': 'settings',
-  '/notes': 'notes',
-  '/clinical-note': 'note',
-};
+declare module 'vue-router' {
+  interface RouteMeta {
+    /**
+     * The shell identity of this screen: the sticky-bar label, the drawer
+     * highlight, the Phase 1 gate and scroll restore all read it. Declared
+     * once per route, so a new route cannot be half-registered. A route
+     * without one (redirects, the dev gallery) leaves the bar as it was.
+     */
+    phase?: Phase;
+  }
+}
 
 const GATED_PHASES: ReadonlySet<Phase> = new Set(['phase2', 'phase3', 'phase4']);
 
@@ -35,7 +31,7 @@ export const router = createRouter({
   // render at full height.
   scrollBehavior(to, _from, savedPosition) {
     if (savedPosition) return savedPosition;
-    const phase = PHASE_ROUTES[to.path];
+    const phase = to.meta.phase;
     const session = useSessionStore();
     const top = phase ? session.caseScroll[phase as keyof typeof session.caseScroll] : undefined;
     if (top === undefined) return { top: 0 };
@@ -46,39 +42,46 @@ export const router = createRouter({
   routes: [
     { path: '/', redirect: '/phase/1' },
     {
-      path: '/phase/1',
+      path: CASE_PHASE_ROUTE.phase1,
       name: 'phase1',
+      meta: { phase: 'phase1' },
       component: () => import('@/views/Phase1View.vue'),
     },
     {
-      path: '/phase/2',
+      path: CASE_PHASE_ROUTE.phase2,
       name: 'phase2',
+      meta: { phase: 'phase2' },
       component: () => import('@/views/Phase2View.vue'),
     },
     {
-      path: '/phase/3',
+      path: CASE_PHASE_ROUTE.phase3,
       name: 'phase3',
+      meta: { phase: 'phase3' },
       component: () => import('@/views/Phase3View.vue'),
     },
     {
-      path: '/phase/4',
+      path: CASE_PHASE_ROUTE.phase4,
       name: 'phase4',
+      meta: { phase: 'phase4' },
       component: () => import('@/views/Phase4View.vue'),
     },
     {
       path: '/quick-reference',
       name: 'quickref',
+      meta: { phase: 'quickref' },
       component: () => import('@/views/QuickReferenceView.vue'),
     },
     {
       path: '/quick-reference/:id',
       name: 'quickref-detail',
+      meta: { phase: 'quickref' },
       component: () => import('@/views/QuickReferenceDetailView.vue'),
       props: true,
     },
     {
       path: '/inventory',
       name: 'inventory',
+      meta: { phase: 'inventory' },
       component: () => import('@/views/InventoryView.vue'),
     },
     // Saved notes are records of FINISHED encounters, so they are not gated
@@ -87,17 +90,20 @@ export const router = createRouter({
     {
       path: '/notes',
       name: 'saved-notes',
+      meta: { phase: 'notes' },
       component: () => import('@/views/SavedNotesView.vue'),
     },
     {
       path: '/notes/:id',
       name: 'saved-note',
+      meta: { phase: 'notes' },
       component: () => import('@/views/ClinicalNoteView.vue'),
       props: true,
     },
     {
       path: '/clinical-note',
       name: 'clinical-note',
+      meta: { phase: 'note' },
       component: () => import('@/views/ClinicalNoteView.vue'),
     },
     // Practice-level setup, deliberately NOT gated behind Phase 1 — the keys
@@ -105,6 +111,7 @@ export const router = createRouter({
     {
       path: '/settings',
       name: 'settings',
+      meta: { phase: 'settings' },
       component: () => import('@/views/SettingsView.vue'),
     },
     // UiDemoView is the developer-only primitives gallery — ships only in
@@ -133,7 +140,7 @@ export const router = createRouter({
 router.beforeEach((to: RouteLocationNormalized, from: RouteLocationNormalized) => {
   const patient = usePatientStore();
 
-  const leaving = PHASE_ROUTES[from.path];
+  const leaving = from.meta.phase;
   if (leaving && typeof window !== 'undefined') {
     useSessionStore().rememberScroll(leaving, window.scrollY);
   }
@@ -170,7 +177,7 @@ router.beforeEach((to: RouteLocationNormalized, from: RouteLocationNormalized) =
     }
   }
 
-  const targetPhase = PHASE_ROUTES[to.path];
+  const targetPhase = to.meta.phase;
   if (targetPhase && GATED_PHASES.has(targetPhase) && !patient.isPhase1Complete) {
     // Flip the validation flag so Phase 1 paints red rings on every missing
     // required field — the user gets a concrete visual answer to "which ones?"
@@ -203,22 +210,11 @@ router.beforeEach((to: RouteLocationNormalized, from: RouteLocationNormalized) =
 });
 
 /**
- * Whenever the router lands on a known phase, mirror it into the session
- * store so the sticky bar and nav drawer pick it up. We don't push from the
- * store side here — components that need to navigate call `router.push()`
- * and the watcher below catches it.
+ * Whenever the router lands on a screen with a shell identity, mirror it
+ * into the session store so the sticky bar and nav drawer pick it up.
+ * Components that need to navigate call `router.push()`; this hook catches it.
  */
-function resolvePhase(path: string): Phase | undefined {
-  if (PHASE_ROUTES[path]) return PHASE_ROUTES[path];
-  // Detail routes under /quick-reference/:id still belong to the quickref tint.
-  if (path.startsWith('/quick-reference')) return 'quickref';
-  return undefined;
-}
-
 router.afterEach((to: RouteLocationNormalized) => {
-  const session = useSessionStore();
-  const phase = resolvePhase(to.path);
-  if (phase) {
-    session.setPhase(phase);
-  }
+  const phase = to.meta.phase;
+  if (phase) useSessionStore().setPhase(phase);
 });
