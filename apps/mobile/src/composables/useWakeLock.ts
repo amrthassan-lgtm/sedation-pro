@@ -21,12 +21,6 @@ import { onScopeDispose, ref, type Ref } from 'vue';
  * (e.g. backgrounded). We listen for `visibilitychange` and re-acquire when
  * the tab comes back, so a quick switch to another app and back doesn't
  * leave the screen unlocked.
- *
- * When you swap the web shell for a Capacitor native shell, replace the
- * `navigator.wakeLock.request('screen')` call with the native plugin
- * (`@capacitor-community/keep-awake` or platform-native APIs). The
- * composable's `active` ref and `request()` / `release()` contract stay
- * the same.
  */
 
 interface WakeLockSentinelLike {

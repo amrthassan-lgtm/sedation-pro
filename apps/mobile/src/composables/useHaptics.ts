@@ -3,10 +3,8 @@
  *
  * On Android Chrome and most desktop browsers this calls the Web Vibration
  * API. iOS Safari does not (and historically will not) support the Vibration
- * API — so on iPhone web this is a deliberate no-op. When the app moves into
- * a Capacitor native shell, swap the implementations below for
- * `@capacitor/haptics` calls (`Haptics.impact({ style: ... })`,
- * `Haptics.notification({ type: ... })`) and the call-sites stay identical.
+ * API — so on iPhone web this is a deliberate no-op. The practice runs the
+ * app on an Android tablet, where it vibrates.
  *
  * Style guide for callers:
  *   - `tap('light')`   — minor confirmation (button focus, toggle)

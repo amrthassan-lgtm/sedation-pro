@@ -9,13 +9,9 @@
     "build": "node scripts/generate-icons.mjs && vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
-    "cap:sync": "cap sync"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@capacitor/android": "^6.2.0",
-    "@capacitor/core": "^6.2.0",
-    "@capacitor/ios": "^6.2.0",
     "@sedation-pro/clinical": "workspace:*",
     "@sedation-pro/persistence": "workspace:*",
     "@sedation-pro/ui": "workspace:*",
@@ -25,7 +21,6 @@
     "vue-router": "^4.4.5"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.2.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.7.0",

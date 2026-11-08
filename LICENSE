@@ -47,7 +47,7 @@ without prior written permission from the Owner:
 THIRD-PARTY COMPONENTS
 
 The Software incorporates open-source components (such as Vue, Vite,
-Pinia, Capacitor, TypeScript, and others listed in the project's
+Pinia, TypeScript, and others listed in the project's
 package manifests). Each such component is governed by its own license,
 which is unaffected by this notice and continues to apply to that
 component's source code only.

@@ -1,7 +1,8 @@
 # Sedation Pro
 
-Clinical IV sedation companion app for iOS and Android, built as a
-Capacitor + Vue 3 hybrid app.
+Clinical IV sedation companion app, built with Vue 3 and delivered as an
+installable web app (PWA). There is no App Store or Play Store build: the
+practice runs it from the home screen of an Android tablet.
 
 **Live preview:** <https://amrthassan-lgtm.github.io/sedation-pro/> —
 auto-deployed by `.github/workflows/deploy-pages.yml` on every push to the
@@ -25,9 +26,7 @@ pnpm test
 pnpm build
 ```
 
-See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for the full workflow,
-including how to add the Capacitor `ios/` and `android/` native shells on a
-developer machine.
+See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for the full workflow.
 
 The full plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -61,7 +60,7 @@ Two things worth knowing before you send:
 
 | Path                    | Purpose                                        |
 | ----------------------- | ---------------------------------------------- |
-| `apps/mobile/`          | Vue 3 + Vite + Capacitor 6 mobile shell        |
+| `apps/mobile/`          | Vue 3 + Vite web app (PWA)                     |
 | `packages/clinical/`    | Pure-TS clinical logic (drugs, dosing, gating) |
 | `packages/ui/`          | Shared UI primitives (Phase 2)                 |
 | `packages/persistence/` | Storage adapter (Phase 5)                      |

@@ -1,7 +1,8 @@
 # Roadmap
 
-Production rebuild of the Apex Dental IV-sedation app as a Capacitor +
-Vue 3 hybrid for the App Store and Google Play.
+Production rebuild of the Apex Dental IV-sedation app as a Vue 3 web app
+(installable PWA). Owner decision, Nov 2026: stay a web app; phases 7–9
+(native shells and store submission) are dropped.
 
 The nine phases below take the project from an empty repo to a submitted
 build. Each phase has a single deliverable, an explicit exit gate, and
@@ -9,18 +10,18 @@ its scope is small enough to land in one focused session.
 
 ## Status
 
-| Phase                                | Status     | Package(s)                              |
-| ------------------------------------ | ---------- | --------------------------------------- |
-| 0 · Foundation scaffold              | ✅ Done    | repo · `apps/mobile` · `packages/*`     |
-| 1 · Clinical engine                  | ✅ Done    | `@sedation-pro/clinical` v0.1.0         |
-| 2 · UI primitives                    | ✅ Done    | `@sedation-pro/ui` v0.1.0               |
-| 3 · App shell + navigation           | ✅ Done    | `apps/mobile`                           |
-| 4 · Assessment + premed screens      | ⏳ Next    | `apps/mobile`                           |
-| 5 · Persistence + custom formularies | ⏳ Pending | `@sedation-pro/persistence`             |
-| 6 · IV sedation + recovery + note    | ⏳ Pending | `apps/mobile`                           |
-| 7 · Native integration               | ⏳ Pending | Capacitor (iOS + Android)               |
-| 8 · Store readiness                  | ⏳ Pending | `tools/store-assets/`                   |
-| 9 · Submission + launch              | ⏳ Pending | App Store Connect · Google Play Console |
+| Phase                                | Status     | Package(s)                          |
+| ------------------------------------ | ---------- | ----------------------------------- |
+| 0 · Foundation scaffold              | ✅ Done    | repo · `apps/mobile` · `packages/*` |
+| 1 · Clinical engine                  | ✅ Done    | `@sedation-pro/clinical` v0.1.0     |
+| 2 · UI primitives                    | ✅ Done    | `@sedation-pro/ui` v0.1.0           |
+| 3 · App shell + navigation           | ✅ Done    | `apps/mobile`                       |
+| 4 · Assessment + premed screens      | ⏳ Next    | `apps/mobile`                       |
+| 5 · Persistence + custom formularies | ⏳ Pending | `@sedation-pro/persistence`         |
+| 6 · IV sedation + recovery + note    | ⏳ Pending | `apps/mobile`                       |
+| 7 · Native integration               | ✖ Dropped  | stays a web app (owner, Nov 2026)   |
+| 8 · Store readiness                  | ✖ Dropped  | no store build                      |
+| 9 · Submission + launch              | ✖ Dropped  | ships via GitHub Pages              |
 
 ## Phase 0 — Foundation scaffold ✅
 
@@ -30,7 +31,8 @@ formatting, typecheck, test, and build all wired up.
 **Shipped.**
 
 - pnpm 10 + Node 22 + TS 5.9 strict mode across four workspaces.
-- `apps/mobile` (Vue 3.5 + Vite 6 + Pinia + Vue Router + Capacitor 6.2)
+- `apps/mobile` (Vue 3.5 + Vite 6 + Pinia + Vue Router; Capacitor 6.2
+  was scaffolded here and removed in Nov 2026)
   with iOS-style design tokens (`tokens.css`) and base typography
   (`base.css`).
 - `packages/clinical`, `packages/ui`, `packages/persistence` placeholders.
@@ -157,17 +159,14 @@ logs a stamped event and updates the sticky bar.
 
 ## Phase 5 — Persistence + custom formularies ⏳
 
-**Deliverable.** `@sedation-pro/persistence` package — adapter interface,
-Capacitor Preferences implementation, and IndexedDB fallback for web
-development.
+**Deliverable.** `@sedation-pro/persistence` package — adapter interface
+over browser storage (localStorage today, IndexedDB if needed).
 
 **Scope.**
 
 - `StorageAdapter` interface (get / set / delete / clear, all
   Promise-based).
-- Capacitor `Preferences` plugin wrapper.
-- Web IndexedDB fallback (via `idb-keyval`) used when Capacitor is
-  unavailable.
+- IndexedDB backing (via `idb-keyval`) if localStorage limits are hit.
 - Stores: current session (autosave + restore on reload), practice
   profile (provider name, practice name, assistants list), **custom
   formulary** (replaces or extends `DEFAULT_FORMULARY`).
@@ -203,7 +202,7 @@ formulary entry overrides `DEFAULT_FORMULARY` for one engine call.
 clinical note that includes every logged event in chronological order,
 with the provider's signature.
 
-## Phase 7 — Native integration ⏳
+## Phase 7 — Native integration ✖ Dropped (owner, Nov 2026: stays a web app)
 
 **Deliverable.** Real iOS and Android builds running on device.
 
@@ -222,7 +221,7 @@ with the provider's signature.
 devices; running a mock session keeps the screen awake and produces
 haptic feedback on dose taps.
 
-## Phase 8 — Store readiness ⏳
+## Phase 8 — Store readiness ✖ Dropped
 
 **Deliverable.** App Store Connect and Google Play Console listings
 populated, screenshots prepared, privacy and clinical disclaimers
@@ -247,7 +246,7 @@ authored, internal audit passed.
 **Exit gate.** TestFlight build delivered to the practice; internal
 review sign-off; legal review of disclaimers complete.
 
-## Phase 9 — Submission + launch ⏳
+## Phase 9 — Submission + launch ✖ Dropped
 
 **Deliverable.** App accepted on both stores and a v1.0.0 tagged
 release.
