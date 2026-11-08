@@ -16,7 +16,7 @@ const undo = useUndoStore();
 const now = useNow(15_000);
 
 const { currentPhase } = storeToRefs(session);
-const { canUndo, count: undoCount } = storeToRefs(undo);
+const { canUndo, count: undoCount, nextLabel: undoNext } = storeToRefs(undo);
 const { completeness, isPhase1Complete, safetyAlerts, ekgPlaced } = storeToRefs(patient);
 
 /** The phases where a sedative can actually be given. */
@@ -192,8 +192,11 @@ function emergency() {
         class="sticky-bar-undo"
         :class="{ 'has-action': canUndo }"
         :disabled="!canUndo"
-        :aria-label="canUndo ? `Undo (${undoCount} actions)` : 'No actions to undo'"
-        @click="undo.undo"
+        :aria-label="
+          canUndo ? `Undo ${undoNext ?? ''} (${undoCount} actions)` : 'No actions to undo'
+        "
+        :title="undoNext ?? undefined"
+        @click="undo.undo()"
       >
         ↶
         <span class="sticky-bar-undo-text">Undo</span>
