@@ -174,6 +174,24 @@ export function protocolsUsing(names: ReadonlyArray<string>): ReadonlyArray<Prot
   ).map((p) => ({ id: p.id, name: p.name }));
 }
 
+/** Protocols (in library order) whose id is in `ids`. */
+export function protocolsByIds(ids: ReadonlyArray<string>): ReadonlyArray<ProtocolRef> {
+  if (ids.length === 0) return [];
+  const wanted = new Set(ids);
+  return EMERGENCY_PROTOCOLS.filter((p) => wanted.has(p.id)).map((p) => ({
+    id: p.id,
+    name: p.name,
+  }));
+}
+
+/** The equipment rows linked to one protocol, in inventory order. */
+export function equipmentFor(
+  protocolId: string,
+  classified: ReadonlyArray<ClassifiedItem>,
+): ReadonlyArray<ClassifiedItem> {
+  return classified.filter((c) => c.item.protocolIds?.includes(protocolId));
+}
+
 /** Every distinct drug name referenced by protocol step callouts. */
 export function protocolCalloutNames(): ReadonlyArray<string> {
   const names = new Set<string>();
@@ -221,6 +239,8 @@ export interface InventoryStatus {
   readonly subLine: string;
   statusFor(calloutName: string): Severity | null;
   usesFor(item: InventoryItem): ReadonlyArray<ProtocolRef>;
+  /** Equipment linked to a protocol, for its kit card. */
+  equipmentFor(protocolId: string): ReadonlyArray<ClassifiedItem>;
 }
 
 export function useInventoryStatus(now: number = Date.now()): InventoryStatus {
@@ -243,6 +263,10 @@ export function useInventoryStatus(now: number = Date.now()): InventoryStatus {
     courseShort: protocolCourseCoverage(classified).filter((c) => c.short),
     subLine: inventorySubLine(summary),
     statusFor: (calloutName) => protocolStockStatus(calloutName, classified),
-    usesFor: (item) => protocolsUsing(item.protocolDrugNames ?? []),
+    usesFor: (item) =>
+      item.protocolIds
+        ? protocolsByIds(item.protocolIds)
+        : protocolsUsing(item.protocolDrugNames ?? []),
+    equipmentFor: (protocolId) => equipmentFor(protocolId, classified),
   };
 }
