@@ -15,7 +15,7 @@ interface Props {
    * emitted as-is.
    */
   allowCustom?: boolean;
-  /** Ghost-chip label; rendered as "+ <customLabel>". */
+  /** Free-entry chip label; rendered as "<customLabel>…". */
   customLabel?: string;
   customPlaceholder?: string;
   disabled?: boolean;
@@ -140,7 +140,7 @@ function commitEntry(): void {
         :disabled="props.disabled"
         @click="startEntry"
       >
-        + {{ props.customLabel }}
+        {{ props.customLabel }}…
       </button>
     </div>
   </div>
@@ -176,9 +176,6 @@ function commitEntry(): void {
   justify-content: center;
   padding: 8px 14px;
   border-radius: var(--r-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
   font-size: var(--type-footnote);
   font-weight: var(--weight-bold);
@@ -191,6 +188,9 @@ function commitEntry(): void {
     border-color var(--dur-150) var(--ease-standard),
     box-shadow var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
+  border: 1px solid transparent;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
 }
 .ui-chip:active:not(:disabled) {
   transform: scale(0.96);
@@ -199,10 +199,10 @@ function commitEntry(): void {
    themes — there's no track behind it to lift off of), stronger border,
    shadow. */
 .ui-chip.is-active {
-  background: var(--color-surface-overlay);
-  border-color: var(--color-border-strong);
-  color: var(--color-text-primary);
-  box-shadow: var(--shadow-sm);
+  background: var(--color-text-primary);
+  border-color: transparent;
+  color: var(--color-bg);
+  box-shadow: none;
 }
 .ui-chip:disabled {
   opacity: 0.4;
@@ -211,12 +211,11 @@ function commitEntry(): void {
 .ui-chip-group.is-disabled {
   opacity: 0.5;
 }
-/* Ghost "+ Other" chip: dashed border + tertiary text so it reads as an
-   affordance to extend the cloud, not another selectable condition. */
+/* "Other…" opens free entry: same grey pill, quieter label, so it reads
+   as an action rather than another condition. */
 .ui-chip-add {
-  background: transparent;
-  border-style: dashed;
-  border-color: var(--color-border-strong);
+  background: var(--color-surface-elevated);
+  border-color: transparent;
   color: var(--color-text-tertiary);
 }
 .ui-chip-add:active:not(:disabled) {

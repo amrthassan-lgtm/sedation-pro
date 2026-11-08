@@ -119,8 +119,8 @@ const activeCaption = computed<string | undefined>(() => {
   gap: 0;
   padding: 2px;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
   border-radius: var(--r-pill);
+  border: 1px solid transparent;
 }
 .ui-chip {
   position: relative;

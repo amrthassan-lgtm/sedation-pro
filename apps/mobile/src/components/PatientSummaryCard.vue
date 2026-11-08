@@ -135,6 +135,7 @@ const initial = computed(() => {
   gap: 1px;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  border-color: transparent;
 }
 .ps-pill-label {
   font-size: var(--type-caption);

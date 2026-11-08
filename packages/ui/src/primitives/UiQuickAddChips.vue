@@ -41,7 +41,7 @@ function add(term: string): void {
       :disabled="props.disabled"
       @click="add(term)"
     >
-      + {{ term }}
+      {{ term }}
     </button>
   </div>
 </template>
@@ -50,22 +50,23 @@ function add(term: string): void {
 .ui-qa-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--sp-2);
   margin: 0 0 var(--sp-2);
 }
 .ui-qa-chip {
-  /* 44pt HIG minimum — these were the smallest targets in the app. */
+  /* Same metrics as the Medical problems chips (UiChipMultiSelect) and the
+     grey pill of the button family: 44 px, footnote type, no outline. */
   min-height: 44px;
   display: inline-flex;
   align-items: center;
-  font-size: var(--type-caption);
+  font-size: var(--type-footnote);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.2px;
-  padding: 5px 10px;
+  padding: 8px 14px;
   border-radius: var(--r-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
+  border: 0;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
@@ -75,8 +76,7 @@ function add(term: string): void {
 }
 .ui-qa-chip:active:not(:disabled) {
   transform: scale(0.96);
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
+  background: var(--color-surface-overlay);
 }
 .ui-qa-chip:disabled {
   opacity: 0.4;

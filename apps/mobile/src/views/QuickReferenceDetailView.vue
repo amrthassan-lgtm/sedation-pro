@@ -543,6 +543,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
   background: var(--color-surface-elevated);
   border: 1px solid var(--color-border);
   color: var(--color-text-primary);
+  border-color: transparent;
 }
 
 .contra-list {
