@@ -31,6 +31,10 @@ export const useUndoStore = defineStore('undo', () => {
 
   const count = computed(() => stack.value.length);
   const canUndo = computed(() => stack.value.length > 0);
+  /** What the next undo would revert — the sticky-bar button names it. */
+  const nextLabel = computed<string | null>(
+    () => stack.value[stack.value.length - 1]?.label ?? null,
+  );
 
   /**
    * Record an event and its undo entry in one shot. Returns the log entry so
@@ -68,14 +72,27 @@ export const useUndoStore = defineStore('undo', () => {
       label: options.toast.label,
       ...(options.toast.sub !== undefined && { sub: options.toast.sub }),
       tone: options.toast.tone,
+      undoId: entry.id,
     });
 
     return entry;
   }
 
-  function undo(): boolean {
-    const last = stack.value.pop();
+  /** True when `id` is the entry the next undo would revert. */
+  function isNext(id: string): boolean {
+    return stack.value[stack.value.length - 1]?.id === id;
+  }
+
+  /**
+   * Revert the most recent action. With `expectedId`, revert only if that
+   * is the action on top — a toast's Undo must never pop a different,
+   * newer entry than the one it describes.
+   */
+  function undo(expectedId?: string): boolean {
+    const last = stack.value[stack.value.length - 1];
     if (!last) return false;
+    if (expectedId !== undefined && last.id !== expectedId) return false;
+    stack.value.pop();
     last.revert();
     toast.dismiss();
     return true;
@@ -86,5 +103,5 @@ export const useUndoStore = defineStore('undo', () => {
     toast.dismiss();
   }
 
-  return { stack, count, canUndo, stamp, undo, clear };
+  return { stack, count, canUndo, nextLabel, isNext, stamp, undo, clear };
 });

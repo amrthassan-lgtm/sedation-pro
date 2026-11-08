@@ -67,68 +67,53 @@ export function useIvDosing() {
 
   function logIvVersed(mg: number, sub: string) {
     if (refusedForReadiness()) return;
-    iv.logDose({ drug: 'versed', mg });
+    const dose = iv.logDose({ drug: 'versed', mg });
     undo.stamp({
       event: 'IV Dose',
       details: { Drug: 'Midazolam (Versed)', Dose: `${mg} mg`, Route: 'IV' },
       toast: { label: `✓ Versed ${mg} mg IV (${sub})`, sub: nowClock(), tone: 'safe' },
-      revert: () => {
-        const last = iv.doses[iv.doses.length - 1];
-        if (last && last.drug === 'versed' && last.mg === mg) iv.removeDoseById(last.id);
-      },
+      revert: () => iv.removeDoseById(dose.id),
     });
   }
 
   function logIvFentanyl(mcg: number, sub: string) {
     if (refusedForReadiness()) return;
-    iv.logDose({ drug: 'fentanyl', mcg });
+    const dose = iv.logDose({ drug: 'fentanyl', mcg });
     undo.stamp({
       event: 'IV Dose',
       details: { Drug: 'Fentanyl', Dose: `${mcg} mcg`, Route: 'IV' },
       toast: { label: `✓ Fentanyl ${mcg} mcg IV (${sub})`, sub: nowClock(), tone: 'safe' },
-      revert: () => {
-        const last = iv.doses[iv.doses.length - 1];
-        if (last && last.drug === 'fentanyl' && last.mcg === mcg) iv.removeDoseById(last.id);
-      },
+      revert: () => iv.removeDoseById(dose.id),
     });
   }
 
   function logIvZofran(mg: number) {
-    iv.logDose({ drug: 'zofran', mg });
+    const dose = iv.logDose({ drug: 'zofran', mg });
     undo.stamp({
       event: 'IV Dose',
       details: { Drug: 'Ondansetron (Zofran)', Dose: `${mg} mg`, Route: 'IV' },
       toast: { label: `✓ Zofran ${mg} mg IV`, sub: nowClock(), tone: 'safe' },
-      revert: () => {
-        const last = iv.doses[iv.doses.length - 1];
-        if (last && last.drug === 'zofran' && last.mg === mg) iv.removeDoseById(last.id);
-      },
+      revert: () => iv.removeDoseById(dose.id),
     });
   }
 
   function logIvFlumazenil() {
-    iv.logDose({ drug: 'flumazenil', mg: 0.2 });
+    const dose = iv.logDose({ drug: 'flumazenil', mg: 0.2 });
     undo.stamp({
       event: 'Reversal Agent',
       details: { Drug: 'Flumazenil', Dose: '0.2 mg', Route: 'IV', Notes: 'benzo reversal' },
       toast: { label: '✓ Flumazenil 0.2 mg IV', sub: nowClock(), tone: 'limit' },
-      revert: () => {
-        const last = iv.doses[iv.doses.length - 1];
-        if (last && last.drug === 'flumazenil') iv.removeDoseById(last.id);
-      },
+      revert: () => iv.removeDoseById(dose.id),
     });
   }
 
   function logIvNaloxone() {
-    iv.logDose({ drug: 'naloxone', mg: 0.4 });
+    const dose = iv.logDose({ drug: 'naloxone', mg: 0.4 });
     undo.stamp({
       event: 'Reversal Agent',
       details: { Drug: 'Naloxone', Dose: '0.4 mg', Route: 'IV', Notes: 'opioid reversal' },
       toast: { label: '✓ Naloxone 0.4 mg IV', sub: nowClock(), tone: 'limit' },
-      revert: () => {
-        const last = iv.doses[iv.doses.length - 1];
-        if (last && last.drug === 'naloxone') iv.removeDoseById(last.id);
-      },
+      revert: () => iv.removeDoseById(dose.id),
     });
   }
 

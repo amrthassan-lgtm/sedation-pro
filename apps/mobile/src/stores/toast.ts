@@ -13,6 +13,14 @@ export interface UndoToastView {
   readonly label: string;
   readonly sub?: string;
   readonly tone: BannerTone;
+  /**
+   * Set only by `undoStore.stamp`: the undo-stack entry this toast can
+   * revert. A toast without one (route gate, readiness refusal, Phase 1
+   * lock, release countdown) renders no Undo button — before this field
+   * existed every toast showed one, and tapping it on a gate toast
+   * silently reverted the last logged dose.
+   */
+  readonly undoId?: string;
 }
 
 export const useToastStore = defineStore('toast', () => {

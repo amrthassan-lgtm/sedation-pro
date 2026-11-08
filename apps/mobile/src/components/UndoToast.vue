@@ -9,7 +9,7 @@ const undoStore = useUndoStore();
 const { current } = storeToRefs(toastStore);
 
 function onUndo() {
-  undoStore.undo();
+  if (current.value?.undoId) undoStore.undo(current.value.undoId);
 }
 </script>
 
@@ -23,6 +23,7 @@ function onUndo() {
             <div v-if="current.sub" class="undo-toast-sub">{{ current.sub }}</div>
           </div>
           <button
+            v-if="current.undoId && undoStore.isNext(current.undoId)"
             type="button"
             class="undo-toast-btn"
             :class="`undo-toast-btn--${current.tone}`"
