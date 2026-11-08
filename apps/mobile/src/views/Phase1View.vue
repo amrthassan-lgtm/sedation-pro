@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 
 import { formatUsPhone, phoneIncomplete } from '@/composables/phone';
-import { nowClock } from '@/composables/format';
+import { nowClock, parseCalendarDay } from '@/composables/format';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 
@@ -465,7 +465,7 @@ const careRelationOptions = computed(() =>
 
 const lastExam = computed(() => {
   if (!lastExamDate.value || age.value === null) return null;
-  const examDate = new Date(lastExamDate.value);
+  const examDate = parseCalendarDay(lastExamDate.value);
   if (Number.isNaN(examDate.getTime())) return null;
   return lastExamCheck(examDate, age.value, new Date());
 });

@@ -6,6 +6,17 @@
 
 const CLOCK: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
 
+/**
+ * A `YYYY-MM-DD` value (an `<input type="date">`) as that calendar day at
+ * local midnight. `new Date('2024-11-28')` reads it as UTC midnight, which is
+ * Nov 27 anywhere west of UTC (the practice is in Florida). Anything else is
+ * passed to `new Date` unchanged; invalid input gives an Invalid Date.
+ */
+export function parseCalendarDay(s: string): Date {
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim());
+  return day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])) : new Date(s);
+}
+
 /** `HH:MM` in the device locale, or undefined when there is no timestamp. */
 export function fmtClock(ms: number | null | undefined): string | undefined {
   if (ms === null || ms === undefined) return undefined;

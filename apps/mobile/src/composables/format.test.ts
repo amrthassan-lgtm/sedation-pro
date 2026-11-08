@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { fmtClock, fmtDuration, nowClock } from './format';
+import { fmtClock, fmtDuration, nowClock, parseCalendarDay } from './format';
 
 describe('format', () => {
   it('fmtClock renders hours and minutes and is empty for no timestamp', () => {
@@ -20,5 +20,32 @@ describe('format', () => {
     expect(fmtDuration(600)).toBe('10:00');
     expect(fmtDuration(-4)).toBe('0:00');
     expect(fmtDuration(59.9)).toBe('0:59');
+  });
+});
+
+describe('parseCalendarDay (Florida time)', () => {
+  const realTz = process.env.TZ;
+  beforeAll(() => {
+    process.env.TZ = 'America/New_York';
+  });
+  afterAll(() => {
+    process.env.TZ = realTz;
+  });
+
+  it('keeps a YYYY-MM-DD on its own calendar day, where new Date() slips to the day before', () => {
+    expect(new Date('2024-11-28').getDate()).toBe(27); // the bug this guards against
+    const d = parseCalendarDay('2024-11-28');
+    expect([d.getFullYear(), d.getMonth() + 1, d.getDate()]).toEqual([2024, 11, 28]);
+    expect(d.getHours()).toBe(0);
+  });
+
+  it('keeps month boundaries: the 1st stays the 1st', () => {
+    const d = parseCalendarDay('2026-03-01');
+    expect([d.getMonth() + 1, d.getDate()]).toEqual([3, 1]);
+  });
+
+  it('passes other strings through and flags garbage as invalid', () => {
+    expect(parseCalendarDay('2026-11-08T14:30:00Z').toISOString()).toBe('2026-11-08T14:30:00.000Z');
+    expect(Number.isNaN(parseCalendarDay('not a date').getTime())).toBe(true);
   });
 });
