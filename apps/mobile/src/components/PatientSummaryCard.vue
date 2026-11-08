@@ -137,11 +137,11 @@ const initial = computed(() => {
   font-variant-numeric: tabular-nums;
 }
 .ps-pill-label {
-  font-size: 9px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-bold);
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  color: var(--color-text-disabled);
+  color: var(--color-text-tertiary);
 }
 .ps-pill-value {
   font-size: var(--type-caption);

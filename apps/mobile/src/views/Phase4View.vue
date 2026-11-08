@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useRouter } from 'vue-router';
@@ -158,6 +158,11 @@ const venipunctureComplicationOptions = computed(
 // the engine no longer carries a companion-signature gate. Only the provider
 // signature is captured in-app.
 const providerSigned = computed(() => providerSignatureDataUrl.value !== null);
+// A light tap the moment the pad first holds ink, so signing confirms
+// physically like every other stamp. Re-strokes and Clear stay silent.
+watch(providerSignatureDataUrl, (next, prev) => {
+  if (prev === null && next !== null) haptic('light');
+});
 
 // Response state — short chip labels, full clinical phrases stay as the
 // stored values so the printed note + audit log read clinically. Verbal

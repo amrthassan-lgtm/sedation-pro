@@ -411,7 +411,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
   color: var(--color-text-primary);
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: var(--type-caption);
   min-width: 42px;
 }
 .dock-drug-load {
@@ -468,7 +468,7 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
 }
 .dock-section-label {
   margin: 4px 0 0;
-  font-size: 10px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-bold);
   letter-spacing: 0.8px;
   text-transform: uppercase;

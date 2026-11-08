@@ -771,11 +771,11 @@ function onTouchEnd() {
   font-variant-numeric: tabular-nums;
 }
 .nav-sum-pill-label {
-  font-size: 9px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-bold);
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  color: var(--color-text-disabled);
+  color: var(--color-text-tertiary);
 }
 .nav-sum-pill-value {
   font-size: var(--type-caption);
@@ -791,7 +791,7 @@ function onTouchEnd() {
 }
 .nav-section-label {
   margin: 0 16px 8px;
-  font-size: 9px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-bold);
   letter-spacing: 1.2px;
   text-transform: uppercase;
@@ -891,7 +891,7 @@ function onTouchEnd() {
 }
 .nav-phase-sub {
   font-size: var(--type-caption);
-  color: var(--color-text-disabled);
+  color: var(--color-text-tertiary);
   letter-spacing: 0.2px;
   /* Live sub-lines (inventory status) can outgrow the 288px drawer —
      ellipsize so every nav row keeps the same height. */
@@ -951,7 +951,7 @@ function onTouchEnd() {
 /* Flight-recorder readout — quiet caption under the toggle label. */
 .nav-utility-sub {
   font-size: var(--type-caption);
-  color: var(--color-text-disabled);
+  color: var(--color-text-tertiary);
   letter-spacing: 0.2px;
   line-height: 1.35;
   max-width: 200px;

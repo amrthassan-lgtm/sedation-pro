@@ -137,7 +137,7 @@ const renderState = computed<ActionState>(() => {
   font-size: var(--type-body);
 }
 .ui-drug-btn-name {
-  font-size: 9px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-bold);
   color: var(--color-text-tertiary);
   letter-spacing: 0.8px;
@@ -151,8 +151,10 @@ const renderState = computed<ActionState>(() => {
   font-family: var(--font-mono);
 }
 .ui-drug-btn-sub {
-  font-size: 9px;
-  color: var(--color-text-disabled);
+  /* Volume and route under the dose: read mid-procedure, so footnote size
+     at secondary contrast, never the 30% disabled tone. */
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
   font-family: var(--font-mono);
   letter-spacing: 0.3px;
   line-height: 1.2;

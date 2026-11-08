@@ -559,7 +559,7 @@ function clearSearch() {
   font-size: var(--type-caption);
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--color-text-disabled);
+  color: var(--color-text-tertiary);
   font-weight: var(--weight-bold);
 }
 
