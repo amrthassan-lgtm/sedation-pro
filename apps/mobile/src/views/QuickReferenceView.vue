@@ -144,7 +144,7 @@ function clearSearch() {
       <h1 class="title-display">Emergency Protocols</h1>
     </header>
 
-    <UiButton tone="primary" block @click="goCase">‹ {{ backToCaseLabel }}</UiButton>
+    <UiButton tone="plain" block @click="goCase">‹ {{ backToCaseLabel }}</UiButton>
 
     <!-- Crisis first: the two shortcut grids lead the screen so the Emergency
          button lands on them with no scrolling. The routine drug reference
@@ -412,8 +412,8 @@ function clearSearch() {
 }
 .drug-pill-chevron {
   flex-shrink: 0;
-  font-size: 14px;
-  color: var(--color-text-disabled);
+  font-size: var(--type-heading);
+  color: var(--color-text-tertiary);
   font-family: var(--font-mono);
 }
 .drug-pill-detail {

@@ -19,12 +19,10 @@ export const PENDING_MRN_KEY = 'sedation-pro:pending-mrn:v1';
  */
 /**
  * Practice-level keys that survive "Start new case". The reset's job is to
- * wipe per-CASE state; theme preference and the inventory-banner dismissal
- * are per-PRACTICE and outliving the case is the point. (Theme previously
- * being wiped here was a bug this list fixes.)
+ * wipe per-CASE state; the inventory-banner dismissal and the keys below
+ * are per-PRACTICE and outliving the case is the point.
  */
 export const PRESERVED_KEYS: ReadonlySet<string> = new Set([
-  'sedation-pro:theme:v1',
   'sedation-pro:inventory-banner:v1',
   // Chime flight recorder — diagnostics must survive the reset that often
   // immediately follows the event being diagnosed.

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onScopeDispose, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
@@ -7,14 +7,12 @@ import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { lastSavedAt } from '@/stores/persistence';
-import { useNow } from '@/composables/useNow';
 import { fmtClock } from '@/composables/format';
 
 const router = useRouter();
 const session = useSessionStore();
 const patient = usePatientStore();
 const undo = useUndoStore();
-const now = useNow(15_000);
 
 const { currentPhase } = storeToRefs(session);
 const { canUndo, count: undoCount, nextLabel: undoNext } = storeToRefs(undo);
@@ -47,11 +45,26 @@ const barAlerts = computed(() => [...readinessAlerts.value, ...safetyAlerts.valu
  * Becomes "Saving…" momentarily after each write (within 800 ms) — pure
  * cosmetic but reassures the user that the form isn't lost.
  */
+const saving = ref(false);
+let savingTimer: ReturnType<typeof setTimeout> | null = null;
+watch(lastSavedAt, (ts) => {
+  if (ts === null) return;
+  saving.value = true;
+  if (savingTimer) clearTimeout(savingTimer);
+  // Its own short timer, not the 15 s bar clock: the pill used to read
+  // "Saving…" for up to 15 s after every route change and looked stuck.
+  savingTimer = setTimeout(() => {
+    saving.value = false;
+    savingTimer = null;
+  }, 800);
+});
+onScopeDispose(() => {
+  if (savingTimer) clearTimeout(savingTimer);
+});
 const savedLabel = computed<string | null>(() => {
   const ts = lastSavedAt.value;
   if (ts === null) return null;
-  const ageMs = now.value - ts;
-  if (ageMs < 800) return 'Saving…';
+  if (saving.value) return 'Saving…';
   return `Saved · ${fmtClock(ts)}`;
 });
 
@@ -311,7 +324,11 @@ function emergency() {
   gap: 8px;
   min-width: 0;
   flex: 1;
-  padding: 0;
+  /* 44 px tap height without changing the bar's look: the hit area grows
+     into the row's own padding. */
+  min-height: 44px;
+  margin: -12px 0;
+  padding: 12px 0;
   border: none;
   background: transparent;
   font: inherit;

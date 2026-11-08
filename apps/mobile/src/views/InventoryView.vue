@@ -644,6 +644,7 @@ function printSheet(): void {
   gap: var(--sp-2);
 }
 .inv-head--toggle {
+  min-height: 44px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }

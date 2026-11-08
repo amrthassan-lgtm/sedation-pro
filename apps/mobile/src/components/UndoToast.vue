@@ -89,7 +89,7 @@ function onUndo() {
   background: var(--color-surface-elevated);
   color: var(--color-text-primary);
   border-radius: var(--r-sm);
-  min-height: 36px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 4px;

@@ -1249,10 +1249,10 @@ const diazepamModalCopy = computed(() => {
   font-size: var(--type-footnote);
 }
 .mrn-ok {
-  color: var(--color-safe, #047857);
+  color: var(--color-good);
 }
 .mrn-warn {
-  color: var(--color-limit, #be123c);
+  color: var(--color-danger);
 }
 .mrn-muted {
   color: var(--color-text-secondary);
@@ -1263,18 +1263,18 @@ const diazepamModalCopy = computed(() => {
   align-items: flex-start;
   gap: var(--sp-2);
   padding: var(--sp-3);
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--r-md);
   background: var(--color-surface-subtle);
 }
 .mrn-mismatch-text {
   font-size: var(--type-footnote);
-  color: var(--color-caution, #b45309);
+  color: var(--color-warn);
 }
 
 /* The identity is the wrong-patient guard now that the MRN leads the form,
    so it is sized to be read rather than skimmed. */
 .ident {
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--r-md);
   padding: var(--sp-3);
   background: var(--color-surface-subtle);
   border: 1px solid transparent;
@@ -1303,7 +1303,7 @@ const diazepamModalCopy = computed(() => {
 .ident-ok {
   margin-top: var(--sp-2);
   font-size: var(--type-footnote);
-  color: var(--color-safe, #047857);
+  color: var(--color-good);
 }
 
 .conflict-note {

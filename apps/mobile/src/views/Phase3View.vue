@@ -10,6 +10,7 @@ import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
 import { fmtClock, fmtDuration, nowClock } from '@/composables/format';
+import { vitalsDetails } from '@/composables/vitalsDetails';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { syringeConfig } from '@/composables/useSyringeConfig';
 import { useNow } from '@/composables/useNow';
@@ -213,19 +214,16 @@ function stampPreOpVitals() {
   });
   undo.stamp({
     event: 'Pre-Op Vitals',
-    details: {
-      HR: preOpHr.value !== null ? `${preOpHr.value} bpm` : '—',
-      BP:
-        preOpBpSys.value !== null && preOpBpDia.value !== null
-          ? `${preOpBpSys.value}/${preOpBpDia.value}`
-          : '—',
-      SpO2: preOpSpo2.value !== null ? `${preOpSpo2.value}%` : '—',
-      EtCO2: preOpEtco2.value !== null ? `${preOpEtco2.value} mmHg` : '—',
-      ...(diabetic.value && preOpGlucose.value !== null
-        ? { Glucose: `${preOpGlucose.value} mg/dL` }
-        : {}),
-      Response: preOpResponse.value,
-    },
+    details: vitalsDetails({
+      hr: preOpHr.value,
+      bpSys: preOpBpSys.value,
+      bpDia: preOpBpDia.value,
+      spo2: preOpSpo2.value,
+      etco2: preOpEtco2.value,
+      glucose: preOpGlucose.value,
+      diabetic: diabetic.value,
+      response: preOpResponse.value,
+    }),
     toast: {
       label: '✓ Pre-Op Vitals stamped',
       sub: nowClock(),
@@ -381,19 +379,16 @@ function stampSedationVitals() {
   });
   undo.stamp({
     event: 'Sedation Level Achieved',
-    details: {
-      HR: sedHr.value !== null ? `${sedHr.value} bpm` : '—',
-      BP:
-        sedBpSys.value !== null && sedBpDia.value !== null
-          ? `${sedBpSys.value}/${sedBpDia.value}`
-          : '—',
-      SpO2: sedSpo2.value !== null ? `${sedSpo2.value}%` : '—',
-      EtCO2: sedEtco2.value !== null ? `${sedEtco2.value} mmHg` : '—',
-      ...(diabetic.value && sedGlucose.value !== null
-        ? { Glucose: `${sedGlucose.value} mg/dL` }
-        : {}),
-      Response: sedResponse.value,
-    },
+    details: vitalsDetails({
+      hr: sedHr.value,
+      bpSys: sedBpSys.value,
+      bpDia: sedBpDia.value,
+      spo2: sedSpo2.value,
+      etco2: sedEtco2.value,
+      glucose: sedGlucose.value,
+      diabetic: diabetic.value,
+      response: sedResponse.value,
+    }),
     toast: { label: '✓ Sedation level stamped', tone: 'safe' },
     revert: () => iv.clearSedationStamp(),
   });

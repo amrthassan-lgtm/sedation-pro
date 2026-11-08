@@ -142,6 +142,18 @@ const renderState = computed<ActionState>(() => {
   background: var(--surface-highlight), var(--color-good-soft);
   color: var(--color-good);
 }
+/* Plain text button in the accent colour — the iOS "Back" / "Done" idiom.
+   No border, no fill; the 44 px height and the label carry the target. */
+.ui-btn--plain {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-accent);
+  font-weight: var(--weight-semibold);
+}
+.ui-btn--plain:active:not(:disabled) {
+  background: var(--color-accent-soft);
+}
 
 /* Logged state — has timestamp pinned to the right edge. */
 .ui-btn--logged {

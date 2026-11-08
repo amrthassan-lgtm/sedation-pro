@@ -108,7 +108,7 @@ const readSummary = computed(() => {
 <style scoped>
 .chart-who {
   padding: var(--sp-3);
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--r-md);
   background: var(--color-surface-subtle);
 }
 .chart-who-name {
@@ -151,7 +151,7 @@ const readSummary = computed(() => {
 }
 .chart-applied {
   font-size: var(--type-footnote);
-  color: var(--color-safe, #047857);
+  color: var(--color-good);
 }
 .chart-nochange {
   font-size: var(--type-footnote);

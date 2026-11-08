@@ -10,7 +10,6 @@ import { useEventLogStore } from '@/stores/event-log';
 import { useFormularyStore } from '@/stores/formulary';
 import { useNoteArchiveStore } from '@/stores/note-archive';
 import { useCaseReset } from '@/composables/useCaseReset';
-import { useTheme, type ThemeChoice } from '@/composables/useTheme';
 import { UiModal, UiStatusPill } from '@sedation-pro/ui';
 
 import {
@@ -220,24 +219,6 @@ const lastUnlock = computed(() => {
   }
   return null;
 });
-
-// -------- Theme toggle ----------------------------------------------------
-//
-// Cycle through auto → light → dark → auto so a single button can express
-// "follow system" + the two explicit overrides without taking up nav space.
-
-const { choice: themeChoice } = useTheme();
-
-const themeMeta: Record<ThemeChoice, { icon: string; label: string }> = {
-  auto: { icon: '🌗', label: 'Theme · Auto' },
-  light: { icon: '☀️', label: 'Theme · Light' },
-  dark: { icon: '🌙', label: 'Theme · Dark' },
-};
-
-function cycleTheme(): void {
-  themeChoice.value =
-    themeChoice.value === 'auto' ? 'light' : themeChoice.value === 'light' ? 'dark' : 'auto';
-}
 
 // -------- Start new case --------------------------------------------------
 
@@ -465,7 +446,7 @@ function onTouchEnd() {
         <div class="nav-sum-pills">
           <div class="nav-sum-pill">
             <div class="nav-sum-pill-label">Clearance</div>
-            <div class="nav-sum-pill-value">{{ completeness.percent }}%</div>
+            <div class="nav-sum-pill-value">{{ completeness.done }} / {{ completeness.total }}</div>
           </div>
           <div class="nav-sum-pill">
             <div class="nav-sum-pill-label">Events</div>
@@ -604,18 +585,6 @@ function onTouchEnd() {
             No chimes yet · {{ lastUnlock }}
           </span>
         </span>
-      </button>
-
-      <!-- Theme cycle: auto → light → dark → auto. Auto follows the OS via
-           prefers-color-scheme; the two locked modes override regardless. -->
-      <button
-        type="button"
-        class="nav-utility"
-        :aria-label="`Theme: ${themeChoice}. Tap to cycle.`"
-        @click="cycleTheme"
-      >
-        <span class="nav-utility-icon" aria-hidden="true">{{ themeMeta[themeChoice].icon }}</span>
-        <span class="nav-utility-label">{{ themeMeta[themeChoice].label }}</span>
       </button>
 
       <!-- Destructive action — start a fresh case. Sits below the nav and is
@@ -874,24 +843,21 @@ function onTouchEnd() {
 .nav-phase-icon--ph4 {
   background: linear-gradient(135deg, var(--color-surface-elevated), var(--color-surface-overlay));
 }
-/* Quick Reference keeps its teal identity — separate destination, not a
-   numbered phase. White glyph reads on the saturated teal. */
-.nav-phase-icon--qr {
-  background: linear-gradient(135deg, #14b8a6, #0d9488);
-  color: #fff;
-}
-/* Inventory shares the reference-section identity family — indigo so it
-   reads as a sibling of Quick Reference without impersonating it. */
-.nav-phase-icon--inv {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: #fff;
-}
-/* Settings is practice setup, not clinical reference — deliberately the one
-   neutral row in this section so it doesn't compete with the two rows a
+/* Reference-section rows carry a soft tint from the token palette instead
+   of their own gradients: Quick Reference in the crisis red, Inventory in
+   purple, Settings neutral so it never competes with the two rows a
    clinician reaches for mid-case. */
+.nav-phase-icon--qr {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+.nav-phase-icon--inv {
+  background: var(--color-purple-soft);
+  color: var(--color-purple);
+}
 .nav-phase-icon--set {
-  background: linear-gradient(135deg, #94a3b8, #64748b);
-  color: #fff;
+  background: var(--color-slate-soft);
+  color: var(--color-slate);
 }
 .nav-phase-badge {
   flex-shrink: 0;
@@ -954,6 +920,7 @@ function onTouchEnd() {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-height: 44px;
   padding: 11px 16px;
   background: transparent;
   border: 1px solid var(--color-surface-elevated);

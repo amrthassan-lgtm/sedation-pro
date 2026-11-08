@@ -198,7 +198,7 @@ function toggle() {
   line-height: 1.2;
 }
 .ui-check-label {
-  font-size: var(--type-step, var(--type-footnote));
+  font-size: var(--type-footnote);
   font-weight: var(--weight-medium);
   color: var(--color-text-primary);
 }

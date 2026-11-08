@@ -295,7 +295,7 @@ async function testConnection(): Promise<void> {
   margin-inline: auto;
 }
 .settings-section {
-  font-size: var(--type-title3, 1.125rem);
+  font-size: var(--type-heading);
   font-weight: 650;
   margin: var(--sp-4) 0 0;
 }

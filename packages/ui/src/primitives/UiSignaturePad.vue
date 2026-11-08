@@ -213,7 +213,7 @@ onMounted(() => {
       />
       <span v-if="!hasInk" class="ui-sig-hint">Sign here</span>
       <button v-if="hasInk" type="button" class="ui-sig-clear" :disabled="disabled" @click="clear">
-        Clear
+        <span class="ui-sig-clear-pill">Clear</span>
       </button>
     </div>
     <div class="ui-sig-meta">
@@ -268,9 +268,24 @@ onMounted(() => {
   pointer-events: none;
 }
 .ui-sig-clear {
+  /* A transparent 44 px target in the corner; the visible pill inside keeps
+     its small size so it never covers the ink. */
   position: absolute;
-  top: 8px;
-  right: 8px;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 8px 8px 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-sig-clear-pill {
   font-size: var(--type-caption);
   font-weight: var(--weight-bold);
   letter-spacing: 0.4px;
@@ -280,11 +295,9 @@ onMounted(() => {
   border: 1px solid var(--color-border-strong);
   background: var(--color-frosted-bg);
   color: var(--color-text-secondary);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
   transition: background var(--dur-150) var(--ease-standard);
 }
-.ui-sig-clear:active {
+.ui-sig-clear:active .ui-sig-clear-pill {
   background: var(--color-card-bg);
 }
 .ui-sig-meta {

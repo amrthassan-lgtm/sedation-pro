@@ -75,10 +75,10 @@ action. `PicklistEditor.vue` and `InventoryView.vue` are the reference rows.
   wrong. Real names are `--r-sm|md|lg|xl|pill` (not `--radius-*`),
   `--color-surface-subtle|elevated|overlay` (there is no `--sunken`),
   `--sp-1..8`, `--type-caption|footnote|body|heading|title|display`.
-- **Both themes are a gate, not a nicety.** Light is
-  `:root[data-theme='light']`; the persisted key is a bare string at
-  `sedation-pro:theme:v1`. Check computed values in a real browser rather
-  than assuming a token resolves.
+- **Dark is the only theme.** The light palette and the theme toggle were
+  removed on purpose (owner, Nov 2026): the app lives under operatory
+  lighting and nobody used light. Do not add a second palette back. Check
+  computed values in a real browser rather than assuming a token resolves.
 - **Drive it in a browser before claiming it works.** Repeated experience in
   this repo: a dead button, a control that unmounts mid-tap, a guard that
   never fires, an unstyled row — none were visible to the suite, typecheck

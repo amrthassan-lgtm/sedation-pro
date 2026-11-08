@@ -57,13 +57,11 @@ const visible = computed(
   () =>
     summary.value.expired + summary.value.expiringSoon + shortCourses.value.length > 0 &&
     dismissedDay.value !== today &&
-    // One warning per screen: the inventory view carries its own
-    // always-on banner, Phase 1 renders the kit banner beside the
-    // emergency-drugs checkbox, and Quick Reference is a crisis surface
-    // that must stay pure signal during a protocol lookup.
-    route.path !== '/inventory' &&
-    route.path !== '/phase/1' &&
-    !route.path.startsWith('/quick-reference'),
+    // Only on the case phases. Notes, settings and the inventory screen
+    // either repeat the warning themselves or have nothing to do with the
+    // next case, and the drawer badge carries it everywhere else.
+    route.path.startsWith('/phase/') &&
+    route.path !== '/phase/1',
 );
 
 const title = computed(() => {
@@ -136,9 +134,9 @@ function review(): void {
   min-height: 44px;
   padding: 8px 14px;
   border-radius: var(--r-md);
-  border: 1px solid var(--color-border-strong);
+  border: none;
   background: transparent;
-  color: var(--color-text-primary);
+  color: var(--color-accent);
   font-size: var(--type-footnote);
   font-weight: var(--weight-semibold);
   cursor: pointer;
@@ -149,7 +147,6 @@ function review(): void {
 }
 /* Hierarchy via weight + surface, per the house button doctrine. */
 .inv-alert-btn--primary {
-  background: var(--color-surface-elevated);
   font-weight: var(--weight-bold);
 }
 .inv-alert-btn:active {

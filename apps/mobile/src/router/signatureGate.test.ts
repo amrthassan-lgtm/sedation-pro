@@ -124,3 +124,32 @@ describe('clinical-note signature gate', () => {
     expect(router.currentRoute.value.path).toBe('/phase/1');
   });
 });
+
+describe('route phase identity', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  it('every navigable screen declares the shell phase it shows', () => {
+    const missing = router
+      .getRoutes()
+      .filter((r) => r.name !== undefined && r.name !== 'ui-demo' && r.meta.phase === undefined)
+      .map((r) => r.path);
+    expect(missing).toEqual([]);
+  });
+
+  it('a saved note detail labels the bar as Saved Notes, not the previous screen', async () => {
+    const session = useSessionStore();
+    await router.push('/settings');
+    expect(session.currentPhase).toBe('settings');
+    await router.push('/notes/abc');
+    expect(session.currentPhase).toBe('notes');
+  });
+
+  it('a protocol detail keeps the Quick Reference identity', async () => {
+    const session = useSessionStore();
+    await router.push('/quick-reference/anaphylaxis');
+    expect(session.currentPhase).toBe('quickref');
+  });
+});
