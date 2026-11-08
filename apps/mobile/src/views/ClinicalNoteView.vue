@@ -119,15 +119,16 @@ async function shareNote() {
 <template>
   <main class="note-view">
     <header class="toolbar no-print">
-      <UiButton tone="neutral" @click="goBack">← Back</UiButton>
+      <UiButton tone="nav" compact @click="goBack">← Back</UiButton>
       <h1 class="toolbar-title">Clinical Note</h1>
       <div class="toolbar-actions">
-        <UiButton tone="neutral" @click="copyNote">{{ copyLabel }}</UiButton>
-        <UiButton v-if="supportsShare" tone="primary" @click="shareNote">Share</UiButton>
-        <UiButton tone="success" @click="printNote">Print</UiButton>
+        <UiButton tone="nav" compact @click="copyNote">{{ copyLabel }}</UiButton>
+        <UiButton v-if="supportsShare" tone="key" compact @click="shareNote">Share</UiButton>
+        <UiButton tone="success" compact @click="printNote">Print</UiButton>
         <UiButton
           v-if="!isArchived"
-          tone="primary"
+          tone="key"
+          compact
           :disabled="!chart.precondition.value.ready || chart.busy.value"
           @click="chart.requestSend"
         >
@@ -148,7 +149,8 @@ async function shareNote() {
       </p>
       <UiButton
         v-if="!chart.precondition.value.ready && chart.precondition.value.needsSettings"
-        tone="neutral"
+        tone="nav"
+        compact
         class="chart-inline-action"
         @click="goToSettings"
       >
@@ -173,7 +175,8 @@ async function shareNote() {
            what gets rejected. -->
       <UiButton
         v-if="chart.canResend.value"
-        tone="neutral"
+        tone="nav"
+        compact
         class="chart-secondary"
         :disabled="chart.busy.value"
         @click="openResend"

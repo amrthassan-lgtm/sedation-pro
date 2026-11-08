@@ -922,11 +922,8 @@ function onTouchEnd() {
   gap: 8px;
   min-height: 44px;
   padding: 11px 16px;
-  background: transparent;
-  border: 1px solid var(--color-surface-elevated);
   border-radius: var(--r-md);
   cursor: pointer;
-  color: var(--color-text-secondary);
   font-size: var(--type-footnote);
   font-weight: var(--weight-medium);
   letter-spacing: 0.2px;
@@ -934,6 +931,9 @@ function onTouchEnd() {
   transition:
     background var(--dur-150) var(--ease-standard),
     color var(--dur-150) var(--ease-standard);
+  border: 1px solid transparent;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
 }
 .nav-utility:hover {
   color: var(--color-text-primary);
@@ -972,11 +972,8 @@ function onTouchEnd() {
   justify-content: center;
   gap: 8px;
   padding: 11px 16px;
-  background: var(--color-surface-subtle);
-  border: 1px solid var(--color-surface-elevated);
   border-radius: var(--r-md);
   cursor: pointer;
-  color: var(--color-text-secondary);
   font-size: var(--type-footnote);
   font-weight: var(--weight-medium);
   letter-spacing: 0.2px;
@@ -984,6 +981,9 @@ function onTouchEnd() {
   transition:
     background var(--dur-150) var(--ease-standard),
     color var(--dur-150) var(--ease-standard);
+  border: 1px solid transparent;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
 }
 .nav-new-case:hover {
   color: var(--color-text-primary);

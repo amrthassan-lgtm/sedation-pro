@@ -80,18 +80,19 @@ function reloadNow(): void {
 /* Muted chrome per the house button doctrine: hierarchy comes from
    weight + border, not a bright accent fill. */
 .update-prompt-btn {
-  padding: 6px 14px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface-overlay);
-  color: var(--color-text-primary);
-  font-size: var(--type-footnote);
-  font-weight: var(--weight-bold);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  border: 0;
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+  font-weight: var(--weight-bold);
+  font-size: var(--type-footnote);
 }
 .update-prompt-btn:active {
   transform: scale(0.96);

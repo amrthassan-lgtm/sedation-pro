@@ -64,9 +64,17 @@ docs/                      DEVELOPMENT.md, ROADMAP.md
 not a per-task preference. Every new surface is held to it: grouped inset
 lists with hairline separators on the card's own surface, destructive and
 reordering controls behind an `Edit` toggle rather than a button on every
-row, plain text buttons in the accent colour instead of bordered chrome,
-44px minimum tap targets, and a resting state that reads before it invites
-action. `PicklistEditor.vue` and `InventoryView.vue` are the reference rows.
+row, 44px minimum tap targets, and a resting state that reads before it
+invites action.
+
+- **Buttons are always buttons, in one family (owner, Nov 2026).** No
+  outlines and no blue: blue already means links, Fentanyl and the airway
+  category. `UiButton` tone `nav` (solid grey) for anything that moves
+  between screens; tone `key` (white fill, dark label) for the one main way
+  forward on a screen; `compact` (48 px) in toolbars and navigation rows;
+  clinical actions keep the default 56 px. Small inline actions are 44 px
+  pills: grey, or white for the main one. Red stays reserved for Emergency
+  and CALL 911; green for Print and success. `PicklistEditor.vue` and `InventoryView.vue` are the reference rows.
 
 - **Never invent a CSS custom property.** The token vocabulary lives in
   `packages/ui/src/styles/tokens.css` — read it, don't guess from memory. An

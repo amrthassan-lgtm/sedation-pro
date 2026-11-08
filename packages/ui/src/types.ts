@@ -28,7 +28,7 @@ export type DrugTone =
 export type PhaseTint = 'ph1' | 'ph2' | 'ph3' | 'ph4';
 
 /** Visual tone for buttons. */
-export type ButtonTone = 'neutral' | 'primary' | 'danger' | 'success' | 'plain';
+export type ButtonTone = 'neutral' | 'primary' | 'danger' | 'success' | 'nav' | 'key';
 
 /** Action button states — the consumer drives these; the component renders them. */
 export type ActionState = 'idle' | 'locked' | 'logged';
