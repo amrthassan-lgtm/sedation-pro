@@ -1,70 +1,90 @@
 # Sedation Pro
 
-Clinical IV sedation companion app, built with Vue 3 and delivered as an
-installable web app (PWA). There is no App Store or Play Store build: the
-practice runs it from the home screen of an Android tablet.
+A chairside companion for moderate IV sedation in a dental office. It walks
+the sedation team through a case from the pre-sedation assessment to
+discharge, keeps a timed record of every dose and vital sign, and produces a
+signed clinical note. Emergency protocols and the crash-cart inventory are a
+tap away at any point.
 
-**Live preview:** <https://amrthassan-lgtm.github.io/sedation-pro/> —
-auto-deployed by `.github/workflows/deploy-pages.yml` on every push to the
-active development branch. Open on iPhone Safari to test (Add to Home
-Screen for an app-like icon).
+**Live app:** <https://amrthassan-lgtm.github.io/sedation-pro/>
 
-> **Status: Phase 0 + 1 + 2 + 3 done; Phase 4 next.** Engine is the source
-> of truth for the drug formulary, OSA-diazepam interlock, Malamed
-> combined-percent rule, half-life metabolism, phase gating, release
-> eligibility, dismissal safety, and dose ceilings. Shell mounts the sticky
-> bar, nav drawer, undo toast, and four phase routes — Phase 1 form is
-> wired; Phase 2/3/4 are placeholders waiting on the next sprint.
+It is a web app (installable PWA), not an App Store or Play Store app. The
+practice adds it to the home screen of a Samsung tablet; it then opens full
+screen, works offline, and updates itself whenever a change is published.
 
-## Quick start
+## What it does
 
-```sh
-pnpm install --frozen-lockfile
-pnpm dev          # run apps/mobile in a browser
-pnpm typecheck
-pnpm test
-pnpm build
-```
+- **Phase 1 · Assessment.** Patient details, vitals, medical and airway
+  history, ASA and Mallampati, with automatic BMI and blood-pressure staging,
+  safety alerts (OSA, ASA III/IV, age, diabetes) and a required-fields gate
+  before sedation can start.
+- **Phase 2 · Oral sedation.** Pre-op anxiolytic doses with weight-based
+  ceilings.
+- **Phase 3 · IV sedation.** One-tap dose logging with Versed and Fentanyl
+  timers, cumulative ceilings, local-anesthetic load (Malamed), reversal
+  agents, and a drug dock that follows the clinician down the page.
+- **Phase 4 · Recovery.** Discharge checklist, release gate (observation
+  wait, longer after reversal), provider signature.
+- **Clinical note.** Narrative plus a chronological record of every event;
+  print, share as PDF, or file it straight into the Open Dental chart.
+- **Emergency protocols.** 34 protocols reviewed against AHA 2025 and current
+  specialty guidance, with drug draw-up volumes, syringe sizes, mix steps,
+  live stock status, and links between related protocols.
+- **Drug inventory.** The crash-cart and sedation-cart stock with expiry
+  tracking, full-course checks per protocol, and what is on order.
 
-See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) for the full workflow.
+## Privacy and data
 
-The full plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+- **Patient data stays on the device.** Case data lives in the browser's
+  storage on the tablet. Nothing is sent anywhere unless the clinician
+  presses **Send to chart**, which talks only to the practice's Open Dental
+  server.
+- **No secrets in this repository.** The Open Dental keys are typed into
+  Settings on the tablet and stored only there. Test files use obvious
+  placeholders (`DEVKEY-AAA/CUSTKEY-BBB`).
+- **This repository is public.** It must never contain patient information,
+  passwords, keys, or licence and permit numbers.
 
 ## Sending a note to Open Dental
 
 The clinical note can be filed straight into the patient's Open Dental chart:
 the note text goes in as a chart note, and the PDF goes into the Images
 module. Set the practice's API keys once, on the tablet, under **Settings →
-Open Dental Connection**. Without keys the feature stays switched off and the
-app behaves exactly as it did before.
+Open Dental Connection**. Without keys the feature stays switched off.
 
 **The first time you open one of these PDFs, Open Dental will say the
 document "has been previously deleted." Click it again and it opens
-normally.** Nothing has been deleted and nothing is wrong with the file.
-Open Dental does not write an uploaded file to disk straight away — it holds
-it in the database until someone first opens it, and that first open is what
-produces the warning. From then on the document behaves like any other
-scanned page in the chart.
-
-Two things worth knowing before you send:
+normally.** Open Dental holds an uploaded file in its database until someone
+first opens it, and that first open produces the warning.
 
 - **Entries cannot be removed from the app.** Neither a chart note nor an
-  uploaded document can be deleted through the API — only from inside Open
+  uploaded document can be deleted through the API, only from inside Open
   Dental. The app asks you to confirm the patient's name and date of birth
   first, for that reason.
 - **If one half fails, retry only that half.** The app tracks the note text
-  and the PDF separately and will offer to retry just the one that did not
-  land. Sending everything again would file a second copy.
+  and the PDF separately and offers to retry just the one that did not land.
 
-## Workspace layout
+## For developers
 
-| Path                    | Purpose                                        |
-| ----------------------- | ---------------------------------------------- |
-| `apps/mobile/`          | Vue 3 + Vite web app (PWA)                     |
-| `packages/clinical/`    | Pure-TS clinical logic (drugs, dosing, gating) |
-| `packages/ui/`          | Shared UI primitives (Phase 2)                 |
-| `packages/persistence/` | Storage adapter (Phase 5)                      |
-| `tools/store-assets/`   | App Store / Play Store screenshots + metadata  |
+```sh
+pnpm install --frozen-lockfile
+pnpm dev          # run the app in a browser
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+Every push to `main` is checked (format, typecheck, tests, build) and then
+deployed to GitHub Pages. See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
+for the full workflow and [`CLAUDE.md`](CLAUDE.md) for the conventions and
+design rules.
+
+| Path                    | Purpose                                                   |
+| ----------------------- | --------------------------------------------------------- |
+| `apps/mobile/`          | The app: Vue 3 + Vite, installable PWA                    |
+| `packages/clinical/`    | Clinical rules, formulary and protocols (pure TypeScript) |
+| `packages/ui/`          | Shared UI components and design tokens                    |
+| `packages/persistence/` | Storage adapter (placeholder)                             |
 
 ## License
 

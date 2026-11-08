@@ -4,12 +4,10 @@ This monorepo is managed with **pnpm** workspaces.
 
 ## Prerequisites
 
-| Tool           | Version   | Notes                                                                    |
-| -------------- | --------- | ------------------------------------------------------------------------ |
-| Node.js        | 22 LTS    | Pinned in `.nvmrc`. Use `nvm use` or `fnm use`.                          |
-| pnpm           | 10        | Pinned in `package.json` (`packageManager`). Easiest: `corepack enable`. |
-| Xcode          | 16+       | Only needed to add / build the iOS native shell.                         |
-| Android Studio | Hedgehog+ | Only needed to add / build the Android native shell.                     |
+| Tool    | Version | Notes                                                                    |
+| ------- | ------- | ------------------------------------------------------------------------ |
+| Node.js | 22 LTS  | Pinned in `.nvmrc`. Use `nvm use` or `fnm use`.                          |
+| pnpm    | 10      | Pinned in `package.json` (`packageManager`). Easiest: `corepack enable`. |
 
 ## Install
 
