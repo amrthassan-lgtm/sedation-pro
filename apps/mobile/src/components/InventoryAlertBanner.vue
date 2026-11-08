@@ -78,11 +78,11 @@ const detail = computed(() => {
   const s = summary.value.soonest;
   if (!s) {
     const names = shortCourses.value.map((c) => c.drug).join(', ');
-    return names ? `Reorder ${names}.` : '';
+    return names ? `Short of a full course: ${names}.` : '';
   }
   const lead =
     s.daysLeft < 0 || !Number.isFinite(s.daysLeft)
-      ? `${s.drug} needs replacement.`
+      ? `${s.drug} is expired.`
       : `${s.drug} expires in ${s.daysLeft} days.`;
   // Truthful reassurance, derived from the structured onOrder field —
   // reduces alarm fatigue on a warn-only banner.

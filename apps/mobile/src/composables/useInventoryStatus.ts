@@ -76,8 +76,8 @@ export function summarizeInventory(classified: ReadonlyArray<ClassifiedItem>): I
 /** Drawer/link-row sub-line — one shared phrasing for stock at a glance. */
 export function inventorySubLine(summary: InventorySummary): string {
   const parts: string[] = [];
-  if (summary.expired > 0) parts.push(`${summary.expired} needs ordering`);
-  if (summary.shipped > 0) parts.push(`${summary.shipped} shipped`);
+  if (summary.expired > 0) parts.push(`${summary.expired} expired`);
+  if (summary.shipped > 0) parts.push(`${summary.shipped} on order`);
   if (summary.expiringSoon > 0) parts.push(`${summary.expiringSoon} expiring soon`);
   if (parts.length > 0) return parts.join(' · ');
   return `${summary.total} items · all in date`;
