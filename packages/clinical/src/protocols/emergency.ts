@@ -66,6 +66,12 @@ export interface ProtocolStep {
    * `normal` — routine step.
    */
   readonly severity?: 'critical' | 'final';
+  /**
+   * Protocols this step sends the clinician to ("go to MI", "No pulse:
+   * CPR + AED", "LMA or King"). Rendered as tappable links under the step
+   * so the jump happens mid-protocol, not after scrolling to the bottom.
+   */
+  readonly goTo?: ReadonlyArray<string>;
 }
 
 export interface EmergencyProtocol {
@@ -125,6 +131,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary:
       'Crowing, stridor, no air movement · Jaw thrust + CPAP, then Succinylcholine 20-40mg IV',
     signs: ['crowing', 'stridor', 'bucking respiratory pattern'],
+    relatedProtocols: ['hypoventilation', 'npa', 'lma'],
     steps: [
       { text: 'Stop the procedure. Remove packs and gauze, suction the throat' },
       {
@@ -153,7 +160,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         severity: 'critical',
       },
       { text: 'Call 911', severity: 'critical' },
-      { text: 'Cannot ventilate: LMA or King, then cricothyrotomy', severity: 'final' },
+      {
+        text: 'Cannot ventilate: LMA or King, then cricothyrotomy',
+        severity: 'final',
+        goTo: ['lma', 'king_lt'],
+      },
     ],
     critical: true,
   },
@@ -163,6 +174,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Bronchospasm / Asthma (Wheezing)',
     summary: 'Wheezing, cough, dyspnea · Albuterol 4-8 puffs, Epinephrine IM if severe',
     signs: ['wheezing', 'cough', 'dyspnea'],
+    relatedProtocols: ['anaphylaxis', 'lma', 'king_lt'],
     steps: [
       { text: 'Stop the procedure. Sit upright, remove packs' },
       {
@@ -219,7 +231,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Not clearly better after the first albuterol round: Call 911',
         severity: 'critical',
       },
-      { text: 'Cannot ventilate: BVM 100% O₂, then LMA or King', severity: 'final' },
+      {
+        text: 'Cannot ventilate: BVM 100% O₂, then LMA or King',
+        severity: 'final',
+        goTo: ['lma', 'king_lt'],
+      },
     ],
   },
   {
@@ -228,6 +244,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Hyperventilation',
     summary: 'Rapid breathing, lightheaded, tingling hands · Check SpO₂, coach slow breathing',
     signs: ['rapid breathing', 'lightheaded', 'tingling hands'],
+    relatedProtocols: ['syncope', 'hypoglycemia'],
     steps: [
       { text: 'Stop the procedure, remove objects, sit upright' },
       {
@@ -274,7 +291,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       {
         text: 'Reverse: Naloxone for fentanyl, Flumazenil for midazolam (see Oversedation protocols)',
       },
-      { text: 'No pulse: start CPR (Cardiac Arrest protocol)', severity: 'final' },
+      {
+        text: 'No pulse: start CPR (Cardiac Arrest protocol)',
+        severity: 'final',
+        goTo: ['vfib_vtach', 'pea_asystole'],
+      },
     ],
     relatedProtocols: ['oversedation_benzo', 'oversedation_opioid'],
     critical: true,
@@ -285,6 +306,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Emesis / Aspiration',
     summary: 'Vomiting, gagging, aspiration · Side, head down, suction · Zofran 4mg IV',
     signs: ['vomiting', 'gagging', 'aspiration'],
+    relatedProtocols: ['laryngospasm', 'bronchospasm', 'choking'],
     steps: [
       {
         text: 'Stop. Turn to the side, head down, suction mouth and throat immediately',
@@ -320,6 +342,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Choking / Airway Obstruction',
     summary: 'Cannot speak or cough, cyanosis · 5 back blows + 5 abdominal thrusts',
     signs: ['cannot speak', 'cannot cough', 'cyanosis', 'silent chest'],
+    relatedProtocols: ['laryngospasm', 'pea_asystole'],
     steps: [
       { text: 'Mild (can cough or speak): encourage coughing, do not interfere' },
       {
@@ -343,6 +366,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'NPA (Nasopharyngeal Airway) - Use WITH BVM',
     summary: 'BVM difficult, tongue obstruction · 7.5 mm most adults',
     signs: ['BVM difficult', 'tongue obstruction'],
+    relatedProtocols: ['lma', 'king_lt', 'hypoventilation'],
     steps: [
       {
         text: 'Size: nose tip to earlobe. Stock: 6 mm (small adult), 7.5 mm (average), 8 mm (large)',
@@ -378,16 +402,17 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Inflate without holding it, using the colour-coded LarySeal syringe: 3 = 20 ml, 4 = 30 ml, 5 = 40 ml',
       },
       { text: 'Attach BVM; confirm chest rise and a capnography waveform', severity: 'critical' },
-      { text: 'Fails: King or cricothyrotomy', severity: 'final' },
+      { text: 'Fails: King or cricothyrotomy', severity: 'final', goTo: ['king_lt'] },
     ],
-    relatedProtocols: ['king_lt'],
+    relatedProtocols: ['king_lt', 'npa'],
   },
   {
     id: 'king_lt',
     category: 'airway',
-    name: 'KING LT AIRWAY - If LMA Fails or Alternative',
+    name: 'King LT Airway - If LMA Fails or Alternative',
     summary: 'LMA failed · Size 4 (5-6 ft) stocked',
     signs: ['LMA failed'],
+    relatedProtocols: ['lma', 'npa'],
     steps: [
       { text: 'Size 4 (5-6 ft) is stocked' },
       { text: 'Lubricate; head neutral' },
@@ -424,7 +449,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           notes: 'repeat q5 min, max 3 doses',
         },
       },
-      { text: 'Pain not gone 5 min after 1st nitro: Call 911, go to MI', severity: 'critical' },
+      {
+        text: 'Pain not gone 5 min after 1st nitro: Call 911, go to MI',
+        severity: 'critical',
+        goTo: ['mi'],
+      },
       {
         text: 'Aspirin 4 × 81 mg CHEWED',
         drug: {
@@ -446,7 +475,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           notes: 'already sedated: watch breathing; label the syringe',
         },
       },
-      { text: 'No pulse: CPR + AED', severity: 'final' },
+      { text: 'No pulse: CPR + AED', severity: 'final', goTo: ['vfib_vtach', 'pea_asystole'] },
     ],
     contraindications: [
       'Sildenafil (Viagra) or vardenafil (Levitra) in last 24 hr',
@@ -455,7 +484,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       'HR <50 or >100 BPM',
       'Aspirin allergy or active GI bleed (aspirin)',
     ],
-    relatedProtocols: ['mi'],
+    relatedProtocols: ['mi', 'hypertensive_crisis'],
   },
   {
     id: 'mi',
@@ -501,7 +530,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           notes: 'repeat q10-20 min; already sedated: watch breathing; label the syringe',
         },
       },
-      { text: 'No pulse: CPR + AED', severity: 'final' },
+      { text: 'No pulse: CPR + AED', severity: 'final', goTo: ['vfib_vtach', 'pea_asystole'] },
     ],
     contraindications: [
       'Sildenafil (Viagra) or vardenafil (Levitra) in last 24 hr',
@@ -541,6 +570,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'No symptoms: no IV BP drug. Urgent care only. Refer to their physician today' },
       {
         text: 'Headache, chest pain, short of breath, vision change or weakness: go to Hypertensive Crisis',
+        goTo: ['hypertensive_crisis'],
         severity: 'critical',
       },
     ],
@@ -582,7 +612,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         },
       },
       { text: 'Lower BP no more than 25% in the first hour' },
-      { text: 'Chest pain: go to MI. One-sided weakness or slurred speech: go to Stroke' },
+      {
+        text: 'Chest pain: go to MI. One-sided weakness or slurred speech: go to Stroke',
+        goTo: ['mi', 'stroke'],
+      },
       { text: 'Monitor vitals continuously', severity: 'final' },
     ],
     relatedProtocols: ['mi', 'stroke'],
@@ -593,6 +626,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Hypotension (Low BP)',
     summary: 'Dizzy, SBP <90, pale · Fluids, legs up, then drug by heart rate',
     signs: ['dizzy', 'SBP <90', 'pale'],
+    relatedProtocols: [
+      'bradycardia',
+      'anaphylaxis',
+      'oversedation_benzo',
+      'oversedation_opioid',
+      'syncope',
+    ],
     steps: [
       { text: 'Stop sedatives. N₂O off, 100% O₂' },
       { text: 'Supine, legs up' },
@@ -657,6 +697,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Symptomatic Bradycardia (<50 BPM)',
     summary: 'HR under 50 with low BP or confusion · Ventilate, then Atropine 1mg IV',
     signs: ['HR <50 BPM', 'low BP'],
+    relatedProtocols: ['hypotension', 'pea_asystole'],
     steps: [
       {
         text: 'Ventilate first: jaw thrust, O₂, BVM if breathing is poor (hypoxia is the usual cause in sedation)',
@@ -708,6 +749,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Sinus Tachycardia (>150 adult, >180 pediatric)',
     summary: 'HR over 150, usually a response to pain, anxiety or fluids · Treat the cause',
     signs: ['HR >150', 'chest pain', 'hypotension'],
+    relatedProtocols: ['svt', 'hypotension'],
     steps: [
       {
         text: 'Find the cause: pain, anxiety, hypoxia, low fluids, epinephrine in the local anesthetic',
@@ -723,6 +765,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Junctional Tachycardia',
     summary: 'Regular narrow tachycardia, HR 100-180 · Amiodarone 150mg IV over 10min',
     signs: ['regular narrow tachycardia', 'HR 100-180'],
+    relatedProtocols: ['svt', 'afib', 'wide_complex', 'stable_vtach'],
     steps: [
       {
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
@@ -750,6 +793,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'SVT / PSVT (>150 BPM)',
     summary: 'Sudden HR >150, palpitations · Modified Valsalva, then Adenosine 6mg IV',
     signs: ['sudden HR >150', 'palpitations'],
+    relatedProtocols: ['afib', 'junctional_tach', 'wide_complex', 'stable_vtach'],
     steps: [
       {
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
@@ -785,6 +829,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Atrial Fibrillation / Atrial Flutter',
     summary: 'Irregular HR, palpitations, hypotension · Amiodarone 150mg IV over 10min',
     signs: ['irregular HR', 'palpitations', 'hypotension'],
+    relatedProtocols: ['svt', 'junctional_tach', 'wide_complex', 'stable_vtach'],
     steps: [
       {
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
@@ -812,6 +857,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Stable Ventricular Tachycardias (with pulse)',
     summary: 'Wide complex tachycardia, pulse present · Amiodarone 150mg IV over 10min',
     signs: ['wide complex tachycardia', 'pulse present'],
+    relatedProtocols: ['wide_complex', 'svt', 'afib', 'junctional_tach', 'vfib_vtach'],
     steps: [
       {
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
@@ -857,6 +903,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Wide Complex Tachycardias',
     summary: 'Wide QRS, HR >100, unknown origin · Amiodarone 150mg IV over 10min',
     signs: ['wide QRS', 'HR >100', 'unknown origin'],
+    relatedProtocols: ['stable_vtach', 'svt', 'afib', 'junctional_tach', 'vfib_vtach'],
     steps: [
       {
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
@@ -888,6 +935,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Call for help, AED and 911', severity: 'critical' },
       {
         text: 'CPR on the CPR board: 100-120/min, 30:2 until an LMA/King/ET tube is placed, then 1 breath every 6 seconds with continuous compressions',
+        goTo: ['lma', 'king_lt'],
         severity: 'critical',
       },
       { text: 'AED: shock when advised, then CPR for 2 minutes right away', severity: 'critical' },
@@ -947,7 +995,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Continue CPR and AED until EMS takes over', severity: 'final' },
     ],
     critical: true,
-    relatedProtocols: ['pea_asystole'],
+    relatedProtocols: ['pea_asystole', 'lma'],
   },
   {
     id: 'pea_asystole',
@@ -959,6 +1007,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Call for help, AED and 911', severity: 'critical' },
       {
         text: 'CPR on the CPR board: 100-120/min, 30:2 until an LMA/King/ET tube is placed, then 1 breath every 6 seconds with continuous compressions',
+        goTo: ['lma', 'king_lt'],
         severity: 'critical',
       },
       { text: 'AED on: follow its prompts (shock only if advised)' },
@@ -985,7 +1034,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       { text: 'No atropine for PEA or asystole', severity: 'final' },
     ],
-    relatedProtocols: ['vfib_vtach'],
+    relatedProtocols: ['vfib_vtach', 'lma'],
   },
   {
     id: 'anaphylaxis',
@@ -993,6 +1042,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Anaphylaxis (Severe Allergic Reaction)',
     summary: 'Hives, bronchospasm, hypotension, angioedema · Epinephrine IM THIGH first, then 911',
     signs: ['hives', 'bronchospasm', 'hypotension', 'angioedema'],
+    relatedProtocols: ['bronchospasm', 'hypotension', 'laryngospasm'],
     steps: [
       {
         text: 'Epinephrine IM into the THIGH (Auvi-Q, or draw from the 1 mg/ml ampule). NEVER 1 mg/ml IV',
@@ -1276,7 +1326,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         severity: 'final',
       },
     ],
-    relatedProtocols: ['hypoglycemia'],
+    relatedProtocols: ['hypoglycemia', 'last'],
   },
   {
     id: 'syncope',
@@ -1285,7 +1335,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary: 'Sudden unconsciousness, dizziness, pallor · Flat, legs up, O₂',
     signs: ['sudden unconsciousness', 'dizziness', 'pallor'],
     steps: [
-      { text: 'Check breathing and pulse. No pulse: CPR + AED', severity: 'critical' },
+      {
+        text: 'Check breathing and pulse. No pulse: CPR + AED',
+        severity: 'critical',
+        goTo: ['vfib_vtach', 'pea_asystole'],
+      },
       { text: 'Flat, legs up (not head-down)' },
       { text: 'N₂O off, 100% O₂. Sedated patient? Think oversedation' },
       { text: 'Loosen tight clothing. Cool cloth to the forehead' },
@@ -1313,7 +1367,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'BE-FAST: Balance, Eyes, Face droop, Arm weakness, Speech, Time' },
       { text: 'CALL 911 IMMEDIATELY', severity: 'critical' },
       { text: 'Write down the last known well time', severity: 'critical' },
-      { text: 'Check glucose. Under 70: treat as hypoglycemia (it can look like a stroke)' },
+      {
+        text: 'Check glucose. Under 70: treat as hypoglycemia (it can look like a stroke)',
+        goTo: ['hypoglycemia'],
+      },
       { text: 'Nothing by mouth' },
       { text: 'O₂ only if SpO₂ <94%' },
       { text: 'Vomiting: recovery position, suction' },
@@ -1362,6 +1419,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Phlebitis',
     summary: 'Edema, warmth, tenderness along vein · Remove IV + warm compress + elevate',
     signs: ['edema', 'warmth', 'tenderness along vein'],
+    relatedProtocols: ['intraarterial'],
     steps: [
       { text: 'Remove all rings immediately' },
       { text: 'Remove catheter' },
@@ -1387,6 +1445,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       'pale/cool limb',
       'possible loss of radial pulse',
     ],
+    relatedProtocols: ['phlebitis'],
     steps: [
       { text: 'Check radial pulse. Compare color and temperature with the other hand' },
       { text: 'No drug given yet: remove needle, pressure 10 minutes. No damage done' },
