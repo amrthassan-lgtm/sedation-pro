@@ -131,22 +131,24 @@ function review(): void {
   flex-wrap: wrap;
 }
 .inv-alert-btn {
-  min-height: 44px;
-  padding: 8px 14px;
-  border-radius: var(--r-md);
-  border: none;
-  background: transparent;
-  color: var(--color-accent);
   font-size: var(--type-footnote);
-  font-weight: var(--weight-semibold);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  border: 0;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font-weight: var(--weight-semibold);
 }
 /* Hierarchy via weight + surface, per the house button doctrine. */
 .inv-alert-btn--primary {
+  background: var(--color-text-primary);
+  color: var(--color-bg);
   font-weight: var(--weight-bold);
 }
 .inv-alert-btn:active {

@@ -90,9 +90,6 @@ function goForward() {
   font-weight: var(--weight-semibold);
   letter-spacing: 0.2px;
   cursor: pointer;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
   min-height: 52px;
   -webkit-tap-highlight-color: transparent;
   transition:
@@ -100,13 +97,12 @@ function goForward() {
     border-color var(--dur-150) var(--ease-standard),
     color var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
+  border: 1px solid transparent;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
 }
 .phase-nav-btn:active {
   transform: scale(0.98);
-}
-.phase-nav-btn--back:hover {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
 }
 .phase-nav-icon {
   font-size: 18px;
@@ -122,11 +118,9 @@ function goForward() {
    Forward (the primary direction) reads stronger than back by weight +
    contrast, not hue. */
 .phase-nav-btn--forward {
-  color: var(--color-text-primary);
+  /* The way forward: the white key button, as everywhere else. */
+  background: var(--color-text-primary);
+  color: var(--color-bg);
   font-weight: var(--weight-bold);
-  border-color: var(--color-border-strong);
-}
-.phase-nav-btn--forward:hover {
-  background: var(--color-surface-elevated);
 }
 </style>

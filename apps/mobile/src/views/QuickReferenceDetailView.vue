@@ -260,9 +260,11 @@ function syringeFor(drug: EmergencyDrugCallout) {
 <template>
   <main class="phase-view">
     <header class="toolbar">
-      <UiButton tone="neutral" @click="goBack">‹ Back</UiButton>
-      <UiButton tone="primary" class="toolbar-case" @click="goCase">{{ backToCaseLabel }}</UiButton>
-      <UiButton tone="neutral" @click="goList">All protocols</UiButton>
+      <UiButton tone="nav" compact @click="goBack">‹ Back</UiButton>
+      <UiButton tone="key" compact class="toolbar-case" @click="goCase">{{
+        backToCaseLabel
+      }}</UiButton>
+      <UiButton tone="nav" compact @click="goList">All protocols</UiButton>
     </header>
 
     <template v-if="protocol">

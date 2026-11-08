@@ -144,7 +144,7 @@ function clearSearch() {
       <h1 class="title-display">Emergency Protocols</h1>
     </header>
 
-    <UiButton tone="plain" block @click="goCase">‹ {{ backToCaseLabel }}</UiButton>
+    <UiButton tone="key" block compact @click="goCase">‹ {{ backToCaseLabel }}</UiButton>
 
     <!-- Crisis first: the two shortcut grids lead the screen so the Emergency
          button lands on them with no scrolling. The routine drug reference
@@ -520,16 +520,17 @@ function clearSearch() {
 }
 .search-clear {
   align-self: flex-end;
-  font-size: var(--type-caption);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
   cursor: pointer;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  border: 0;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font-weight: var(--weight-semibold);
+  font-size: var(--type-footnote);
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 /* ----------------- Category cards ----------------------------------- */

@@ -337,10 +337,11 @@ function move(index: number, delta: number): void {
   padding: 0;
   font: inherit;
   font-size: var(--type-body);
-  color: var(--color-accent);
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  color: var(--color-text-primary);
+  min-height: 44px;
 }
 .pl-add-glyph {
   display: flex;
@@ -355,31 +356,39 @@ function move(index: number, delta: number): void {
 }
 .pl-action {
   flex-shrink: 0;
-  background: none;
-  border: 0;
-  padding: var(--sp-2);
   font: inherit;
   font-size: var(--type-body);
-  color: var(--color-text-secondary);
   cursor: pointer;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  border: 0;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font-weight: var(--weight-semibold);
 }
 .pl-action.is-primary {
-  color: var(--color-accent);
-  font-weight: 600;
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+  font-weight: var(--weight-bold);
 }
 .pl-action:disabled {
-  color: var(--color-text-disabled);
   cursor: default;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-disabled);
 }
 .pl-restore {
   align-self: flex-start;
-  background: none;
-  border: 0;
-  padding: var(--sp-2) 0;
   font: inherit;
-  font-size: var(--type-body);
-  color: var(--color-accent);
   cursor: pointer;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  border: 0;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font-weight: var(--weight-semibold);
+  font-size: var(--type-footnote);
 }
 @media (prefers-reduced-motion: reduce) {
   .pl-chevron {

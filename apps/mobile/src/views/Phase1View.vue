@@ -1194,12 +1194,9 @@ const diazepamModalCopy = computed(() => {
   transform: scale(0.98);
 }
 .phase-advance--ready {
-  background: var(--color-surface);
-  border-color: var(--color-border-strong);
-  color: var(--color-text-primary);
-}
-.phase-advance--ready:hover {
-  background: var(--color-surface-elevated);
+  background: var(--color-text-primary);
+  border-color: transparent;
+  color: var(--color-bg);
 }
 .phase-advance--locked {
   background: var(--color-warn-soft);
@@ -1219,19 +1216,19 @@ const diazepamModalCopy = computed(() => {
   margin-top: var(--sp-2);
 }
 .kit-alert-btn {
-  min-height: 44px;
-  padding: 8px 14px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
   font-size: var(--type-footnote);
-  font-weight: var(--weight-bold);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  border: 0;
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+  font-weight: var(--weight-bold);
 }
 .kit-alert-btn:active {
   transform: scale(0.97);

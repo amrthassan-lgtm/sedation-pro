@@ -20,6 +20,8 @@ interface Props {
   loggedAt?: string | undefined;
   /** Make the button render at full width (the common Phase 3 layout). */
   block?: boolean;
+  /** 48 px instead of 56 px: toolbars and navigation rows, not clinical stamps. */
+  compact?: boolean;
   /**
    * Internal anti-double-tap cooldown. Flashes the check overlay and blocks
    * repeat clicks for this duration after every successful tap. Independent
@@ -35,6 +37,7 @@ const props = withDefaults(defineProps<Props>(), {
   state: 'idle',
   loggedAt: undefined,
   block: false,
+  compact: false,
   cooldownMs: 1200,
 });
 
@@ -70,7 +73,7 @@ const renderState = computed<ActionState>(() => {
     :class="[
       `ui-btn--${props.tone}`,
       `ui-btn--${renderState}`,
-      { 'is-block': props.block, 'is-disabled': props.disabled },
+      { 'is-block': props.block, 'is-compact': props.compact, 'is-disabled': props.disabled },
     ]"
     :disabled="props.disabled || renderState === 'locked'"
     @click="onClick"
@@ -142,17 +145,34 @@ const renderState = computed<ActionState>(() => {
   background: var(--surface-highlight), var(--color-good-soft);
   color: var(--color-good);
 }
-/* Plain text button in the accent colour — the iOS "Back" / "Done" idiom.
-   No border, no fill; the 44 px height and the label carry the target. */
-.ui-btn--plain {
+/* Navigation: solid grey, no outline. Everything that moves between
+   screens, so it reads as one family on every page. */
+.ui-btn--nav {
   border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  color: var(--color-accent);
-  font-weight: var(--weight-semibold);
+  background: var(--color-surface-elevated);
 }
-.ui-btn--plain:active:not(:disabled) {
-  background: var(--color-accent-soft);
+/* Key: the one main way forward on a screen (Back to case, next phase,
+   Share). White fill, dark label: the iOS prominent button on dark,
+   with no new hue competing with the clinical colours. */
+.ui-btn--key {
+  border-color: transparent;
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+  font-weight: var(--weight-bold);
+}
+.ui-btn--key:active:not(:disabled) {
+  background: var(--color-text-secondary);
+}
+/* A disabled key button falls back to the grey family, never a washed-out
+   white slab. */
+.ui-btn--key:disabled,
+.ui-btn--key.is-disabled {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-tertiary);
+}
+.ui-btn.is-compact {
+  min-height: 48px;
+  padding: 10px 18px;
 }
 
 /* Logged state — has timestamp pinned to the right edge. */
