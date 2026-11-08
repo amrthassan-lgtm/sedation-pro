@@ -80,11 +80,11 @@ describe('inventorySubLine', () => {
     const expired = summarizeInventory(
       classifyInventory(NOW, [at('2026-01', 'a'), at('2026-09', 'b')]),
     );
-    expect(inventorySubLine(expired)).toBe('1 needs ordering · 1 expiring soon');
+    expect(inventorySubLine(expired)).toBe('1 expired · 1 expiring soon');
     const shipped = summarizeInventory(
       classifyInventory(NOW, [item({ id: 's', expiresOn: '', onOrder: { sku: 'X' } })]),
     );
-    expect(inventorySubLine(shipped)).toBe('1 shipped');
+    expect(inventorySubLine(shipped)).toBe('1 on order');
     const soonOnly = summarizeInventory(classifyInventory(NOW, [at('2026-09', 'a')]));
     expect(inventorySubLine(soonOnly)).toBe('1 expiring soon');
     const clean = summarizeInventory(

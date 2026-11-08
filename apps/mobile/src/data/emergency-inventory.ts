@@ -143,7 +143,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2027-04',
     protocolDrugNames: ['Epinephrine'],
-    notes: 'Adults only (no pediatric sedation): keep until expiry, do not reorder',
+    // Owner/purchasing note (kept out of the screen): Adults only (no pediatric sedation): keep until expiry, do not reorder
+    notes: 'Pediatric size: not used (adults only)',
   },
   {
     id: 'epi-autoinjector-03',
@@ -154,7 +155,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2026-08',
     onOrder: { sku: 'AUVI3-R', substitution: 'Auvi-Q 0.3 mg auto-injector' },
-    notes: 'Shipped (inv 3747995): Auvi-Q lot G001-000011714486, exp 2028-01-17, NDC 71872-7329-01',
+    // Owner/purchasing note (kept out of the screen): Shipped (inv 3747995): Auvi-Q lot G001-000011714486, exp 2028-01-17, NDC 71872-7329-01
     protocolDrugNames: ['Epinephrine'],
   },
   {
@@ -165,7 +166,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '',
     quantity: 1,
     expiresOn: '2029-03',
-    notes: 'Lot and expiry are embossed on the pouch seal (50889 · 03/2029)',
+    // Owner/purchasing note (kept out of the screen): Lot and expiry are embossed on the pouch seal (50889 · 03/2029)
   },
   {
     id: 'adenosine-12-a',
@@ -177,7 +178,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     mgPerUnit: 12,
     expiresOn: '2026-12',
     protocolDrugNames: ['Adenosine'],
-    notes: 'Not reordered: the 6 mg vials cover the 18 mg course',
+    // Owner/purchasing note (kept out of the screen): Not reordered: the 6 mg vials cover the 18 mg course
+    notes: 'The 6 mg vials cover the full 18 mg course',
   },
   {
     id: 'adenosine-6',
@@ -200,7 +202,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     mgPerUnit: 12,
     expiresOn: '2026-11',
     protocolDrugNames: ['Adenosine'],
-    notes: 'Not reordered: the 6 mg vials cover the 18 mg course',
+    // Owner/purchasing note (kept out of the screen): Not reordered: the 6 mg vials cover the 18 mg course
+    notes: 'The 6 mg vials cover the full 18 mg course',
   },
   {
     id: 'amiodarone-150-a',
@@ -241,8 +244,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2026-09',
     onOrder: { sku: 'ASPI81-36O', substitution: '81 mg chewable ×36' },
-    notes:
-      'Shipped (inv 3747995): 81 mg chewable ×36, lot 6GE1743, exp 2029-04-30, NDC 70677-1134-01',
+    // Owner/purchasing note (kept out of the screen): Shipped (inv 3747995): 81 mg chewable ×36, lot 6GE1743, exp 2029-04-30, NDC 70677-1134-01
     protocolDrugNames: ['Aspirin'],
   },
   {
@@ -255,8 +257,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     mgPerUnit: 1,
     expiresOn: '2026-09',
     onOrder: { sku: 'on order #2000017881', substitution: '1 mg ×2' },
-    notes:
-      'Shipped ×2 (inv 3748160): 1 mg/mL 1 mL vials, lot F985-A250596, exp 2027-11-30, NDC 71872-7340-01',
+    // Owner/purchasing note (kept out of the screen): Shipped ×2 (inv 3748160): 1 mg/mL 1 mL vials, lot F985-A250596, exp 2027-11-30, NDC 71872-7340-01
     protocolDrugNames: ['Atropine'],
   },
   {
@@ -289,7 +290,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 2,
     expiresOn: '2026-08',
     onOrder: { sku: 'DIPH501V-R' },
-    notes: 'Shipped ×2 (inv 3747995): lot AB071-E109A012, exp 2028-02-29, NDC 71872-7373-01',
+    // Owner/purchasing note (kept out of the screen): Shipped ×2 (inv 3747995): lot AB071-E109A012, exp 2028-02-29, NDC 71872-7373-01
     protocolDrugNames: ['Diphenhydramine'],
   },
   {
@@ -362,7 +363,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '55150-252-20',
     quantity: 1,
     expiresOn: '2028-02',
-    notes: 'Not used by any protocol — let expire and do not reorder',
+    // Owner/purchasing note (kept out of the screen): Not used by any protocol — let expire and do not reorder
+    notes: 'Infiltration only, never for cardiac use',
   },
   {
     id: 'lidocaine-2pct',
@@ -372,7 +374,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '0143-9594-01',
     quantity: 2,
     expiresOn: '2028-05',
-    notes: 'Not used by any protocol — let expire and do not reorder',
+    // Owner/purchasing note (kept out of the screen): Not used by any protocol — let expire and do not reorder
+    notes: 'Infiltration only, never for cardiac use',
   },
   {
     id: 'lidocaine-cardiac',
@@ -392,8 +395,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '36000-308-01',
     quantity: 2,
     expiresOn: '2027-03',
-    notes:
-      "2 vials per owner (Nov 2026); only lot 305756 photographed — confirm the second vial's lot/exp",
+    // Owner/purchasing note (kept out of the screen): 2 vials per owner (Nov 2026); only lot 305756 photographed — confirm the second vial's lot/exp
     protocolDrugNames: ['Naloxone'],
   },
   {
@@ -415,7 +417,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '72266-123-01',
     quantity: 1,
     expiresOn: '2027-02',
-    notes: 'Not being replaced — the sedation-cart 20 mL vial covers emergencies',
+    // Owner/purchasing note (kept out of the screen): Not being replaced — the sedation-cart 20 mL vial covers emergencies
+    notes: 'For emergencies, use the sedation-cart 20 mL vial',
     protocolDrugNames: ['Ondansetron'],
   },
   {
@@ -447,8 +450,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '',
     quantity: 1,
     expiresOn: '',
-    notes:
-      'Vial backordered at Young (Nov 2026); 50 mL prefilled syringe (SKU DEXT5050S-E) is on the January order',
+    // Owner/purchasing note (kept out of the screen): Vial backordered at Young (Nov 2026); 50 mL prefilled syringe (SKU DEXT5050S-E) is on the January order
     protocolDrugNames: ['D50W'],
   },
   {
@@ -463,7 +465,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     mgPerUnit: 6,
     expiresOn: '',
     onOrder: { sku: 'ADEN32V-R' },
-    notes: 'Shipped ×2 (inv 3747995): lot F933-A4640039, exp 2027-11-30, NDC 71872-7335-01',
+    // Owner/purchasing note (kept out of the screen): Shipped ×2 (inv 3747995): lot F933-A4640039, exp 2027-11-30, NDC 71872-7335-01
     protocolDrugNames: ['Adenosine'],
   },
   {
@@ -475,7 +477,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '',
     onOrder: { sku: 'SOLU1252V-R' },
-    notes: 'Shipped (inv 3747995): lot E014-RA5974, exp 2029-01-31, NDC 71872-7061-01',
+    // Owner/purchasing note (kept out of the screen): Shipped (inv 3747995): lot E014-RA5974, exp 2029-01-31, NDC 71872-7061-01
     protocolDrugNames: ['Methylprednisolone (Solu-Medrol)'],
   },
   // Sedation cart (the safe), read from the packaging 2026-10 and counted
@@ -592,7 +594,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2027-08-31',
     category: 'equipment',
-    notes: 'Adults only (no pediatric sedation): keep until expiry, do not reorder',
+    // Owner/purchasing note (kept out of the screen): Adults only (no pediatric sedation): keep until expiry, do not reorder
+    notes: 'Pediatric size: not used (adults only)',
   },
   {
     id: 'aed-battery',
@@ -724,7 +727,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2030-01-13',
     category: 'equipment',
-    notes: 'Adults only (no pediatric sedation): keep until expiry, do not reorder',
+    // Owner/purchasing note (kept out of the screen): Adults only (no pediatric sedation): keep until expiry, do not reorder
+    notes: 'Pediatric size: not used (adults only)',
   },
   {
     id: 'cannula-pediatric',
@@ -736,8 +740,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
-    notes:
-      'Adults only (no pediatric sedation): keep until expiry, do not reorder. Everyday sedation supply — stock tracked, expiry not',
+    // Owner/purchasing note (kept out of the screen): Adults only (no pediatric sedation): keep until expiry, do not reorder. Everyday sedation supply — stock tracked, expiry not
+    notes: 'Pediatric size: not used (adults only)',
   },
   {
     id: 'iv-catheter-22',
@@ -860,7 +864,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
-    notes: 'Everyday sedation supply — stock tracked, expiry not',
+    // Owner/purchasing note (kept out of the screen): Everyday sedation supply — stock tracked, expiry not
   },
   {
     id: 'syringe-3ml-25g',
@@ -873,8 +877,9 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
+    // Owner/purchasing note (kept out of the screen): Everyday sedation supply — stock tracked, expiry not. The one needle for the whole kit: draw and give with it. IM epinephrine: auto-injector length, push firmly into the outer thigh
     notes:
-      'Everyday sedation supply — stock tracked, expiry not. The one needle for the whole kit: draw and give with it. IM epinephrine: auto-injector length, push firmly into the outer thigh',
+      'One needle for the whole kit: draw and give with it. IM epinephrine: push firmly into the outer thigh',
   },
   {
     id: 'syringe-1ml-25g',
@@ -886,7 +891,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
-    notes: 'Everyday sedation supply — stock tracked, expiry not',
+    // Owner/purchasing note (kept out of the screen): Everyday sedation supply — stock tracked, expiry not
   },
   {
     id: 'cric-kit',
@@ -908,8 +913,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     awaitingPhoto: true,
-    notes:
-      'Adults only (no pediatric sedation): keep until expiry, do not reorder. Read the expiry at the next emergency training',
+    // Owner/purchasing note (kept out of the screen): Adults only (no pediatric sedation): keep until expiry, do not reorder. Read the expiry at the next emergency training
+    notes: 'Pediatric size: not used (adults only)',
   },
   {
     id: 'o2-mask-adult',
@@ -921,7 +926,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
-    notes: 'Not reordered — the adult non-rebreather replaces it',
+    // Owner/purchasing note (kept out of the screen): Not reordered — the adult non-rebreather replaces it
+    notes: 'Use the adult non-rebreather instead',
   },
   {
     id: 'suction-catheters',
@@ -946,7 +952,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     awaitingPhoto: true,
-    notes: 'On the January order: NasoSafe 6 mm, 7.5 mm, 8 mm + water-based lubricant',
+    // Owner/purchasing note (kept out of the screen): On the January order: NasoSafe 6 mm, 7.5 mm, 8 mm + water-based lubricant
   },
   {
     id: 'o2-cylinder',
@@ -958,7 +964,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
-    notes: 'Checked full Nov 2026; hydro-test stamp not yet read',
+    // Owner/purchasing note (kept out of the screen): Checked full Nov 2026; hydro-test stamp not yet read
+    notes: 'Checked full Nov 2026',
   },
   {
     id: 'laryngoscope',
@@ -970,7 +977,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
-    notes: 'Keep spare batteries and a spare bulb with it (Florida 64B5-14.009)',
+    // Owner/purchasing note (kept out of the screen): Keep spare batteries and a spare bulb with it (Florida 64B5-14.009)
+    notes: 'Spare batteries and bulb are kept with it',
   },
   {
     id: 'laryngoscope-spares',
@@ -982,7 +990,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     awaitingPhoto: true,
-    notes: 'Required by Florida 64B5-14.009(4)(b) — order bulbs, confirm batteries',
+    // Owner/purchasing note (kept out of the screen): Required by Florida 64B5-14.009(4)(b) — order bulbs, confirm batteries
   },
   {
     id: 'magill-forceps',
@@ -1072,7 +1080,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
-    notes: 'Everyday sedation supply — stock tracked, expiry not',
+    // Owner/purchasing note (kept out of the screen): Everyday sedation supply — stock tracked, expiry not
   },
   {
     id: 'ekg-electrodes',
@@ -1084,7 +1092,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
-    notes: 'Everyday sedation supply — stock tracked, expiry not',
+    // Owner/purchasing note (kept out of the screen): Everyday sedation supply — stock tracked, expiry not
   },
   {
     id: 'edan-x10',
@@ -1096,7 +1104,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
-    notes: 'Service/inspection date: ask Sedation Resource (800-753-6376)',
+    // Owner/purchasing note (kept out of the screen): Service/inspection date: ask Sedation Resource (800-753-6376)
   },
   {
     id: 'nitrous-flowmeter',

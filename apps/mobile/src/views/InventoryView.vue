@@ -3,17 +3,9 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { EXPIRY_WARN_DAYS, type Severity } from '@sedation-pro/clinical';
-import {
-  UiBanner,
-  UiButton,
-  UiCard,
-  UiStack,
-  UiStatCard,
-  UiStatusPill,
-  UiTextInput,
-} from '@sedation-pro/ui';
+import { UiBanner, UiCard, UiStack, UiStatCard, UiStatusPill, UiTextInput } from '@sedation-pro/ui';
 
-import { INVENTORY_AS_OF, type InventoryItem } from '@/data/emergency-inventory';
+import type { InventoryItem } from '@/data/emergency-inventory';
 import {
   protocolsUsing,
   useInventoryStatus,
@@ -37,22 +29,22 @@ interface Section {
 const sections: ReadonlyArray<Section> = [
   {
     id: 'ordering',
-    label: 'Needs ordering',
-    hint: 'Expired or missing, nothing on the way',
+    label: 'Expired, none on order',
+    hint: 'Not usable',
     tone: 'danger',
     entries: inv.needsAttention,
   },
   {
     id: 'shipped',
-    label: 'Shipped, check in on arrival',
-    hint: 'Compare the lot and expiry on the box to the shipping line, then tell Claude',
+    label: 'On order',
+    hint: 'Replacement on the way; not usable until it is in the cart',
     tone: 'warn',
     entries: inv.shipped,
   },
   {
     id: 'expiring',
     label: `Expiring within ${EXPIRY_WARN_DAYS} days`,
-    hint: 'Reorder window, unless the row says otherwise',
+    hint: 'Usable until the date shown',
     tone: 'warn',
     entries: inv.expiringSoon,
   },
@@ -66,8 +58,8 @@ const sections: ReadonlyArray<Section> = [
   },
   {
     id: 'awaiting',
-    label: 'Awaiting photo',
-    hint: 'Required kit, date not read yet — not counted as a warning',
+    label: 'Expiry not recorded',
+    hint: 'Required kit on hand; date not on file yet, not counted as a warning',
     tone: 'slate',
     entries: inv.awaitingPhoto,
   },
@@ -124,9 +116,9 @@ function pillSeverity(c: ClassifiedItem): Severity | 'empty' {
 }
 
 function pillLabel(c: ClassifiedItem): string {
-  if (c.item.awaitingPhoto) return 'Awaiting photo';
+  if (c.item.awaitingPhoto) return 'No date';
   if (c.item.noExpiry) return 'On hand';
-  if (isInbound(c)) return 'Inbound';
+  if (isInbound(c)) return 'On order';
   if (!c.status.valid) return 'No date';
   if (c.status.daysLeft < 0) return 'Expired';
   if (c.status.severity === 'caution') return `${c.status.daysLeft} d`;
@@ -167,15 +159,8 @@ function metaLine(item: InventoryItem): string {
 function orderLine(item: InventoryItem): string {
   if (!item.onOrder) return '';
   return item.onOrder.substitution
-    ? `SKU ${item.onOrder.sku} · arriving as ${item.onOrder.substitution}`
-    : `SKU ${item.onOrder.sku}`;
-}
-
-/** The lot and expiry printed on the shipping line, for the check-in sheet. */
-function shippedLine(item: InventoryItem): string {
-  const note = item.notes ?? '';
-  const m = /Shipped[^:]*:\s*(.*)$/.exec(note);
-  return m?.[1] ?? note;
+    ? `Replacement on order · arriving as ${item.onOrder.substitution}`
+    : 'Replacement on order';
 }
 
 const router = useRouter();
@@ -205,19 +190,6 @@ function toggleExpanded(key: string): void {
 function openProtocol(id: string): void {
   void router.push(`/quick-reference/${id}`);
 }
-
-// -------- To do + print sheet --------------------------------------------------
-const todoCount = computed(
-  () => inv.awaitingPhoto.length + inv.shipped.length + inv.needsAttention.length,
-);
-const printedOn = new Date().toLocaleDateString(undefined, {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-});
-function printSheet(): void {
-  window.print();
-}
 </script>
 
 <template>
@@ -232,17 +204,17 @@ function printSheet(): void {
         v-if="inv.needsAttention.length > 0"
         tone="limit"
         icon="⚠"
-        :title="`${inv.needsAttention.length} item${inv.needsAttention.length === 1 ? '' : 's'} with nothing on the way`"
+        :title="`${inv.needsAttention.length} expired item${inv.needsAttention.length === 1 ? '' : 's'}`"
       >
-        Order before the next sedation case.
+        Not usable. Nothing is on order to replace it.
       </UiBanner>
       <UiBanner
         v-else-if="inv.shipped.length > 0"
         tone="caution"
         icon="📦"
-        :title="`${inv.shipped.length} replacement${inv.shipped.length === 1 ? '' : 's'} shipped`"
+        :title="`${inv.shipped.length} replacement${inv.shipped.length === 1 ? '' : 's'} on order`"
       >
-        Nothing to order. Check each box in when it arrives.
+        The stock they replace is not usable until they arrive.
       </UiBanner>
       <UiBanner
         v-else-if="inv.expiringSoon.length > 0"
@@ -250,75 +222,36 @@ function printSheet(): void {
         icon="⏳"
         :title="`${inv.expiringSoon.length} medication${inv.expiringSoon.length === 1 ? '' : 's'} expiring soon`"
       >
-        Inside the {{ EXPIRY_WARN_DAYS }}-day reorder window.
+        Within {{ EXPIRY_WARN_DAYS }} days. Usable until the date shown.
       </UiBanner>
 
       <div class="stat-row">
         <UiStatCard
-          label="Needs ordering"
+          label="Expired"
           :value="String(inv.needsAttention.length)"
           :severity="inv.needsAttention.length > 0 ? 'limit' : 'safe'"
-          :category="inv.needsAttention.length > 0 ? 'Decide' : 'Clear'"
+          :category="inv.needsAttention.length > 0 ? 'Not usable' : 'None'"
         />
         <UiStatCard
-          label="Shipped"
+          label="On order"
           :value="String(inv.shipped.length)"
           :severity="inv.shipped.length > 0 ? 'caution' : 'safe'"
-          :category="inv.shipped.length > 0 ? 'Check in' : 'Clear'"
+          :category="inv.shipped.length > 0 ? 'In transit' : 'None'"
         />
         <UiStatCard
-          :label="`Expiring ≤ ${EXPIRY_WARN_DAYS} d`"
+          :label="`≤ ${EXPIRY_WARN_DAYS} days`"
           :value="String(inv.expiringSoon.length)"
           :severity="inv.expiringSoon.length > 0 ? 'caution' : 'safe'"
-          :category="inv.expiringSoon.length > 0 ? 'Review' : 'Clear'"
+          :category="inv.expiringSoon.length > 0 ? 'Usable' : 'None'"
         />
       </div>
-
-      <!-- The DA's three jobs, with counts, and the sheet to carry to the cart. -->
-      <UiCard v-if="todoCount > 0" class="inv-card inv-todo">
-        <header class="inv-head">
-          <span class="inv-swatch inv-swatch--warn" aria-hidden="true" />
-          <div class="inv-head-main">
-            <p class="inv-title">To do</p>
-            <p class="inv-hint">
-              Photograph, check in, or flag for ordering. Send photos to Dr. Hassan.
-            </p>
-          </div>
-          <span class="card-count">{{ todoCount }}</span>
-        </header>
-        <ul class="inv-todo-list">
-          <li v-if="inv.awaitingPhoto.length > 0">
-            <span class="inv-todo-n">{{ inv.awaitingPhoto.length }}</span>
-            <span>
-              <strong>Photograph the label</strong> showing LOT and EXP:
-              {{ inv.awaitingPhoto.map((c) => c.item.drug).join(', ') }}
-            </span>
-          </li>
-          <li v-if="inv.shipped.length > 0">
-            <span class="inv-todo-n">{{ inv.shipped.length }}</span>
-            <span>
-              <strong>Check in when the box arrives.</strong> Compare the lot and expiry to the
-              shipping line, put the new stock in the cart, pull the expired one. Then tell Claude
-              "arrived" so every device updates.
-            </span>
-          </li>
-          <li v-if="inv.needsAttention.length > 0">
-            <span class="inv-todo-n">{{ inv.needsAttention.length }}</span>
-            <span>
-              <strong>Needs ordering:</strong>
-              {{ inv.needsAttention.map((c) => c.item.drug).join(', ') }}
-            </span>
-          </li>
-        </ul>
-        <UiButton tone="primary" block class="mt-2" @click="printSheet">Print check sheet</UiButton>
-      </UiCard>
 
       <UiCard v-if="inv.courseShort.length > 0" class="inv-card">
         <header class="inv-head">
           <span class="inv-swatch inv-swatch--danger" aria-hidden="true" />
           <div class="inv-head-main">
             <p class="inv-title">Not enough for a full protocol course</p>
-            <p class="inv-hint">In-date stock only; shipped units are shown but don't count yet</p>
+            <p class="inv-hint">In-date stock only; units on order are shown but don't count yet</p>
           </div>
           <span class="card-count">{{ inv.courseShort.length }}</span>
         </header>
@@ -332,7 +265,7 @@ function printSheet(): void {
                 >Have {{ course.haveMg }} mg · need {{ course.needMg }} mg<template
                   v-if="course.onOrderMg > 0"
                 >
-                  · {{ course.onOrderMg }} mg shipped</template
+                  · {{ course.onOrderMg }} mg on order</template
                 ></span
               >
             </span>
@@ -421,7 +354,7 @@ function printSheet(): void {
                         pillLabel(entry)
                       }}</UiStatusPill>
                       <UiStatusPill v-if="entry.item.onOrder && !isInbound(entry)" severity="empty">
-                        Shipped
+                        On order
                       </UiStatusPill>
                       <UiStatusPill v-if="entry.item.category === 'sedation'" severity="empty">
                         Sedation cart
@@ -512,110 +445,7 @@ function printSheet(): void {
           and are deliberately excluded here.
         </p>
       </UiCard>
-
-      <p class="caption inv-footer">
-        Paper sheet transcribed {{ INVENTORY_AS_OF }} · the inventory lives in the practice repo and
-        every device updates on the next deploy.
-      </p>
     </div>
-
-    <!-- Print only: the sheet the DA carries to the cart. -->
-    <section class="inv-print" aria-hidden="true">
-      <header class="inv-print-head">
-        <h1>Emergency Kit Check Sheet</h1>
-        <div>
-          Inventory as of {{ INVENTORY_AS_OF }} · Printed {{ printedOn }} · Done by ____________
-        </div>
-      </header>
-      <p class="inv-print-how">
-        Tick each line when done. Photograph the label showing <b>LOT</b> and <b>EXP</b> and send
-        the photos to Dr. Hassan. Write MISSING if an item is not in the cart.
-      </p>
-      <template v-if="inv.awaitingPhoto.length > 0">
-        <h2>1 · Photograph the label</h2>
-        <table>
-          <tr>
-            <th></th>
-            <th>Item</th>
-            <th>Lot</th>
-            <th>Exp</th>
-          </tr>
-          <tr v-for="c in inv.awaitingPhoto" :key="c.item.id">
-            <td class="box"><span class="sq" /></td>
-            <td>
-              <b>{{ c.item.drug }}</b
-              ><br /><span>{{ c.item.description }}</span>
-            </td>
-            <td class="write"></td>
-            <td class="write"></td>
-          </tr>
-        </table>
-      </template>
-      <template v-if="inv.shipped.length > 0">
-        <h2>2 · Check in when the box arrives</h2>
-        <table>
-          <tr>
-            <th></th>
-            <th>Item</th>
-            <th>Should read</th>
-            <th>Matches?</th>
-          </tr>
-          <tr v-for="c in inv.shipped" :key="c.item.id">
-            <td class="box"><span class="sq" /></td>
-            <td>
-              <b>{{ c.item.drug }}</b
-              ><br /><span>{{ c.item.description }}</span>
-            </td>
-            <td>
-              <span>{{ shippedLine(c.item) || orderLine(c.item) }}</span>
-            </td>
-            <td class="write"></td>
-          </tr>
-        </table>
-      </template>
-      <template v-if="inv.needsAttention.length > 0">
-        <h2>3 · Needs ordering</h2>
-        <table>
-          <tr>
-            <th></th>
-            <th>Item</th>
-            <th>Note</th>
-          </tr>
-          <tr v-for="c in inv.needsAttention" :key="c.item.id">
-            <td class="box"><span class="sq" /></td>
-            <td>
-              <b>{{ c.item.drug }}</b
-              ><br /><span>{{ c.item.description }}</span>
-            </td>
-            <td>
-              <span>{{ c.item.notes ?? '' }}</span>
-            </td>
-          </tr>
-        </table>
-      </template>
-      <template v-if="inv.expiringSoon.length > 0">
-        <h2>4 · Expiring within {{ EXPIRY_WARN_DAYS }} days</h2>
-        <table>
-          <tr>
-            <th></th>
-            <th>Item</th>
-            <th>Expires</th>
-            <th>Note</th>
-          </tr>
-          <tr v-for="c in inv.expiringSoon" :key="c.item.id">
-            <td class="box"><span class="sq" /></td>
-            <td>
-              <b>{{ c.item.drug }}</b
-              ><br /><span>{{ c.item.description }}</span>
-            </td>
-            <td>{{ formatExpiry(c.item.expiresOn) }}</td>
-            <td>
-              <span>{{ c.item.notes ?? '' }}</span>
-            </td>
-          </tr>
-        </table>
-      </template>
-    </section>
   </main>
 </template>
 
@@ -827,39 +657,6 @@ button.inv-row {
   gap: 4px;
   flex-shrink: 0;
 }
-.inv-footer {
-  text-align: center;
-  padding-inline: var(--sp-4);
-}
-
-/* To do card */
-.inv-todo-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-.inv-todo-list li {
-  display: flex;
-  gap: var(--sp-3);
-  align-items: flex-start;
-  font-size: var(--type-footnote);
-  line-height: 1.4;
-}
-.inv-todo-n {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--color-warn-soft);
-  color: var(--color-warn);
-  font-weight: var(--weight-bold);
-  font-size: var(--type-footnote);
-}
 .inv-search {
   display: flex;
 }
@@ -869,100 +666,5 @@ button.inv-row {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-tertiary);
-}
-
-/* Print sheet: hidden on screen, the only thing on paper. */
-.inv-print {
-  display: none;
-}
-@media print {
-  :global(html),
-  :global(body) {
-    background: #fff;
-  }
-  .inv-screen {
-    display: none;
-  }
-  .inv-print {
-    display: block;
-    color: #111;
-    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
-    font-size: 10.5pt;
-    line-height: 1.3;
-  }
-  .inv-print-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    border-bottom: 2px solid #111;
-    padding-bottom: 6px;
-  }
-  .inv-print h1 {
-    margin: 0;
-    font-size: 17pt;
-  }
-  .inv-print h2 {
-    margin: 11px 0 2px;
-    font-size: 11.5pt;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    break-after: avoid;
-  }
-  .inv-print-how {
-    margin: 8px 0 4px;
-    padding: 7px 10px;
-    border: 1px solid #999;
-    border-radius: 6px;
-    font-size: 9.5pt;
-  }
-  .inv-print table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .inv-print tr {
-    break-inside: avoid;
-  }
-  .inv-print th {
-    text-align: left;
-    font-size: 8pt;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #444;
-    padding: 4px 4px 2px;
-    border-bottom: 1px solid #111;
-  }
-  .inv-print td {
-    padding: 4px;
-    border-bottom: 1px solid #bbb;
-    vertical-align: top;
-  }
-  .inv-print td span {
-    display: block;
-    font-size: 8.5pt;
-    color: #444;
-  }
-  .inv-print td.box {
-    width: 22px;
-  }
-  .inv-print td.write {
-    width: 1.2in;
-  }
-  .inv-print .sq {
-    display: inline-block;
-    width: 13px;
-    height: 13px;
-    border: 1.5px solid #111;
-    border-radius: 2px;
-  }
-  .inv-print footer {
-    margin-top: 14px;
-    padding-top: 6px;
-    border-top: 1px solid #111;
-    font-size: 9pt;
-  }
-  @page {
-    size: letter;
-    margin: 0.5in 0.55in;
-  }
 }
 </style>
