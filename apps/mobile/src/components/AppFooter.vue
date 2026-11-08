@@ -78,8 +78,8 @@ const practiceName = computed(() => formulary.practiceName);
 }
 .app-footer-meta {
   margin: 0;
-  font-size: 10px;
-  color: var(--color-text-disabled);
+  font-size: var(--type-caption);
+  color: var(--color-text-tertiary);
   letter-spacing: 0.4px;
 }
 </style>

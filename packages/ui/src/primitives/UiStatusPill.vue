@@ -30,7 +30,7 @@ const defaultLabel: Record<Severity | 'empty', string> = {
 .ui-status-pill {
   display: inline-flex;
   align-items: center;
-  font-size: 9px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-bold);
   letter-spacing: 1.2px;
   text-transform: uppercase;

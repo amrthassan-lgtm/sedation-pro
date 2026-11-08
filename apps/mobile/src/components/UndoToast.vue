@@ -18,6 +18,7 @@ function onUndo() {
     <Transition name="toast">
       <div v-if="current" class="undo-toast-container no-print">
         <div class="undo-toast" :class="`undo-toast--${current.tone}`" role="status">
+          <span class="undo-toast-dot" aria-hidden="true" />
           <div class="undo-toast-body">
             <div class="undo-toast-action">{{ current.label }}</div>
             <div v-if="current.sub" class="undo-toast-sub">{{ current.sub }}</div>
@@ -52,9 +53,10 @@ function onUndo() {
   background: rgba(18, 27, 46, 0.98);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  /* No container border — left-edge accent stripe carries the tone; depth
-     is the two-layer shadow. */
-  border-left: 3px solid var(--color-border-strong);
+  /* Hairline on the card's own surface; the tone lives in the leading dot,
+     not a coloured edge stripe. */
+  --toast-tone: var(--color-text-tertiary);
+  border: 1px solid var(--color-border);
   border-radius: var(--r-md);
   padding: 12px 14px;
   display: flex;
@@ -104,40 +106,42 @@ function onUndo() {
   transform: scale(0.96);
 }
 
-/* Tone accents — match BannerTone palette. */
-/* Info-tone toast uses neutral chrome (was accent blue) — severity tones
-   below keep their clinical hue. */
-.undo-toast--info {
-  border-left-color: var(--color-border-strong);
-}
-.undo-toast--info .undo-toast-btn {
-  border-color: var(--color-border-strong);
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
+/* Tone: one colour per toast, read by the dot and the Undo button. Info
+   stays neutral; the clinical tones keep their hue. */
+.undo-toast-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--toast-tone);
 }
 .undo-toast--safe {
-  border-left-color: var(--color-good);
+  --toast-tone: var(--color-good);
+}
+.undo-toast--caution {
+  --toast-tone: var(--color-warn);
+}
+.undo-toast--limit {
+  --toast-tone: var(--color-danger);
+}
+.undo-toast--crisis {
+  --toast-tone: var(--color-crisis);
+}
+.undo-toast--info .undo-toast-btn {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
 }
 .undo-toast--safe .undo-toast-btn {
   background: var(--color-good-soft);
   color: var(--color-good);
 }
-.undo-toast--caution {
-  border-left-color: var(--color-warn);
-}
 .undo-toast--caution .undo-toast-btn {
   background: var(--color-warn-soft);
   color: var(--color-warn);
 }
-.undo-toast--limit {
-  border-left-color: var(--color-danger);
-}
 .undo-toast--limit .undo-toast-btn {
   background: var(--color-danger-soft);
   color: var(--color-danger);
-}
-.undo-toast--crisis {
-  border-left-color: var(--color-crisis);
 }
 .undo-toast--crisis .undo-toast-btn {
   background: var(--color-crisis-soft);

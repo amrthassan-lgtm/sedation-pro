@@ -313,6 +313,6 @@ onMounted(() => {
   color: var(--color-good);
 }
 .ui-sig-status.muted {
-  color: var(--color-text-disabled);
+  color: var(--color-text-tertiary);
 }
 </style>

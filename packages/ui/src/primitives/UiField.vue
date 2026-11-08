@@ -64,14 +64,14 @@ const props = withDefaults(defineProps<Props>(), {
   gap: var(--sp-2);
 }
 .ui-field-label {
-  font-size: 10px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.5px;
   text-transform: uppercase;
   color: var(--color-text-tertiary);
 }
 .ui-field-hint {
-  color: var(--color-text-disabled);
+  color: var(--color-text-tertiary);
   font-weight: var(--weight-regular);
   margin-left: 4px;
   text-transform: none;
@@ -117,7 +117,7 @@ const props = withDefaults(defineProps<Props>(), {
   color: var(--color-danger);
   font-weight: var(--weight-bold);
   letter-spacing: 0.5px;
-  font-size: 9px;
+  font-size: var(--type-caption);
   text-transform: uppercase;
 }
 .ui-field.is-invalid .ui-field-slot {

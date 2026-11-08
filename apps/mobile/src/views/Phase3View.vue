@@ -11,6 +11,7 @@ import { useEventLogStore } from '@/stores/event-log';
 import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
 import { fmtClock, fmtDuration, nowClock } from '@/composables/format';
 import { vitalsDetails } from '@/composables/vitalsDetails';
+import { haptic } from '@/composables/useHaptics';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { syringeConfig } from '@/composables/useSyringeConfig';
 import { useNow } from '@/composables/useNow';
@@ -236,6 +237,7 @@ function stampPreOpVitals() {
 // -------- Gas flow ----------------------------------------------------------
 
 function onN2oOn() {
+  haptic('medium');
   // Capture before mutation — undo must restore both booleans, not just the
   // one this setter touches. Without an explicit revert the stamp would only
   // remove the event-log entry and the toggle would stay flipped.
@@ -251,6 +253,7 @@ function onN2oOn() {
 }
 
 function onN2oOff() {
+  haptic('medium');
   const prevN2oOn = iv.n2oOn;
   const prevO2OnlyOn = iv.o2OnlyOn;
   iv.setN2oOff();

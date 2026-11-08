@@ -59,14 +59,14 @@ withDefaults(defineProps<Props>(), {
   gap: var(--sp-2);
 }
 .ui-stat-label {
-  font-size: 10px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-bold);
   letter-spacing: 1.2px;
   text-transform: uppercase;
   color: var(--color-text-tertiary);
 }
 .ui-stat-category {
-  font-size: 9px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-bold);
   letter-spacing: 0.8px;
   text-transform: uppercase;

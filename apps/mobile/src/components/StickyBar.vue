@@ -395,7 +395,7 @@ function emergency() {
   flex-shrink: 0;
 }
 .sticky-bar-alert {
-  font-size: 9px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-bold);
   letter-spacing: 0.6px;
   text-transform: uppercase;
@@ -508,7 +508,7 @@ function emergency() {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: var(--type-caption);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.4px;
   text-transform: uppercase;

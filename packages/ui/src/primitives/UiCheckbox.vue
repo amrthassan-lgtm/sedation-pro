@@ -225,7 +225,7 @@ function toggle() {
   color: var(--color-danger);
   font-weight: var(--weight-bold);
   letter-spacing: 0.5px;
-  font-size: 9px;
+  font-size: var(--type-caption);
   text-transform: uppercase;
 }
 </style>

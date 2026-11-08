@@ -26,6 +26,9 @@ html {
 
 body {
   background: var(--color-bg);
+  /* Every digit the same width app-wide, so clocks, timers and vitals never
+     jitter as they tick. */
+  font-variant-numeric: tabular-nums;
   padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);
   padding-left: var(--safe-left);
