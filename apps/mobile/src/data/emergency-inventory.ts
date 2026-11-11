@@ -150,19 +150,19 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     quantity: 1,
     expiresOn: '2027-04',
     protocolDrugNames: ['Epinephrine'],
-    // Owner/purchasing note (kept out of the screen): Adults only (no pediatric sedation): keep until expiry, do not reorder
-    notes: 'Pediatric size: not used (adults only)',
+    // Owner (Nov 2026): keep permanently, reorder before expiry. Not required
+    // for the adult moderate-sedation permit; kept for any child in the office.
+    notes: 'Pediatric dose, kept for any child in the office',
   },
   {
     id: 'epi-autoinjector-03',
     drug: 'Epinephrine Injection',
-    description: 'Auto-injector 0.3 mg',
-    lot: 'G250206X',
-    ndc: '0115-1694-30',
+    description: 'Auvi-Q auto-injector 0.3 mg',
+    lot: '000011714486',
+    ndc: '60842-023-02',
     quantity: 1,
-    expiresOn: '2026-08',
-    onOrder: { sku: 'AUVI3-R', substitution: 'Auvi-Q 0.3 mg auto-injector' },
-    // Owner/purchasing note (kept out of the screen): Shipped (inv 3747995): Auvi-Q lot G001-000011714486, exp 2028-01-17, NDC 71872-7329-01
+    expiresOn: '2028-01-17',
+    // Arrived 2026-11-09 (Young inv 3747995), replacing the expired EpiPen 0.3.
     protocolDrugNames: ['Epinephrine'],
   },
   {
@@ -245,26 +245,24 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   {
     id: 'aspirin',
     drug: 'Aspirin',
-    description: '325 mg tablets',
-    lot: '9262',
-    ndc: '68599-1311-3',
+    description: '81 mg chewable tablets ×36',
+    lot: '6GE1743',
+    ndc: '70677-1134-01',
     quantity: 1,
-    expiresOn: '2026-09',
-    onOrder: { sku: 'ASPI81-36O', substitution: '81 mg chewable ×36' },
-    // Owner/purchasing note (kept out of the screen): Shipped (inv 3747995): 81 mg chewable ×36, lot 6GE1743, exp 2029-04-30, NDC 70677-1134-01
+    expiresOn: '2029-04',
+    // Arrived 2026-11-09 (Young inv 3747995), replacing the expired 325 mg bottle.
     protocolDrugNames: ['Aspirin'],
   },
   {
     id: 'atropine-1ml',
     drug: 'Atropine Sulfate Injection',
     description: '1 mg/mL',
-    lot: 'A240543',
+    lot: 'A250596',
     ndc: '70069-641-01',
     quantity: 2,
     mgPerUnit: 1,
-    expiresOn: '2026-09',
-    onOrder: { sku: 'on order #2000017881', substitution: '1 mg ×2' },
-    // Owner/purchasing note (kept out of the screen): Shipped ×2 (inv 3748160): 1 mg/mL 1 mL vials, lot F985-A250596, exp 2027-11-30, NDC 71872-7340-01
+    expiresOn: '2027-11',
+    // Arrived 2026-11-09 (Young inv 3748160), replacing two expired vials (lot A240543).
     protocolDrugNames: ['Atropine'],
   },
   {
@@ -291,13 +289,12 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   {
     id: 'diphenhydramine',
     drug: 'Diphenhydramine HCl',
-    description: '50 mg/mL injection',
-    lot: 'H24059',
-    ndc: '0641-0376-21',
+    description: '50 mg/mL injection, 1 mL vial',
+    lot: 'E109A012',
+    ndc: '23155-264-31',
     quantity: 2,
-    expiresOn: '2026-08',
-    onOrder: { sku: 'DIPH501V-R' },
-    // Owner/purchasing note (kept out of the screen): Shipped ×2 (inv 3747995): lot AB071-E109A012, exp 2028-02-29, NDC 71872-7373-01
+    expiresOn: '2028-02',
+    // Arrived 2026-11-09 (Young inv 3747995), replacing two expired vials.
     protocolDrugNames: ['Diphenhydramine'],
   },
   {
@@ -450,6 +447,18 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     protocolDrugNames: ['Succinylcholine'],
   },
   {
+    id: 'succinylcholine-b',
+    drug: 'Succinylcholine',
+    description: '200 mg/10 mL (20 mg/mL) multi-dose vial — KEEP REFRIGERATED',
+    lot: 'AS1250419A',
+    ndc: '31722-981-10',
+    quantity: 1,
+    expiresOn: '2027-08',
+    // Arrived 2026-11-10 (Medical Purchasing Solutions, cold shipment).
+    notes: 'Red cap (Camber/Aspiro). Refrigerated; once out of the fridge, use within 14 days',
+    protocolDrugNames: ['Succinylcholine'],
+  },
+  {
     id: 'd50w',
     drug: 'Dextrose 50% (D50W)',
     description: '0.5 g/mL, 50 mL single-dose vial',
@@ -466,25 +475,23 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     id: 'adenosine-6-order',
     drug: 'Adenosine Injection',
     description: '6 mg / 2 mL',
-    lot: '',
-    ndc: '',
+    lot: 'A4640039',
+    ndc: '25021-318-02',
     quantity: 2,
     mgPerUnit: 6,
-    expiresOn: '',
-    onOrder: { sku: 'ADEN32V-R' },
-    // Owner/purchasing note (kept out of the screen): Shipped ×2 (inv 3747995): lot F933-A4640039, exp 2027-11-30, NDC 71872-7335-01
+    expiresOn: '2027-11',
+    // Arrived 2026-11-09 (Young inv 3747995).
     protocolDrugNames: ['Adenosine'],
   },
   {
     id: 'solu-medrol',
     drug: 'Solu-Medrol (methylprednisolone)',
     description: '125 mg / 2 mL Act-O-Vial',
-    lot: '',
-    ndc: '',
+    lot: 'RA5974',
+    ndc: '0009-0047-25',
     quantity: 1,
-    expiresOn: '',
-    onOrder: { sku: 'SOLU1252V-R' },
-    // Owner/purchasing note (kept out of the screen): Shipped (inv 3747995): lot E014-RA5974, exp 2029-01-31, NDC 71872-7061-01
+    expiresOn: '2029-01',
+    // Arrived 2026-11-09 (Young inv 3747995).
     protocolDrugNames: ['Methylprednisolone (Solu-Medrol)'],
   },
   // Sedation cart (the safe), read from the packaging 2026-10 and counted
