@@ -207,8 +207,9 @@ describe('live inventory data invariants', () => {
     // Glucagon left this list 2026-08: the owner decided not to stock it
     // (IV office — the hypoglycemia protocol's no-IV branch is now
     // "establish access for D50W"), so it is no longer a callout at all.
-    // Solu-Medrol left this list 2026-11 when the owner ordered it.
-    expect(protocolGapList()).toEqual(['Phenylephrine']);
+    // Solu-Medrol left this list 2026-11 when the owner ordered it, and
+    // Phenylephrine when its first vial arrived (2026-11-12).
+    expect(protocolGapList()).toEqual([]);
   });
 
   it('controlled substances are covered by sedation-cart stock, not an exemption', () => {

@@ -259,10 +259,11 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     description: '1 mg/mL',
     lot: 'A250596',
     ndc: '70069-641-01',
-    quantity: 2,
+    quantity: 3,
     mgPerUnit: 1,
     expiresOn: '2027-11',
-    // Arrived 2026-11-09 (Young inv 3748160), replacing two expired vials (lot A240543).
+    // Two arrived 2026-11-09 (Young inv 3748160), replacing two expired vials
+    // (lot A240543); a third from the same lot arrived 2026-11-12.
     protocolDrugNames: ['Atropine'],
   },
   {
@@ -308,6 +309,17 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     protocolDrugNames: ['Ephedrine'],
   },
   {
+    id: 'ephedrine-b',
+    drug: 'Ephedrine Sulfate Injection',
+    description: '50 mg/mL, 1 mL single-dose vial',
+    lot: '3EP26001A',
+    ndc: '55150-373-01',
+    quantity: 1,
+    expiresOn: '2028-04',
+    // Arrived 2026-11-12.
+    protocolDrugNames: ['Ephedrine'],
+  },
+  {
     id: 'epi-vial',
     drug: 'Epinephrine Injection',
     description: '1 mg/mL single-use ampule',
@@ -315,6 +327,17 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '54288-103-01',
     quantity: 3,
     expiresOn: '2027-02',
+    protocolDrugNames: ['Epinephrine', 'Push-dose Epinephrine'],
+  },
+  {
+    id: 'epi-vial-b',
+    drug: 'Epinephrine Injection',
+    description: '1 mg/mL single-use ampule',
+    lot: '260625A',
+    ndc: '54288-103-01',
+    quantity: 3,
+    expiresOn: '2028-01',
+    // Arrived 2026-11-12.
     protocolDrugNames: ['Epinephrine', 'Push-dose Epinephrine'],
   },
   {
@@ -401,6 +424,28 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2027-03',
     // Owner/purchasing note (kept out of the screen): 2 vials per owner (Nov 2026); only lot 305756 photographed — confirm the second vial's lot/exp
     protocolDrugNames: ['Naloxone'],
+  },
+  {
+    id: 'naloxone-vial-b',
+    drug: 'Naloxone HCl Injection',
+    description: '0.4 mg/mL, 1 mL single-dose vial',
+    lot: '306025',
+    ndc: '36000-308-01',
+    quantity: 2,
+    expiresOn: '2027-11',
+    // Arrived 2026-11-12.
+    protocolDrugNames: ['Naloxone'],
+  },
+  {
+    id: 'phenylephrine',
+    drug: 'Phenylephrine HCl Injection',
+    description: '10 mg/mL, 1 mL single-dose vial — must be diluted',
+    lot: '90001426',
+    ndc: '70069-801-01',
+    quantity: 1,
+    expiresOn: '2027-08',
+    // Arrived 2026-11-12. First stock of this drug: it leaves the protocol gap list.
+    protocolDrugNames: ['Phenylephrine'],
   },
   {
     id: 'nitroglycerin',
@@ -963,17 +1008,30 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
   // Required by Florida 64B5-14.009 (Aug 2026); listed before the DA's
   // photos arrive so the kit is complete.
   {
-    id: 'npa-set',
-    drug: 'Nasopharyngeal Airways',
-    description: 'Nasal airways, various sizes',
-    lot: '',
+    id: 'npa-6',
+    drug: 'Nasopharyngeal Airway',
+    description: 'NasoSafe 6.0 mm (28 Fr), REF 038-95-006U',
+    lot: '25100175',
     ndc: '',
     quantity: 1,
-    expiresOn: '',
+    // The pouch prints a full date, the 1st of the month; kept to the day so
+    // the row never reads usable past the label.
+    expiresOn: '2030-09-01',
     category: 'equipment',
     protocolIds: ['npa'],
-    awaitingPhoto: true,
-    // Owner/purchasing note (kept out of the screen): On the January order: NasoSafe 6 mm, 7.5 mm, 8 mm + water-based lubricant
+    // Arrived 2026-11-12. Owner/purchasing note (kept out of the screen): the 7.5 mm size and the water-based lubricant from the same order have not been photographed yet.
+  },
+  {
+    id: 'npa-8',
+    drug: 'Nasopharyngeal Airway',
+    description: 'NasoSafe 8.0 mm (34 Fr), REF 038-95-008U',
+    lot: '240700320',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2029-06-01',
+    category: 'equipment',
+    protocolIds: ['npa'],
+    // Arrived 2026-11-12.
   },
   {
     id: 'o2-cylinder',
