@@ -69,3 +69,52 @@ describe('note dates print the day that was entered (Florida time)', () => {
     expect(row('Return visit')).toMatch(/December 1, 2026/);
   });
 });
+
+describe('chronology rows from an earlier visit name their day', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  it('dates the assessment rows and leaves the sedation-day rows as clock times', async () => {
+    const { useEventLogStore } = await import('@/stores/event-log');
+    const log = useEventLogStore();
+    const sedationDay = new Date(2026, 10, 9, 14, 0).getTime();
+    const assessmentDay = new Date(2026, 9, 19, 10, 30).getTime();
+    log.events = [
+      {
+        id: 'a',
+        timestamp: assessmentDay,
+        event: 'Phase 1 — Pre-Sedation Assessment',
+        details: { Weight: '170 lb' },
+      },
+      {
+        id: 'b',
+        timestamp: assessmentDay + 60_000,
+        event: 'Assessment Completed · sedation deferred',
+        details: {},
+      },
+      { id: 'c', timestamp: sedationDay, event: 'IV Started', details: { Gauge: '22' } },
+    ];
+
+    const rows = useClinicalNote().value.chronology;
+
+    expect(rows[0]?.detail).toMatch(/^On Oct 19, 2026 · Weight: 170 lb$/);
+    expect(rows[1]?.detail).toBe('On Oct 19, 2026');
+    expect(rows[2]?.detail).toBe('Gauge: 22');
+  });
+
+  it('adds nothing when every row is from the same day', async () => {
+    const { useEventLogStore } = await import('@/stores/event-log');
+    const log = useEventLogStore();
+    const day = new Date(2026, 10, 9, 14, 0).getTime();
+    log.events = [
+      { id: 'a', timestamp: day, event: 'IV Started', details: { Gauge: '22' } },
+      { id: 'b', timestamp: day + 60_000, event: 'Procedure Start', details: {} },
+    ];
+
+    const rows = useClinicalNote().value.chronology;
+
+    expect(rows.map((r) => r.detail)).toEqual(['Gauge: 22', '']);
+  });
+});
