@@ -18,7 +18,11 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the nine-phase plan.
 
 - **Phase 0 — Foundation scaffold:** done.
 - **Phase 1 — Clinical engine:** done (`@sedation-pro/clinical` v0.1.0).
-- **Phase 2 onward:** see roadmap.
+- **Version 1.0.0 (Nov 2026):** the app the practice runs: assessment, oral
+  and IV sedation, recovery, clinical note, Open Dental filing, emergency
+  protocols and the crash-cart inventory. `APP_VERSION` in
+  `apps/mobile/src/config/version.ts` is the number shown on screen and on
+  every note; bump it with `apps/mobile/package.json`.
 
 ## Workspace layout
 

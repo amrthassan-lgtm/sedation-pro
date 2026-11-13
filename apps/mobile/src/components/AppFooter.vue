@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import { CLINICAL_LIB_VERSION } from '@sedation-pro/clinical';
-import { UI_LIB_VERSION } from '@sedation-pro/ui';
-
+import { APP_VERSION } from '@/config/version';
 import { INVENTORY_AS_OF } from '@/data/emergency-inventory';
 import { useFormularyStore } from '@/stores/formulary';
 
 /**
- * App footer: the single-source logo, brand name, and library versions.
+ * App footer: the single-source logo, brand name, and the app version.
  * Uses `public/logo-source.svg` (the same asset that drives the favicon,
  * apple-touch and PWA icons) so the in-app mark can never drift from the
  * installed-app icon. Path goes through BASE_URL so it resolves under the
@@ -30,8 +28,9 @@ const practiceName = computed(() => formulary.practiceName);
       </div>
     </div>
     <p class="app-footer-meta">
-      © {{ year }} {{ practiceName }} · Sedation Pro · clinical&nbsp;v{{ CLINICAL_LIB_VERSION }} ·
-      ui&nbsp;v{{ UI_LIB_VERSION }} · inv&nbsp;{{ INVENTORY_AS_OF }}
+      © {{ year }} {{ practiceName }} · Sedation Pro&nbsp;v{{ APP_VERSION }} · inv&nbsp;{{
+        INVENTORY_AS_OF
+      }}
     </p>
   </footer>
 </template>

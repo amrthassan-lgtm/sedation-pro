@@ -1,3 +1,4 @@
+import { APP_VERSION } from '@/config/version';
 import type { ClinicalNote } from './useClinicalNote';
 
 const WIDTH = 52;
@@ -81,7 +82,7 @@ export function clinicalNoteToText(note: ClinicalNote): string {
 
   lines.push('');
   lines.push(major);
-  lines.push(`Generated ${note.generatedAt} · Sedation Pro v0.1`);
+  lines.push(`Generated ${note.generatedAt} · Sedation Pro v${APP_VERSION}`);
 
   return lines.join('\n');
 }
