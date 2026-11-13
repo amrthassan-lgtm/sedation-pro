@@ -263,7 +263,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     mgPerUnit: 1,
     expiresOn: '2027-11',
     // Two arrived 2026-11-09 (Young inv 3748160), replacing two expired vials
-    // (lot A240543); a third from the same lot arrived 2026-11-12.
+    // (lot A240543); a third from the same lot arrived 2026-11-12 (order 2000018004).
     protocolDrugNames: ['Atropine'],
   },
   {
@@ -316,7 +316,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '55150-373-01',
     quantity: 1,
     expiresOn: '2028-04',
-    // Arrived 2026-11-12.
+    // Arrived 2026-11-12 (Young order 2000018004).
     protocolDrugNames: ['Ephedrine'],
   },
   {
@@ -337,7 +337,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '54288-103-01',
     quantity: 3,
     expiresOn: '2028-01',
-    // Arrived 2026-11-12.
+    // Arrived 2026-11-12 (Young order 2000018004).
     protocolDrugNames: ['Epinephrine', 'Push-dose Epinephrine'],
   },
   {
@@ -433,7 +433,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '36000-308-01',
     quantity: 2,
     expiresOn: '2027-11',
-    // Arrived 2026-11-12.
+    // Arrived 2026-11-12 (Young order 2000018004).
     protocolDrugNames: ['Naloxone'],
   },
   {
@@ -444,7 +444,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '70069-801-01',
     quantity: 1,
     expiresOn: '2027-08',
-    // Arrived 2026-11-12. First stock of this drug: it leaves the protocol gap list.
+    // Arrived 2026-11-12 (Young order 2000018004). First stock of this drug: it leaves the protocol gap list.
     protocolDrugNames: ['Phenylephrine'],
   },
   {
@@ -499,7 +499,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '31722-981-10',
     quantity: 1,
     expiresOn: '2027-08',
-    // Arrived 2026-11-10 (Medical Purchasing Solutions, cold shipment).
+    // Arrived 2026-11-10 (Young order 2000018004, cold shipment).
     notes: 'Red cap (Camber/Aspiro). Refrigerated; once out of the fridge, use within 14 days',
     protocolDrugNames: ['Succinylcholine'],
   },
@@ -511,7 +511,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     ndc: '',
     quantity: 1,
     expiresOn: '',
-    // Owner/purchasing note (kept out of the screen): Vial backordered at Young (Nov 2026); 50 mL prefilled syringe (SKU DEXT5050S-E) is on the January order
+    onOrder: { sku: 'DEXT5050S-E', substitution: '50 mL prefilled syringe' },
+    // Owner/purchasing note (kept out of the screen): Vial backordered at Young (Nov 2026); the prefilled syringe is on order 2000018004 (placed 2026-11-09), still processing on 2026-11-13.
     protocolDrugNames: ['D50W'],
   },
   {
@@ -1019,7 +1020,19 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2030-09-01',
     category: 'equipment',
     protocolIds: ['npa'],
-    // Arrived 2026-11-12. Owner/purchasing note (kept out of the screen): the 7.5 mm size and the water-based lubricant from the same order have not been photographed yet.
+    // Arrived 2026-11-12 (Young order 2000018004). Owner/purchasing note (kept out of the screen): no lubricant was on this order.
+  },
+  {
+    id: 'npa-75',
+    drug: 'Nasopharyngeal Airway',
+    description: 'NasoSafe 7.5 mm (32 Fr), REF 038-95-075U',
+    lot: '250601223',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2030-05-01',
+    category: 'equipment',
+    protocolIds: ['npa'],
+    // Lot and date from Young inv 3749491 (2026-11-10); the pouch itself has not been photographed.
   },
   {
     id: 'npa-8',
@@ -1031,7 +1044,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2029-06-01',
     category: 'equipment',
     protocolIds: ['npa'],
-    // Arrived 2026-11-12.
+    // Arrived 2026-11-12 (Young order 2000018004).
   },
   {
     id: 'o2-cylinder',
