@@ -94,7 +94,7 @@ export interface InventoryItem {
 }
 
 /** Vintage of the transcribed paper sheet — bump when re-verifying stock. */
-export const INVENTORY_AS_OF = '2026-08';
+export const INVENTORY_AS_OF = '2026-11';
 
 /**
  * What one full protocol course of a drug needs, so the inventory can say

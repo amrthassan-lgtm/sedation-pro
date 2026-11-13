@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { APP_VERSION } from '@/config/version';
 import { useClinicalNote } from '@/composables/useClinicalNote';
 import { useNoteArchiveStore } from '@/stores/note-archive';
 import { clinicalNoteToText } from '@/composables/clinicalNoteText';
@@ -279,7 +280,9 @@ async function shareNote() {
         </div>
       </section>
 
-      <footer class="note-footer">Generated {{ note.generatedAt }} · Sedation Pro v0.1</footer>
+      <footer class="note-footer">
+        Generated {{ note.generatedAt }} · Sedation Pro v{{ APP_VERSION }}
+      </footer>
     </article>
 
     <!-- The wrong-patient guard. The name and date of birth lead, because

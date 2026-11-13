@@ -1,3 +1,4 @@
+import { APP_VERSION } from '@/config/version';
 import {
   PDFDocument,
   StandardFonts,
@@ -55,7 +56,7 @@ export async function clinicalNoteToPdf(note: ClinicalNote): Promise<Uint8Array>
   pdf.setTitle(winAnsi(`Sedation note - ${note.header.patient}`));
   pdf.setAuthor(winAnsi(note.header.provider));
   pdf.setSubject('Moderate IV Sedation - Clinical Record');
-  pdf.setProducer('Sedation Pro');
+  pdf.setProducer(`Sedation Pro ${APP_VERSION}`);
   // pdf-lib stamps "now" by default, which would make the bytes differ on
   // every render of an identical note and make a byte-equality test
   // meaningless. The note carries its own generation time in the footer.
@@ -334,7 +335,7 @@ export async function clinicalNoteToPdf(note: ClinicalNote): Promise<Uint8Array>
   pages.forEach((p, i) => {
     p.drawText(
       winAnsi(
-        `Generated ${note.generatedAt}  ·  Sedation Pro  ·  Page ${i + 1} of ${pages.length}`,
+        `Generated ${note.generatedAt}  ·  Sedation Pro v${APP_VERSION}  ·  Page ${i + 1} of ${pages.length}`,
       ),
       { x: MARGIN, y: MARGIN - 8, size: 7.5, font: reg, color: MUTED },
     );
