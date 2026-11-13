@@ -13,6 +13,7 @@ import { useAlarms, unlockAudio } from '@/composables/useAlarms';
 import { useDockVisibility } from '@/composables/useDockVisibility';
 import { useWakeLock } from '@/composables/useWakeLock';
 import { useCaseReset } from '@/composables/useCaseReset';
+import { useEncounterReopen } from '@/composables/useEncounterReopen';
 import { useNoteFreeze } from '@/composables/useNoteFreeze';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
@@ -41,9 +42,15 @@ const patient = usePatientStore();
 const eventLog = useEventLogStore();
 const { reset: resetCase } = useCaseReset();
 
+// Read before anything below can write: the reopen repair saves at launch,
+// which would stamp "saved just now" and hide a stale session from the gate.
+const savedAtLaunch = readPersistedSavedAt();
+
 // Turns a signed, concluded encounter into a record that survives the next
 // case opening on this tablet.
 useNoteFreeze();
+// A completed assessment that goes on to sedation gets its sign-off back.
+useEncounterReopen();
 
 const resumeGateOpen = ref(false);
 const resumeSavedDate = ref('');
@@ -71,7 +78,7 @@ function discardSession(): void {
 }
 
 onMounted(() => {
-  const savedAt = readPersistedSavedAt();
+  const savedAt = savedAtLaunch;
   if (savedAt === null || !sessionHasContent()) return;
   if (!isStaleSession(savedAt, Date.now())) return; // same-day — restore silently
   resumeSavedDate.value = new Date(savedAt).toLocaleDateString(undefined, {

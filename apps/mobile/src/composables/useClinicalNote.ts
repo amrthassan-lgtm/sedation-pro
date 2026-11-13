@@ -542,11 +542,25 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
 
     // -------- Chronology table --------------------------------------------
 
-    const chronology: ClinicalNoteRow[] = events.value.map((e: LogEvent) => ({
-      time: fmtClock(e.timestamp),
-      event: e.event,
-      detail: fmtDetail(e.details),
-    }));
+    // A case can span two visits. Rows carry a clock time only, so a row
+    // from an earlier day than the latest one names its date, or the
+    // assessment would read as if it happened on the day of sedation.
+    const lastEvent = events.value[events.value.length - 1];
+    const serviceDay = lastEvent ? new Date(lastEvent.timestamp).toDateString() : null;
+    const chronology: ClinicalNoteRow[] = events.value.map((e: LogEvent) => {
+      const detail = fmtDetail(e.details);
+      const when = new Date(e.timestamp);
+      if (when.toDateString() === serviceDay) {
+        return { time: fmtClock(e.timestamp), event: e.event, detail };
+      }
+      const day = `On ${when.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}`;
+      const joiner = detail.includes('\n') ? '\n' : ' · ';
+      return {
+        time: fmtClock(e.timestamp),
+        event: e.event,
+        detail: detail === '' ? day : `${day}${joiner}${detail}`,
+      };
+    });
 
     const providerSignedAt = recovery.providerSignatureDataUrl ? Date.now() : null;
 

@@ -53,7 +53,7 @@ describe('clinicalNoteToText', () => {
     expect(text).toContain('Provider: signed · 11:02');
     // The companion signs nothing; no signature line for them.
     expect(text).not.toContain('Responsible companion');
-    expect(text).toContain('Generated 5/16/2026, 11:05:00 AM · Sedation Pro v1.0.0');
+    expect(text).toContain('Generated 5/16/2026, 11:05:00 AM · Sedation Pro v1.0.1');
   });
 
   it('flags an unsigned note explicitly', () => {
