@@ -107,9 +107,9 @@ body {
   background: var(--color-good-soft);
   color: var(--color-good);
 }
-.btn--red {
-  background: var(--color-crisis);
-  color: var(--color-text-primary);
+/* "Labeled" and "Red guard off" are confirmations, not unavailable controls. */
+.btn--on:disabled {
+  color: var(--color-good);
 }
 
 .pill {
@@ -123,14 +123,6 @@ body {
   font-size: var(--type-footnote);
   font-weight: var(--weight-semibold);
   color: var(--color-text-primary);
-}
-.pill--key {
-  background: var(--color-text-primary);
-  color: var(--color-bg);
-}
-.pill--on {
-  background: var(--color-good-soft);
-  color: var(--color-good);
 }
 
 /* Grouped inset list: rows on the card's own surface with hairlines between. */

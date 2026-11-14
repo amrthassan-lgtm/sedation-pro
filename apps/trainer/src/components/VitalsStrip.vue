@@ -20,7 +20,7 @@ defineProps<{ monitor: MonitorView; said: Voice | null }>();
       BP {{ monitor.nibp ? `${monitor.nibp.sbp}/${monitor.nibp.dbp}` : '--/--' }}
     </span>
   </div>
-  <p v-if="said" class="said" aria-live="polite">
+  <p v-if="said" class="said">
     <span class="eyebrow">{{ said.who }}</span> {{ said.line }}
   </p>
 </template>

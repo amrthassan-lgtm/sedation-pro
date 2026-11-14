@@ -1,4 +1,4 @@
-import { CART_ACTIONS, findAction, findDevice, findVial } from './catalog';
+import { findAction, findDevice, findVial } from './catalog';
 import {
   concentrationMcgPerMl,
   drawDrug,
@@ -689,8 +689,3 @@ export class Simulation {
     return dose;
   }
 }
-
-/** Every toggle the cart defines, for scenario authors and tests. */
-export const TOGGLE_IDS: ReadonlyArray<string> = CART_ACTIONS.filter(
-  (a) => a.kind === 'toggle',
-).map((a) => a.id);

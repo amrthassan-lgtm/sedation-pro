@@ -14,7 +14,7 @@ import { useRun } from '@/composables/useRun';
 import { CART_ACTIONS, type ActionGroup, type CartEntry } from '@/engine/catalog';
 import { findScenario, SCENARIOS } from '@/scenarios';
 import { settings, saveSettings } from '@/session';
-import { fmtClock, fmtStoryClock } from '@/time';
+import { fmtClock, fmtStoryClock, toneMark } from '@/time';
 
 /**
  * The room: one screen for the whole run. Eyes at the top (monitor), the
@@ -112,6 +112,9 @@ function leave(): void {
 function toDebrief(): void {
   void router.push('/debrief');
 }
+
+/** The run is over, so the one way forward takes the keyboard. */
+const vFocus = { mounted: (el: HTMLElement) => el.focus() };
 </script>
 
 <template>
@@ -175,7 +178,7 @@ function toDebrief(): void {
       </div>
     </section>
 
-    <button type="button" class="now" aria-label="Timeline" @click="sheet = { kind: 'timeline' }">
+    <button type="button" class="now" @click="sheet = { kind: 'timeline' }">
       <span v-for="label in now" :key="label" class="chip">{{ label }}</span>
       <span v-if="now.length === 0" class="now-empty">Nothing under way</span>
       <span class="now-more">Timeline</span>
@@ -220,7 +223,7 @@ function toDebrief(): void {
       <ol class="timeline">
         <li v-for="(entry, i) in run.log.value" :key="i" :class="`tone-${entry.tone}`">
           <span class="mono">{{ fmtClock(entry.t) }}</span>
-          <span>{{ entry.text }}</span>
+          <span>{{ toneMark(entry.tone) }}{{ entry.text }}</span>
         </li>
         <li v-if="run.log.value.length === 0" class="row-sub">Nothing yet.</li>
       </ol>
@@ -244,12 +247,18 @@ function toDebrief(): void {
       </div>
     </div>
 
-    <div v-else-if="run.ending.value" class="card-layer" role="dialog" aria-label="Scenario over">
+    <div
+      v-else-if="run.ending.value"
+      class="card-layer"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Scenario over"
+    >
       <div class="title-card">
         <p class="eyebrow">Scenario over · {{ fmtClock(run.t.value) }}</p>
         <h1 class="title-name">{{ run.ending.value.title }}</h1>
         <p class="ending-text">{{ run.ending.value.text }}</p>
-        <button type="button" class="btn btn--key btn--tall btn--block" @click="toDebrief">
+        <button v-focus type="button" class="btn btn--key btn--tall btn--block" @click="toDebrief">
           Debrief
         </button>
       </div>
@@ -264,6 +273,9 @@ function toDebrief(): void {
   margin: 0 auto;
   padding: calc(var(--band-h) + var(--sp-2)) var(--sp-3) var(--sp-3);
   display: grid;
+  /* Without this the one column takes the call-out input's own width and the
+     room is wider than a phone as soon as the 911 button grows. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(236px, 1fr) auto auto auto auto;
   gap: var(--sp-2);
 }
@@ -293,7 +305,6 @@ function toDebrief(): void {
   font-weight: var(--weight-bold);
 }
 .room-head .pill {
-  min-height: 40px;
   padding: 0 var(--sp-3);
 }
 .room-monitor {

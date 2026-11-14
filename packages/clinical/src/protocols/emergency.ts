@@ -251,8 +251,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '2.0-3.0 ml (4 mg/ml stock)',
           concentration: '4 mg/ml (in-office stock) or 10 mg/ml',
           drawTable: [
-            { label: '4 mg/ml: 8 mg', ml: '2.0 ml' },
-            { label: '4 mg/ml: 12 mg', ml: '3.0 ml' },
+            { label: '4 mg/ml: 8 mg (two 1 ml vials)', ml: '2.0 ml' },
+            { label: '4 mg/ml: 12 mg (three 1 ml vials)', ml: '3.0 ml' },
             { label: '10 mg/ml: 8 mg', ml: '0.8 ml' },
             { label: '10 mg/ml: 12 mg', ml: '1.2 ml' },
           ],
@@ -321,7 +321,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         severity: 'critical',
       },
       {
+        text: 'BVM not moving the chest: reposition, NPA, then LMA or King. Crowing or no air movement: Laryngospasm',
+        goTo: ['npa', 'lma', 'king_lt', 'laryngospasm'],
+        severity: 'critical',
+      },
+      {
         text: 'Reverse: Naloxone for fentanyl, Flumazenil for midazolam (see Oversedation protocols)',
+        goTo: ['oversedation_opioid', 'oversedation_benzo'],
       },
       {
         text: 'Still needs the BVM after reversal, or not waking: Call 911',
@@ -427,6 +433,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary: 'BVM + NPA failing · Size 4 most adults',
     signs: ['BVM failing', 'NPA failing'],
     steps: [
+      { text: 'DA calls 911 if not already called', severity: 'critical' },
       {
         text: 'Size by weight: 3 (30-50 kg), 4 (50-70 kg), 5 (70-100 kg). When in doubt, go larger',
       },
@@ -450,6 +457,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     signs: ['LMA failed'],
     relatedProtocols: ['lma', 'npa'],
     steps: [
+      { text: 'DA calls 911 if not already called', severity: 'critical' },
       { text: 'Size 4 (5-6 ft) is stocked' },
       { text: 'Lubricate; head neutral' },
       {
@@ -476,6 +484,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'O₂: nasal hood at 100% (N₂O off) or 4 L/min cannula. Mouth breathing: non-rebreather 15 L/min',
       },
       { text: 'EKG on. Check BP and HR' },
+      {
+        text: 'No history of angina, or sweating, nausea or short of breath: Call 911 now, go to MI',
+        goTo: ['mi'],
+        severity: 'critical',
+      },
       {
         text: 'Nitroglycerin SL, only if SBP ≥90, HR 50-100, no ED drug',
         drug: {
@@ -618,6 +631,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Hypertensive Crisis (>180/120 + symptoms)',
     summary: 'BP >180/120 with headache, chest pain, vision change · Call 911 + Labetalol IV',
     signs: ['BP >180/120', 'severe headache', 'vision changes', 'chest pain', 'weakness'],
+    contraindications: [
+      'Labetalol: asthma or COPD, HR under 60, heart block, heart failure. Use hydralazine instead',
+    ],
     steps: [
       { text: 'Call 911', severity: 'critical' },
       { text: 'Sit upright' },
@@ -743,6 +759,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Ventilate first: jaw thrust, O₂, BVM if breathing is poor (hypoxia is the usual cause in sedation)',
         severity: 'critical',
       },
+      {
+        text: 'Check the pulse. No pulse: CPR + AED',
+        severity: 'critical',
+        goTo: ['pea_asystole', 'vfib_vtach'],
+      },
       { text: 'Monitor EKG, BP, SpO₂. IV open' },
       {
         text: 'Low BP, confusion, chest pain or shock: Atropine IV, repeat q3-5 min, max 3 mg',
@@ -786,11 +807,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
   {
     id: 'sinus_tach',
     category: 'cardiac-arrhythmia',
-    name: 'Sinus Tachycardia (>150 adult, >180 pediatric)',
-    summary: 'HR over 150, usually a response to pain, anxiety or fluids · Treat the cause',
-    signs: ['HR >150', 'chest pain', 'hypotension'],
+    name: 'Sinus Tachycardia (HR over 100)',
+    summary:
+      'HR over 100 with a normal P wave before every QRS, usually a response to pain, anxiety or low fluids · Treat the cause',
+    signs: ['HR >100', 'chest pain', 'hypotension'],
     relatedProtocols: ['svt', 'hypotension'],
     steps: [
+      { text: 'Sudden onset or HR over 150: go to SVT', goTo: ['svt'] },
       {
         text: 'Find the cause: pain, anxiety, hypoxia, low fluids, epinephrine in the local anesthetic',
       },
@@ -817,6 +840,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Normal P wave before every QRS: this is sinus tachycardia, no amiodarone, go to Sinus Tachycardia',
         goTo: ['sinus_tach'],
       },
+      { text: 'Call 911', severity: 'critical' },
       {
         text: 'Amiodarone IV over 10 minutes (office protocol; not an AHA pathway)',
         drug: {
@@ -826,10 +850,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 10,
           volume: '3.0 ml',
           concentration: '50 mg/ml',
-          notes: 'give over 10 minutes; label the syringe',
+          notes:
+            'give over 10 minutes: 0.3 ml every minute into the running D5W, check BP each minute and stop if SBP falls; label the syringe',
         },
       },
-      { text: 'Call 911', severity: 'critical' },
     ],
   },
   {
@@ -861,7 +885,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '12 mg (2nd dose)', ml: '4.0 ml' },
           ],
           notes:
-            '10 ml syringe for the 12 mg dose; push in 1-2 seconds, then a rapid 20 ml NS flush; avoid in asthma; never for irregular or polymorphic rhythms; label the syringe if drawn from a vial',
+            '10 ml syringe for the 12 mg dose; draw the 20 ml NS flush BEFORE the push (two 10 ml syringes from the saline bag); push in 1-2 seconds, then the flush right away and raise the arm; avoid in asthma; never for irregular or polymorphic rhythms; label the syringe if drawn from a vial',
         },
         severity: 'critical',
       },
@@ -875,12 +899,17 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary: 'Irregular HR, palpitations, hypotension · Amiodarone 150mg IV over 10min',
     signs: ['irregular HR', 'palpitations', 'hypotension'],
     relatedProtocols: ['svt', 'junctional_tach', 'wide_complex', 'stable_vtach'],
+    contraindications: [
+      'AF for more than 48 hr or unknown start, and not on a blood thinner: amiodarone can convert it and release a clot (stroke)',
+      'Irregular rhythm with a wide QRS (possible WPW): no amiodarone',
+    ],
     steps: [
       {
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
         severity: 'critical',
       },
       { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
+      { text: 'Call 911', severity: 'critical' },
       {
         text: 'Amiodarone IV over 10 minutes (office protocol; AHA uses rate control first)',
         drug: {
@@ -890,10 +919,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 10,
           volume: '3.0 ml',
           concentration: '50 mg/ml',
-          notes: 'give over 10 minutes; label the syringe',
+          notes:
+            'give over 10 minutes: 0.3 ml every minute into the running D5W, check BP each minute and stop if SBP falls; label the syringe',
         },
       },
-      { text: 'Call 911', severity: 'critical' },
     ],
   },
   {
@@ -910,6 +939,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       { text: 'No pulse: CPR + AED', severity: 'critical', goTo: ['vfib_vtach', 'pea_asystole'] },
       { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
+      { text: 'Call 911', severity: 'critical' },
       {
         text: 'Amiodarone IV over 10 minutes; repeat once if it recurs',
         drug: {
@@ -919,11 +949,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 10,
           volume: '3.0 ml',
           concentration: '50 mg/ml',
-          notes: 'give over 10 minutes; repeat 150 mg if it recurs; label the syringe',
+          notes:
+            'give over 10 minutes: 0.3 ml every minute into the running D5W, check BP each minute and stop if SBP falls; repeat 150 mg if it recurs; label the syringe',
         },
       },
       {
-        text: 'If amiodarone unavailable: Cardiac Lidocaine IV push; second dose is half',
+        text: 'If amiodarone unavailable: Cardiac Lidocaine IV over 2-3 minutes; second dose is half',
         drug: {
           name: 'Cardiac Lidocaine',
           dose: '0.6 mg/lb',
@@ -937,10 +968,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '250 lb (150 mg)', ml: '7.5 ml' },
           ],
           notes:
-            'second dose 0.3 mg/lb in 5-10 min; max 1.4 mg/lb total; over 165 lb needs a second 100 mg/5 ml vial; label the syringe',
+            'no faster than 50 mg (2.5 ml) per minute; second dose 0.3 mg/lb in 5-10 min; max 1.4 mg/lb total; over 165 lb needs a second 100 mg/5 ml vial; label the syringe',
         },
       },
-      { text: 'Call 911', severity: 'critical' },
     ],
   },
   {
@@ -957,6 +987,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       { text: 'No pulse: CPR + AED', severity: 'critical', goTo: ['vfib_vtach', 'pea_asystole'] },
       { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
+      { text: 'Call 911', severity: 'critical' },
       {
         text: 'Amiodarone IV over 10 minutes; repeat once if it recurs',
         drug: {
@@ -966,10 +997,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 10,
           volume: '3.0 ml',
           concentration: '50 mg/ml',
-          notes: 'give over 10 minutes; repeat 150 mg if it recurs; label the syringe',
+          notes:
+            'give over 10 minutes: 0.3 ml every minute into the running D5W, check BP each minute and stop if SBP falls; repeat 150 mg if it recurs; label the syringe',
         },
       },
-      { text: 'Call 911', severity: 'critical' },
     ],
   },
   {
@@ -1004,7 +1035,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 3,
           volume: '1.0 ml',
           concentration: '1 mg/ml',
-          notes: 'draw the entire 1 ml ampule; repeat q3-5 min; label the syringe',
+          notes:
+            'draw the entire 1 ml ampule; push, then run the IV wide open for 10-20 seconds and raise the arm; repeat q3-5 min; label the syringe',
         },
         severity: 'critical',
       },
@@ -1076,7 +1108,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 3,
           volume: '1.0 ml',
           concentration: '1 mg/ml',
-          notes: 'draw the entire 1 ml ampule; repeat q3-5 min; label the syringe',
+          notes:
+            'draw the entire 1 ml ampule; push, then run the IV wide open for 10-20 seconds and raise the arm; repeat q3-5 min; label the syringe',
         },
         severity: 'critical',
       },
@@ -1097,7 +1130,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Anaphylaxis (Severe Allergic Reaction)',
     summary: 'Hives, bronchospasm, hypotension, angioedema · Epinephrine IM THIGH first, then 911',
     signs: ['hives', 'bronchospasm', 'hypotension', 'angioedema'],
-    relatedProtocols: ['bronchospasm', 'hypotension', 'laryngospasm'],
+    relatedProtocols: ['bronchospasm', 'hypotension', 'laryngospasm', 'lma', 'pea_asystole'],
     steps: [
       {
         // Owner (Nov 2026): the cart holds one adult pen. The pen is always
@@ -1197,13 +1230,23 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '2.0-3.0 ml (4 mg/ml stock)',
           concentration: '4 mg/ml (in-office stock) or 10 mg/ml',
           drawTable: [
-            { label: '4 mg/ml: 8 mg', ml: '2.0 ml' },
-            { label: '4 mg/ml: 12 mg', ml: '3.0 ml' },
+            { label: '4 mg/ml: 8 mg (two 1 ml vials)', ml: '2.0 ml' },
+            { label: '4 mg/ml: 12 mg (three 1 ml vials)', ml: '3.0 ml' },
             { label: '10 mg/ml: 8 mg', ml: '0.8 ml' },
             { label: '10 mg/ml: 12 mg', ml: '1.2 ml' },
           ],
           notes: 'label the syringe',
         },
+      },
+      {
+        text: 'Throat or tongue swelling, cannot ventilate: BVM 100% O₂, then LMA or King, then cricothyrotomy',
+        goTo: ['lma', 'king_lt'],
+        severity: 'critical',
+      },
+      {
+        text: 'No pulse: CPR + AED, Epinephrine 1 mg IV',
+        goTo: ['vfib_vtach', 'pea_asystole'],
+        severity: 'critical',
       },
       { text: 'Monitor vitals continuously' },
       {
@@ -1280,9 +1323,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           concentration: '0.4 mg/ml',
           drawTable: [
             { label: '0.4 mg', ml: '1.0 ml' },
-            { label: '2 mg (five 1 ml vials, 2 stocked)', ml: '5.0 ml' },
+            { label: '2 mg (five 1 ml vials, 4 stocked)', ml: '5.0 ml' },
           ],
-          notes: 'give slowly over 2-3 minutes; titrate q2-3 min; label the syringe',
+          notes:
+            '10 ml syringe for the 2 mg dose; give slowly over 2-3 minutes; titrate q2-3 min; label the syringe',
         },
       },
       {
@@ -1371,11 +1415,30 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       {
         // Deliberate: no drug callout. 20% lipid emulsion is not stocked
         // (owner decision 2026-11); EMS and the hospital give it.
-        text: 'Lipid emulsion 20% not stocked: EMS gives it. Tell them LAST',
+        text: 'Lipid emulsion 20% not stocked: EMS or the hospital gives it. Tell 911 and the crew LAST so it is ready',
       },
       {
-        text: 'Arrhythmia or arrest: CPR, AED, small epinephrine doses. NO lidocaine as the antiarrhythmic',
+        // The arrest pages give 1 mg; here that is the wrong dose, so "small"
+        // carries a number and the same mix the anaphylaxis page uses.
+        text: 'Arrhythmia or arrest: CPR, AED, small epinephrine doses (1 mcg/kg or less, not the 1 mg ampule). NO lidocaine as the antiarrhythmic',
+        drug: {
+          name: 'Push-dose Epinephrine',
+          dose: '1 mcg/kg or less',
+          route: 'IV',
+          syringeMl: 10,
+          volume: '5.0-10.0 ml (by weight)',
+          concentration: '10 mcg/ml (after dilution)',
+          mixFirst:
+            'MIX FIRST: one 10 ml syringe, saline from the IV bag port; Draw 1 ml epinephrine 1 mg/ml + 9 ml saline = 100 mcg/ml; WASTE DOWN TO 1 ml; Draw saline back up to 10 ml = 10 mcg/ml; Label it EPI 10 mcg/ml; Never inject from the stock vial',
+          drawTable: [
+            { label: '110 lb (50 mcg)', ml: '5.0 ml' },
+            { label: '155 lb (70 mcg)', ml: '7.0 ml' },
+            { label: '220 lb (100 mcg)', ml: '10.0 ml' },
+          ],
+          notes: 'never the 1 mg ampule undiluted',
+        },
         severity: 'critical',
+        goTo: ['vfib_vtach', 'pea_asystole'],
       },
       {
         text: 'Prevent: aspirate, count cartridges, stay under the max dose for weight',
@@ -1395,6 +1458,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'N₂O off, 100% O₂' },
       { text: 'Protect from injury. Do not restrain, nothing in the mouth' },
       {
+        text: 'Check glucose as soon as it is safe. Under 70: go to Hypoglycemia',
+        goTo: ['hypoglycemia'],
+      },
+      {
         text: 'Seizure 5 min or more: Midazolam IV, repeat once after 5 min (IV diazepam not stocked)',
         drug: {
           name: 'Midazolam',
@@ -1404,6 +1471,20 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '1.0 ml',
           concentration: '5 mg/ml',
           notes: 'push slowly; repeat once after 5 min; BVM ready; label the syringe',
+        },
+      },
+      {
+        // AES 2016 and RAMPART: 10 mg IM for anyone over 40 kg, one dose. It
+        // is 2.0 ml, so it takes the 3 ml syringe, not the 1 ml midazolam one.
+        text: 'No IV (not started, or pulled out): Midazolam 10 mg IM into the outer thigh, once',
+        drug: {
+          name: 'Midazolam',
+          dose: '10 mg',
+          route: 'IM',
+          syringeMl: 3,
+          volume: '2.0 ml',
+          concentration: '5 mg/ml',
+          notes: 'one dose only; BVM ready; label the syringe',
         },
       },
       { text: 'Call 911 at 5 minutes', severity: 'critical' },
@@ -1455,7 +1536,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'CALL 911 IMMEDIATELY', severity: 'critical' },
       { text: 'Write down the last known well time', severity: 'critical' },
       {
-        text: 'Check glucose. Under 70: treat as hypoglycemia (it can look like a stroke)',
+        text: 'Check glucose. Under 70: D50W IV, not the gel (it can look like a stroke)',
         goTo: ['hypoglycemia'],
       },
       { text: 'Nothing by mouth' },
@@ -1496,7 +1577,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'D50W not in stock, or no IV: Call 911 now (Glucagon not stocked)',
         severity: 'critical',
       },
-      { text: 'Recheck glucose in 15 min. Still under 70: repeat' },
+      {
+        text: 'Recheck glucose in 15 min. Still under 70: repeat if a second dose is on hand, otherwise Call 911',
+      },
       { text: 'Once 70 or more: a small snack', severity: 'final' },
     ],
     relatedProtocols: ['stroke', 'syncope'],

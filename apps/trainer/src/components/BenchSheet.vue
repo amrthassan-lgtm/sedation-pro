@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { UiSyringe } from '@sedation-pro/ui';
 
 import { findVial } from '@/engine/catalog';
@@ -43,6 +43,13 @@ watch(syringe, (s) => {
 });
 
 const pending = ref<'IV' | 'IM' | null>(null);
+/** On a phone the read-back and Give land below the fold of the sheet: bring them up. */
+const readbackEl = ref<HTMLElement | null>(null);
+watch(pending, async (route) => {
+  if (!route) return;
+  await nextTick();
+  readbackEl.value?.scrollIntoView({ block: 'end', behavior: 'smooth' });
+});
 
 const size = computed(() => syringe.value?.sizeMl ?? null);
 const labeled = computed(() => syringe.value?.labeled ?? false);
@@ -125,6 +132,7 @@ const readBack = computed(() => {
         type="button"
         class="btn"
         :class="{ 'btn--on': size === ml }"
+        :aria-pressed="size === ml"
         :disabled="volume > 0 && size !== ml"
         @click="pickSize(ml)"
       >
@@ -194,6 +202,7 @@ const readBack = computed(() => {
           type="button"
           class="btn btn--tall"
           :class="{ 'btn--on': pending === 'IM' }"
+          :aria-pressed="pending === 'IM'"
           :disabled="volume <= 0"
           @click="pending = 'IM'"
         >
@@ -203,6 +212,7 @@ const readBack = computed(() => {
           type="button"
           class="btn btn--tall"
           :class="{ 'btn--on': pending === 'IV' }"
+          :aria-pressed="pending === 'IV'"
           :disabled="volume <= 0"
           @click="pending = 'IV'"
         >
@@ -210,7 +220,7 @@ const readBack = computed(() => {
         </button>
       </div>
 
-      <div v-if="pending" class="readback">
+      <div v-if="pending" ref="readbackEl" class="readback">
         <p class="readback-line"><span class="eyebrow">DA</span> {{ readBack }}</p>
         <div class="actions">
           <button type="button" class="btn btn--key btn--tall" @click="give">Give</button>

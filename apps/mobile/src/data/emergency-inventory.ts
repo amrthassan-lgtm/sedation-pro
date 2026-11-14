@@ -138,6 +138,20 @@ export const PROTOCOL_COURSES: ReadonlyArray<ProtocolCourse> = [
     basis: '0.4 mg every 5 min, max 3 doses',
     protocolPhrase: 'max 3 doses',
   },
+  {
+    drug: 'Naloxone',
+    needMg: 2,
+    basis: '0.4 mg doses, up to 2 mg',
+    protocolPhrase: '2 mg (five 1 ml vials',
+  },
+  {
+    // The alternative steroid: one 4 mg vial reads "in stock" against a dose
+    // that starts at 8 mg.
+    drug: 'Dexamethasone',
+    needMg: 8,
+    basis: '8 to 12 mg in one dose',
+    protocolPhrase: '8 mg (two 1 ml vials)',
+  },
 ];
 
 export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
@@ -284,6 +298,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: 'H25060',
     ndc: '0641-6145-01',
     quantity: 1,
+    mgPerUnit: 4,
     expiresOn: '2027-08',
     protocolDrugNames: ['Dexamethasone'],
   },
@@ -421,6 +436,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '305756',
     ndc: '36000-308-01',
     quantity: 2,
+    mgPerUnit: 0.4,
     expiresOn: '2027-03',
     // Owner/purchasing note (kept out of the screen): 2 vials per owner (Nov 2026); only lot 305756 photographed — confirm the second vial's lot/exp
     protocolDrugNames: ['Naloxone'],
@@ -432,6 +448,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '306025',
     ndc: '36000-308-01',
     quantity: 2,
+    mgPerUnit: 0.4,
     expiresOn: '2027-11',
     // Arrived 2026-11-12 (Young order 2000018004).
     protocolDrugNames: ['Naloxone'],
@@ -1152,6 +1169,21 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '',
     category: 'equipment',
     noExpiry: true,
+  },
+  {
+    // Not stock: the yearly team training Florida 64B5-14.009(6) requires.
+    // Listed here so its due date reaches the same banner and To do card as
+    // an expiring drug. Owner (Nov 2026): last held 2026-03-13.
+    id: 'training-annual',
+    drug: 'Emergency Training (yearly)',
+    description: 'Team training on the 16 Florida emergencies — last held Mar 13, 2026',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2027-03-13',
+    category: 'equipment',
+    notes:
+      'Due again by Mar 13, 2027. Keep the signed record: date, time, length, topics and names',
   },
   {
     id: 'cpr-board',

@@ -19,3 +19,8 @@ export function fmtStoryClock(startsAtMin: number, seconds: number, withSeconds:
   const tail = withSeconds ? `:${String(s).padStart(2, '0')}` : '';
   return `${h12}:${mm}${tail} ${h24 < 12 ? 'AM' : 'PM'}`;
 }
+
+/** A mark in front of a timeline line, so its tone is never carried by colour alone. */
+export function toneMark(tone: 'good' | 'bad' | 'neutral'): string {
+  return tone === 'good' ? '▲ ' : tone === 'bad' ? '▼ ' : '';
+}

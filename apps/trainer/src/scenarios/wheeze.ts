@@ -475,7 +475,8 @@ export const wheeze: Scenario = {
         ? {
             voice: {
               who: 'DA',
-              line: 'Want me to push that in the line? It would work faster.',
+              // A temptation, on purpose, and nothing more: no claim about what it would do.
+              line: 'Want me to push that in the line, Doc?',
             },
           }
         : undefined,

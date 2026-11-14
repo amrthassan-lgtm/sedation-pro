@@ -12,6 +12,27 @@ const ACTION_IDS = new Set(CART_ACTIONS.map((a) => a.id));
 const DEVICE_IDS = new Set(CART_DEVICES.map((d) => d.id));
 const VIAL_KEYS = new Set(CART_VIALS.map((v) => v.key));
 
+/**
+ * Protocol steps a scenario deliberately leaves ungraded, each with its
+ * reason. The debrief prints these as "Not part of this run". A step added
+ * to a protocol a scenario grades has to be graded or listed here: without
+ * this, a new step would quietly read as outside the run.
+ */
+const LEFT_OUT: Readonly<Record<string, ReadonlyArray<readonly [string, string, string]>>> = {
+  quiet: [
+    ['hypoventilation', 'No pulse: start CPR', 'the run stops at the arrest'],
+    ['oversedation_opioid', 'No pulse: start CPR', 'the run stops at the arrest'],
+    ['oversedation_opioid', 'Naloxone can wear off before fentanyl', 'after the run ends'],
+    ['laryngospasm', 'Cannot ventilate: LMA or King', 'succinylcholine breaks the spasm'],
+  ],
+  wheeze: [
+    ['anaphylaxis', 'Push-dose Epinephrine IV', 'the mix bench is a later release'],
+    ['anaphylaxis', 'Throat or tongue swelling', 'his airway stays open in this run'],
+    ['anaphylaxis', 'No pulse: CPR + AED', 'the run stops at the arrest'],
+    ['anaphylaxis', 'Monitor vitals continuously', 'not an act the cart offers'],
+  ],
+};
+
 describe('every scenario', () => {
   it('has a unique id and can be found by it', () => {
     const ids = SCENARIOS.map((s) => s.id);
@@ -61,6 +82,32 @@ describe('every scenario', () => {
     (_id, scenario) => {
       const texts = scenario.rubric.map((r) => resolveRef(r.ref)!.text);
       expect(new Set(texts).size).toBe(texts.length);
+    },
+  );
+
+  it.each(SCENARIOS.map((s) => [s.id, s] as const))(
+    '%s: every step of a protocol it grades is graded or deliberately left out',
+    (id, scenario) => {
+      const graded = new Set(
+        scenario.rubric.map((item) => {
+          const r = resolveRef(item.ref)!;
+          return `${r.protocolId}:${r.stepIndex}`;
+        }),
+      );
+      const leftOut = LEFT_OUT[id] ?? [];
+      for (const [protocol, text] of leftOut) {
+        const matches = findProtocol(protocol)!.steps.filter((s) => s.text.includes(text));
+        expect(matches.length, `${id}: left-out "${text}"`).toBe(1);
+      }
+      for (const pid of scenario.protocols) {
+        findProtocol(pid)!.steps.forEach((step, i) => {
+          const listed = leftOut.some(([p, text]) => p === pid && step.text.includes(text));
+          expect(
+            graded.has(`${pid}:${i}`) !== listed,
+            `${id}: "${step.text}" (${pid}) must be either graded or listed as left out`,
+          ).toBe(true);
+        });
+      }
     },
   );
 

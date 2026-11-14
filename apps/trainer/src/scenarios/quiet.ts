@@ -144,6 +144,11 @@ function stoppedSedatives(run: Ctx): boolean | null {
   return run.onDuring('o2', 'hypo') ? true : null;
 }
 
+/** 911 belongs to the spasm: `null` in a run that never reached it. */
+function called911InSpasm(run: Ctx): boolean | null {
+  return run.entered('spasm') === null ? null : run.at('call_911') !== null;
+}
+
 const sedativeGiven: Reaction = (_ctx, e) => {
   const dose = doseOf(e);
   if (!dose) return undefined;
@@ -308,7 +313,9 @@ export const quiet: Scenario = {
           look: {
             color: ctx.vitals.spo2 < 85 ? 'dusky' : 'pale',
             eyes: 'open',
-            note: 'chest heaving, no sound',
+            // The words change with the colour: colour is never the only signal.
+            note:
+              ctx.vitals.spo2 < 85 ? 'chest heaving, lips turning blue' : 'chest heaving, no sound',
           },
         };
       },
@@ -349,7 +356,8 @@ export const quiet: Scenario = {
           look: {
             color: ctx.vitals.spo2 < 85 ? 'dusky' : 'pale',
             eyes: 'closed',
-            note: 'paralysed, not breathing',
+            note:
+              ctx.vitals.spo2 < 85 ? 'paralysed, lips turning blue' : 'paralysed, not breathing',
           },
         };
       },
@@ -695,6 +703,43 @@ export const quiet: Scenario = {
       check: (run) => gaveProtocolDose(NALOXONE, run.given('naloxone')),
       when: (run) => run.given('naloxone')[0]?.t ?? null,
     },
+    // The sibling pages word the spasm and its 911 call their own way. Shown
+    // there too, and scored once, under Laryngospasm.
+    {
+      id: 'hypo_no_air',
+      ref: { protocol: 'hypoventilation', step: 'BVM not moving the chest' },
+      tier: 'echo',
+      parts: [
+        {
+          // His airway shuts at the cords: nothing in this run calls for an airway device.
+          quote: 'BVM not moving the chest: reposition, NPA, then LMA or King',
+          check: () => null,
+        },
+        {
+          quote: 'Crowing or no air movement: Laryngospasm',
+          check: (run) =>
+            run.entered('spasm') === null
+              ? null
+              : suctionedForSpasm(run) ||
+                run.onDuring('larson', 'spasm') ||
+                run.onDuring('cpap', 'spasm'),
+        },
+      ],
+    },
+    {
+      id: 'hypo_911',
+      ref: { protocol: 'hypoventilation', step: 'or not waking: Call 911' },
+      tier: 'echo',
+      check: called911InSpasm,
+      when: (run) => run.at('call_911'),
+    },
+    {
+      id: 'opioid_911',
+      ref: { protocol: 'oversedation_opioid', step: 'or you cannot ventilate: Call 911' },
+      tier: 'echo',
+      check: called911InSpasm,
+      when: (run) => run.at('call_911'),
+    },
     {
       id: 'spasm_suction',
       ref: { protocol: 'laryngospasm', step: 'Remove packs and gauze, suction the throat' },
@@ -783,7 +828,7 @@ export const quiet: Scenario = {
       id: 'call_911',
       ref: { protocol: 'laryngospasm', step: 'Call 911' },
       tier: 'core',
-      check: (run) => (run.entered('spasm') === null ? null : run.at('call_911') !== null),
+      check: called911InSpasm,
       when: (run) => run.at('call_911'),
     },
   ],

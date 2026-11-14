@@ -10,7 +10,7 @@ import type { DebriefRow, RowResult } from '@/engine/grade';
 import type { DoseEvent } from '@/engine/types';
 import { findScenario } from '@/scenarios';
 import { lastRun, settings } from '@/session';
-import { fmtClock } from '@/time';
+import { fmtClock, toneMark } from '@/time';
 
 /**
  * Two things, kept apart. "What happened to the patient" is the story the
@@ -207,7 +207,7 @@ function again(): void {
       <div class="group">
         <div v-for="(entry, i) in run.log" :key="i" class="row log" :class="`tone-${entry.tone}`">
           <span class="mono log-t">{{ fmtClock(entry.t) }}</span>
-          <span class="row-main">{{ entry.text }}</span>
+          <span class="row-main">{{ toneMark(entry.tone) }}{{ entry.text }}</span>
         </div>
       </div>
     </section>
