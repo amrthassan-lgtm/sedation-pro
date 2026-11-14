@@ -960,6 +960,20 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     // Owner/purchasing note (kept out of the screen): Everyday sedation supply — stock tracked, expiry not
   },
   {
+    // The third syringe of the kit plan. Thirteen protocol callouts name it:
+    // every MIX FIRST recipe, and labetalol, amiodarone and cardiac lidocaine.
+    id: 'syringe-10ml',
+    drug: '10 mL Syringe',
+    description: 'Every mix, and every draw over 3 ml',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '',
+    category: 'equipment',
+    noExpiry: true,
+    // Owner/purchasing note (kept out of the screen): Owner confirmed on hand (2026-11-14). Everyday sedation supply — stock tracked, expiry not. Pack size and needle not yet recorded
+  },
+  {
     id: 'cric-kit',
     drug: 'Chinook TMM-CR Cricothyrotomy Kit',
     description: 'Cuffed 6.0 trach tube, Kelly, #10 scalpel, 10 mL syringe, tracheal hook',
