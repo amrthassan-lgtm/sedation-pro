@@ -26,7 +26,12 @@ import { useIVStore } from '@/stores/iv';
 import { usePatientStore } from '@/stores/patient';
 import { CASE_PHASE_ROUTE, CASE_PHASE_SHORT, useSessionStore } from '@/stores/session';
 
-import { parseVolumeMl, syringeConfig } from '@/composables/useSyringeConfig';
+import {
+  emergencySyringe,
+  parseVolumeMl,
+  syringeConfig,
+  type SyringeDrawing,
+} from '@/composables/useSyringeConfig';
 import { useInventoryStatus, type ClassifiedItem } from '@/composables/useInventoryStatus';
 import { CATEGORY_LABEL, swatchFor } from '@/data/protocolCategories';
 
@@ -242,11 +247,13 @@ function routeLine(drug: EmergencyDrugCallout): string {
 }
 
 /**
- * Returns the syringe rendering tuple for a drug callout when the drug is one
- * of the five recognised IV-push drugs *and* the callout includes a volume.
- * Otherwise returns `null` so the template can `v-if` past it.
+ * Returns the syringe drawing for a callout: the sedation-tray drugs with a
+ * single draw volume, plus the emergency drugs `emergencySyringe` knows
+ * (epinephrine). Otherwise `null` so the template can `v-if` past it.
  */
-function syringeFor(drug: EmergencyDrugCallout) {
+function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
+  const emergency = emergencySyringe(drug);
+  if (emergency !== null) return emergency;
   const cfg = syringeConfig(drug.name);
   if (cfg === null) return null;
   const drawnMl = parseVolumeMl(drug.volume);
@@ -258,7 +265,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
     drawnMl,
     color: cfg.color,
     concentration: drug.concentration ?? cfg.concentration,
-    caption: drug.volume ?? '',
+    caption: `Draw ${drug.volume ?? ''}`,
   };
 }
 </script>
@@ -413,7 +420,7 @@ function syringeFor(drug: EmergencyDrugCallout) {
                   :drawn-ml="syringeFor(step.drug)!.drawnMl"
                   :color="syringeFor(step.drug)!.color"
                   :concentration="syringeFor(step.drug)!.concentration"
-                  :caption="`Draw ${syringeFor(step.drug)!.caption}`"
+                  :caption="syringeFor(step.drug)!.caption"
                 />
               </div>
             </div>

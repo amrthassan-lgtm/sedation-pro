@@ -62,17 +62,24 @@ const CENTER_Y = 37;
 const PLUNGER_HEAD_W = 8;
 const THUMB_X = 256;
 const THUMB_W = 12;
-const THUMB_Y = 18;
-const THUMB_H = 38;
 
 /**
  * 1cc tuberculin syringes (Versed) have a noticeably thinner barrel than
- * 3cc syringes (Fentanyl, Zofran, Flumazenil, Naloxone). Match the legacy
- * single-file SVGs which render these as two distinct sizes — a flat
- * BARREL_H regardless of capacity made all five drugs look identical.
+ * 3cc syringes (Fentanyl, Zofran, Flumazenil, Naloxone), and the 10 ml
+ * syringe every MIX FIRST recipe uses is wider again. A flat barrel height
+ * regardless of capacity made every syringe look identical.
  */
 const narrow = computed(() => props.capacityMl <= 1);
-const barrelH = computed(() => (narrow.value ? 14 : 22));
+/**
+ * Three real barrel sizes, so the picture matches the syringe in the hand:
+ * 1 ml tuberculin (narrow), 3 ml (standard) and 10 ml (wide, for every mix).
+ * Barrel height, thumb ring and plunger rod all step up together.
+ */
+const wide = computed(() => props.capacityMl > 3);
+const barrelH = computed(() => (narrow.value ? 14 : wide.value ? 32 : 22));
+const thumbH = computed(() => (wide.value ? 48 : 38));
+const thumbY = computed(() => CENTER_Y - thumbH.value / 2 - 1);
+const rodH = computed(() => (wide.value ? 8 : 6));
 const barrelY = computed(() => CENTER_Y - barrelH.value / 2);
 const barrelBottom = computed(() => barrelY.value + barrelH.value);
 
@@ -101,7 +108,7 @@ const rodW = computed(() => Math.max(0, THUMB_X - rodX.value));
 /**
  * Tick scheme matches the legacy SVGs:
  *  - 1cc tuberculin: 10 minor ticks (every 0.1 mL), labels every 0.2 mL (5 majors).
- *  - 3cc syringe: ticks every 0.5 mL, labels every 1 mL.
+ *  - 3cc and 10 ml syringes: ticks every 0.5 mL, labels every 1 mL.
  */
 const ticks = computed(() => {
   const out: Array<{ x: number; label: string | null }> = [];
@@ -179,9 +186,9 @@ const ticks = computed(() => {
              the empty back portion of the barrel and out the back. -->
         <rect
           :x="rodX"
-          :y="CENTER_Y - 3"
+          :y="CENTER_Y - rodH / 2"
           :width="rodW"
-          height="6"
+          :height="rodH"
           fill="#5d6b85"
           stroke="#a8b6cf"
           stroke-width="0.6"
@@ -190,9 +197,9 @@ const ticks = computed(() => {
         <!-- Thumb ring at the back of the rod. -->
         <rect
           :x="THUMB_X"
-          :y="THUMB_Y"
+          :y="thumbY"
           :width="THUMB_W"
-          :height="THUMB_H"
+          :height="thumbH"
           rx="2"
           fill="#0d1527"
           stroke="#a8b6cf"

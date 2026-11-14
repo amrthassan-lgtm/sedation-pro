@@ -18,7 +18,8 @@ function allCallouts(): ReadonlyArray<EmergencyDrugCallout> {
 const INJECTABLE_ROUTES = new Set(['IV', 'IM', 'IA', 'SubQ']);
 
 function injectables(): ReadonlyArray<EmergencyDrugCallout> {
-  return allCallouts().filter((d) => INJECTABLE_ROUTES.has(d.route));
+  // An auto-injector is given, not drawn: no syringe, volume or label.
+  return allCallouts().filter((d) => INJECTABLE_ROUTES.has(d.route) && d.device === undefined);
 }
 
 describe('emergency protocols', () => {
@@ -268,8 +269,37 @@ describe('emergency protocols', () => {
     expect(push?.drug?.mixFirst).toContain('WASTE DOWN TO 1 ml');
     // Epinephrine first, 911 in parallel, and every case leaves for the ER.
     expect(steps[0]?.drug?.name).toBe('Epinephrine');
+    expect(steps[0]?.drug?.device).toBe('auto-injector');
     expect(steps[1]?.text).toContain('calls 911');
     expect(steps.at(-1)?.text).toContain('goes to the ER');
+  });
+
+  it('anaphylaxis: the pen first, then the ampule, before any push-dose (one pen on the cart)', () => {
+    const steps = findProtocol('anaphylaxis')?.steps ?? [];
+    const epiIdx = steps
+      .map((s, i) => (s.drug?.name === 'Epinephrine' ? i : -1))
+      .filter((i) => i >= 0);
+    expect(epiIdx).toHaveLength(2);
+    const [pen, ampule] = epiIdx.map((i) => steps[i]!);
+    expect(pen?.text).toContain('Auvi-Q');
+    expect(ampule?.text).toContain('from the ampule');
+    expect(ampule?.text).toContain('NEVER 1 mg/ml IV');
+    expect(ampule?.drug?.route).toBe('IM');
+    expect(ampule?.drug?.syringeMl).toBe(3);
+    expect(ampule?.drug?.concentration).toBe('1 mg/ml');
+    expect(ampule?.drug?.drawTable?.[0]).toEqual({ label: '0.3 mg', ml: '0.3 ml' });
+    const pushIdx = steps.findIndex((s) => s.drug?.name === 'Push-dose Epinephrine');
+    expect(epiIdx[1]!).toBeLessThan(pushIdx);
+  });
+
+  it('auto-injector callouts are IM epinephrine only and carry no draw instructions', () => {
+    for (const drug of allCallouts().filter((d) => d.device === 'auto-injector')) {
+      expect(drug.name).toBe('Epinephrine');
+      expect(drug.route).toBe('IM');
+      expect(drug.volume).toBeUndefined();
+      expect(drug.syringeMl).toBeUndefined();
+      expect(drug.drawTable).toBeUndefined();
+    }
   });
 
   it('reversal agents state the stocked concentration', () => {

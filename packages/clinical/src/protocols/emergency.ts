@@ -53,6 +53,11 @@ export interface EmergencyDrugCallout {
   readonly notes?: string;
   /** Syringe the practice draws this into (owner's kit plan: 1, 3 or 10 ml). */
   readonly syringeMl?: 1 | 3 | 10;
+  /**
+   * Given from a prefilled auto-injector (Auvi-Q): nothing is drawn, so the
+   * callout carries no syringe, volume or label instruction.
+   */
+  readonly device?: 'auto-injector';
 }
 
 /** A single ordered step in a protocol. */
@@ -1045,7 +1050,29 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     relatedProtocols: ['bronchospasm', 'hypotension', 'laryngospasm'],
     steps: [
       {
-        text: 'Epinephrine IM into the THIGH (Auvi-Q, or draw from the 1 mg/ml ampule). NEVER 1 mg/ml IV',
+        // Owner (Nov 2026): the cart holds one adult pen. The pen is always
+        // the first dose; every later IM dose is drawn from the ampule.
+        text: 'Epinephrine IM into the outer THIGH: Auvi-Q 0.3 first. NEVER 1 mg/ml IV',
+        drug: {
+          name: 'Epinephrine',
+          dose: '0.3 mg',
+          route: 'IM',
+          device: 'auto-injector',
+          notes:
+            'Auvi-Q: pull off the red guard, press firmly into the outer thigh, hold 2 seconds; through clothing is fine',
+        },
+        severity: 'critical',
+      },
+      { text: 'At the same time: DA calls 911', severity: 'critical' },
+      { text: 'Lie flat, legs up (sit up if breathing hard). NEVER stand them up' },
+      { text: 'O₂ to >94%' },
+      {
+        text: 'Albuterol (if wheezing)',
+        drug: { name: 'Albuterol', dose: '4-8 puffs', route: 'inhaled', notes: 'repeat q20 min' },
+      },
+      { text: '500 ml saline bolus, wide open' },
+      {
+        text: '5 min, not better: second IM dose from the ampule, outer THIGH. Repeat every 5-15 min. NEVER 1 mg/ml IV',
         drug: {
           name: 'Epinephrine',
           dose: '0.3-0.5 mg',
@@ -1058,18 +1085,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '0.5 mg', ml: '0.5 ml' },
           ],
           notes:
-            'same syringe and needle to draw and give, outer thigh, push firmly, through clothing is fine; repeat q5-15 min if not better; label the syringe if drawn from the ampule',
+            'same syringe and needle to draw and give, push firmly, through clothing is fine; label the syringe',
         },
         severity: 'critical',
       },
-      { text: 'At the same time: DA calls 911', severity: 'critical' },
-      { text: 'Lie flat, legs up (sit up if breathing hard). NEVER stand them up' },
-      { text: 'O₂ to >94%' },
-      {
-        text: 'Albuterol (if wheezing)',
-        drug: { name: 'Albuterol', dose: '4-8 puffs', route: 'inhaled', notes: 'repeat q20 min' },
-      },
-      { text: '500 ml saline bolus, wide open' },
       {
         text: 'Still low BP after 2 IM doses + fluids: Push-dose Epinephrine IV (office protocol)',
         drug: {
