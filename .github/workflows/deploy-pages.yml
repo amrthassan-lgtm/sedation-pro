@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build apps/mobile for Pages
+    name: Build apps/mobile and apps/trainer for Pages
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,13 +44,28 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build apps/mobile
+      # The trainer's protocol references are held to the protocol text by its
+      # tests, not by the compiler: a reworded step would build cleanly and
+      # ship a drill that cannot load. A failure here stops the deploy, and
+      # devices keep the site they already have.
+      - name: Test the training simulator
+        run: pnpm --filter @sedation-pro/trainer test
+
+      # One command, both apps, on purpose: the site ships whole or not at
+      # all, so `/trainer/` never goes missing from a deploy.
+      - name: Build apps/mobile and apps/trainer
         run: pnpm build
         env:
           GITHUB_PAGES: '1'
 
       - name: SPA fallback — Pages serves dist/404.html for unknown paths
         run: cp apps/mobile/dist/index.html apps/mobile/dist/404.html
+
+      # The training simulator ships in the same site, one folder down. It is
+      # copied in after the clinical build, so it is never in the clinical
+      # app's offline cache and cannot change what the tablet runs chairside.
+      - name: Add the training simulator at /trainer/
+        run: cp -r apps/trainer/dist apps/mobile/dist/trainer
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

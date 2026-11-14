@@ -78,6 +78,25 @@ describe('QuickReferenceDetailView emergency actions', () => {
     quiet.unmount();
   });
 
+  it('a prefilled syringe is given, not drawn', () => {
+    const w = mountDetail('hypoglycemia');
+    const dextrose = w.findAll('.drug-callout').find((c) => c.text().includes('D50W'));
+    expect(dextrose?.find('.drug-draw-label').text()).toBe('Give');
+    w.unmount();
+    const drawn = mountDetail('oversedation_opioid');
+    expect(drawn.find('.drug-draw-label').text()).toBe('Draw');
+    drawn.unmount();
+  });
+
+  it('the three during-sedation breathing pages carry the banner (review, Nov 2026)', () => {
+    // Each now has a step that calls 911 when reversal has not ended the need for the BVM.
+    for (const id of ['hypoventilation', 'oversedation_opioid', 'oversedation_benzo']) {
+      const w = mountDetail(id);
+      expect(w.find('a.call-911').exists(), id).toBe(true);
+      w.unmount();
+    }
+  });
+
   it('offers to log the reversal only on the oversedation protocols, and only with a case open', () => {
     const w = mountDetail('oversedation_benzo');
     expect(w.find('.give-card').exists()).toBe(true);

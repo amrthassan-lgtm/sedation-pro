@@ -18,7 +18,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the nine-phase plan.
 
 - **Phase 0 — Foundation scaffold:** done.
 - **Phase 1 — Clinical engine:** done (`@sedation-pro/clinical` v0.1.0).
-- **Version 1 (Nov 2026, now 1.0.1):** the app the practice runs: assessment, oral
+- **Version 1 (Nov 2026, now 1.1.0):** the app the practice runs: assessment, oral
   and IV sedation, recovery, clinical note, Open Dental filing, emergency
   protocols and the crash-cart inventory. `APP_VERSION` in
   `apps/mobile/src/config/version.ts` is the number shown on screen and on
@@ -29,6 +29,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the nine-phase plan.
 ```
 apps/
   mobile/                  Vue 3 + Vite web app (PWA)
+  trainer/                 Emergency training simulator (served at /trainer/)
 packages/
   clinical/                Pure-TS clinical engine (formulary + rules)
   ui/                      Vue UI primitives (Phase 2)
@@ -105,7 +106,7 @@ pnpm install --frozen-lockfile
 pnpm dev          # apps/mobile in browser
 pnpm typecheck    # tsc/vue-tsc across all packages
 pnpm test         # Vitest across all packages, with coverage in @sedation-pro/clinical
-pnpm build        # apps/mobile production bundle
+pnpm build        # apps/mobile and apps/trainer production bundles
 pnpm format       # Prettier (write)
 pnpm format:check # Prettier (verify, used by CI)
 ```
@@ -136,6 +137,48 @@ pnpm --filter @sedation-pro/mobile dev
   copy of the original single-file app now (the local `tools/legacy-source/`
   copy was removed, Nov 2026) and is read-only reference. Changes go in
   this repo (`sedation-pro`).
+
+## Training simulator (`apps/trainer`)
+
+A separate app in the same site, at `…/sedation-pro/trainer/`. It plays an
+emergency in real time (a monitor, a patient, the practice's cart) and
+debriefs the run against the practice's own protocols. It is not part of
+the clinical app and must stay that way:
+
+- **It holds no clinical wording of its own.** Every line the debrief
+  prints about what should have happened is protocol text looked up through
+  a `ProtocolRef`, and doses are graded from the callout's own `dose`
+  string (`engine/protocol.ts`). Never write a dose, a step or advice into
+  a scenario's rubric. Tests fail when a reference stops resolving.
+- **The cart is the same in every scenario** (`engine/catalog.ts`). Labels
+  are phrases from protocol steps and carry no dose, rate or technique. A
+  scenario decides what an action does, never whether it is offered.
+- **Scenario numbers are pacing, not pharmacology** (how fast a saturation
+  falls, how long a drug takes). A skipped protocol wait is a `cut` with a
+  card, never a silently shortened wait.
+- **Unmistakably training, and walled off.** The gold TRAINING band is on
+  every screen. Storage keys are all under `sedation-trainer:`; the app
+  shares an origin with the clinical app, and `isolation.test.ts` forbids
+  any other key, any import from `apps/mobile`, and any network request.
+  No patient fields, ever: the patients are invented.
+- **No pulse beep.** The practice's Edan runs on minimal alerts, so the
+  monitor makes alarm tones only.
+- **Deploy:** built with the clinical app and copied into its `dist/trainer`
+  by `deploy-pages.yml`, so it is never in the clinical app's offline
+  cache. The clinical service worker's `navigateFallbackDenylist`
+  (`apps/mobile/src/config/trainer-path.ts`) keeps it from answering
+  `/trainer/` with the clinical shell. Hash routing, because the site's 404
+  fallback is the clinical app. The deploy runs the trainer's tests first:
+  rewording a protocol step a scenario points at fails them, so fix the
+  reference in the same change.
+- **No lazy chunks and no worker.** The four views are imported whole in
+  `router.ts`. A deploy that lands mid-drill would otherwise remove the
+  chunk the debrief needs.
+- **A drug acts on the patient, not on the scenario.** What a vial does in
+  every room lives in `scenarios/shared.ts`; a dose of a drug the run's
+  protocols never mention is listed in the debrief and withholds "Clean
+  run" (`outsideProtocols` in `engine/grade.ts`).
+- `pnpm dev:trainer` runs it locally on port 5174.
 
 ## Branching and commits
 

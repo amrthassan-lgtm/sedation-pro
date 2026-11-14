@@ -54,10 +54,12 @@ export interface EmergencyDrugCallout {
   /** Syringe the practice draws this into (owner's kit plan: 1, 3 or 10 ml). */
   readonly syringeMl?: 1 | 3 | 10;
   /**
-   * Given from a prefilled auto-injector (Auvi-Q): nothing is drawn, so the
-   * callout carries no syringe, volume or label instruction.
+   * Given from a prefilled device, so nothing is drawn. An auto-injector
+   * (Auvi-Q) carries no syringe, volume or label instruction at all. A
+   * prefilled syringe (50% dextrose) keeps its volume, which is given rather
+   * than drawn, and carries its maker's label.
    */
-  readonly device?: 'auto-injector';
+  readonly device?: 'auto-injector' | 'prefilled-syringe';
 }
 
 /** A single ordered step in a protocol. */
@@ -202,6 +204,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         severity: 'critical',
       },
       {
+        // The pen means this is no longer a simple wheeze: the same call the
+        // anaphylaxis page makes, at the same moment.
+        text: 'At the same time: DA calls 911. Hives or swelling: go to Anaphylaxis',
+        goTo: ['anaphylaxis'],
+        severity: 'critical',
+      },
+      {
         text: '5 min, not better: second IM dose from the ampule, outer THIGH. Repeat every 5-15 min. NEVER 1 mg/ml IV in a patient with a pulse',
         drug: {
           name: 'Epinephrine',
@@ -313,6 +322,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       {
         text: 'Reverse: Naloxone for fentanyl, Flumazenil for midazolam (see Oversedation protocols)',
+      },
+      {
+        text: 'Still needs the BVM after reversal, or not waking: Call 911',
+        severity: 'critical',
       },
       {
         text: 'No pulse: start CPR (Cardiac Arrest protocol)',
@@ -610,6 +623,13 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Sit upright' },
       { text: 'O₂ to >94%' },
       {
+        // Before the drug on purpose: the Stroke page gives no BP drug until
+        // the hospital has a scan.
+        text: 'One-sided weakness, face droop or slurred speech: go to Stroke, no BP drug',
+        goTo: ['stroke'],
+        severity: 'critical',
+      },
+      {
         text: 'Labetalol IV over 2 minutes, repeat 20-40mg q10min, up to 300mg total',
         drug: {
           name: 'Labetalol',
@@ -635,10 +655,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         },
       },
       { text: 'Lower BP no more than 25% in the first hour' },
-      {
-        text: 'Chest pain: go to MI. One-sided weakness or slurred speech: go to Stroke',
-        goTo: ['mi', 'stroke'],
-      },
+      { text: 'Chest pain: go to MI', goTo: ['mi'] },
       { text: 'Monitor vitals continuously', severity: 'final' },
     ],
     relatedProtocols: ['mi', 'stroke'],
@@ -786,8 +803,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'junctional_tach',
     category: 'cardiac-arrhythmia',
     name: 'Junctional Tachycardia',
-    summary: 'Regular narrow tachycardia, HR 100-180 · Amiodarone 150mg IV over 10min',
-    signs: ['regular narrow tachycardia', 'HR 100-180'],
+    summary:
+      'Regular narrow tachycardia with no P wave before the QRS (or an upside-down P), HR 100-180 · Amiodarone 150mg IV over 10min',
+    signs: ['regular narrow tachycardia', 'no P waves or inverted P waves', 'HR 100-180'],
     relatedProtocols: ['svt', 'afib', 'wide_complex', 'stable_vtach'],
     steps: [
       {
@@ -795,6 +813,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         severity: 'critical',
       },
       { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
+      {
+        text: 'Normal P wave before every QRS: this is sinus tachycardia, no amiodarone, go to Sinus Tachycardia',
+        goTo: ['sinus_tach'],
+      },
       {
         text: 'Amiodarone IV over 10 minutes (office protocol; not an AHA pathway)',
         drug: {
@@ -886,6 +908,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
         severity: 'critical',
       },
+      { text: 'No pulse: CPR + AED', severity: 'critical', goTo: ['vfib_vtach', 'pea_asystole'] },
       { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
       {
         text: 'Amiodarone IV over 10 minutes; repeat once if it recurs',
@@ -932,6 +955,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
         severity: 'critical',
       },
+      { text: 'No pulse: CPR + AED', severity: 'critical', goTo: ['vfib_vtach', 'pea_asystole'] },
       { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
       {
         text: 'Amiodarone IV over 10 minutes; repeat once if it recurs',
@@ -962,6 +986,14 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         severity: 'critical',
       },
       { text: 'AED: shock when advised, then CPR for 2 minutes right away', severity: 'critical' },
+      {
+        // This is the page the team opens for any arrest, and an arrest under
+        // sedation is usually not shockable: without this the epinephrine
+        // below waits for a second shock that never comes.
+        text: 'AED says no shock: CPR for 2 minutes, Epinephrine now, go to PEA / Asystole',
+        goTo: ['pea_asystole'],
+        severity: 'critical',
+      },
       { text: 'IV access without stopping compressions' },
       {
         text: 'After 2nd shock: Epinephrine IV push, repeat q3-5min',
@@ -1207,6 +1239,15 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         },
       },
       {
+        text: 'Still needs the BVM after reversal, or you cannot ventilate: Call 911',
+        severity: 'critical',
+      },
+      {
+        text: 'No pulse: start CPR (Cardiac Arrest protocol)',
+        severity: 'critical',
+        goTo: ['vfib_vtach', 'pea_asystole'],
+      },
+      {
         text: 'Sleepiness can come back: watch 2 hr after flumazenil (the app holds discharge 120 min)',
         severity: 'final',
       },
@@ -1246,6 +1287,15 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       {
         text: 'Midazolam given too? Naloxone first, then flumazenil only if still not breathing well',
+      },
+      {
+        text: 'Still needs the BVM after reversal, or you cannot ventilate: Call 911',
+        severity: 'critical',
+      },
+      {
+        text: 'No pulse: start CPR (Cardiac Arrest protocol)',
+        severity: 'critical',
+        goTo: ['vfib_vtach', 'pea_asystole'],
       },
       {
         text: 'Naloxone can wear off before fentanyl: watch 2 hr after the last dose (the app holds discharge 120 min)',
@@ -1426,15 +1476,16 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Check blood glucose with Glucometer. Under 70 = low' },
       { text: 'Awake and can swallow: 1 glucose gel pouch (15 g)' },
       {
-        text: 'Not awake: nothing by mouth. D50W IV',
+        text: 'Not awake: Call 911. Nothing by mouth. D50W IV',
         drug: {
           name: 'D50W',
           dose: '25 g',
           route: 'IV',
-          volume: '50 ml',
+          device: 'prefilled-syringe',
+          volume: '50 ml (whole syringe)',
           concentration: '0.5 g/ml (50% Dextrose)',
           notes:
-            'use 50 ml prefilled syringe or draw entire vial into 60 cc syringe; label the syringe if drawn from a vial',
+            'prefilled syringe; push slowly with the line running; stop if the hand swells or hurts',
         },
         severity: 'critical',
       },

@@ -20,9 +20,10 @@ pnpm install --frozen-lockfile
 | Command             | What it does                                                                                        |
 | ------------------- | --------------------------------------------------------------------------------------------------- |
 | `pnpm dev`          | Run `apps/mobile` in a browser via Vite.                                                            |
+| `pnpm dev:trainer`  | Run the training simulator (`apps/trainer`) on port 5174.                                           |
 | `pnpm typecheck`    | Run `tsc --noEmit` / `vue-tsc --noEmit` across every workspace.                                     |
 | `pnpm test`         | Run Vitest across every workspace. `@sedation-pro/clinical` runs with v8 coverage and an 80% floor. |
-| `pnpm build`        | Type-check and build the production `apps/mobile` bundle into `apps/mobile/dist`.                   |
+| `pnpm build`        | Type-check and build `apps/mobile` and `apps/trainer`, each into its own `dist`.                    |
 | `pnpm format`       | Format all source with Prettier.                                                                    |
 | `pnpm format:check` | Verify formatting (used by CI).                                                                     |
 
@@ -88,6 +89,7 @@ native-shell setup was removed in Nov 2026 by the owner's choice.
 ```
 apps/
   mobile/                  Vue 3 + Vite web app (PWA, the shipped app)
+  trainer/                 Emergency training simulator, served at /trainer/
 packages/
   clinical/                Pure-TS clinical engine (Phase 1+)
   ui/                      UI primitives (Phase 2)

@@ -18,7 +18,7 @@ function allCallouts(): ReadonlyArray<EmergencyDrugCallout> {
 const INJECTABLE_ROUTES = new Set(['IV', 'IM', 'IA', 'SubQ']);
 
 function injectables(): ReadonlyArray<EmergencyDrugCallout> {
-  // An auto-injector is given, not drawn: no syringe, volume or label.
+  // A prefilled device is given, not drawn: no syringe to choose, nothing to label.
   return allCallouts().filter((d) => INJECTABLE_ROUTES.has(d.route) && d.device === undefined);
 }
 
@@ -146,9 +146,9 @@ describe('emergency protocols', () => {
 
   it('every injectable callout names its syringe (1, 3 or 10 ml)', () => {
     // Owner's kit plan (2026-11): 1 ml for midazolam, 3 ml for most draws,
-    // 10 ml for anything over 3 ml and every mix. D50W is prefilled.
+    // 10 ml for anything over 3 ml and every mix. D50W is prefilled, so it is
+    // not among the drawn callouts at all.
     for (const drug of injectables()) {
-      if (drug.name === 'D50W') continue;
       expect([1, 3, 10], drug.name).toContain(drug.syringeMl);
       if (drug.mixFirst) expect(drug.syringeMl, drug.name).toBe(10);
       if (drug.name === 'Midazolam') expect(drug.syringeMl).toBe(1);
@@ -458,6 +458,131 @@ describe('emergency protocols', () => {
       expect(svt).toContain('Modified Valsalva');
       expect(svt).not.toMatch(/Carotid Massage/);
       expect(svt).toContain('6 mg, then 12 mg after 1-2 minutes');
+    });
+  });
+
+  // Owner-approved after the Nov 2026 protocol review: each of these closed a
+  // path where a team reading top to bottom reached a dead end, or reached a
+  // drug before the step that should have sent them elsewhere.
+  describe('exits and escalation (review, Nov 2026)', () => {
+    const stepsOf = (id: string) => findProtocol(id)?.steps ?? [];
+    const indexOf = (id: string, includes: string) =>
+      stepsOf(id).findIndex((s) => s.text.includes(includes));
+    const ARREST_PAGES = ['vfib_vtach', 'pea_asystole'];
+
+    it('hypoventilation calls 911 when reversal has not ended the need for the BVM', () => {
+      const at = indexOf('hypoventilation', 'Still needs the BVM after reversal');
+      const step = stepsOf('hypoventilation')[at];
+      expect(step?.text).toBe('Still needs the BVM after reversal, or not waking: Call 911');
+      expect(step?.severity).toBe('critical');
+      expect(at).toBeGreaterThan(indexOf('hypoventilation', 'Reverse:'));
+      expect(at).toBeLessThan(indexOf('hypoventilation', 'No pulse'));
+    });
+
+    it('both oversedation protocols call 911 and check the pulse before the watch step', () => {
+      for (const [id, reversal] of [
+        ['oversedation_opioid', 'Naloxone'],
+        ['oversedation_benzo', 'Flumazenil'],
+      ] as const) {
+        const steps = stepsOf(id);
+        const call = indexOf(id, 'Still needs the BVM after reversal');
+        expect(steps[call]?.text, id).toBe(
+          'Still needs the BVM after reversal, or you cannot ventilate: Call 911',
+        );
+        expect(steps[call]?.severity, id).toBe('critical');
+        expect(call, id).toBeGreaterThan(steps.findIndex((s) => s.drug?.name === reversal));
+        const pulse = steps[call + 1];
+        expect(pulse?.text, id).toBe('No pulse: start CPR (Cardiac Arrest protocol)');
+        expect(pulse?.goTo, id).toEqual(ARREST_PAGES);
+        expect(call + 1, id).toBeLessThan(steps.length - 1);
+      }
+    });
+
+    it('severe bronchospasm calls 911 with the pen and sends hives to anaphylaxis', () => {
+      const steps = stepsOf('bronchospasm');
+      const pen = steps.findIndex((s) => s.drug?.device === 'auto-injector');
+      const call = steps[pen + 1];
+      expect(call?.text).toBe(
+        'At the same time: DA calls 911. Hives or swelling: go to Anaphylaxis',
+      );
+      expect(call?.goTo).toEqual(['anaphylaxis']);
+      expect(call?.severity).toBe('critical');
+      // The milder patient still has the later, conditional call.
+      expect(indexOf('bronchospasm', 'Not clearly better after the first albuterol round')).toBe(
+        steps.findIndex((s, i) => i > pen + 1 && /911/.test(s.text)),
+      );
+    });
+
+    it('the shockable arrest page has a way out when the AED advises no shock', () => {
+      const steps = stepsOf('vfib_vtach');
+      const shock = indexOf('vfib_vtach', 'AED: shock when advised');
+      const none = steps[shock + 1];
+      expect(none?.text).toBe(
+        'AED says no shock: CPR for 2 minutes, Epinephrine now, go to PEA / Asystole',
+      );
+      expect(none?.goTo).toEqual(['pea_asystole']);
+      expect(none?.severity).toBe('critical');
+      expect(shock + 1).toBeLessThan(indexOf('vfib_vtach', 'After 2nd shock'));
+    });
+
+    it('hypertensive crisis sends stroke signs to Stroke before any BP drug', () => {
+      const steps = stepsOf('hypertensive_crisis');
+      const stroke = steps.findIndex((s) => s.goTo?.includes('stroke'));
+      const firstDrug = steps.findIndex((s) => s.drug !== undefined);
+      expect(steps[stroke]?.text).toBe(
+        'One-sided weakness, face droop or slurred speech: go to Stroke, no BP drug',
+      );
+      expect(steps[stroke]?.severity).toBe('critical');
+      expect(stroke).toBeGreaterThan(indexOf('hypertensive_crisis', 'Call 911'));
+      expect(stroke).toBeLessThan(firstDrug);
+      // One stroke exit, read before the drug; the chest-pain exit stays where it was.
+      expect(steps.filter((s) => s.goTo?.includes('stroke'))).toHaveLength(1);
+      const mi = steps.findIndex((s) => s.goTo?.includes('mi'));
+      expect(steps[mi]?.text).toBe('Chest pain: go to MI');
+      expect(mi).toBeGreaterThan(firstDrug);
+    });
+
+    it('the ventricular tachycardia pages check the pulse and lead to CPR and the AED', () => {
+      for (const id of ['stable_vtach', 'wide_complex']) {
+        const steps = stepsOf(id);
+        const pulse = steps.findIndex((s) => s.text === 'No pulse: CPR + AED');
+        expect(pulse, id).toBe(1);
+        expect(steps[pulse]?.goTo, id).toEqual(ARREST_PAGES);
+        expect(steps[pulse]?.severity, id).toBe('critical');
+      }
+    });
+
+    it('junctional tachycardia says what makes it junctional and turns sinus tachycardia away', () => {
+      const proto = findProtocol('junctional_tach');
+      expect(proto?.summary).toBe(
+        'Regular narrow tachycardia with no P wave before the QRS (or an upside-down P), HR 100-180 · Amiodarone 150mg IV over 10min',
+      );
+      expect(proto?.signs).toContain('no P waves or inverted P waves');
+      const steps = proto?.steps ?? [];
+      const sinus = steps.findIndex((s) => s.goTo?.includes('sinus_tach'));
+      expect(steps[sinus]?.text).toBe(
+        'Normal P wave before every QRS: this is sinus tachycardia, no amiodarone, go to Sinus Tachycardia',
+      );
+      expect(sinus).toBeGreaterThan(0);
+      expect(sinus).toBeLessThan(steps.findIndex((s) => s.drug?.name === 'Amiodarone'));
+    });
+
+    it('an unconscious hypoglycemic patient gets 911 with the dextrose, not after it', () => {
+      const dextrose = stepsOf('hypoglycemia').find((s) => s.drug?.name === 'D50W');
+      expect(dextrose?.text).toBe('Not awake: Call 911. Nothing by mouth. D50W IV');
+      expect(dextrose?.severity).toBe('critical');
+    });
+
+    it('the dextrose is the prefilled syringe: nothing to draw, and a slow push', () => {
+      // Owner, Nov 2026: the vial is gone from the plan, and with it the 60 ml
+      // syringe that is also the King LT cuff syringe.
+      const d50 = allCallouts().find((d) => d.name === 'D50W');
+      expect(d50?.device).toBe('prefilled-syringe');
+      expect(d50?.volume).toBe('50 ml (whole syringe)');
+      expect(d50?.syringeMl).toBeUndefined();
+      expect(d50?.notes).toContain('prefilled syringe');
+      expect(d50?.notes).toContain('push slowly');
+      expect(d50?.notes).not.toMatch(/vial|60/);
     });
   });
 });

@@ -3,6 +3,8 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 
+import { TRAINER_PATH } from './src/config/trainer-path';
+
 // GitHub Pages serves the site at `<user>.github.io/sedation-pro/`, so a
 // production build for Pages needs that path prefix. Local dev (`pnpm dev`)
 // and any other host (Vercel, Netlify, custom domain) keep the default '/'.
@@ -37,6 +39,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         // SPA history routing — serve the app shell for deep links offline.
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [TRAINER_PATH],
       },
     }),
   ],

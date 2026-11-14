@@ -394,7 +394,9 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
                   </ol>
                 </div>
                 <div v-if="step.drug.volume" class="drug-draw">
-                  <span class="drug-draw-label">Draw</span>
+                  <span class="drug-draw-label">{{
+                    step.drug.device === 'prefilled-syringe' ? 'Give' : 'Draw'
+                  }}</span>
                   <span class="drug-draw-vol">{{ step.drug.volume }}</span>
                 </div>
                 <dl v-if="step.drug.drawTable" class="drug-draw-table">

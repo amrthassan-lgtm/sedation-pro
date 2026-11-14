@@ -1,0 +1,181 @@
+/*
+ * Trainer-only tokens. Everything else comes from @sedation-pro/ui's
+ * tokens.css; these exist because the clinical app has no monitor and no
+ * "this is training" colour, and both must be defined once, here.
+ */
+:root {
+  /* The one colour that means "training". Never used by the clinical app's chrome. */
+  --train: var(--color-gold);
+  --train-soft: var(--color-gold-soft);
+  --train-ink: #1a1405;
+
+  /* Monitor: the screen is its own black, darker than the app surface. */
+  --mon-bg: #04070c;
+  --mon-line: rgba(255, 255, 255, 0.08);
+  --mon-dim: rgba(255, 255, 255, 0.5);
+  --mon-ecg: var(--color-good);
+  --mon-spo2: var(--cat-airway);
+  --mon-co2: var(--color-warn);
+  --mon-nibp: var(--color-text-primary);
+  --mon-alarm: var(--color-crisis);
+  --mon-caution: var(--color-warn);
+
+  /* Patient figure skin tones, keyed by the engine's `Look.color`. */
+  --skin-pink: #e8b49a;
+  --skin-pale: #cdb8ad;
+  --skin-flushed: #e58a7a;
+  --skin-dusky: #8d93b5;
+  --skin-grey: #9aa3ad;
+
+  /* Line art on the figure. */
+  --fig-ink: rgba(0, 0, 0, 0.6);
+  --fig-device: rgba(255, 255, 255, 0.4);
+  --fig-device-line: rgba(255, 255, 255, 0.85);
+  --fig-tube: rgba(255, 255, 255, 0.35);
+
+  /* Light enough that the monitor's numbers stay readable through it. */
+  --sheet-scrim: rgba(4, 7, 12, 0.35);
+  --card-scrim: rgba(4, 7, 12, 0.82);
+
+  --band-h: 32px;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.eyebrow {
+  font-size: var(--type-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+/* Button family, as in the clinical app: solid grey, white for the one way forward. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 48px;
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface-highlight), var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font-size: var(--type-body);
+  font-weight: var(--weight-semibold);
+  transition:
+    transform var(--dur-150) var(--ease-standard),
+    background var(--dur-150) var(--ease-standard);
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  color: var(--color-text-disabled);
+  cursor: default;
+}
+.btn--key {
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+  font-weight: var(--weight-bold);
+}
+.btn--key:disabled {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-tertiary);
+}
+.btn--block {
+  display: flex;
+  width: 100%;
+}
+.btn--tall {
+  min-height: 56px;
+}
+.btn--on {
+  background: var(--color-good-soft);
+  color: var(--color-good);
+}
+.btn--red {
+  background: var(--color-crisis);
+  color: var(--color-text-primary);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--color-surface-elevated);
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+.pill--key {
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+}
+.pill--on {
+  background: var(--color-good-soft);
+  color: var(--color-good);
+}
+
+/* Grouped inset list: rows on the card's own surface with hairlines between. */
+.group {
+  background: var(--color-card-bg);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.group > * + * {
+  border-top: 1px solid var(--color-border);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+}
+.row-main {
+  flex: 1;
+  min-width: 0;
+}
+.row-title {
+  display: block;
+  font-weight: var(--weight-semibold);
+}
+.row-sub {
+  display: block;
+  font-size: var(--type-footnote);
+  color: var(--color-text-secondary);
+}
+.row-end {
+  font-size: var(--type-footnote);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--sp-4);
+  padding-top: calc(var(--band-h) + var(--sp-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}

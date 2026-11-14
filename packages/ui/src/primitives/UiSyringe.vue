@@ -37,12 +37,19 @@ interface Props {
   caption?: string;
   /** Compact variant for inline use in step cards. */
   compact?: boolean;
+  /**
+   * Large drawing with 0.1 ml marks on the 3 ml barrel, for a screen where
+   * the volume is read off the syringe itself (the trainer's draw-up bench).
+   * Off by default, so the clinical app's cards are unchanged.
+   */
+  hero?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   concentration: '',
   caption: '',
   compact: false,
+  hero: false,
 });
 
 const fillFraction = computed(() => {
@@ -111,21 +118,25 @@ const rodW = computed(() => Math.max(0, THUMB_X - rodX.value));
  *  - 3cc and 10 ml syringes: ticks every 0.5 mL, labels every 1 mL.
  */
 const ticks = computed(() => {
-  const out: Array<{ x: number; label: string | null }> = [];
-  const n = narrow.value ? 10 : Math.max(2, Math.round(props.capacityMl * 2));
-  for (let i = 0; i <= n; i += 1) {
-    const x = BARREL_X + (BARREL_W * i) / n;
-    const ml = (props.capacityMl * i) / n;
-    const isMajor = i % 2 === 0;
+  const out: Array<{ x: number; label: string | null; reach: number }> = [];
+  // A 3 ml barrel read to the tenth: thirty marks, numbered at each millilitre.
+  const tenths = props.hero && !narrow.value && !wide.value;
+  const n = narrow.value ? 10 : tenths ? props.capacityMl * 10 : Math.round(props.capacityMl * 2);
+  const every = tenths ? 10 : 2;
+  for (let i = 0; i <= Math.max(2, n); i += 1) {
+    const x = BARREL_X + (BARREL_W * i) / Math.max(2, n);
+    const ml = (props.capacityMl * i) / Math.max(2, n);
+    const isMajor = i % every === 0;
     const label = isMajor ? (narrow.value ? ml.toFixed(1) : ml.toFixed(0)) : null;
-    out.push({ x, label });
+    const reach = isMajor ? 0.75 : tenths ? (i % 5 === 0 ? 0.55 : 0.3) : 0.4;
+    out.push({ x, label, reach });
   }
   return out;
 });
 </script>
 
 <template>
-  <figure class="syringe" :class="{ 'is-compact': props.compact }">
+  <figure class="syringe" :class="{ 'is-compact': props.compact, 'is-hero': props.hero }">
     <figcaption class="syringe-label">{{ props.label }}</figcaption>
 
     <div class="syringe-stage">
@@ -214,7 +225,7 @@ const ticks = computed(() => {
             :x1="t.x"
             :x2="t.x"
             :y1="barrelY"
-            :y2="t.label !== null ? barrelY + barrelH * 0.75 : barrelY + barrelH * 0.4"
+            :y2="barrelY + barrelH * t.reach"
             :stroke-opacity="t.label !== null ? 0.65 : 0.35"
           />
         </g>
@@ -270,6 +281,9 @@ const ticks = computed(() => {
   width: 100%;
   height: auto;
   max-height: 70px;
+}
+.syringe.is-hero .syringe-svg {
+  max-height: 150px;
 }
 .syringe-meta {
   display: flex;
