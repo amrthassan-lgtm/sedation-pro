@@ -292,6 +292,19 @@ describe('emergency protocols', () => {
     expect(epiIdx[1]!).toBeLessThan(pushIdx);
   });
 
+  it('every IM epinephrine protocol gives the pen first, then the ampule', () => {
+    for (const id of ['anaphylaxis', 'bronchospasm']) {
+      const im = (findProtocol(id)?.steps ?? []).filter(
+        (s) => s.drug?.name === 'Epinephrine' && s.drug.route === 'IM',
+      );
+      expect(im, id).toHaveLength(2);
+      expect(im[0]?.drug?.device, id).toBe('auto-injector');
+      expect(im[1]?.text, id).toContain('from the ampule');
+      for (const step of im)
+        expect(step.text, id).toContain('NEVER 1 mg/ml IV in a patient with a pulse');
+    }
+  });
+
   it('auto-injector callouts are IM epinephrine only and carry no draw instructions', () => {
     for (const drug of allCallouts().filter((d) => d.device === 'auto-injector')) {
       expect(drug.name).toBe('Epinephrine');
