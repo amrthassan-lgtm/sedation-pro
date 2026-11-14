@@ -5,19 +5,10 @@ export function toward(to: number, rate: number): Target {
   return { to, rate };
 }
 
-/** Seconds since a moment, or `null` if it never happened. */
-export function since(ctx: Ctx, at: number | null): number | null {
-  return at === null ? null : ctx.t - at;
-}
-
 /** True for `seconds` after the action was last done. */
 export function within(ctx: Ctx, action: string, seconds: number): boolean {
   const last = ctx.last(action);
   return last !== null && ctx.t - last <= seconds;
-}
-
-export function totalMcg(doses: ReadonlyArray<DoseEvent>): number {
-  return doses.reduce((sum, d) => sum + d.mcg, 0);
 }
 
 /**

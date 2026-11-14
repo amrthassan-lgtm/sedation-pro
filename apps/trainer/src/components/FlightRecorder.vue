@@ -142,8 +142,8 @@ const summary = computed(
     <figcaption class="legend">
       <span><i class="key key--trace"></i>SpO₂</span>
       <span><i class="key key--limit"></i>Alarm limit 90</span>
-      <span><i class="key key--good"></i>Helped</span>
-      <span><i class="key key--bad"></i>Got worse</span>
+      <span><i class="key key--good"></i>▲ Helped</span>
+      <span><i class="key key--bad"></i>▼ Got worse</span>
     </figcaption>
   </figure>
 </template>

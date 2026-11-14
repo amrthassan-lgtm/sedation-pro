@@ -79,7 +79,7 @@ export function epinephrineOverdose(capno: Capno): Consequence {
     ending: {
       outcome: 'harm',
       title: 'Ventricular tachycardia',
-      text: 'Epinephrine went into the vein at a dose meant for the thigh. He has a dangerous rhythm and crushing chest pain. The run stops here.',
+      text: 'Epinephrine went into the vein. He has a dangerous rhythm and crushing chest pain. The run stops here.',
     },
   };
 }

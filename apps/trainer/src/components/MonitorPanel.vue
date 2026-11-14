@@ -32,6 +32,17 @@ const alarmText = computed(() => {
   return '';
 });
 
+/** The shape of each trace in words: the capnogram and the rhythm are otherwise only pixels. */
+const traceLabel = computed(() => ({
+  ecg: props.monitor.rhythm === 'vtach' ? 'ECG: wide and fast' : 'ECG: regular',
+  co2:
+    props.monitor.capno === 'flat'
+      ? 'CO₂ waveform: flat'
+      : props.monitor.capno === 'sharkfin'
+        ? 'CO₂ waveform: slanted upstroke'
+        : 'CO₂ waveform: square',
+}));
+
 const nibpAge = computed(() => {
   if (props.monitor.cuffCycling) return 'measuring…';
   const reading = props.monitor.nibp;
@@ -222,7 +233,7 @@ watch(
     <div class="mon-grid">
       <div class="wave">
         <span class="tag mono ecg">II</span>
-        <canvas ref="ecg" aria-hidden="true"></canvas>
+        <canvas ref="ecg" role="img" :aria-label="traceLabel.ecg"></canvas>
       </div>
       <div class="num ecg">
         <span class="lab mono">HR</span>
@@ -231,7 +242,7 @@ watch(
 
       <div class="wave">
         <span class="tag mono spo2">PLETH</span>
-        <canvas ref="pleth" aria-hidden="true"></canvas>
+        <canvas ref="pleth" role="img" aria-label="Pleth waveform"></canvas>
       </div>
       <div class="num spo2" :class="{ 'is-low': monitor.alarms.includes('spo2_low') }">
         <span class="lab mono">SpO₂</span>
@@ -240,7 +251,7 @@ watch(
 
       <div class="wave">
         <span class="tag mono co2">CO₂</span>
-        <canvas ref="co2" aria-hidden="true"></canvas>
+        <canvas ref="co2" role="img" :aria-label="traceLabel.co2"></canvas>
       </div>
       <div class="num co2" :class="{ 'is-low': monitor.alarms.includes('apnea') }">
         <span class="lab mono">EtCO₂</span>
@@ -317,6 +328,7 @@ watch(
   color: var(--train-ink);
 }
 .mon-key {
+  position: relative;
   height: 100%;
   padding: 0 var(--sp-3);
   border-radius: var(--r-sm);
@@ -326,6 +338,12 @@ watch(
   font-weight: var(--weight-bold);
   letter-spacing: 0.06em;
   white-space: nowrap;
+}
+/* The alarm row is 30 px tall; the key's tap area is a full 44. */
+.mon-key::after {
+  content: '';
+  position: absolute;
+  inset: -7px 0;
 }
 .mon-key:disabled {
   color: var(--mon-dim);

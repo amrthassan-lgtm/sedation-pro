@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { Simulation } from '@/engine/engine';
+import { findProtocol } from '@sedation-pro/clinical';
+
+import { BAG_RATE, Simulation } from '@/engine/engine';
 import { gradeRun } from '@/engine/grade';
 
 import { quiet } from './quiet';
@@ -506,6 +508,31 @@ describe('"Quiet", played by the protocols', () => {
     drawAndGive(sim, 'atropine', 0.5);
     untilEnd(sim);
     expect(gradeRun(quiet, sim).outside).toEqual([]);
+  });
+
+  it('the bagging rate in the story is the one the protocol states', () => {
+    const step = findProtocol('hypoventilation')!.steps.find((s) =>
+      s.text.includes('BVM, 1 breath every'),
+    )!;
+    const seconds = Number(/1 breath every (\d+) seconds/.exec(step.text)?.[1]);
+    expect(60 / seconds).toBe(BAG_RATE);
+    const sim = start();
+    sim.act('bvm');
+    expect(sim.log.at(-1)?.text).toBe(`BVM, 1 breath every ${seconds} s`);
+  });
+
+  it('the sibling pages show the spasm and its 911 call in their own words, unscored', () => {
+    const sim = start();
+    idealUntilSpasm(sim);
+    idealSpasm(sim);
+    untilEnd(sim);
+    expect(row(sim, 'hypo_911')).toMatchObject({ result: 'done', tier: 'echo' });
+    expect(row(sim, 'opioid_911')).toMatchObject({ result: 'done', tier: 'echo' });
+    expect(row(sim, 'hypo_no_air').parts).toEqual([
+      { quote: 'BVM not moving the chest: reposition, NPA, then LMA or King', result: 'na' },
+      { quote: 'Crowing or no air movement: Laryngospasm', result: 'done' },
+    ]);
+    expect(gradeRun(quiet, sim).of).toBe(13);
   });
 
   it('is deterministic: the same play gives the same run', () => {

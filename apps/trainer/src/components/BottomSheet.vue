@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 /**
  * A sheet that rises from the bottom and leaves the monitor in view above
@@ -20,14 +20,36 @@ function onKey(e: KeyboardEvent): void {
   if (e.key === 'Escape') emit('close');
 }
 
-onMounted(() => window.addEventListener('keydown', onKey));
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
+const panel = ref<HTMLElement | null>(null);
+let opener: Element | null = null;
+
+onMounted(() => {
+  window.addEventListener('keydown', onKey);
+  opener = document.activeElement;
+  panel.value?.focus({ preventScroll: true });
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey);
+  // Back to what opened it, unless that was a text box: on a tablet that
+  // would bring the keyboard up over the monitor.
+  if (opener instanceof HTMLElement && opener.isConnected && opener.tagName !== 'INPUT') {
+    opener.focus({ preventScroll: true });
+  }
+});
 </script>
 
 <template>
   <div class="sheet-layer">
     <button type="button" class="sheet-backdrop" aria-label="Close" @click="emit('close')"></button>
-    <section class="sheet" :class="`sheet--${props.size}`" role="dialog" :aria-label="props.title">
+    <section
+      ref="panel"
+      class="sheet"
+      :class="`sheet--${props.size}`"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      :aria-label="props.title"
+    >
       <header class="sheet-head">
         <h2 class="sheet-title">{{ props.title }}</h2>
         <button type="button" class="pill" @click="emit('close')">Close</button>

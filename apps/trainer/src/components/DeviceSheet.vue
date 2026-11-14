@@ -63,6 +63,11 @@ function release(): void {
   held.value = 0;
 }
 
+/** A held key repeats: only the first keydown starts the hold. */
+function keyPress(e: KeyboardEvent): void {
+  if (!e.repeat) press();
+}
+
 function givePuffs(): void {
   props.run.useDevice(props.deviceId, puffs.value);
   emit('close');
@@ -96,6 +101,11 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
         @pointerup="release"
         @pointerleave="release"
         @pointercancel="release"
+        @keydown.space.prevent="keyPress"
+        @keydown.enter.prevent="keyPress"
+        @keyup.space="release"
+        @keyup.enter="release"
+        @blur="release"
         @contextmenu.prevent
       >
         <span class="hold-fill" aria-hidden="true"></span>
