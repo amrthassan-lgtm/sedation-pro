@@ -18,7 +18,7 @@ function allCallouts(): ReadonlyArray<EmergencyDrugCallout> {
 const INJECTABLE_ROUTES = new Set(['IV', 'IM', 'IA', 'SubQ']);
 
 function injectables(): ReadonlyArray<EmergencyDrugCallout> {
-  // An auto-injector is given, not drawn: no syringe, volume or label.
+  // A prefilled device is given, not drawn: no syringe to choose, nothing to label.
   return allCallouts().filter((d) => INJECTABLE_ROUTES.has(d.route) && d.device === undefined);
 }
 
@@ -146,9 +146,9 @@ describe('emergency protocols', () => {
 
   it('every injectable callout names its syringe (1, 3 or 10 ml)', () => {
     // Owner's kit plan (2026-11): 1 ml for midazolam, 3 ml for most draws,
-    // 10 ml for anything over 3 ml and every mix. D50W is prefilled.
+    // 10 ml for anything over 3 ml and every mix. D50W is prefilled, so it is
+    // not among the drawn callouts at all.
     for (const drug of injectables()) {
-      if (drug.name === 'D50W') continue;
       expect([1, 3, 10], drug.name).toContain(drug.syringeMl);
       if (drug.mixFirst) expect(drug.syringeMl, drug.name).toBe(10);
       if (drug.name === 'Midazolam') expect(drug.syringeMl).toBe(1);
@@ -571,6 +571,18 @@ describe('emergency protocols', () => {
       const dextrose = stepsOf('hypoglycemia').find((s) => s.drug?.name === 'D50W');
       expect(dextrose?.text).toBe('Not awake: Call 911. Nothing by mouth. D50W IV');
       expect(dextrose?.severity).toBe('critical');
+    });
+
+    it('the dextrose is the prefilled syringe: nothing to draw, and a slow push', () => {
+      // Owner, Nov 2026: the vial is gone from the plan, and with it the 60 ml
+      // syringe that is also the King LT cuff syringe.
+      const d50 = allCallouts().find((d) => d.name === 'D50W');
+      expect(d50?.device).toBe('prefilled-syringe');
+      expect(d50?.volume).toBe('50 ml (whole syringe)');
+      expect(d50?.syringeMl).toBeUndefined();
+      expect(d50?.notes).toContain('prefilled syringe');
+      expect(d50?.notes).toContain('push slowly');
+      expect(d50?.notes).not.toMatch(/vial|60/);
     });
   });
 });

@@ -54,10 +54,12 @@ export interface EmergencyDrugCallout {
   /** Syringe the practice draws this into (owner's kit plan: 1, 3 or 10 ml). */
   readonly syringeMl?: 1 | 3 | 10;
   /**
-   * Given from a prefilled auto-injector (Auvi-Q): nothing is drawn, so the
-   * callout carries no syringe, volume or label instruction.
+   * Given from a prefilled device, so nothing is drawn. An auto-injector
+   * (Auvi-Q) carries no syringe, volume or label instruction at all. A
+   * prefilled syringe (50% dextrose) keeps its volume, which is given rather
+   * than drawn, and carries its maker's label.
    */
-  readonly device?: 'auto-injector';
+  readonly device?: 'auto-injector' | 'prefilled-syringe';
 }
 
 /** A single ordered step in a protocol. */
@@ -1479,10 +1481,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'D50W',
           dose: '25 g',
           route: 'IV',
-          volume: '50 ml',
+          device: 'prefilled-syringe',
+          volume: '50 ml (whole syringe)',
           concentration: '0.5 g/ml (50% Dextrose)',
           notes:
-            'use 50 ml prefilled syringe or draw entire vial into 60 cc syringe; label the syringe if drawn from a vial',
+            'prefilled syringe; push slowly with the line running; stop if the hand swells or hurts',
         },
         severity: 'critical',
       },
