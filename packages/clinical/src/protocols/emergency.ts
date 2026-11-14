@@ -188,7 +188,21 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       { text: 'O₂ to SpO₂ 93-95%' },
       {
-        text: 'Severe (cannot speak in sentences, SpO₂ under 92%, quiet chest) or hives/swelling: Epinephrine IM into the thigh',
+        // Same habit as anaphylaxis (owner, Nov 2026): the pen first, every
+        // later IM dose from the ampule.
+        text: 'Severe (cannot speak in sentences, SpO₂ under 92%, quiet chest) or hives/swelling: Epinephrine IM into the outer THIGH: Auvi-Q 0.3 first. NEVER 1 mg/ml IV in a patient with a pulse',
+        drug: {
+          name: 'Epinephrine',
+          dose: '0.3 mg',
+          route: 'IM',
+          device: 'auto-injector',
+          notes:
+            'Auvi-Q: pull off the red guard, press firmly into the outer thigh, hold 2 seconds; through clothing is fine',
+        },
+        severity: 'critical',
+      },
+      {
+        text: '5 min, not better: second IM dose from the ampule, outer THIGH. Repeat every 5-15 min. NEVER 1 mg/ml IV in a patient with a pulse',
         drug: {
           name: 'Epinephrine',
           dose: '0.3-0.5 mg',
@@ -196,8 +210,12 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 3,
           volume: '0.3-0.5 ml',
           concentration: '1 mg/ml',
+          drawTable: [
+            { label: '0.3 mg', ml: '0.3 ml' },
+            { label: '0.5 mg', ml: '0.5 ml' },
+          ],
           notes:
-            'same syringe and needle to draw and give, outer thigh, push firmly, through clothing is fine; repeat q5-15 min; label the syringe',
+            'same syringe and needle to draw and give, push firmly, through clothing is fine; label the syringe',
         },
         severity: 'critical',
       },
@@ -1052,7 +1070,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       {
         // Owner (Nov 2026): the cart holds one adult pen. The pen is always
         // the first dose; every later IM dose is drawn from the ampule.
-        text: 'Epinephrine IM into the outer THIGH: Auvi-Q 0.3 first. NEVER 1 mg/ml IV',
+        text: 'Epinephrine IM into the outer THIGH: Auvi-Q 0.3 first. NEVER 1 mg/ml IV in a patient with a pulse',
         drug: {
           name: 'Epinephrine',
           dose: '0.3 mg',
@@ -1072,7 +1090,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       { text: '500 ml saline bolus, wide open' },
       {
-        text: '5 min, not better: second IM dose from the ampule, outer THIGH. Repeat every 5-15 min. NEVER 1 mg/ml IV',
+        text: '5 min, not better: second IM dose from the ampule, outer THIGH. Repeat every 5-15 min. NEVER 1 mg/ml IV in a patient with a pulse',
         drug: {
           name: 'Epinephrine',
           dose: '0.3-0.5 mg',
