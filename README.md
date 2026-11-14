@@ -64,6 +64,17 @@ first opens it, and that first open produces the warning.
 - **If one half fails, retry only that half.** The app tracks the note text
   and the PDF separately and offers to retry just the one that did not land.
 
+## Training simulator
+
+The same site carries a second, separate app at `/trainer/`: an emergency
+drill for the sedation team. It runs a scenario in real time (a live
+monitor, a patient, the practice's own cart of actions and drugs) and then
+marks the run against the written protocols, quoting them word for word.
+
+It uses invented patients only, stores nothing but its own settings and
+last-run scores, sends nothing anywhere, and cannot read or change a real
+case. Every screen carries a "TRAINING · NOT A PATIENT" band.
+
 ## For developers
 
 ```sh

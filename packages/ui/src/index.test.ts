@@ -26,6 +26,36 @@ import {
   UiTimerPill,
 } from './index';
 
+describe('UiSyringe marks', () => {
+  const marks = (props: Record<string, unknown>) => {
+    const wrapper = mount(UiSyringe, {
+      props: { label: 'Test', capacityMl: 3, drawnMl: 1, color: 'red', ...props },
+    });
+    const count = wrapper.findAll('.ticks line').length;
+    const labels = wrapper
+      .findAll('.tick-labels text')
+      .filter((t) => t.attributes('style') !== 'display: none;')
+      .map((t) => t.text());
+    wrapper.unmount();
+    return { count, labels };
+  };
+
+  it('keeps the clinical cards as they were: half-millilitre marks on 3 ml', () => {
+    expect(marks({})).toEqual({ count: 7, labels: ['0', '1', '2', '3'] });
+    expect(marks({ capacityMl: 1 }).count).toBe(11);
+    expect(marks({ capacityMl: 10 }).count).toBe(21);
+  });
+
+  it('hero marks the 3 ml barrel to the tenth and numbers each millilitre', () => {
+    expect(marks({ hero: true })).toEqual({ count: 31, labels: ['0', '1', '2', '3'] });
+  });
+
+  it('hero leaves the 1 ml and 10 ml barrels on their usual marks', () => {
+    expect(marks({ hero: true, capacityMl: 1 }).count).toBe(11);
+    expect(marks({ hero: true, capacityMl: 10 }).count).toBe(21);
+  });
+});
+
 describe('@sedation-pro/ui', () => {
   it('exports a semver-shaped version', () => {
     expect(UI_LIB_VERSION).toMatch(/^\d+\.\d+\.\d+/);
