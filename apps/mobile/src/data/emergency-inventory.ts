@@ -1171,6 +1171,21 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     noExpiry: true,
   },
   {
+    // Not stock: the yearly team training Florida 64B5-14.009(6) requires.
+    // Listed here so its due date reaches the same banner and To do card as
+    // an expiring drug. Owner (Nov 2026): last held 2026-03-13.
+    id: 'training-annual',
+    drug: 'Emergency Training (yearly)',
+    description: 'Team training on the 16 Florida emergencies — last held Mar 13, 2026',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2027-03-13',
+    category: 'equipment',
+    notes:
+      'Due again by Mar 13, 2027. Keep the signed record: date, time, length, topics and names',
+  },
+  {
     id: 'cpr-board',
     drug: 'CPR Board',
     description: 'Or a CPR-rated operating chair',
