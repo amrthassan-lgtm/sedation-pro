@@ -138,6 +138,20 @@ export const PROTOCOL_COURSES: ReadonlyArray<ProtocolCourse> = [
     basis: '0.4 mg every 5 min, max 3 doses',
     protocolPhrase: 'max 3 doses',
   },
+  {
+    drug: 'Naloxone',
+    needMg: 2,
+    basis: '0.4 mg doses, up to 2 mg',
+    protocolPhrase: '2 mg (five 1 ml vials',
+  },
+  {
+    // The alternative steroid: one 4 mg vial reads "in stock" against a dose
+    // that starts at 8 mg.
+    drug: 'Dexamethasone',
+    needMg: 8,
+    basis: '8 to 12 mg in one dose',
+    protocolPhrase: '8 mg (two 1 ml vials)',
+  },
 ];
 
 export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
@@ -284,6 +298,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: 'H25060',
     ndc: '0641-6145-01',
     quantity: 1,
+    mgPerUnit: 4,
     expiresOn: '2027-08',
     protocolDrugNames: ['Dexamethasone'],
   },
@@ -421,6 +436,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '305756',
     ndc: '36000-308-01',
     quantity: 2,
+    mgPerUnit: 0.4,
     expiresOn: '2027-03',
     // Owner/purchasing note (kept out of the screen): 2 vials per owner (Nov 2026); only lot 305756 photographed — confirm the second vial's lot/exp
     protocolDrugNames: ['Naloxone'],
@@ -432,6 +448,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     lot: '306025',
     ndc: '36000-308-01',
     quantity: 2,
+    mgPerUnit: 0.4,
     expiresOn: '2027-11',
     // Arrived 2026-11-12 (Young order 2000018004).
     protocolDrugNames: ['Naloxone'],

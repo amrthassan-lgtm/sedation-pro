@@ -167,10 +167,25 @@ function stockPill(name: string): { severity: 'safe' | 'caution' | 'limit'; labe
   return { severity, label: STOCK_PILL[severity] };
 }
 
-/** Short name for a linked protocol: the part before any "(…)" or " - …". */
+function shortName(name: string): string {
+  return name.split(/ \(| - /)[0] ?? name;
+}
+
+/** Short names two protocols share: "Oversedation" would label two different links alike. */
+const SHARED_SHORT_NAMES = new Set(
+  EMERGENCY_PROTOCOLS.map((p) => shortName(p.name)).filter(
+    (short, i, all) => all.indexOf(short) !== i,
+  ),
+);
+
+/**
+ * Short name for a linked protocol: the part before any "(…)" or " - …",
+ * unless that would not tell it from another protocol.
+ */
 function protocolName(id: string): string {
   const name = EMERGENCY_PROTOCOLS.find((p) => p.id === id)?.name ?? id;
-  return name.split(/ \(| - /)[0] ?? name;
+  const short = shortName(name);
+  return SHARED_SHORT_NAMES.has(short) ? name : short;
 }
 
 function open(id: string) {

@@ -339,6 +339,21 @@ describe('live protocol-course data', () => {
     }
   });
 
+  it('the naloxone row that names the count on the cart matches the inventory', () => {
+    // The protocol says "five 1 ml vials, N stocked" so the team sees at once
+    // whether the 2 mg dose can be drawn. That N is a fact about the cart:
+    // recording a new vial here fails this until the protocol row follows.
+    const label =
+      EMERGENCY_PROTOCOLS.flatMap((p) => p.steps)
+        .find((s) => s.drug?.name === 'Naloxone')
+        ?.drug?.drawTable?.find((r) => r.label.startsWith('2 mg'))?.label ?? '';
+    const stated = Number(/(\d+) stocked/.exec(label)?.[1]);
+    const onCart = EMERGENCY_INVENTORY.filter((i) =>
+      i.protocolDrugNames?.includes('Naloxone'),
+    ).reduce((n, i) => n + i.quantity, 0);
+    expect(stated).toBe(onCart);
+  });
+
   it('every row for a course drug carries mgPerUnit, so no lot is silently skipped', () => {
     const courseDrugs = new Set(PROTOCOL_COURSES.map((c) => c.drug));
     for (const inv of EMERGENCY_INVENTORY) {

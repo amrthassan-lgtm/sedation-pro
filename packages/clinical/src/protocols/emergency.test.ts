@@ -151,7 +151,8 @@ describe('emergency protocols', () => {
     for (const drug of injectables()) {
       expect([1, 3, 10], drug.name).toContain(drug.syringeMl);
       if (drug.mixFirst) expect(drug.syringeMl, drug.name).toBe(10);
-      if (drug.name === 'Midazolam') expect(drug.syringeMl).toBe(1);
+      // The 10 mg IM seizure dose is 2.0 ml: it does not fit the 1 ml midazolam syringe.
+      if (drug.name === 'Midazolam') expect(drug.syringeMl).toBe(drug.route === 'IM' ? 3 : 1);
     }
   });
 
@@ -583,6 +584,233 @@ describe('emergency protocols', () => {
       expect(d50?.notes).toContain('prefilled syringe');
       expect(d50?.notes).toContain('push slowly');
       expect(d50?.notes).not.toMatch(/vial|60/);
+    });
+  });
+
+  // Owner-approved, Nov 2026. Same aim as the block above: nothing here
+  // changes a drug choice. The rows that name vial counts are held to the
+  // inventory by a tripwire in the app's own tests.
+  describe('Priority B (review, Nov 2026)', () => {
+    const stepsOf = (id: string) => findProtocol(id)?.steps ?? [];
+    const indexOf = (id: string, includes: string) =>
+      stepsOf(id).findIndex((s) => s.text.includes(includes));
+    const drugAt = (id: string, name: string) => stepsOf(id).find((s) => s.drug?.name === name);
+    const ARREST_PAGES = ['vfib_vtach', 'pea_asystole'];
+    const STABLE_RHYTHM_PAGES = ['stable_vtach', 'wide_complex', 'afib', 'junctional_tach'];
+
+    it('naloxone: the 2 mg row says what it takes, and which syringe', () => {
+      const naloxone = drugAt('oversedation_opioid', 'Naloxone')?.drug;
+      expect(naloxone?.drawTable?.[1]?.label).toMatch(/^2 mg \(five 1 ml vials, \d+ stocked\)$/);
+      expect(naloxone?.notes).toContain('10 ml syringe for the 2 mg dose');
+    });
+
+    it('hypoventilation has a branch for a bag that moves no air, and links to both reversal pages', () => {
+      const steps = stepsOf('hypoventilation');
+      const bag = indexOf('hypoventilation', 'BVM, 1 breath every 6 seconds');
+      expect(steps[bag + 1]?.text).toBe(
+        'BVM not moving the chest: reposition, NPA, then LMA or King. Crowing or no air movement: Laryngospasm',
+      );
+      expect(steps[bag + 1]?.goTo).toEqual(['npa', 'lma', 'king_lt', 'laryngospasm']);
+      // Opioid first, as the pages themselves give naloxone first.
+      expect(steps[indexOf('hypoventilation', 'Reverse:')]?.goTo).toEqual([
+        'oversedation_opioid',
+        'oversedation_benzo',
+      ]);
+    });
+
+    it('the LMA and King pages call 911 first', () => {
+      for (const id of ['lma', 'king_lt']) {
+        expect(stepsOf(id)[0]?.text, id).toBe('DA calls 911 if not already called');
+        expect(stepsOf(id)[0]?.severity, id).toBe('critical');
+      }
+    });
+
+    it('sinus tachycardia starts at 100 and sends a sudden or very fast rhythm to SVT', () => {
+      const proto = findProtocol('sinus_tach');
+      expect(proto?.name).toBe('Sinus Tachycardia (HR over 100)');
+      expect(proto?.summary).toBe(
+        'HR over 100 with a normal P wave before every QRS, usually a response to pain, anxiety or low fluids · Treat the cause',
+      );
+      expect(proto?.signs).toContain('HR >100');
+      expect(proto?.signs).not.toContain('HR >150');
+      const svt = proto?.steps.find((s) => s.goTo?.includes('svt'));
+      expect(svt?.text).toBe('Sudden onset or HR over 150: go to SVT');
+    });
+
+    it('the stable rhythm pages call 911 before the drug, not after it', () => {
+      for (const id of STABLE_RHYTHM_PAGES) {
+        const steps = stepsOf(id);
+        const call = steps.findIndex((s) => s.text === 'Call 911');
+        const drug = steps.findIndex((s) => s.drug?.name === 'Amiodarone');
+        expect(call, id).toBeGreaterThan(0);
+        expect(call, id).toBe(drug - 1);
+        expect(
+          steps.filter((s) => s.text === 'Call 911'),
+          id,
+        ).toHaveLength(1);
+      }
+    });
+
+    it('atrial fibrillation warns about a clot and about a wide irregular rhythm', () => {
+      const warnings = findProtocol('afib')?.contraindications ?? [];
+      expect(warnings).toEqual([
+        'AF for more than 48 hr or unknown start, and not on a blood thinner: amiodarone can convert it and release a clot (stroke)',
+        'Irregular rhythm with a wide QRS (possible WPW): no amiodarone',
+      ]);
+    });
+
+    it('amiodarone over ten minutes says how: a third of a millilitre a minute', () => {
+      for (const id of STABLE_RHYTHM_PAGES) {
+        expect(drugAt(id, 'Amiodarone')?.drug?.notes, id).toContain(
+          'give over 10 minutes: 0.3 ml every minute into the running D5W, check BP each minute and stop if SBP falls',
+        );
+      }
+      // The arrest dose is still a push.
+      expect(drugAt('vfib_vtach', 'Amiodarone')?.drug?.notes).toContain('IV PUSH');
+    });
+
+    it('adenosine: the flush is drawn before the push', () => {
+      const notes = drugAt('svt', 'Adenosine')?.drug?.notes ?? '';
+      expect(notes).toContain('draw the 20 ml NS flush BEFORE the push');
+      expect(notes).toContain('then the flush right away and raise the arm');
+    });
+
+    it('lidocaine with a pulse goes in over minutes; in an arrest it stays a push', () => {
+      const stable = drugAt('stable_vtach', 'Cardiac Lidocaine');
+      expect(stable?.text).toBe(
+        'If amiodarone unavailable: Cardiac Lidocaine IV over 2-3 minutes; second dose is half',
+      );
+      expect(stable?.drug?.notes).toMatch(/^no faster than 50 mg \(2\.5 ml\) per minute;/);
+      expect(drugAt('vfib_vtach', 'Cardiac Lidocaine')?.text).toContain('IV push');
+    });
+
+    it('arrest epinephrine is flushed in', () => {
+      for (const id of ARREST_PAGES) {
+        expect(drugAt(id, 'Epinephrine')?.drug?.notes, id).toBe(
+          'draw the entire 1 ml ampule; push, then run the IV wide open for 10-20 seconds and raise the arm; repeat q3-5 min; label the syringe',
+        );
+      }
+    });
+
+    it('first-ever chest pain is 911 before the nitroglycerin trial', () => {
+      const steps = stepsOf('angina');
+      const first = indexOf('angina', 'No history of angina');
+      expect(steps[first]?.text).toBe(
+        'No history of angina, or sweating, nausea or short of breath: Call 911 now, go to MI',
+      );
+      expect(steps[first]?.goTo).toEqual(['mi']);
+      expect(steps[first]?.severity).toBe('critical');
+      expect(first).toBe(steps.findIndex((s) => s.drug?.name === 'Nitroglycerin') - 1);
+    });
+
+    it('hypertensive crisis says who must not get labetalol, before the step that gives it', () => {
+      expect(findProtocol('hypertensive_crisis')?.contraindications).toEqual([
+        'Labetalol: asthma or COPD, HR under 60, heart block, heart failure. Use hydralazine instead',
+      ]);
+    });
+
+    it('bradycardia checks the pulse after ventilating', () => {
+      const steps = stepsOf('bradycardia');
+      const pulse = steps[indexOf('bradycardia', 'Ventilate first') + 1];
+      expect(pulse?.text).toBe('Check the pulse. No pulse: CPR + AED');
+      expect(pulse?.goTo).toEqual(['pea_asystole', 'vfib_vtach']);
+      expect(pulse?.severity).toBe('critical');
+    });
+
+    it('LAST gives "small" a number and a syringe', () => {
+      const step = stepsOf('last').find((s) => s.text.startsWith('Arrhythmia or arrest'));
+      expect(step?.text).toBe(
+        'Arrhythmia or arrest: CPR, AED, small epinephrine doses (1 mcg/kg or less, not the 1 mg ampule). NO lidocaine as the antiarrhythmic',
+      );
+      expect(step?.goTo).toEqual(ARREST_PAGES);
+      expect(step?.drug?.name).toBe('Push-dose Epinephrine');
+      expect(step?.drug?.concentration).toBe('10 mcg/ml (after dilution)');
+      // The same recipe the anaphylaxis page mixes, so the team learns one.
+      expect(step?.drug?.mixFirst).toBe(
+        drugAt('anaphylaxis', 'Push-dose Epinephrine')?.drug?.mixFirst,
+      );
+      expect(step?.drug?.drawTable).toEqual([
+        { label: '110 lb (50 mcg)', ml: '5.0 ml' },
+        { label: '155 lb (70 mcg)', ml: '7.0 ml' },
+        { label: '220 lb (100 mcg)', ml: '10.0 ml' },
+      ]);
+    });
+
+    it('LAST: the lipid line says who has it', () => {
+      expect(indexOf('last', 'Lipid emulsion 20% not stocked')).toBeGreaterThan(-1);
+      expect(
+        stepsOf('last').some(
+          (s) =>
+            s.text ===
+            'Lipid emulsion 20% not stocked: EMS or the hospital gives it. Tell 911 and the crew LAST so it is ready',
+        ),
+      ).toBe(true);
+    });
+
+    it('dexamethasone rows say how many vials the draw takes', () => {
+      const callouts = allCallouts().filter((d) => d.name === 'Dexamethasone');
+      expect(callouts).toHaveLength(2);
+      for (const callout of callouts) {
+        expect(callout.drawTable?.slice(0, 2)).toEqual([
+          { label: '4 mg/ml: 8 mg (two 1 ml vials)', ml: '2.0 ml' },
+          { label: '4 mg/ml: 12 mg (three 1 ml vials)', ml: '3.0 ml' },
+        ]);
+      }
+    });
+
+    it('hypoglycemia: a repeat needs a second dose on hand', () => {
+      expect(
+        stepsOf('hypoglycemia').some(
+          (s) =>
+            s.text ===
+            'Recheck glucose in 15 min. Still under 70: repeat if a second dose is on hand, otherwise Call 911',
+        ),
+      ).toBe(true);
+    });
+
+    it('seizure: glucose before the drug, and a route when there is no IV', () => {
+      const steps = stepsOf('seizure');
+      const iv = steps.findIndex((s) => s.drug?.name === 'Midazolam' && s.drug.route === 'IV');
+      expect(steps[iv - 1]?.text).toBe(
+        'Check glucose as soon as it is safe. Under 70: go to Hypoglycemia',
+      );
+      expect(steps[iv - 1]?.goTo).toEqual(['hypoglycemia']);
+      const im = steps[iv + 1];
+      expect(im?.text).toBe(
+        'No IV (not started, or pulled out): Midazolam 10 mg IM into the outer thigh, once',
+      );
+      // AES 2016 / RAMPART: 10 mg IM for anyone over 40 kg, a single dose.
+      expect(im?.drug).toMatchObject({
+        name: 'Midazolam',
+        dose: '10 mg',
+        route: 'IM',
+        syringeMl: 3,
+        volume: '2.0 ml',
+        concentration: '5 mg/ml',
+      });
+      expect(im?.drug?.notes).toContain('one dose only');
+    });
+
+    it('stroke with a low glucose gets dextrose, not the gel', () => {
+      const step = stepsOf('stroke').find((s) => s.text.startsWith('Check glucose'));
+      expect(step?.text).toBe(
+        'Check glucose. Under 70: D50W IV, not the gel (it can look like a stroke)',
+      );
+      expect(step?.goTo).toEqual(['hypoglycemia']);
+    });
+
+    it('anaphylaxis names the two ways it kills: the airway and the arrest', () => {
+      const steps = stepsOf('anaphylaxis');
+      const monitor = indexOf('anaphylaxis', 'Monitor vitals continuously');
+      expect(steps[monitor - 2]?.text).toBe(
+        'Throat or tongue swelling, cannot ventilate: BVM 100% O₂, then LMA or King, then cricothyrotomy',
+      );
+      expect(steps[monitor - 2]?.goTo).toEqual(['lma', 'king_lt']);
+      expect(steps[monitor - 1]?.text).toBe('No pulse: CPR + AED, Epinephrine 1 mg IV');
+      expect(steps[monitor - 1]?.goTo).toEqual(ARREST_PAGES);
+      const related = findProtocol('anaphylaxis')?.relatedProtocols ?? [];
+      expect(related).toContain('lma');
+      expect(related).toContain('pea_asystole');
     });
   });
 });

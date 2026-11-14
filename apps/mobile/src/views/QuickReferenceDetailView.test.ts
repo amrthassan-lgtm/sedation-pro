@@ -78,6 +78,18 @@ describe('QuickReferenceDetailView emergency actions', () => {
     quiet.unmount();
   });
 
+  it('two links in one step never read the same', () => {
+    // Hypoventilation's Reverse step links both oversedation pages: the
+    // short name alone would make two identical buttons.
+    const w = mountDetail('hypoventilation');
+    const labels = w.findAll('.step-link').map((l) => l.text());
+    expect(labels).toContain('Go to Oversedation (Opioid) ›');
+    expect(labels).toContain('Go to Oversedation (Benzodiazepine) ›');
+    expect(labels).toContain('Go to Laryngospasm ›');
+    expect(new Set(labels).size).toBe(labels.length);
+    w.unmount();
+  });
+
   it('a prefilled syringe is given, not drawn', () => {
     const w = mountDetail('hypoglycemia');
     const dextrose = w.findAll('.drug-callout').find((c) => c.text().includes('D50W'));
