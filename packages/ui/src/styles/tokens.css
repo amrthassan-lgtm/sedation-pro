@@ -113,6 +113,11 @@
   --color-purple-soft: rgba(139, 92, 246, 0.12);
   --color-red: #ef4444;
   --color-red-soft: rgba(239, 68, 68, 0.12);
+  /* Syringe drawings only. Pale purple is a pressor after its dilution, set
+     against the solid purple of the stock ampule. Green is atropine, kept
+     apart from `--color-good` so a syringe never reads as "success". */
+  --color-purple-pale: #c4b5fd;
+  --color-green: #22c55e;
 
   /* Emergency protocol categories: one colour each, read by every surface
      (landing chips, swatches, detail hero, related rows) through `--cat`. */

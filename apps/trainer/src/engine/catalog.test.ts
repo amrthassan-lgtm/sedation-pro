@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { EMERGENCY_PROTOCOLS } from '@sedation-pro/clinical';
+import {
+  DEFAULT_FORMULARY,
+  EMERGENCY_PROTOCOLS,
+  emergencySyringeTint,
+} from '@sedation-pro/clinical';
 
-import { CART_ACTIONS, CART_DEVICES, CART_VIALS, searchCart, vialForCallout } from './catalog';
+import {
+  CART_ACTIONS,
+  CART_DEVICES,
+  CART_VIALS,
+  findVial,
+  searchCart,
+  vialForCallout,
+} from './catalog';
 import { formatMass, parseConcentrationMcgPerMl } from './dose';
 import { resolveRef } from './grade';
 
@@ -145,5 +156,31 @@ describe('the call-out box', () => {
     expect(searchCart('')).toEqual([]);
     expect(searchCart('   ')).toEqual([]);
     expect(searchCart('zzzz')).toEqual([]);
+  });
+});
+
+describe('the cart is coloured like the clinical app', () => {
+  const trayColours = new Set(DEFAULT_FORMULARY.iv.map((d) => d.color));
+
+  it('every vial takes its colour from the formulary or from its family, for every callout it serves', () => {
+    for (const v of CART_VIALS) {
+      const family = v.callouts.map((name) => emergencySyringeTint(name));
+      if (family.every((c) => c === undefined)) {
+        expect(trayColours.has(v.tint), v.key).toBe(true);
+        continue;
+      }
+      for (const c of family) expect(c, v.key).toBe(v.tint);
+    }
+  });
+
+  it('the paralytic is red, atropine is green and the pressors are purple', () => {
+    expect(findVial('succinylcholine')?.tint).toBe('var(--color-red)');
+    expect(findVial('atropine')?.tint).toBe('var(--color-green)');
+    for (const key of ['epinephrine', 'ephedrine', 'phenylephrine']) {
+      expect(findVial(key)?.tint, key).toBe('var(--color-purple)');
+    }
+    for (const pen of CART_DEVICES.filter((d) => d.drugKey === 'epinephrine')) {
+      expect(pen.tint, pen.id).toBe('var(--color-purple)');
+    }
   });
 });

@@ -814,3 +814,24 @@ describe('emergency protocols', () => {
     });
   });
 });
+
+describe('step drawings', () => {
+  it("Larson's point is drawn on the one step that names the landmark", () => {
+    const drawn = EMERGENCY_PROTOCOLS.flatMap((p) =>
+      p.steps.filter((s) => s.figure !== undefined).map((s) => ({ protocol: p.id, step: s })),
+    );
+    expect(drawn.map((d) => d.protocol)).toEqual(['laryngospasm']);
+    // The drawing's labels are these words, so the step has to keep them.
+    for (const word of ['laryngospasm notch', "Larson's", 'earlobe', 'jaw', 'mastoid']) {
+      expect(drawn[0]?.step.text, word).toContain(word);
+    }
+  });
+
+  it('no other step mentions the landmark without the drawing', () => {
+    for (const p of EMERGENCY_PROTOCOLS) {
+      for (const s of p.steps) {
+        if (/Larson/.test(s.text)) expect(s.figure, p.id).toBe('larsons-point');
+      }
+    }
+  });
+});

@@ -79,6 +79,8 @@ export interface ProtocolStep {
    * so the jump happens mid-protocol, not after scrolling to the bottom.
    */
   readonly goTo?: ReadonlyArray<string>;
+  /** A drawing shown under the step, for a landmark words cannot place. */
+  readonly figure?: 'larsons-point';
 }
 
 export interface EmergencyProtocol {
@@ -143,6 +145,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Stop the procedure. Remove packs and gauze, suction the throat' },
       {
         text: "Jaw thrust plus firm pressure at the laryngospasm notch (Larson's: behind the earlobe, between jaw and mastoid)",
+        figure: 'larsons-point',
       },
       {
         text: 'Tight mask seal, 100% O₂ at 15 L/min with the BVM, steady gentle pressure (CPAP)',
