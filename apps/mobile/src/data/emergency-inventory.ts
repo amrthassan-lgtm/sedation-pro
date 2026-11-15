@@ -977,8 +977,9 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     // Owner/purchasing note (kept out of the screen): Everyday sedation supply — stock tracked, expiry not
   },
   {
-    // The third syringe of the kit plan. Thirteen protocol callouts name it:
-    // every MIX FIRST recipe, and labetalol, amiodarone and cardiac lidocaine.
+    // The third syringe of the kit plan. Nine protocol callouts name it:
+    // every MIX FIRST recipe, and labetalol and cardiac lidocaine. Amiodarone
+    // moved to the 3 ml syringe, a whole vial each (owner, Nov 2026).
     id: 'syringe-10ml',
     drug: '10 mL Syringe',
     description: 'Every mix, and every draw over 3 ml',

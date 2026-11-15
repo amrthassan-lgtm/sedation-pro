@@ -179,8 +179,9 @@ describe('emergency protocols', () => {
   });
 
   it('volume and drawTable strings follow the canonical "N.N ml" grammar', () => {
-    const VOLUME = /^\d+(\.\d{1,2})?(-\d+(\.\d{1,2})?)? ml( \([^)]+\))?$/;
-    const ROW_ML = /^\d+(\.\d{1,2})? ml( \([^)]+\))?$/;
+    // "2 × 3.0 ml": the same draw in two syringes (arrest amiodarone).
+    const VOLUME = /^(\d × )?\d+(\.\d{1,2})?(-\d+(\.\d{1,2})?)? ml( \([^)]+\))?$/;
+    const ROW_ML = /^(\d × )?\d+(\.\d{1,2})? ml( \([^)]+\))?$/;
     for (const drug of allCallouts()) {
       if (drug.volume !== undefined) {
         expect(drug.volume, `${drug.name} volume '${drug.volume}'`).toMatch(VOLUME);
@@ -669,6 +670,12 @@ describe('emergency protocols', () => {
       expect(drugAt('vfib_vtach', 'Amiodarone')?.drug?.notes).toContain('IV PUSH');
     });
 
+    it('amiodarone is drawn in the 3 ml syringe, whose 0.1 ml marks every 0.3 ml push lands on (owner, Nov 2026)', () => {
+      for (const id of [...STABLE_RHYTHM_PAGES, 'vfib_vtach']) {
+        expect(drugAt(id, 'Amiodarone')?.drug?.syringeMl, id).toBe(3);
+      }
+    });
+
     it('adenosine: the flush is drawn before the push', () => {
       const notes = drugAt('svt', 'Adenosine')?.drug?.notes ?? '';
       expect(notes).toContain('draw the 20 ml NS flush BEFORE the push');
@@ -844,11 +851,18 @@ describe('second doses have rows of their own (owner, Nov 2026)', () => {
 
   it('arrest amiodarone: 300 mg first, 150 mg second, each with its volume', () => {
     expect(drugAt('vfib_vtach', 'Amiodarone')?.drawTable).toEqual([
-      { label: '300 mg (1st dose)', ml: '6.0 ml' },
+      { label: '300 mg (1st dose)', ml: '2 × 3.0 ml' },
       { label: '150 mg (2nd dose)', ml: '3.0 ml' },
     ]);
     // The step and the note already said so; the rows are the same numbers.
     expect(drugAt('vfib_vtach', 'Amiodarone')?.notes).toContain('second dose 150 mg (3.0 ml)');
+  });
+
+  it('arrest amiodarone says which syringes, and where the second dose comes from (owner, Nov 2026)', () => {
+    const notes = drugAt('vfib_vtach', 'Amiodarone')?.notes ?? '';
+    expect(notes).toContain('300 mg = two 3 ml syringes, one per vial, pushed one after the other');
+    // Both 150 mg vials go into the first dose: the second comes from the large vial.
+    expect(notes).toContain('a third 3 ml syringe drawn from the 900 mg/18 ml vial');
   });
 
   it('labetalol: the 40 mg repeat has its own row', () => {

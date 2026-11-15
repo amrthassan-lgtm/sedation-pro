@@ -212,7 +212,8 @@ interface StepView {
 }
 
 function amount(text: string): Amount {
-  const m = /^([\d.]+(?:-[\d.]+)?) (.+)$/.exec(text);
+  // Only a unit word is set apart: "2 × 3.0 ml" stays one figure.
+  const m = /^([\d.]+(?:-[\d.]+)?) ([A-Za-z].*)$/.exec(text);
   return m ? { num: m[1]!, unit: m[2]! } : { num: text, unit: '' };
 }
 function byRoute<T extends { readonly route: string }>(
