@@ -18,7 +18,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the nine-phase plan.
 
 - **Phase 0 — Foundation scaffold:** done.
 - **Phase 1 — Clinical engine:** done (`@sedation-pro/clinical` v0.1.0).
-- **Version 1 (Nov 2026, now 1.1.3):** the app the practice runs: assessment, oral
+- **Version 1 (Nov 2026, now 1.1.4):** the app the practice runs: assessment, oral
   and IV sedation, recovery, clinical note, Open Dental filing, emergency
   protocols and the crash-cart inventory. `APP_VERSION` in
   `apps/mobile/src/config/version.ts` is the number shown on screen and on
@@ -139,8 +139,11 @@ pnpm --filter @sedation-pro/mobile dev
   was tapped on, a diagnosis, a reason, or a word like "emergency": a doctor
   who opens the wrong page under stress must not leave a record that reads
   as the wrong diagnosis. The app writes no narrative about a rescue; when
-  the log holds one (`RESCUE_EVENTS` in `composables/emergencyLog.ts`), the
-  note only stops saying "without complication" and "None". Any new sentence
+  the log holds one (`RESCUE_EVENTS` in `composables/emergencyLog.ts`), a
+  blank complications box prints "See chronological record", not "None".
+  The note states what was recorded, never a conclusion: no "sedation
+  achieved", no "without complication", and a sentence about the discharge
+  is written only from the box that was ticked. Any new sentence
   the note writes by itself, and any new log line, is shown to the owner for
   approval first. Audit for this whenever the note or the log is touched.
 - **Do not touch the legacy `sedation-app` GitHub repo.** It's the only

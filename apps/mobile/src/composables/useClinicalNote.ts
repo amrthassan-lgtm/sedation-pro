@@ -2,7 +2,7 @@ import { computed, type ComputedRef } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import { useEventLogStore, type LogEvent } from '@/stores/event-log';
-import { useIVStore } from '@/stores/iv';
+import { useIVStore, type IVDoseRecord } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
 import { formatAlcoholBucket, usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
@@ -234,13 +234,21 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
 
     // -------- IV sedation totals -------------------------------------------
 
+    /** "7.0 mg IV", or "5.0 mg IV and 10.0 mg IM": the record names the route each dose took. */
+    const byRoute = (drug: IVDoseRecord['drug'], unit: 'mg' | 'mcg', digits: number): string => {
+      const parts: string[] = [];
+      for (const route of ['IV', 'IM'] as const) {
+        const total = iv.doses
+          .filter((d) => d.drug === drug && (d.route ?? 'IV') === route)
+          .reduce((sum, d) => sum + (d[unit] ?? 0), 0);
+        if (total > 0) parts.push(`${total.toFixed(digits)} ${unit} ${route}`);
+      }
+      return parts.join(' and ');
+    };
     const ivRows: Array<readonly [string, string]> = [];
-    if (iv.versedTotalMg > 0)
-      ivRows.push(['Midazolam (Versed)', `${iv.versedTotalMg.toFixed(1)} mg IV`]);
-    if (iv.fentanylTotalMcg > 0)
-      ivRows.push(['Fentanyl', `${iv.fentanylTotalMcg.toFixed(0)} mcg IV`]);
-    if (iv.zofranTotalMg > 0)
-      ivRows.push(['Ondansetron (Zofran)', `${iv.zofranTotalMg.toFixed(0)} mg IV`]);
+    if (iv.versedTotalMg > 0) ivRows.push(['Midazolam (Versed)', byRoute('versed', 'mg', 1)]);
+    if (iv.fentanylTotalMcg > 0) ivRows.push(['Fentanyl', byRoute('fentanyl', 'mcg', 0)]);
+    if (iv.zofranTotalMg > 0) ivRows.push(['Ondansetron (Zofran)', byRoute('zofran', 'mg', 0)]);
     const flumazenilTotal = iv.doses
       .filter((d) => d.drug === 'flumazenil')
       .reduce((sum, d) => sum + (d.mg ?? 0), 0);
@@ -455,15 +463,14 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
         const placement = `An IV catheter${gaugePart} was placed${sitePart} after ${attempts}`;
         sentences.push(fluid ? `${placement}; ${fluid} was initiated.` : `${placement}.`);
       }
+      // What was given, as totals by route. No "sedation achieved" and no
+      // "titrated to effect": the note states what was recorded, never a
+      // conclusion, and these totals can include a rescue dose.
       const meds: string[] = [];
-      if (iv.versedTotalMg > 0) meds.push(`${iv.versedTotalMg.toFixed(1)} mg midazolam`);
-      if (iv.fentanylTotalMcg > 0) meds.push(`${iv.fentanylTotalMcg.toFixed(0)} mcg fentanyl`);
-      if (iv.zofranTotalMg > 0) meds.push(`${iv.zofranTotalMg.toFixed(0)} mg ondansetron`);
-      if (meds.length > 0) {
-        sentences.push(
-          `Sedation achieved with ${meds.join(', ')} IV titrated to effect; ${iv.doses.filter((d) => !['flumazenil', 'naloxone'].includes(d.drug)).length} dose${iv.doses.length === 1 ? '' : 's'} total.`,
-        );
-      }
+      if (iv.versedTotalMg > 0) meds.push(`midazolam ${byRoute('versed', 'mg', 1)}`);
+      if (iv.fentanylTotalMcg > 0) meds.push(`fentanyl ${byRoute('fentanyl', 'mcg', 0)}`);
+      if (iv.zofranTotalMg > 0) meds.push(`ondansetron ${byRoute('zofran', 'mg', 0)}`);
+      if (meds.length > 0) sentences.push(`Medications given: ${meds.join(', ')}.`);
       if (iv.procedureStartedAt !== null) {
         sentences.push(`Procedure commenced at ${fmtClock(iv.procedureStartedAt)}.`);
       }
@@ -499,7 +506,6 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
     // Para 6 — Recovery + discharge
     {
       const sentences: string[] = [];
-      if (!hasRescueEvents) sentences.push('Recovery proceeded without complication.');
       const tolerance: string[] = [];
       if (recovery.ambulatory) tolerance.push('ambulatory');
       if (recovery.orientedX3) tolerance.push('oriented ×3');
@@ -526,8 +532,15 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       }
       if (recovery.companionDocumented) {
         sentences.push(
-          `Patient was discharged accompanied by ${recovery.companionName} (${recovery.companionRelation}). Verbal and written post-op instructions were given to the companion.`,
+          `Patient was discharged accompanied by ${recovery.companionName} (${recovery.companionRelation}).`,
         );
+        const verbal = recovery.discharge.verbalInstructionsGiven === true;
+        const written = recovery.discharge.writtenInstructionsGiven === true;
+        const given =
+          verbal && written ? 'Verbal and written' : verbal ? 'Verbal' : written ? 'Written' : null;
+        if (given !== null) {
+          sentences.push(`${given} post-op instructions were given to the companion.`);
+        }
       }
       if (recovery.releasedAt !== null) {
         sentences.push(`Patient was released at ${fmtClock(recovery.releasedAt)}.`);

@@ -25,6 +25,11 @@ export interface IVDoseRecord {
   readonly mg?: number;
   /** Amount in mcg (Fentanyl). */
   readonly mcg?: number;
+  /**
+   * Set only for a dose that did not go into the vein (midazolam IM from the
+   * Seizure page). Absent means IV, which every older record is.
+   */
+  readonly route?: 'IM';
   readonly at: number;
 }
 

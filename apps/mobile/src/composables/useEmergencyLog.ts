@@ -45,11 +45,12 @@ export function useEmergencyLog() {
   function give(drug: EmergencyDrugCallout, pill: LogPill): void {
     const { event, details } = record(drug, pill);
     const tray = TRAY[drug.name];
+    const route = pill.route === 'IM' ? ({ route: 'IM' } as const) : {};
     const dose = tray
       ? iv.logDose(
           pill.dose.includes('mcg')
-            ? { drug: tray.drug, mcg: amount(pill.dose) }
-            : { drug: tray.drug, mg: amount(pill.dose) },
+            ? { drug: tray.drug, mcg: amount(pill.dose), ...route }
+            : { drug: tray.drug, mg: amount(pill.dose), ...route },
         )
       : null;
     undo.stamp({
