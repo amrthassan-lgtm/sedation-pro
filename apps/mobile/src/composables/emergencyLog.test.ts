@@ -11,6 +11,7 @@ import { useClinicalNote } from './useClinicalNote';
 import { useEmergencyLog } from './useEmergencyLog';
 import { useEventLogStore } from '@/stores/event-log';
 import { useIVStore } from '@/stores/iv';
+import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 
 const callouts = EMERGENCY_PROTOCOLS.flatMap((p) =>
@@ -257,24 +258,18 @@ describe('the note never contradicts the record', () => {
   const complications = (note: ReturnType<typeof useClinicalNote>['value']) =>
     note.sections.flatMap((s) => s.rows).find(([label]) => label === 'Sedation complications')?.[1];
 
-  it('an ordinary case still reads "without complication" and "None"', () => {
-    const note = useClinicalNote();
-    expect(note.value.narrative.join(' ')).toContain('Recovery proceeded without complication.');
-    expect(complications(note.value)).toBe('None');
+  it('an ordinary case prints "None" for a blank complications box', () => {
+    expect(complications(useClinicalNote().value)).toBe('None');
   });
 
-  it('with a rescue dose in the record, the note says neither, and writes nothing about it', () => {
+  it('with a rescue dose in the record, the box reads "See chronological record" and the narrative is unchanged', () => {
     const before = useClinicalNote().value.narrative.join('\n');
     const rescue = useEmergencyLog();
     const epi = callout('anaphylaxis', 'Epinephrine', 0);
     rescue.give(epi, logPills(epi)[0]!);
     const note = useClinicalNote().value;
-    const narrative = note.narrative.join('\n');
-    expect(narrative).not.toContain('without complication');
     expect(complications(note)).toBe('See chronological record');
-    // Nothing added: the narrative is the old one less that one sentence.
-    expect(narrative).toBe(before.replace('\nRecovery proceeded without complication.', ''));
-    expect(narrative.toLowerCase()).not.toContain('epinephrine');
+    expect(note.narrative.join('\n')).toBe(before);
     expect(note.chronology.at(-1)).toMatchObject({
       event: 'Medication given',
       detail: 'Drug: Epinephrine · Dose: 0.3 mg · Route: IM · Notes: auto-injector',
@@ -284,5 +279,64 @@ describe('the note never contradicts the record', () => {
   it('a time stamp alone is enough, and what the doctor wrote is printed as written', () => {
     useEmergencyLog().stamp('911 called');
     expect(complications(useClinicalNote().value)).toBe('See chronological record');
+  });
+});
+
+describe('the note states what was recorded, never a conclusion (owner, Nov 2026)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  const narrative = () => useClinicalNote().value.narrative.join('\n');
+  const total = (label: string) =>
+    useClinicalNote()
+      .value.sections.flatMap((s) => s.rows)
+      .find(([l]) => l === label)?.[1];
+
+  it('lists the medications as totals, with no "sedation achieved" or "titrated to effect"', () => {
+    const iv = useIVStore();
+    iv.logDose({ drug: 'versed', mg: 2 });
+    iv.logDose({ drug: 'fentanyl', mcg: 50 });
+    iv.logDose({ drug: 'zofran', mg: 4 });
+    const text = narrative();
+    expect(text).toContain(
+      'Medications given: midazolam 2.0 mg IV, fentanyl 50 mcg IV, ondansetron 4 mg IV.',
+    );
+    expect(text).not.toMatch(/sedation achieved|titrated|doses? total/i);
+  });
+
+  it('a dose into the muscle is never printed as IV, in the sentence or the totals', () => {
+    const iv = useIVStore();
+    iv.logDose({ drug: 'versed', mg: 2 });
+    const im = callout('seizure', 'Midazolam', 1);
+    useEmergencyLog().give(im, logPills(im)[0]!);
+    expect(iv.versedTotalMg).toBe(12);
+    expect(narrative()).toContain('Medications given: midazolam 2.0 mg IV and 10.0 mg IM.');
+    expect(total('Midazolam (Versed)')).toBe('2.0 mg IV and 10.0 mg IM');
+  });
+
+  it('never writes "Recovery proceeded without complication."', () => {
+    const recovery = useRecoveryStore();
+    recovery.ambulatory = true;
+    expect(narrative()).not.toContain('without complication');
+  });
+
+  it('writes the instructions sentence only from the boxes that were ticked', () => {
+    const recovery = useRecoveryStore();
+    recovery.companionName = 'Pat';
+    recovery.companionRelation = 'Spouse';
+    const line = () =>
+      narrative()
+        .split(/(?<=\.) /)
+        .find((s) => s.includes('instructions'));
+    expect(narrative()).toContain('Patient was discharged accompanied by Pat (Spouse).');
+    expect(line()).toBeUndefined();
+    recovery.setDischarge('verbalInstructionsGiven', true);
+    expect(line()).toBe('Verbal post-op instructions were given to the companion.');
+    recovery.setDischarge('writtenInstructionsGiven', true);
+    expect(line()).toBe('Verbal and written post-op instructions were given to the companion.');
+    recovery.setDischarge('verbalInstructionsGiven', false);
+    expect(line()).toBe('Written post-op instructions were given to the companion.');
   });
 });
