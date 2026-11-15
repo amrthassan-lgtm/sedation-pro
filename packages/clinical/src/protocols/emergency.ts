@@ -657,6 +657,11 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 10,
           volume: '4.0 ml',
           concentration: '5 mg/ml',
+          // The repeat can be 40 mg: its own row, so it can be logged as given.
+          drawTable: [
+            { label: '20 mg', ml: '4.0 ml' },
+            { label: '40 mg (repeat)', ml: '8.0 ml' },
+          ],
           notes: 'over 2 minutes; repeat 20-40 mg q10 min up to 300 mg total; label the syringe',
         },
       },
@@ -1052,6 +1057,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           syringeMl: 10,
           volume: '6.0 ml',
           concentration: '50 mg/ml',
+          drawTable: [
+            { label: '300 mg (1st dose)', ml: '6.0 ml' },
+            { label: '150 mg (2nd dose)', ml: '3.0 ml' },
+          ],
           notes:
             'IV PUSH; 300 mg = two 150 mg/3 ml vials; second dose 150 mg (3.0 ml) at the next cycle; label the syringe',
         },

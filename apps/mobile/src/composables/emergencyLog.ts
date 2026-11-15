@@ -50,26 +50,35 @@ function pillsFor(drug: EmergencyDrugCallout): ReadonlyArray<LogPill> {
   const rows = drug.drawTable ?? [];
 
   const byWeight = rows.flatMap((row) => {
-    const m = WEIGHT_ROW.exec(row.label);
-    return m?.[1] !== undefined && m[2] !== undefined
-      ? [{ key: m[2], dose: m[2], route: drug.route, sub: `${m[1]} · ${row.ml}` }]
+    const [, weight, dose] = WEIGHT_ROW.exec(row.label) ?? [];
+    return weight !== undefined && dose !== undefined
+      ? [{ key: dose, dose, route: drug.route, sub: `${weight} · ${row.ml}` }]
       : [];
   });
   if (byWeight.length > 0) return byWeight;
 
-  const doses = new Map<string, Set<string>>();
+  const doses = new Map<string, { volumes: Set<string>; notes: Set<string> }>();
   for (const row of rows) {
-    const dose = DOSE_ROW.exec(row.label)?.[1];
-    if (dose === undefined) continue;
-    doses.set(dose, (doses.get(dose) ?? new Set()).add(row.ml));
+    const m = DOSE_ROW.exec(row.label);
+    const dose = m?.[1];
+    if (m === null || dose === undefined) continue;
+    // The row's own words after the dose: "(2nd dose)", "(repeat)".
+    const note = /\(([^)]+)\)/.exec(row.label.slice(m.index + m[0].length))?.[1] ?? '';
+    const seen = doses.get(dose) ?? { volumes: new Set<string>(), notes: new Set<string>() };
+    seen.volumes.add(row.ml);
+    seen.notes.add(note);
+    doses.set(dose, seen);
   }
   if (doses.size > 0) {
-    return [...doses].map(([dose, volumes]) => ({
+    return [...doses].map(([dose, { volumes, notes }]) => ({
       key: dose,
       dose,
       route: drug.route,
       // One dose listed at two strengths has no single volume to show.
-      sub: volumes.size === 1 ? ([...volumes][0] ?? '') : '',
+      sub:
+        volumes.size === 1
+          ? [[...volumes][0], notes.size === 1 ? [...notes][0] : ''].filter(Boolean).join(' · ')
+          : '',
     }));
   }
 
@@ -89,8 +98,8 @@ export type ReversalDrug = 'naloxone' | 'flumazenil';
 
 /**
  * A reversal pill, logged through the sedation screen's own handlers so the
- * discharge hold and the totals follow. The doses are those handlers' fixed
- * doses; a test holds the volumes to the callouts.
+ * discharge hold and the totals follow. A test holds the doses and volumes to
+ * the callouts.
  */
 export interface ReversalPill {
   readonly key: string;
@@ -98,18 +107,40 @@ export interface ReversalPill {
   readonly route: 'IV' | 'IM';
   readonly name: string;
   readonly dose: string;
+  readonly mg: number;
   readonly sub: string;
 }
 
-export const REVERSAL_DOSE: Readonly<
-  Record<ReversalDrug, { name: string; dose: string; sub: string }>
+interface ReversalDose {
+  readonly dose: string;
+  readonly mg: number;
+  readonly sub: string;
+}
+
+/** The first dose, then any larger one the protocol draws (naloxone 2 mg). */
+export const REVERSAL_DOSES: Readonly<
+  Record<ReversalDrug, { name: string; doses: ReadonlyArray<ReversalDose> }>
 > = {
-  naloxone: { name: 'Naloxone', dose: '0.4 mg', sub: '1.0 ml' },
-  flumazenil: { name: 'Flumazenil', dose: '0.2 mg', sub: '2.0 ml' },
+  naloxone: {
+    name: 'Naloxone',
+    doses: [
+      { dose: '0.4 mg', mg: 0.4, sub: '1.0 ml' },
+      { dose: '2 mg', mg: 2, sub: '5.0 ml' },
+    ],
+  },
+  flumazenil: { name: 'Flumazenil', doses: [{ dose: '0.2 mg', mg: 0.2, sub: '2.0 ml' }] },
 };
 
-function reversal(drug: ReversalDrug, route: 'IV' | 'IM'): ReversalPill {
-  return { key: `${drug} ${route}`, drug, route, ...REVERSAL_DOSE[drug] };
+function reversals(
+  drug: ReversalDrug,
+  routes: ReadonlyArray<'IV' | 'IM'>,
+  firstDoseOnly = false,
+): ReadonlyArray<ReversalPill> {
+  const { name, doses } = REVERSAL_DOSES[drug];
+  const offered = firstDoseOnly ? doses.slice(0, 1) : doses;
+  return routes.flatMap((route) =>
+    offered.map((d) => ({ key: `${drug} ${d.dose} ${route}`, drug, route, name, ...d })),
+  );
 }
 
 /**
@@ -120,14 +151,12 @@ function reversal(drug: ReversalDrug, route: 'IV' | 'IM'): ReversalPill {
  */
 export function reversalsFor(step: ProtocolStep): ReadonlyArray<ReversalPill> {
   const im = /\bor IM\b/.test(step.text);
-  if (step.drug?.name === 'Naloxone') {
-    return im
-      ? [reversal('naloxone', 'IV'), reversal('naloxone', 'IM')]
-      : [reversal('naloxone', 'IV')];
-  }
-  if (step.drug?.name === 'Flumazenil') return [reversal('flumazenil', 'IV')];
+  if (step.drug?.name === 'Naloxone') return reversals('naloxone', im ? ['IV', 'IM'] : ['IV']);
+  if (step.drug?.name === 'Flumazenil') return reversals('flumazenil', ['IV']);
+  // The Hypoventilation step only says which reverses which; the full doses
+  // are on the two Oversedation pages it links to.
   if (step.drug === undefined && step.text.startsWith('Reverse:')) {
-    return [reversal('naloxone', 'IV'), reversal('flumazenil', 'IV')];
+    return [...reversals('naloxone', ['IV'], true), ...reversals('flumazenil', ['IV'], true)];
   }
   return [];
 }

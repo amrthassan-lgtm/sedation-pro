@@ -130,13 +130,15 @@ export function useEmergencyLog() {
   const dosing = useIvDosing();
   /** The sedation screen's own handler, so the discharge hold follows. */
   function reverse(pill: ReversalPill): void {
-    if (pill.drug === 'naloxone') dosing.logIvNaloxone(pill.route);
+    if (pill.drug === 'naloxone') dosing.logIvNaloxone(pill.route, pill.mg);
     else dosing.logIvFlumazenil();
   }
 
   /** Like `lastGiven`: the last time and a count, so a repeat is a tap away. */
   function lastReversal(pill: ReversalPill): string | undefined {
-    const given = iv.doses.filter((d) => d.drug === pill.drug && (d.route ?? 'IV') === pill.route);
+    const given = iv.doses.filter(
+      (d) => d.drug === pill.drug && (d.route ?? 'IV') === pill.route && d.mg === pill.mg,
+    );
     const last = given.at(-1);
     if (!last) return undefined;
     return `✓ ${fmtClock(last.at)}${given.length > 1 ? ` · ×${given.length}` : ''}`;

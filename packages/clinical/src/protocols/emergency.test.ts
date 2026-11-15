@@ -835,3 +835,26 @@ describe('step drawings', () => {
     }
   });
 });
+
+describe('second doses have rows of their own (owner, Nov 2026)', () => {
+  // A logged dose comes from a table row, so a second dose that differs from
+  // the first needs its own row, or the record shows the first dose twice.
+  const drugAt = (id: string, name: string) =>
+    findProtocol(id)?.steps.find((s) => s.drug?.name === name)?.drug;
+
+  it('arrest amiodarone: 300 mg first, 150 mg second, each with its volume', () => {
+    expect(drugAt('vfib_vtach', 'Amiodarone')?.drawTable).toEqual([
+      { label: '300 mg (1st dose)', ml: '6.0 ml' },
+      { label: '150 mg (2nd dose)', ml: '3.0 ml' },
+    ]);
+    // The step and the note already said so; the rows are the same numbers.
+    expect(drugAt('vfib_vtach', 'Amiodarone')?.notes).toContain('second dose 150 mg (3.0 ml)');
+  });
+
+  it('labetalol: the 40 mg repeat has its own row', () => {
+    expect(drugAt('hypertensive_crisis', 'Labetalol')?.drawTable).toEqual([
+      { label: '20 mg', ml: '4.0 ml' },
+      { label: '40 mg (repeat)', ml: '8.0 ml' },
+    ]);
+  });
+});
