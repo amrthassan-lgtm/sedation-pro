@@ -241,7 +241,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '2.0 ml',
           concentration: '62.5 mg/ml',
           notes:
-            'Act-O-Vial: press the top to release the liquid, swirl, draw all 2 ml; label the syringe',
+            'Act-O-Vial: press the top to release the liquid, swirl, draw all 2 ml; push over several minutes; label the syringe',
         },
       },
       {
@@ -895,7 +895,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '12 mg (2nd dose)', ml: '4.0 ml' },
           ],
           notes:
-            '10 ml syringe for the 12 mg dose; draw the 20 ml NS flush BEFORE the push (two 10 ml syringes from the saline bag); push in 1-2 seconds, then the flush right away and raise the arm; avoid in asthma; never for irregular or polymorphic rhythms; label the syringe if drawn from a vial',
+            '10 ml syringe for the 12 mg dose; draw the 20 ml NS flush BEFORE the push (two 10 ml syringes from the saline bag); use the port nearest the patient; pinch the tubing above it, push in 1-2 seconds, then the flush right away and raise the arm; avoid in asthma; never for irregular or polymorphic rhythms; label the syringe if drawn from a vial',
         },
         severity: 'critical',
       },
@@ -1052,7 +1052,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '1.0 ml',
           concentration: '1 mg/ml',
           notes:
-            'draw the entire 1 ml ampule; push, then run the IV wide open for 10-20 seconds and raise the arm; repeat q3-5 min; label the syringe',
+            'draw the entire 1 ml ampule; push, then a 20 ml saline flush and raise the arm for 10-20 seconds; repeat q3-5 min; label the syringe',
         },
         severity: 'critical',
       },
@@ -1072,7 +1072,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '150 mg (2nd dose)', ml: '3.0 ml' },
           ],
           notes:
-            'IV PUSH; 300 mg = two 3 ml syringes, one per vial, pushed one after the other; second dose 150 mg (3.0 ml) at the next cycle = a third 3 ml syringe drawn from the 900 mg/18 ml vial; label the syringes',
+            'IV PUSH, then a 20 ml saline flush and raise the arm for 10-20 seconds; 300 mg = two 3 ml syringes, one per vial, pushed one after the other; second dose 150 mg (3.0 ml) at the next cycle = a third 3 ml syringe drawn from the 900 mg/18 ml vial; label the syringes',
         },
         severity: 'critical',
       },
@@ -1091,7 +1091,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '250 lb (150 mg)', ml: '7.5 ml' },
           ],
           notes:
-            'second dose 0.3 mg/lb at the next cycle; over 165 lb needs a second 100 mg/5 ml vial; label the syringe',
+            'push, then a 20 ml saline flush and raise the arm for 10-20 seconds; second dose 0.3 mg/lb at the next cycle; over 165 lb needs a second 100 mg/5 ml vial; label the syringe',
         },
       },
       {
@@ -1131,7 +1131,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '1.0 ml',
           concentration: '1 mg/ml',
           notes:
-            'draw the entire 1 ml ampule; push, then run the IV wide open for 10-20 seconds and raise the arm; repeat q3-5 min; label the syringe',
+            'draw the entire 1 ml ampule; push, then a 20 ml saline flush and raise the arm for 10-20 seconds; repeat q3-5 min; label the syringe',
         },
         severity: 'critical',
       },
@@ -1226,7 +1226,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '25 mg', ml: '0.5 ml' },
             { label: '50 mg', ml: '1.0 ml' },
           ],
-          notes: 'label the syringe',
+          // Label: IV no faster than 25 mg a minute, so 50 mg takes 2 minutes.
+          notes: 'IV: push over 2 minutes; label the syringe',
         },
       },
       {
@@ -1239,7 +1240,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '2.0 ml',
           concentration: '62.5 mg/ml',
           notes:
-            'Act-O-Vial: press the top to release the liquid, swirl, draw all 2 ml; label the syringe',
+            'Act-O-Vial: press the top to release the liquid, swirl, draw all 2 ml; push over several minutes; label the syringe',
         },
       },
       {

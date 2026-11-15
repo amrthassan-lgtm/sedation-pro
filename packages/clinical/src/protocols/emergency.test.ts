@@ -682,6 +682,27 @@ describe('emergency protocols', () => {
       expect(notes).toContain('then the flush right away and raise the arm');
     });
 
+    it('adenosine goes in at the port nearest the patient, with the line pinched above it', () => {
+      // ACLS technique: a push into a port far up the line, or one that can
+      // run back up the tubing, loses a drug that lasts under 10 seconds.
+      expect(drugAt('svt', 'Adenosine')?.drug?.notes).toContain(
+        'use the port nearest the patient; pinch the tubing above it, push in 1-2 seconds',
+      );
+    });
+
+    it('diphenhydramine IV and Solu-Medrol say how fast to push them (their labels)', () => {
+      // Diphenhydramine: no faster than 25 mg a minute. Solu-Medrol: IV over
+      // several minutes; fast large doses have caused arrhythmias.
+      expect(drugAt('anaphylaxis', 'Diphenhydramine')?.drug?.notes).toBe(
+        'IV: push over 2 minutes; label the syringe',
+      );
+      for (const id of ['anaphylaxis', 'bronchospasm']) {
+        expect(drugAt(id, 'Methylprednisolone (Solu-Medrol)')?.drug?.notes, id).toContain(
+          'push over several minutes',
+        );
+      }
+    });
+
     it('lidocaine with a pulse goes in over minutes; in an arrest it stays a push', () => {
       const stable = drugAt('stable_vtach', 'Cardiac Lidocaine');
       expect(stable?.text).toBe(
@@ -694,9 +715,23 @@ describe('emergency protocols', () => {
     it('arrest epinephrine is flushed in', () => {
       for (const id of ARREST_PAGES) {
         expect(drugAt(id, 'Epinephrine')?.drug?.notes, id).toBe(
-          'draw the entire 1 ml ampule; push, then run the IV wide open for 10-20 seconds and raise the arm; repeat q3-5 min; label the syringe',
+          'draw the entire 1 ml ampule; push, then a 20 ml saline flush and raise the arm for 10-20 seconds; repeat q3-5 min; label the syringe',
         );
       }
+    });
+
+    it('every arrest push is followed by 20 ml and a raised arm, as ACLS teaches', () => {
+      // The flush is a volume, not a time: ten to twenty seconds wide open
+      // through the practice's 22 gauge (35 ml/min) gives only 6 to 12 ml.
+      const FLUSH = 'then a 20 ml saline flush and raise the arm for 10-20 seconds';
+      for (const id of ARREST_PAGES) {
+        expect(drugAt(id, 'Epinephrine')?.drug?.notes, id).toContain(FLUSH);
+      }
+      for (const name of ['Amiodarone', 'Cardiac Lidocaine']) {
+        expect(drugAt('vfib_vtach', name)?.drug?.notes, name).toContain(FLUSH);
+      }
+      expect(drugAt('vfib_vtach', 'Amiodarone')?.drug?.notes).toMatch(/^IV PUSH, then a 20 ml/);
+      expect(JSON.stringify(EMERGENCY_PROTOCOLS)).not.toContain('wide open for 10-20 seconds');
     });
 
     it('first-ever chest pain is 911 before the nitroglycerin trial', () => {
