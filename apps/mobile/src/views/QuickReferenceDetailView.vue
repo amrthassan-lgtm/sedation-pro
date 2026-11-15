@@ -9,6 +9,7 @@ import {
   type EmergencyDrugCallout,
   type EmergencyProtocol,
   type ProtocolStep,
+  emergencySyringeTint,
 } from '@sedation-pro/clinical';
 import {
   UiBanner,
@@ -33,6 +34,13 @@ import {
   type SyringeDrawing,
 } from '@/composables/useSyringeConfig';
 import ProtocolFigure from '@/components/ProtocolFigure.vue';
+import {
+  logPills,
+  REPEATABLE_STAMPS,
+  stepStamps,
+  type TimeStamp,
+} from '@/composables/emergencyLog';
+import { useEmergencyLog } from '@/composables/useEmergencyLog';
 import { useInventoryStatus, type ClassifiedItem } from '@/composables/useInventoryStatus';
 import { CATEGORY_LABEL, swatchFor } from '@/data/protocolCategories';
 
@@ -267,6 +275,26 @@ function routeLine(drug: EmergencyDrugCallout): string {
  * single draw volume, plus every emergency drug `emergencySyringe` has a
  * colour and a volume for. Otherwise `null` so the template can `v-if` past it.
  */
+/**
+ * Logging from the page: a pill per dose in each drug box and a time stamp
+ * on the step that names the event. Only with a case open, so the pages read
+ * the same as ever for reference and teaching.
+ */
+const rescue = useEmergencyLog();
+const stamps = computed(() => stepStamps(protocol.value?.steps ?? []));
+const NEUTRAL_TINT = 'var(--color-slate)';
+function pillTint(drug: EmergencyDrugCallout): string {
+  return (
+    syringeConfig(drug.name)?.color ??
+    emergencySyringeTint(drug.name, drug.mixFirst !== undefined) ??
+    NEUTRAL_TINT
+  );
+}
+/** A stamp that happens once locks when logged; a shock can be logged again. */
+function stampState(stamp: TimeStamp): 'idle' | 'logged' {
+  return !REPEATABLE_STAMPS.has(stamp) && rescue.stamped(stamp) !== undefined ? 'logged' : 'idle';
+}
+
 function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
   const emergency = emergencySyringe(drug);
   if (emergency !== null) return emergency;
@@ -377,6 +405,21 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
             <div class="step-body">
               <p class="step-text">{{ step.text }}</p>
               <ProtocolFigure v-if="step.figure" :kind="step.figure" />
+              <div v-if="isPhase1Complete && stamps.has(index)" class="log-stamps">
+                <UiDrugButton
+                  v-for="stamp in stamps.get(index)"
+                  :key="stamp"
+                  compact
+                  tone="zofran"
+                  :tint="NEUTRAL_TINT"
+                  name="Time stamp"
+                  :dose="stamp"
+                  :state="stampState(stamp)"
+                  :logged-at="rescue.stamped(stamp)"
+                  :last-at="rescue.stamped(stamp)"
+                  @click="rescue.stamp(stamp)"
+                />
+              </div>
               <div v-if="step.goTo && step.goTo.length > 0" class="step-links">
                 <button
                   v-for="id in step.goTo"
@@ -442,11 +485,40 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
                   :concentration="syringeFor(step.drug)!.concentration"
                   :caption="syringeFor(step.drug)!.caption"
                 />
+                <div
+                  v-if="isPhase1Complete && logPills(step.drug, step.text).length > 0"
+                  class="log-pills"
+                >
+                  <UiDrugButton
+                    v-for="pill in logPills(step.drug, step.text)"
+                    :key="pill.key"
+                    tone="zofran"
+                    :tint="pillTint(step.drug)"
+                    :name="step.drug.name"
+                    :dose="`${pill.dose} ${pill.route}`"
+                    :sub="pill.sub || undefined"
+                    :last-at="rescue.lastGiven(step.drug, pill)"
+                    @click="rescue.give(step.drug, pill)"
+                  />
+                </div>
               </div>
             </div>
           </li>
         </ol>
       </UiCard>
+
+      <div v-if="isPhase1Complete && call911" class="log-stamps">
+        <UiDrugButton
+          compact
+          tone="zofran"
+          :tint="NEUTRAL_TINT"
+          name="Time stamp"
+          dose="EMS arrived"
+          :state="stampState('EMS arrived')"
+          :logged-at="rescue.stamped('EMS arrived')"
+          @click="rescue.stamp('EMS arrived')"
+        />
+      </div>
 
       <p class="reviewed caption">{{ PROTOCOLS_REVIEWED }}</p>
 
@@ -525,6 +597,18 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
   text-align: center;
 }
 
+.log-pills {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.log-stamps {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  max-width: 320px;
+}
 .give-card {
   display: flex;
   flex-direction: column;
