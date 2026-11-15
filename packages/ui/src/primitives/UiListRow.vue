@@ -16,7 +16,7 @@ interface Props {
    * open and the button says whether it is expanded. A string, not a
    * boolean, so "not a disclosure" stays distinct from "closed".
    */
-  disclosure?: ListRowDisclosure;
+  disclosure?: ListRowDisclosure | undefined;
   /** Where the hairline above this row starts, in px from the left edge. */
   inset?: number;
 }

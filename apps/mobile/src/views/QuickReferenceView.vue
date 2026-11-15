@@ -9,7 +9,15 @@ import {
   EMERGENCY_PROTOCOLS,
   type EmergencyProtocol,
 } from '@sedation-pro/clinical';
-import { UiBanner, UiButton, UiCard, UiStack, UiSyringe, UiTextInput } from '@sedation-pro/ui';
+import {
+  UiBanner,
+  UiButton,
+  UiCard,
+  UiListRow,
+  UiPillButton,
+  UiSyringe,
+  UiTextInput,
+} from '@sedation-pro/ui';
 
 import {
   classifyInventory,
@@ -198,9 +206,9 @@ function clearSearch() {
         placeholder="Search signs, drugs, protocols…"
         block
       />
-      <button v-if="isSearching" type="button" class="search-clear" @click="clearSearch">
-        Clear search
-      </button>
+      <UiPillButton v-if="isSearching" class="search-clear" @click="clearSearch"
+        >Clear search</UiPillButton
+      >
     </section>
 
     <UiBanner v-if="isSearching && filtered.length === 0" tone="info" icon="🔍">
@@ -231,35 +239,37 @@ function clearSearch() {
         <template v-if="group.id === 'cardiac' && !isSearching">
           <template v-for="sub in group.categories" :key="sub">
             <p v-if="CARDIAC_SUBHEADS[sub]" class="subhead">{{ CARDIAC_SUBHEADS[sub] }}</p>
-            <UiStack :gap="1">
-              <button
+            <div class="list">
+              <UiListRow
                 v-for="proto in group.protocols.filter((p) => p.category === sub)"
                 :key="proto.id"
-                type="button"
-                class="row"
+                interactive
+                chevron
+                :inset="18"
                 @click="open(proto.id)"
               >
+                <template #leading><span class="row-indent" /></template>
                 <span class="row-name">{{ proto.name }}</span>
                 <span class="row-summary">{{ proto.summary }}</span>
-                <span class="row-chevron" aria-hidden="true">›</span>
-              </button>
-            </UiStack>
+              </UiListRow>
+            </div>
           </template>
         </template>
 
-        <UiStack v-else :gap="1">
-          <button
+        <div v-else class="list">
+          <UiListRow
             v-for="proto in group.protocols"
             :key="proto.id"
-            type="button"
-            class="row"
+            interactive
+            chevron
+            :inset="18"
             @click="open(proto.id)"
           >
+            <template #leading><span class="row-indent" /></template>
             <span class="row-name">{{ proto.name }}</span>
             <span class="row-summary">{{ proto.summary }}</span>
-            <span class="row-chevron" aria-hidden="true">›</span>
-          </button>
-        </UiStack>
+          </UiListRow>
+        </div>
       </template>
     </UiCard>
 
@@ -270,34 +280,26 @@ function clearSearch() {
         <p class="heading">IV Drug Reference</p>
         <span class="card-count">{{ drugRefs.length }}</span>
       </header>
-      <UiStack :gap="1">
-        <div
-          v-for="ref in drugRefs"
-          :key="ref.seed.id"
-          class="drug-pill-wrap"
-          :class="{ 'is-open': expandedDrugId === ref.seed.id }"
-        >
-          <button
-            type="button"
-            class="drug-pill"
+      <div class="list">
+        <template v-for="ref in drugRefs" :key="ref.seed.id">
+          <UiListRow
+            interactive
+            :disclosure="expandedDrugId === ref.seed.id ? 'open' : 'closed'"
+            :inset="22"
             :class="`drug-pill--${ref.seed.id}`"
-            :aria-expanded="expandedDrugId === ref.seed.id"
             @click="toggleDrug(ref.seed.id)"
           >
-            <span class="drug-swatch" :style="{ background: ref.color }" aria-hidden="true" />
-            <span class="drug-pill-info">
-              <span class="drug-pill-name">{{ ref.drug.name }}</span>
-              <span class="drug-pill-meta">
-                {{ ref.drug.concentration.value }} {{ ref.drug.concentration.unit }} ·
-                {{ ref.syringeMl }} ml syringe<template v-if="ref.drug.tape">
-                  · <span :style="{ color: ref.color }">{{ ref.drug.tape }}</span> tape</template
-                >
-              </span>
+            <template #leading>
+              <span class="drug-swatch" :style="{ background: ref.color }" aria-hidden="true" />
+            </template>
+            <span class="drug-pill-name">{{ ref.drug.name }}</span>
+            <span class="drug-pill-meta">
+              {{ ref.drug.concentration.value }} {{ ref.drug.concentration.unit }} ·
+              {{ ref.syringeMl }} ml syringe<template v-if="ref.drug.tape">
+                · <span :style="{ color: ref.color }">{{ ref.drug.tape }}</span> tape</template
+              >
             </span>
-            <span class="drug-pill-chevron" aria-hidden="true">
-              {{ expandedDrugId === ref.seed.id ? '▾' : '▸' }}
-            </span>
-          </button>
+          </UiListRow>
 
           <div v-if="expandedDrugId === ref.seed.id" class="drug-pill-detail">
             <UiSyringe
@@ -320,21 +322,19 @@ function clearSearch() {
             <p class="drug-dose-note">{{ ref.seed.note }}</p>
             <p v-if="ref.seed.warning" class="drug-dose-warn">⚠ {{ ref.seed.warning }}</p>
           </div>
-        </div>
-      </UiStack>
+        </template>
+      </div>
     </UiCard>
 
     <!-- Discovery link to the standalone inventory. Hidden while searching
          so it can never masquerade as a protocol result — restocking is a
          between-cases task, not a crisis lookup. -->
     <UiCard v-if="!isSearching">
-      <UiStack :gap="1">
-        <button type="button" class="row" @click="void router.push('/inventory')">
-          <span class="row-name">Drug Inventory</span>
-          <span class="row-summary">{{ inventorySubLine(inventorySummary) }}</span>
-          <span class="row-chevron" aria-hidden="true">›</span>
-        </button>
-      </UiStack>
+      <UiListRow interactive chevron @click="void router.push('/inventory')">
+        <template #leading><span class="row-indent" /></template>
+        <span class="row-name">Drug Inventory</span>
+        <span class="row-summary">{{ inventorySubLine(inventorySummary) }}</span>
+      </UiListRow>
     </UiCard>
   </main>
 </template>
@@ -359,47 +359,11 @@ function clearSearch() {
   align-items: center;
   gap: var(--sp-2);
 }
-.drug-pill-wrap {
-  border-radius: var(--r-md);
-  overflow: hidden;
-}
-.drug-pill-wrap.is-open {
-  background: var(--color-surface-subtle);
-  border: 1px solid var(--color-border);
-}
-.drug-pill {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: 10px 12px;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--r-md);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background var(--dur-150) var(--ease-standard);
-}
-.drug-pill:active {
-  background: var(--color-surface);
-}
-.drug-pill-wrap.is-open .drug-pill {
-  border: none;
-}
 .drug-swatch {
   flex-shrink: 0;
   width: 10px;
   height: 28px;
   border-radius: 2px;
-}
-.drug-pill-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
 }
 .drug-pill-name {
   font-size: var(--type-body);
@@ -410,17 +374,24 @@ function clearSearch() {
   color: var(--color-text-tertiary);
   letter-spacing: 0.2px;
 }
-.drug-pill-chevron {
-  flex-shrink: 0;
-  font-size: var(--type-heading);
-  color: var(--color-text-tertiary);
-  font-family: var(--font-mono);
-}
+/* An open drug shows its chart in a borderless panel under its row. */
 .drug-pill-detail {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  padding: 0 12px 12px;
+  margin: 0 0 var(--sp-2) 22px;
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--color-surface);
+}
+.list {
+  display: flex;
+  flex-direction: column;
+}
+/* Row text lines up with the category title, as on the inventory. */
+.row-indent {
+  display: inline-block;
+  width: 6px;
 }
 .drug-dose-list {
   display: flex;
@@ -520,17 +491,6 @@ function clearSearch() {
 }
 .search-clear {
   align-self: flex-end;
-  cursor: pointer;
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: var(--r-pill);
-  border: 0;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
-  font-weight: var(--weight-semibold);
-  font-size: var(--type-footnote);
-  letter-spacing: 0;
-  text-transform: none;
 }
 
 /* ----------------- Category cards ----------------------------------- */
@@ -564,43 +524,14 @@ function clearSearch() {
   font-weight: var(--weight-bold);
 }
 
-.row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 10px 12px;
-  text-align: left;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--r-md);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  position: relative;
-  -webkit-tap-highlight-color: transparent;
-  transition: background var(--dur-150) var(--ease-standard);
-}
-.row:active {
-  background: var(--color-surface);
-}
 .row-name {
   font-size: var(--type-footnote);
   font-weight: var(--weight-semibold);
-  padding-right: 24px;
 }
 .row-summary {
   font-size: var(--type-caption);
   color: var(--color-text-tertiary);
-  line-height: 1.4;
-  padding-right: 24px;
-}
-.row-chevron {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 18px;
-  color: var(--color-text-disabled);
+  line-height: var(--leading-normal);
 }
 .empty {
   font-size: var(--type-footnote);

@@ -21,6 +21,12 @@ export interface LogPill {
   readonly sub: string;
   /** Recorded with the dose when it says something the dose does not. */
   readonly notes?: string;
+  /**
+   * A second dose the protocol derives from the first ("second dose is
+   * half"). For the layout only: it sits on a row of its own. The record
+   * holds the dose and route, never this.
+   */
+  readonly secondDose?: true;
 }
 
 /** Naloxone and flumazenil are logged from the card at the top of their pages. */
@@ -35,14 +41,40 @@ const WEIGHT_ROW = new RegExp(`^(\\d+ lb) \\((${DOSE})\\)`);
 /**
  * A step that allows two routes ("Diphenhydramine IV or IM") offers each
  * dose by each route: a record must not say IV for a dose that went into
- * muscle.
+ * muscle. A step whose second dose is half the first ("second dose is
+ * half"), with a table by weight, offers that half for each weight too
+ * (owner, Nov 2026). It carries no volume: the half volumes fall between
+ * the syringe's marks, and the owner chose not to print them.
  */
 export function logPills(drug: EmergencyDrugCallout, stepText = ''): ReadonlyArray<LogPill> {
-  const pills = pillsFor(drug);
+  const pills = withHalfDoses(pillsFor(drug), stepText);
   if (!new RegExp(`${drug.name} IV or IM\\b`).test(stepText)) return pills;
   return (['IV', 'IM'] as const).flatMap((route) =>
     pills.map((pill) => ({ ...pill, key: `${pill.key} ${route}`, route })),
   );
+}
+
+const BY_WEIGHT = /^(\d+ lb) · /;
+
+function withHalfDoses(pills: ReadonlyArray<LogPill>, stepText: string): ReadonlyArray<LogPill> {
+  if (!/\bsecond dose is half\b/.test(stepText) || pills.length === 0) return pills;
+  if (!pills.every((p) => BY_WEIGHT.test(p.sub))) return pills;
+  const half = pills.flatMap((p) => {
+    const [, amount, unit] = /^([\d.]+) ?(\S+)$/.exec(p.dose) ?? [];
+    const weight = BY_WEIGHT.exec(p.sub)?.[1];
+    if (amount === undefined || unit === undefined || weight === undefined) return [];
+    const dose = `${Number(amount) / 2} ${unit}`;
+    return [
+      {
+        key: `${dose} 2nd`,
+        dose,
+        route: p.route,
+        sub: `${weight} · 2nd dose`,
+        secondDose: true as const,
+      },
+    ];
+  });
+  return [...pills, ...half];
 }
 
 function pillsFor(drug: EmergencyDrugCallout): ReadonlyArray<LogPill> {

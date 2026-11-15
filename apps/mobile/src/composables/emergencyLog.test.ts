@@ -118,11 +118,60 @@ describe('the pills a drug box offers', () => {
       '50 mg IM',
     ]);
     // No other step words a second route this way.
+    const routes = (pills: ReadonlyArray<{ route: string }>) => [
+      ...new Set(pills.map((p) => p.route)),
+    ];
     for (const { protocol, drug } of callouts) {
       if (drug.name === 'Diphenhydramine') continue;
       const text = protocol.steps.find((s) => s.drug === drug)!.text;
-      expect(logPills(drug, text), `${protocol.id}: ${drug.name}`).toEqual(logPills(drug));
+      expect(routes(logPills(drug, text)), `${protocol.id}: ${drug.name}`).toEqual(
+        routes(logPills(drug)),
+      );
     }
+  });
+
+  it('a second dose that is half the first gets a pill per weight, with no volume (owner, Nov 2026)', () => {
+    for (const page of ['stable_vtach', 'vfib_vtach']) {
+      const step = findProtocol(page)!.steps.find((s) => s.drug?.name === 'Cardiac Lidocaine')!;
+      expect(step.text, page).toMatch(/second dose is half/);
+      const pills = logPills(step.drug!, step.text);
+      expect(
+        pills.map((p) => [p.dose, p.sub, p.secondDose ?? false]),
+        page,
+      ).toEqual([
+        ['90 mg', '150 lb · 4.5 ml', false],
+        ['120 mg', '200 lb · 6.0 ml', false],
+        ['150 mg', '250 lb · 7.5 ml', false],
+        ['45 mg', '150 lb · 2nd dose', true],
+        ['60 mg', '200 lb · 2nd dose', true],
+        ['75 mg', '250 lb · 2nd dose', true],
+      ]);
+    }
+    // Only a table by weight, and only where the step says so: these keep their pills.
+    for (const [page, name] of [
+      ['intraarterial', 'Cardiac Lidocaine'],
+      ['last', 'Push-dose Epinephrine'],
+    ] as const) {
+      const step = findProtocol(page)!.steps.find((s) => s.drug?.name === name)!;
+      expect(
+        logPills(step.drug!, step.text).some((p) => p.secondDose),
+        page,
+      ).toBe(false);
+    }
+  });
+
+  it('a half dose is recorded as a dose like any other: drug, dose, route', () => {
+    const step = findProtocol('stable_vtach')!.steps.find(
+      (s) => s.drug?.name === 'Cardiac Lidocaine',
+    )!;
+    const half = logPills(step.drug!, step.text).find((p) => p.dose === '45 mg')!;
+    setActivePinia(createPinia());
+    useEmergencyLog().give(step.drug!, half);
+    const last = useEventLogStore().events.at(-1)!;
+    expect([last.event, last.details]).toEqual([
+      'Medication given',
+      { Drug: 'Cardiac Lidocaine', Dose: '45 mg', Route: 'IV' },
+    ]);
   });
 
   it('the pen is one pill that says it was the auto-injector', () => {
