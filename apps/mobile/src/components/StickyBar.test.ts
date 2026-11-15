@@ -25,6 +25,7 @@ async function barAt(path: string, titleHidden = true) {
   await router.isReady();
   const w = mount(StickyBar, { global: { plugins: [router] } });
   return {
+    fade: w.find('.sticky-bar-phase transition-stub').attributes('name'),
     label: w.find('.sticky-bar-phase-label').text(),
     sub: w.find('.sticky-bar-phase-sub').text(),
     unmount: () => w.unmount(),
@@ -57,5 +58,16 @@ describe('the top bar on a protocol page', () => {
       expect(bar.label, path).toBe('Quick Reference');
       bar.unmount();
     }
+  });
+});
+
+describe('the top bar title on other screens', () => {
+  it('changes at once on every other screen: only the protocol name fades', async () => {
+    const elsewhere = await barAt('/phase1', false);
+    expect(elsewhere.fade).toBe('bar-now');
+    elsewhere.unmount();
+    const protocol = await barAt('/quick-reference/anaphylaxis');
+    expect(protocol.fade).toBe('bar-title');
+    protocol.unmount();
   });
 });

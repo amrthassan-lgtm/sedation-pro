@@ -193,16 +193,13 @@ describe('where the time stamps sit', () => {
     const offered = new Set<TimeStamp>();
     for (const p of EMERGENCY_PROTOCOLS) {
       const calls = p.steps.some((s) => /911/.test(s.text));
-      const inSteps = [...stepStamps(p.steps).values()]
-        .flat()
-        .filter((s) => !HELP_STAMPS.includes(s));
+      const placed = [...stepStamps(p.steps).values()].flat();
+      // The steps place "911 called" exactly where a page calls 911 (the
+      // page moves it to the card), and never "EMS arrived": no step names it.
+      expect(placed.includes('911 called'), p.id).toBe(calls);
+      expect(placed, p.id).not.toContain('EMS arrived');
       if (calls) HELP_STAMPS.forEach((s) => offered.add(s));
-      inSteps.forEach((s) => offered.add(s));
-      // No stamp is offered both on the card and in a step of the same page.
-      expect(
-        inSteps.filter((s) => calls && HELP_STAMPS.includes(s)),
-        p.id,
-      ).toEqual([]);
+      placed.filter((s) => !HELP_STAMPS.includes(s)).forEach((s) => offered.add(s));
     }
     const stamps = [...RESCUE_EVENTS].filter((e) => e !== MEDICATION_GIVEN);
     expect([...offered].sort()).toEqual(stamps.sort());

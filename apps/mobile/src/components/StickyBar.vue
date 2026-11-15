@@ -92,6 +92,11 @@ const protocolMeta = computed(() => {
     : null;
 });
 const meta = computed(() => protocolMeta.value ?? phaseMeta[currentPhase.value]);
+// Only the protocol name fades, as it goes under the bar and back. Every
+// other change of screen switches the title at once: after a tap on
+// Emergency the bar must never still read the screen just left. A name
+// with no CSS behind it makes the Transition instant.
+const titleFade = computed(() => (route.name === 'quickref-detail' ? 'bar-title' : 'bar-now'));
 const showClearance = computed(() => currentPhase.value === 'phase1');
 
 /**
@@ -159,7 +164,7 @@ function emergency() {
 
     <div class="sticky-bar-info">
       <div class="sticky-bar-phase">
-        <Transition name="bar-title" mode="out-in">
+        <Transition :name="titleFade" mode="out-in">
           <span :key="meta.label" class="sticky-bar-phase-label">{{ meta.label }}</span>
         </Transition>
       </div>
@@ -189,7 +194,7 @@ function emergency() {
           <span v-if="isPhase1Complete" class="sticky-bar-ready">✓ Ready</span>
         </button>
         <template v-else>
-          <Transition name="bar-title" mode="out-in">
+          <Transition :name="titleFade" mode="out-in">
             <span :key="meta.sub" class="sticky-bar-phase-sub">{{ meta.sub }}</span>
           </Transition>
         </template>
@@ -315,6 +320,7 @@ function emergency() {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 /* The protocol name fades in as the page's own title goes under the bar. */
 .bar-title-enter-active,
@@ -325,7 +331,13 @@ function emergency() {
 .bar-title-leave-to {
   opacity: 0;
 }
+/* One line whatever the name: a long protocol name must not grow the bar
+   and move the page under the finger. */
 .sticky-bar-phase-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--type-footnote);
   font-weight: var(--weight-bold);
   letter-spacing: 0.2px;

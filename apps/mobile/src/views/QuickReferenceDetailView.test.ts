@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter } from 'vue-router';
 
 import QuickReferenceDetailView from './QuickReferenceDetailView.vue';
+import { useInventoryStatus } from '@/composables/useInventoryStatus';
 import { protocolTitleHidden } from '@/composables/protocolTitle';
 import { emergencySyringe, parseVolumeMl, syringeConfig } from '@/composables/useSyringeConfig';
 import { EMERGENCY_PROTOCOLS, emergencySyringeTint, findProtocol } from '@sedation-pro/clinical';
@@ -39,7 +40,7 @@ describe('QuickReferenceDetailView drug boxes', () => {
     const wrapper = mountDetail('oversedation_benzo'); // Flumazenil 0.2 mg / 2.0 ml
     const box = wrapper
       .findAll('.drug-callout')
-      .find((c) => c.find('.drug-name').text() === 'Flumazenil');
+      .find((c) => c.find('.drug-name-text').text() === 'Flumazenil');
     expect(box?.find('.drug-dose').text()).toBe('0.2 mg');
     expect(box?.find('.drug-volume').text()).toBe('Draw 2.0 ml');
     expect(box?.find('.drug-sub').text()).toContain('0.1 mg/ml');
@@ -351,6 +352,15 @@ describe('logging from the page', () => {
     expect(w.find('.log-gate').exists()).toBe(false);
     expect(w.findAll('.log-pills .ui-drug-btn').length).toBeGreaterThan(0);
     w.unmount();
+    // A page opened afresh (Emergency, then the list, then another protocol)
+    // is a new component on the same store: still unlocked.
+    const next = mount(QuickReferenceDetailView, {
+      props: { id: 'bradycardia' },
+      global: { plugins: [w.router] },
+    });
+    expect(next.find('.log-gate').exists()).toBe(false);
+    expect(next.findAll('.log-pills .ui-drug-btn').length).toBeGreaterThan(0);
+    next.unmount();
   });
 
   it('911 called and EMS arrived sit under the Call 911 card; CPR and shocks stay in their steps', async () => {
@@ -369,19 +379,62 @@ describe('logging from the page', () => {
     w.unmount();
   });
 
-  it('a page that never calls 911 has no 911 stamps', async () => {
-    const w = mountDetail('phlebitis');
-    expect(w.find('a.call-911').exists()).toBe(false);
-    if (w.find('.log-unlock').exists()) await w.find('.log-unlock').trigger('click');
-    expect(w.text()).not.toContain('EMS arrived');
-    w.unmount();
+  it('a page with something to log but no call to 911 has no 911 stamps', async () => {
+    for (const id of ['hypertension', 'hyperventilation']) {
+      expect(
+        findProtocol(id)!.steps.some((s) => /911/.test(s.text)),
+        id,
+      ).toBe(false);
+      const w = mountDetail(id);
+      await w.find('.log-unlock').trigger('click');
+      expect(w.find('.log-status').exists(), id).toBe(true);
+      expect(w.find('section.help').exists(), id).toBe(false);
+      expect(w.text(), id).not.toContain('911 called');
+      expect(w.text(), id).not.toContain('EMS arrived');
+      w.unmount();
+    }
+  });
+
+  it('on every page that calls 911, the steps never repeat the two stamps of the Call 911 card', async () => {
+    for (const p of EMERGENCY_PROTOCOLS.filter((p) => p.steps.some((s) => /911/.test(s.text)))) {
+      const w = mountDetail(p.id);
+      await w.find('.log-unlock').trigger('click');
+      const help = w.findAll('.help .ui-drug-btn-dose').map((d) => d.text());
+      const inSteps = w.findAll('.steps-card .ui-drug-btn-dose').map((d) => d.text());
+      expect(help, p.id).toEqual(['911 called', 'EMS arrived']);
+      expect(inSteps, p.id).not.toContain('911 called');
+      expect(inSteps, p.id).not.toContain('EMS arrived');
+      w.unmount();
+    }
+  });
+
+  it('each route has a row of its own, so an IM dose never sits among IV ones', async () => {
+    for (const [id, name] of [
+      ['oversedation_opioid', 'Naloxone'],
+      ['anaphylaxis', 'Diphenhydramine'],
+    ] as const) {
+      const w = mountDetail(id);
+      await w.find('.log-unlock').trigger('click');
+      const box = w
+        .findAll('.drug-callout')
+        .find((c) => c.find('.drug-name-text').text() === name)!;
+      const rows = box
+        .findAll('.log-groups > .log-pills')
+        .map((r) => r.findAll('.ui-drug-btn-dose').map((d) => d.text().split(' ').pop()));
+      expect(rows.length, id).toBe(2);
+      expect(
+        rows.map((r) => [...new Set(r)]),
+        id,
+      ).toEqual([['IV'], ['IM']]);
+      w.unmount();
+    }
   });
 
   it('once unlocked, the pills replace dose rows they repeat, and only those', async () => {
     const rowsOf = (w: ReturnType<typeof mountDetail>, name: string) =>
       w
         .findAll('.drug-callout')
-        .filter((c) => c.find('.drug-name').text() === name)
+        .filter((c) => c.find('.drug-name-text').text() === name)
         .map((c) => c.findAll('.drug-row').length);
     // Amiodarone in arrest: 300 mg 6.0 ml and 150 mg 3.0 ml, each a pill.
     const arrest = mountDetail('vfib_vtach');
@@ -390,7 +443,7 @@ describe('logging from the page', () => {
     expect(rowsOf(arrest, 'Amiodarone')).toEqual([0]);
     const subs = arrest
       .findAll('.drug-callout')
-      .find((c) => c.find('.drug-name').text() === 'Amiodarone')!
+      .find((c) => c.find('.drug-name-text').text() === 'Amiodarone')!
       .findAll('.ui-drug-btn-sub')
       .map((d) => d.text());
     expect(subs).toEqual(['6.0 ml · 1st dose', '3.0 ml · 2nd dose']);
@@ -446,38 +499,8 @@ describe('logging from the page', () => {
 });
 
 describe('equipment', () => {
-  it('is one quiet line while everything is in date, and opens from it', async () => {
-    const w = mountOn('2020-01-01', 'lma');
-    const head = w.find('.kit-head');
-    expect(head.attributes('aria-expanded')).toBe('false');
-    expect(w.find('.kit-summary').text()).toBe('All in date');
-    expect(w.find('.kit-card .dot--good').exists()).toBe(true);
-    expect(w.findAll('.kit-row').length).toBe(0);
-    await head.trigger('click');
-    expect(head.attributes('aria-expanded')).toBe('true');
-    expect(w.findAll('.kit-row').length).toBeGreaterThan(0);
-    // In date: no pill on any row.
-    expect(w.find('.kit-row .ui-status-pill').exists()).toBe(false);
-    w.unmount();
-  });
-
-  it('opens by itself when something is out of date, and says how many', () => {
-    const w = mountOn('2040-01-01', 'lma');
-    expect(w.find('.kit-head').attributes('aria-expanded')).toBe('true');
-    expect(w.find('.kit-summary').text()).toMatch(/^\d+ to check$/);
-    expect(w.find('.kit-row .ui-status-pill').text()).toBe('Expired');
-    w.unmount();
-  });
-
-  it('a list opened by hand does not stay open on the next protocol', async () => {
-    const w = mountOn('2020-01-01', 'lma');
-    await w.find('.kit-head').trigger('click');
-    expect(w.find('.kit-head').attributes('aria-expanded')).toBe('true');
-    await w.setProps({ id: 'king_lt' });
-    expect(w.find('.kit-head').attributes('aria-expanded')).toBe('false');
-    w.unmount();
-  });
-
+  // The states of the Equipment card are tested on a made-up cart in
+  // QuickReferenceDetailView.kit.test.ts, so stock edits never break them.
   it('a page with no linked equipment has no equipment card', () => {
     const w = mountDetail('seizure');
     expect(w.find('.kit-card').exists()).toBe(false);
@@ -500,24 +523,31 @@ describe('stock, shown by exception', () => {
     w.unmount();
   });
 
-  it('a course the stock cannot finish says Short, with the Inventory line under the name', () => {
+  it('a course the stock cannot finish says Short, outranking its date, with the Inventory line', () => {
+    // Long after every lot has expired, no course can be finished.
+    const day = '2040-01-01';
+    const courses = useInventoryStatus(Date.parse(`${day}T12:00:00Z`)).courses.map((c) => c.drug);
+    expect(courses.length).toBeGreaterThan(0);
+    let seen = 0;
     for (const p of EMERGENCY_PROTOCOLS) {
-      const w = mountDetail(p.id);
+      const w = mountOn(day, p.id);
       for (const box of w.findAll('.drug-callout')) {
-        const short = box.find('.drug-short');
-        const pill = box.find('.drug-name .ui-status-pill');
-        if (!short.exists()) continue;
-        expect(pill.text(), p.id).toBe('Short');
-        expect(short.text(), p.id).toMatch(/^Have \d+(\.\d+)? mg · need \d+(\.\d+)? mg/);
+        if (!courses.includes(box.find('.drug-name-text').text())) continue;
+        seen += 1;
+        expect(box.find('.drug-name .ui-status-pill').text(), p.id).toBe('Short');
+        expect(box.find('.drug-short').text(), p.id).toMatch(/^Have 0 mg · need \d+(\.\d+)? mg/);
       }
       w.unmount();
     }
+    expect(seen).toBeGreaterThan(0);
   });
 });
 
 describe('the page around the steps', () => {
   it('the Call 911 card is only where a step calls 911, and the red link comes first', () => {
-    expect(mountDetail('phlebitis').find('section.help').exists()).toBe(false);
+    const quiet = mountDetail('phlebitis');
+    expect(quiet.find('section.help').exists()).toBe(false);
+    quiet.unmount();
     const w = mountDetail('anaphylaxis');
     expect(w.find('section.help').element.firstElementChild?.matches('a.call-911')).toBe(true);
     w.unmount();

@@ -574,7 +574,7 @@ function stepClass(step: ProtocolStep): string {
                     aria-hidden="true"
                   />
                   <span class="drug-name"
-                    >{{ view.box.drug.name }}
+                    ><span class="drug-name-text">{{ view.box.drug.name }}</span>
                     <UiStatusPill v-if="view.box.issue" :severity="view.box.issue.severity">{{
                       view.box.issue.label
                     }}</UiStatusPill></span
@@ -1108,10 +1108,12 @@ function stepClass(step: ProtocolStep): string {
       'sw sub'
       'sw fig';
   }
+  /* On the narrowest phones the volume drops under the dose rather than past the edge. */
   .drug-fig {
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: baseline;
-    gap: var(--sp-4);
+    gap: 2px var(--sp-4);
     margin-top: var(--sp-1);
   }
 }

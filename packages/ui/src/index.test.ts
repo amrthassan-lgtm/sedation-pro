@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
@@ -491,7 +493,7 @@ describe('UiSyringe bare', () => {
 });
 
 describe('UiPillButton', () => {
-  it('is a 44 px grey capsule by default and the white one as the key', () => {
+  it('is a button, grey (nav) by default and white (key) when asked', () => {
     const nav = mount(UiPillButton, { slots: { default: 'Unlock' } });
     const key = mount(UiPillButton, { props: { tone: 'key' }, slots: { default: 'Back to case' } });
     expect(nav.element.tagName).toBe('BUTTON');
@@ -514,11 +516,20 @@ describe('UiPillButton', () => {
     off.unmount();
   });
 
-  it('a disabled key pill falls back to the grey family, so no faded white slab', () => {
+  it('a disabled key pill is disabled and keeps its tone class', () => {
     const off = mount(UiPillButton, { props: { tone: 'key', disabled: true } });
     expect(off.attributes('disabled')).toBeDefined();
     expect(off.classes()).toContain('ui-pill-btn--key');
     off.unmount();
+  });
+
+  it('its stylesheet sends a disabled pill back to the grey family, never a faded white slab', () => {
+    // happy-dom applies no scoped CSS, so the rule itself is what is checked.
+    const sfc = readFileSync(resolve(__dirname, 'primitives/UiPillButton.vue'), 'utf8');
+    const rule = /\.ui-pill-btn:disabled \{([^}]*)\}/.exec(sfc)?.[1] ?? '';
+    expect(rule).toContain('background: var(--color-surface-elevated)');
+    expect(rule).not.toContain('opacity');
+    expect(sfc).toMatch(/min-height: 44px/);
   });
 });
 
