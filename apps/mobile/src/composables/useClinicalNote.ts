@@ -255,10 +255,8 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
     const naloxoneTotal = iv.doses
       .filter((d) => d.drug === 'naloxone')
       .reduce((sum, d) => sum + (d.mg ?? 0), 0);
-    if (flumazenilTotal > 0)
-      ivRows.push(['Flumazenil (reversal)', `${flumazenilTotal.toFixed(1)} mg IV`]);
-    if (naloxoneTotal > 0)
-      ivRows.push(['Naloxone (reversal)', `${naloxoneTotal.toFixed(1)} mg IV`]);
+    if (flumazenilTotal > 0) ivRows.push(['Flumazenil (reversal)', byRoute('flumazenil', 'mg', 1)]);
+    if (naloxoneTotal > 0) ivRows.push(['Naloxone (reversal)', byRoute('naloxone', 'mg', 1)]);
     if (ivRows.length === 0) ivRows.push(['IV sedation', 'None administered']);
 
     // -------- Local anesthetic totals --------------------------------------
@@ -492,12 +490,12 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       const lines: string[] = [];
       if (flumazenilTotal > 0) {
         lines.push(
-          `Flumazenil ${flumazenilTotal.toFixed(1)} mg IV given for benzodiazepine reversal; post-reversal monitoring extended to 120 minutes per protocol.`,
+          `Flumazenil ${byRoute('flumazenil', 'mg', 1)} given for benzodiazepine reversal; post-reversal monitoring extended to 120 minutes per protocol.`,
         );
       }
       if (naloxoneTotal > 0) {
         lines.push(
-          `Naloxone ${naloxoneTotal.toFixed(1)} mg IV given for opioid reversal; patient monitored for re-sedation as naloxone half-life is shorter than the opioid administered.`,
+          `Naloxone ${byRoute('naloxone', 'mg', 1)} given for opioid reversal; patient monitored for re-sedation as naloxone half-life is shorter than the opioid administered.`,
         );
       }
       narrative.push(lines.join(' '));

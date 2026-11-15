@@ -104,12 +104,17 @@ export function useIvDosing() {
     });
   }
 
-  function logIvNaloxone() {
-    const dose = iv.logDose({ drug: 'naloxone', mg: 0.4 });
+  /** IM only from the Oversedation (Opioid) page, whose step allows it when there is no IV. */
+  function logIvNaloxone(route: 'IV' | 'IM' = 'IV') {
+    const dose = iv.logDose({
+      drug: 'naloxone',
+      mg: 0.4,
+      ...(route === 'IM' && { route: 'IM' as const }),
+    });
     undo.stamp({
       event: 'Reversal Agent',
-      details: { Drug: 'Naloxone', Dose: '0.4 mg', Route: 'IV', Notes: 'opioid reversal' },
-      toast: { label: '✓ Naloxone 0.4 mg IV', sub: nowClock(), tone: 'limit' },
+      details: { Drug: 'Naloxone', Dose: '0.4 mg', Route: route, Notes: 'opioid reversal' },
+      toast: { label: `✓ Naloxone 0.4 mg ${route}`, sub: nowClock(), tone: 'limit' },
       revert: () => iv.removeDoseById(dose.id),
     });
   }

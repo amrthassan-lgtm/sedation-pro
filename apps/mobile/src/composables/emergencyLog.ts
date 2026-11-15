@@ -85,6 +85,53 @@ function pillsFor(drug: EmergencyDrugCallout): ReadonlyArray<LogPill> {
   ];
 }
 
+export type ReversalDrug = 'naloxone' | 'flumazenil';
+
+/**
+ * A reversal pill, logged through the sedation screen's own handlers so the
+ * discharge hold and the totals follow. The doses are those handlers' fixed
+ * doses; a test holds the volumes to the callouts.
+ */
+export interface ReversalPill {
+  readonly key: string;
+  readonly drug: ReversalDrug;
+  readonly route: 'IV' | 'IM';
+  readonly name: string;
+  readonly dose: string;
+  readonly sub: string;
+}
+
+export const REVERSAL_DOSE: Readonly<
+  Record<ReversalDrug, { name: string; dose: string; sub: string }>
+> = {
+  naloxone: { name: 'Naloxone', dose: '0.4 mg', sub: '1.0 ml' },
+  flumazenil: { name: 'Flumazenil', dose: '0.2 mg', sub: '2.0 ml' },
+};
+
+function reversal(drug: ReversalDrug, route: 'IV' | 'IM'): ReversalPill {
+  return { key: `${drug} ${route}`, drug, route, ...REVERSAL_DOSE[drug] };
+}
+
+/**
+ * The reversal pills a step carries: in the drug box of the step that gives
+ * it, and both on the Hypoventilation step that says which reverses which.
+ * A step that allows the muscle ("or IM if no IV") gets an IM pill as well,
+ * so the record never says IV for a dose that went into the thigh.
+ */
+export function reversalsFor(step: ProtocolStep): ReadonlyArray<ReversalPill> {
+  const im = /\bor IM\b/.test(step.text);
+  if (step.drug?.name === 'Naloxone') {
+    return im
+      ? [reversal('naloxone', 'IV'), reversal('naloxone', 'IM')]
+      : [reversal('naloxone', 'IV')];
+  }
+  if (step.drug?.name === 'Flumazenil') return [reversal('flumazenil', 'IV')];
+  if (step.drug === undefined && step.text.startsWith('Reverse:')) {
+    return [reversal('naloxone', 'IV'), reversal('flumazenil', 'IV')];
+  }
+  return [];
+}
+
 export type TimeStamp = '911 called' | 'CPR started' | 'Shock given' | 'EMS arrived';
 
 /** A shock can be given more than once; the others happen once. */

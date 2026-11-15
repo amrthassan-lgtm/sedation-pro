@@ -109,18 +109,6 @@ describe('QuickReferenceDetailView emergency actions', () => {
     }
   });
 
-  it('offers to log the reversal only on the oversedation protocols, and only with a case open', () => {
-    const w = mountDetail('oversedation_benzo');
-    expect(w.find('.give-card').exists()).toBe(true);
-    // No Phase 1 on a fresh store: the hint shows instead of the dose buttons.
-    expect(w.find('.give-hint').exists()).toBe(true);
-    expect(w.findAll('.ui-drug-btn').length).toBe(0);
-    w.unmount();
-    const other = mountDetail('anaphylaxis');
-    expect(other.find('.give-card').exists()).toBe(false);
-    other.unmount();
-  });
-
   it('puts Back to case in the toolbar on every protocol', () => {
     const w = mountDetail('seizure');
     expect(w.find('.toolbar-case').text()).toContain('Back to case');
@@ -299,12 +287,81 @@ describe('step drawings', () => {
 });
 
 describe('logging from the page', () => {
-  it('shows no pill and no time stamp until a case is open: the page reads as it always did', () => {
-    for (const id of ['anaphylaxis', 'vfib_vtach', 'seizure']) {
+  it('locked: no pill and no stamp, and one row that says why with an Unlock pill', () => {
+    for (const id of ['anaphylaxis', 'vfib_vtach', 'seizure', 'oversedation_opioid']) {
       const w = mountDetail(id);
       expect(w.find('.log-pills').exists(), id).toBe(false);
       expect(w.find('.log-stamps').exists(), id).toBe(false);
+      expect(w.find('.log-gate').text(), id).toContain('No case is open');
+      expect(w.find('.log-gate button').text(), id).toBe('Unlock');
       w.unmount();
     }
+  });
+
+  it('the old "Give and log" card is gone from the top of every page', () => {
+    for (const id of ['oversedation_benzo', 'oversedation_opioid', 'hypoventilation']) {
+      const w = mountDetail(id);
+      expect(w.find('.give-card').exists(), id).toBe(false);
+      w.unmount();
+    }
+  });
+
+  it('Unlock shows the pills, says whose case they log to, and stays unlocked on the next page', async () => {
+    const w = mountDetail('anaphylaxis');
+    await w.find('.log-gate button').trigger('click');
+    expect(w.find('.log-gate').exists()).toBe(false);
+    expect(w.find('.log-owner').text()).toBe('Doses and times log to a new case on this tablet');
+    expect(w.findAll('.log-pills .ui-drug-btn').length).toBeGreaterThan(5);
+    expect(w.findAll('.log-stamps .ui-drug-btn').length).toBeGreaterThan(0);
+    w.unmount();
+  });
+
+  it('EMS arrived sits inside the Steps card, in a row lined up like a step', async () => {
+    const w = mountDetail('anaphylaxis');
+    await w.find('.log-gate button').trigger('click');
+    const ems = w.find('.steps-card .step--end .log-stamps');
+    expect(ems.text()).toContain('EMS arrived');
+    w.unmount();
+  });
+
+  it('a page with nothing to log has no gate row', () => {
+    const w = mountDetail('npa');
+    expect(w.find('.log-gate').exists()).toBe(false);
+    w.unmount();
+  });
+
+  it('naloxone and flumazenil sit in their own steps, and both in the Reverse step', async () => {
+    const pills = async (id: string) => {
+      const w = mountDetail(id);
+      await w.find('.log-gate button').trigger('click');
+      const found = w.findAll('ol.steps > .step').map((st) => ({
+        text: st.find('.step-text').text(),
+        pills: st.findAll('.log-pills .ui-drug-btn-dose').map((d) => d.text()),
+        names: st.findAll('.log-pills .ui-drug-btn-name').map((d) => d.text()),
+      }));
+      w.unmount();
+      return found.filter((f) => f.names.some((n) => /Naloxone|Flumazenil/.test(n)));
+    };
+    expect(await pills('oversedation_opioid')).toEqual([
+      {
+        text: expect.stringMatching(/^Naloxone IV/),
+        pills: ['0.4 mg IV', '0.4 mg IM'],
+        names: ['Naloxone', 'Naloxone'],
+      },
+    ]);
+    expect(await pills('oversedation_benzo')).toEqual([
+      {
+        text: expect.stringMatching(/^Flumazenil IV/),
+        pills: ['0.2 mg IV'],
+        names: ['Flumazenil'],
+      },
+    ]);
+    expect(await pills('hypoventilation')).toEqual([
+      {
+        text: expect.stringMatching(/^Reverse:/),
+        pills: ['0.4 mg IV', '0.2 mg IV'],
+        names: ['Naloxone', 'Flumazenil'],
+      },
+    ]);
   });
 });
