@@ -6,11 +6,13 @@ import {
   type EmergencyDrugCallout,
 } from '@sedation-pro/clinical';
 
-import { logPills, RESCUE_EVENTS, stepStamps } from './emergencyLog';
+import { logPills, RESCUE_EVENTS, REVERSAL_DOSE, reversalsFor, stepStamps } from './emergencyLog';
 import { useClinicalNote } from './useClinicalNote';
-import { useEmergencyLog } from './useEmergencyLog';
+import { useEmergencyLog, useLoggingGate } from './useEmergencyLog';
+import { useIvDosing } from './useIvDosing';
 import { useEventLogStore } from '@/stores/event-log';
 import { useIVStore } from '@/stores/iv';
+import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 
@@ -338,5 +340,130 @@ describe('the note states what was recorded, never a conclusion (owner, Nov 2026
     expect(line()).toBe('Verbal and written post-op instructions were given to the companion.');
     recovery.setDischarge('verbalInstructionsGiven', false);
     expect(line()).toBe('Written post-op instructions were given to the companion.');
+  });
+});
+
+describe('naloxone and flumazenil in their steps', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  const pill = (protocol: string, drug: string, route: 'IV' | 'IM') => {
+    const step = findProtocol(protocol)!.steps.find((s) => reversalsFor(s).length > 0)!;
+    const found = reversalsFor(step).find((p) => p.drug === drug && p.route === route);
+    if (!found) throw new Error(`${protocol} has no ${drug} ${route} pill`);
+    return found;
+  };
+
+  it('only three steps carry a reversal pill, and they are the ones that give it', () => {
+    const carrying = EMERGENCY_PROTOCOLS.flatMap((p) =>
+      p.steps
+        .filter((s) => reversalsFor(s).length > 0)
+        .map(
+          (s) =>
+            `${p.id}: ${reversalsFor(s)
+              .map((r) => r.key)
+              .join(' + ')}`,
+        ),
+    );
+    expect(carrying).toEqual([
+      'hypoventilation: naloxone IV + flumazenil IV',
+      'oversedation_benzo: flumazenil IV',
+      'oversedation_opioid: naloxone IV + naloxone IM',
+    ]);
+  });
+
+  it('the naloxone step allows the muscle when there is no IV, so it has an IM pill', () => {
+    const step = findProtocol('oversedation_opioid')!.steps.find(
+      (s) => s.drug?.name === 'Naloxone',
+    )!;
+    expect(step.text).toContain('or IM if no IV');
+  });
+
+  it('the pill shows the volume its callout says to draw', () => {
+    expect(callout('oversedation_opioid', 'Naloxone').volume).toMatch(
+      new RegExp(`^${REVERSAL_DOSE.naloxone.sub}`),
+    );
+    expect(callout('oversedation_benzo', 'Flumazenil').volume).toBe(REVERSAL_DOSE.flumazenil.sub);
+  });
+
+  it('a tap logs through the sedation screen, so the dose and the discharge hold follow', () => {
+    const rescue = useEmergencyLog();
+    rescue.reverse(pill('oversedation_opioid', 'naloxone', 'IV'));
+    rescue.reverse(pill('oversedation_benzo', 'flumazenil', 'IV'));
+    const iv = useIVStore();
+    expect(iv.doses.map((d) => [d.drug, d.mg])).toEqual([
+      ['naloxone', 0.4],
+      ['flumazenil', 0.2],
+    ]);
+    expect(useEventLogStore().events.map((e) => e.event)).toEqual([
+      'Reversal Agent',
+      'Reversal Agent',
+    ]);
+    expect(iv.lastFlumazenilAt).not.toBeNull();
+  });
+
+  it('naloxone into the muscle is recorded as IM, in the line, the totals and the sentence', () => {
+    const rescue = useEmergencyLog();
+    rescue.reverse(pill('oversedation_opioid', 'naloxone', 'IV'));
+    rescue.reverse(pill('oversedation_opioid', 'naloxone', 'IM'));
+    expect(useEventLogStore().events.map((e) => e.details.Route)).toEqual(['IV', 'IM']);
+    // The discharge hold follows either route.
+    expect(useIVStore().lastNaloxoneAt).not.toBeNull();
+    const note = useClinicalNote().value;
+    const row = note.sections.flatMap((s) => s.rows).find(([l]) => l === 'Naloxone (reversal)');
+    expect(row?.[1]).toBe('0.4 mg IV and 0.4 mg IM');
+    expect(note.narrative.join(' ')).toContain('Naloxone 0.4 mg IV and 0.4 mg IM given');
+  });
+
+  it('each pill counts its own route, and none locks', () => {
+    const rescue = useEmergencyLog();
+    const iv_ = pill('oversedation_opioid', 'naloxone', 'IV');
+    const im = pill('oversedation_opioid', 'naloxone', 'IM');
+    expect(rescue.lastReversal(iv_)).toBeUndefined();
+    rescue.reverse(iv_);
+    rescue.reverse(iv_);
+    rescue.reverse(im);
+    expect(rescue.lastReversal(iv_)).toContain('×2');
+    expect(rescue.lastReversal(im)).not.toContain('×');
+  });
+
+  it('the sedation screen still logs naloxone IV, as before', () => {
+    useIvDosing().logIvNaloxone();
+    expect(useEventLogStore().events[0]?.details).toEqual({
+      Drug: 'Naloxone',
+      Dose: '0.4 mg',
+      Route: 'IV',
+      Notes: 'opioid reversal',
+    });
+    expect(useIVStore().doses[0]?.route).toBeUndefined();
+  });
+});
+
+describe('the logging gate', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  it('is locked with no case, and Unlock opens it', () => {
+    const gate = useLoggingGate();
+    expect(gate.state.value).toBe('locked');
+    expect(gate.owner.value).toBeNull();
+    gate.unlock();
+    expect(gate.state.value).toBe('on');
+  });
+
+  it('names the patient the taps will be recorded under', () => {
+    usePatientStore().name = 'Test Patient';
+    expect(useLoggingGate().owner.value).toBe('Test Patient');
+  });
+
+  it('a released case stays closed, even after Unlock: another emergency must not go into it', () => {
+    const gate = useLoggingGate();
+    gate.unlock();
+    useRecoveryStore().stampReleased();
+    expect(gate.state.value).toBe('finished');
   });
 });

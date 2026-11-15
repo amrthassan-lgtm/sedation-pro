@@ -19,12 +19,7 @@ import {
   UiStatusPill,
   UiSyringe,
 } from '@sedation-pro/ui';
-import { storeToRefs } from 'pinia';
 
-import { useIvDosing } from '@/composables/useIvDosing';
-import { fmtClock } from '@/composables/format';
-import { useIVStore } from '@/stores/iv';
-import { usePatientStore } from '@/stores/patient';
 import { CASE_PHASE_ROUTE, CASE_PHASE_SHORT, useSessionStore } from '@/stores/session';
 
 import {
@@ -37,10 +32,11 @@ import ProtocolFigure from '@/components/ProtocolFigure.vue';
 import {
   logPills,
   REPEATABLE_STAMPS,
+  reversalsFor,
   stepStamps,
   type TimeStamp,
 } from '@/composables/emergencyLog';
-import { useEmergencyLog } from '@/composables/useEmergencyLog';
+import { useEmergencyLog, useLoggingGate } from '@/composables/useEmergencyLog';
 import { useInventoryStatus, type ClassifiedItem } from '@/composables/useInventoryStatus';
 import { CATEGORY_LABEL, swatchFor } from '@/data/protocolCategories';
 
@@ -116,46 +112,6 @@ function goCase() {
 // Any protocol whose steps say to call 911 gets the banner: large enough to
 // read aloud across the room, and a tel: link where the device can dial.
 const call911 = computed(() => protocol.value?.steps.some((s) => /911/.test(s.text)) ?? false);
-
-// -------- Give and log ------------------------------------------------------
-// The oversedation protocols end in a reversal dose. Logging it from here
-// runs the same code as the Phase 3 buttons: the dose lands in the record,
-// the undo toast appears, and discharge is held 120 min. Only while a case
-// is open, so a reference lookup can never write into an empty chart.
-type ReversalDrug = 'flumazenil' | 'naloxone';
-const PROTOCOL_REVERSALS: Readonly<Record<string, ReadonlyArray<ReversalDrug>>> = {
-  oversedation_benzo: ['flumazenil'],
-  oversedation_opioid: ['naloxone'],
-  hypoventilation: ['naloxone', 'flumazenil'],
-};
-const REVERSAL_BUTTON: Readonly<Record<ReversalDrug, { name: string; dose: string; sub: string }>> =
-  {
-    flumazenil: {
-      name: 'Flumazenil',
-      dose: '0.2 mg IV',
-      sub: 'logs the dose · holds discharge 120 min',
-    },
-    naloxone: {
-      name: 'Naloxone',
-      dose: '0.4 mg IV',
-      sub: 'logs the dose · holds discharge 120 min',
-    },
-  };
-const reversals = computed(() => PROTOCOL_REVERSALS[props.id] ?? []);
-const patient = usePatientStore();
-const { isPhase1Complete } = storeToRefs(patient);
-const iv = useIVStore();
-const { lastFlumazenilAt, lastNaloxoneAt } = storeToRefs(iv);
-const dosing = useIvDosing();
-function giveReversal(drug: ReversalDrug) {
-  if (drug === 'flumazenil') dosing.logIvFlumazenil();
-  else dosing.logIvNaloxone();
-}
-function lastGiven(drug: ReversalDrug): string | undefined {
-  const at = drug === 'flumazenil' ? lastFlumazenilAt.value : lastNaloxoneAt.value;
-  if (at === null) return undefined;
-  return fmtClock(at) ?? '';
-}
 
 /**
  * Stock pill on drug callouts, from the crash-cart inventory's explicit
@@ -281,7 +237,20 @@ function routeLine(drug: EmergencyDrugCallout): string {
  * the same as ever for reference and teaching.
  */
 const rescue = useEmergencyLog();
+const gate = useLoggingGate();
+const logging = computed(() => gate.state.value === 'on');
 const stamps = computed(() => stepStamps(protocol.value?.steps ?? []));
+/** Does this page have anything to log? The gate row shows only where it does. */
+const loggable = computed(
+  () =>
+    stamps.value.size > 0 ||
+    (protocol.value?.steps ?? []).some(
+      (s) => reversalsFor(s).length > 0 || (s.drug !== undefined && logPills(s.drug).length > 0),
+    ),
+);
+const ownerCase = computed(() =>
+  gate.owner.value === null ? 'a new case on this tablet' : `${gate.owner.value}'s case`,
+);
 const NEUTRAL_TINT = 'var(--color-slate)';
 function pillTint(drug: EmergencyDrugCallout): string {
   return (
@@ -343,26 +312,6 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
         >
       </a>
 
-      <UiCard v-if="reversals.length > 0" class="give-card">
-        <p class="heading give-heading">Give and log</p>
-        <p v-if="!isPhase1Complete" class="give-hint">
-          Open the patient's case (Phase 1) to log a dose from here.
-        </p>
-        <div v-else class="give-grid">
-          <UiDrugButton
-            v-for="drug in reversals"
-            :key="drug"
-            :tone="drug"
-            :name="REVERSAL_BUTTON[drug].name"
-            :dose="REVERSAL_BUTTON[drug].dose"
-            :sub="REVERSAL_BUTTON[drug].sub"
-            :state="lastGiven(drug) ? 'logged' : 'idle'"
-            :logged-at="lastGiven(drug)"
-            @click="giveReversal(drug)"
-          />
-        </div>
-      </UiCard>
-
       <UiCard v-if="kit.length > 0" class="kit-card">
         <p class="heading kit-heading">Equipment</p>
         <div class="kit-list">
@@ -394,6 +343,30 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
 
       <UiCard class="steps-card">
         <p class="heading steps-heading">Steps</p>
+        <p v-if="loggable && logging" class="log-owner">Doses and times log to {{ ownerCase }}</p>
+        <div v-else-if="loggable" class="log-gate">
+          <div class="log-gate-text">
+            <span class="log-gate-title">Logging is off</span>
+            <span v-if="gate.state.value === 'finished'" class="log-gate-sub"
+              >{{ gate.owner.value ?? 'The case' }}'s case is released. Start a new case to log
+              doses and times here.</span
+            >
+            <span v-else-if="gate.owner.value !== null" class="log-gate-sub"
+              >Phase 1 is not complete. Unlock to log doses and times to {{ ownerCase }}.</span
+            >
+            <span v-else class="log-gate-sub"
+              >No case is open. Unlock to log doses and times to {{ ownerCase }}.</span
+            >
+          </div>
+          <button
+            v-if="gate.state.value === 'locked'"
+            type="button"
+            class="step-link"
+            @click="gate.unlock()"
+          >
+            Unlock
+          </button>
+        </div>
         <ol class="steps">
           <li
             v-for="(step, index) in protocol.steps"
@@ -405,7 +378,7 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
             <div class="step-body">
               <p class="step-text">{{ step.text }}</p>
               <ProtocolFigure v-if="step.figure" :kind="step.figure" />
-              <div v-if="isPhase1Complete && stamps.has(index)" class="log-stamps">
+              <div v-if="logging && stamps.has(index)" class="log-stamps">
                 <UiDrugButton
                   v-for="stamp in stamps.get(index)"
                   :key="stamp"
@@ -418,6 +391,18 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
                   :logged-at="rescue.stamped(stamp)"
                   :last-at="rescue.stamped(stamp)"
                   @click="rescue.stamp(stamp)"
+                />
+              </div>
+              <div v-if="logging && !step.drug && reversalsFor(step).length > 0" class="log-pills">
+                <UiDrugButton
+                  v-for="pill in reversalsFor(step)"
+                  :key="pill.key"
+                  :tone="pill.drug"
+                  :name="pill.name"
+                  :dose="`${pill.dose} ${pill.route}`"
+                  :sub="pill.sub"
+                  :last-at="rescue.lastReversal(pill)"
+                  @click="rescue.reverse(pill)"
                 />
               </div>
               <div v-if="step.goTo && step.goTo.length > 0" class="step-links">
@@ -486,9 +471,22 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
                   :caption="syringeFor(step.drug)!.caption"
                 />
                 <div
-                  v-if="isPhase1Complete && logPills(step.drug, step.text).length > 0"
+                  v-if="
+                    logging &&
+                    (logPills(step.drug, step.text).length > 0 || reversalsFor(step).length > 0)
+                  "
                   class="log-pills"
                 >
+                  <UiDrugButton
+                    v-for="pill in reversalsFor(step)"
+                    :key="pill.key"
+                    :tone="pill.drug"
+                    :name="pill.name"
+                    :dose="`${pill.dose} ${pill.route}`"
+                    :sub="pill.sub"
+                    :last-at="rescue.lastReversal(pill)"
+                    @click="rescue.reverse(pill)"
+                  />
                   <UiDrugButton
                     v-for="pill in logPills(step.drug, step.text)"
                     :key="pill.key"
@@ -505,20 +503,25 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
             </div>
           </li>
         </ol>
+        <!-- No step names EMS arriving: a last row, lined up with the steps' pills. -->
+        <div v-if="logging && call911" class="step step--end">
+          <span aria-hidden="true"></span>
+          <div class="step-body">
+            <div class="log-stamps log-stamps--end">
+              <UiDrugButton
+                compact
+                tone="zofran"
+                :tint="NEUTRAL_TINT"
+                name="Time stamp"
+                dose="EMS arrived"
+                :state="stampState('EMS arrived')"
+                :logged-at="rescue.stamped('EMS arrived')"
+                @click="rescue.stamp('EMS arrived')"
+              />
+            </div>
+          </div>
+        </div>
       </UiCard>
-
-      <div v-if="isPhase1Complete && call911" class="log-stamps">
-        <UiDrugButton
-          compact
-          tone="zofran"
-          :tint="NEUTRAL_TINT"
-          name="Time stamp"
-          dose="EMS arrived"
-          :state="stampState('EMS arrived')"
-          :logged-at="rescue.stamped('EMS arrived')"
-          @click="rescue.stamp('EMS arrived')"
-        />
-      </div>
 
       <p class="reviewed caption">{{ PROTOCOLS_REVIEWED }}</p>
 
@@ -609,25 +612,42 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
   margin-top: var(--sp-2);
   max-width: 320px;
 }
-.give-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-.give-heading {
+.log-owner {
   margin: 0;
-}
-.give-hint {
-  margin: 0;
-  font-size: var(--type-footnote);
+  font-size: var(--type-caption);
   color: var(--color-text-tertiary);
 }
-.give-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--sp-2);
+.log-gate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--color-surface-elevated);
 }
-
+.log-gate-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.log-gate-title {
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+.log-gate-sub {
+  font-size: var(--type-caption);
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+.log-gate .step-link {
+  flex-shrink: 0;
+}
+.log-stamps--end {
+  margin-top: 0;
+}
 /* Hero: a category-tinted block that anchors the page. The left border colour
    matches the swatch used on the landing page so muscle memory carries over. */
 .hero {

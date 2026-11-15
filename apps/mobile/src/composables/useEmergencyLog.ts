@@ -1,11 +1,58 @@
+import { computed, ref } from 'vue';
+import { defineStore } from 'pinia';
 import type { EmergencyDrugCallout } from '@sedation-pro/clinical';
 
 import { useEventLogStore } from '@/stores/event-log';
 import { useIVStore, type IVDoseRecord } from '@/stores/iv';
+import { usePatientStore } from '@/stores/patient';
+import { useRecoveryStore } from '@/stores/recovery';
 import { useUndoStore } from '@/stores/undo';
 
-import { MEDICATION_GIVEN, REPEATABLE_STAMPS, type LogPill, type TimeStamp } from './emergencyLog';
+import {
+  MEDICATION_GIVEN,
+  REPEATABLE_STAMPS,
+  type LogPill,
+  type ReversalPill,
+  type TimeStamp,
+} from './emergencyLog';
 import { fmtClock, nowClock } from './format';
+import { useIvDosing } from './useIvDosing';
+
+/**
+ * Unlocked for this visit to the app only, never saved: a reload or a new
+ * case locks it again.
+ */
+const useUnlockStore = defineStore('rescueLoggingUnlock', () => ({ unlocked: ref(false) }));
+
+export type LoggingState = 'on' | 'locked' | 'finished';
+
+/**
+ * Whether a protocol page may write into the case on this tablet.
+ *
+ * - `on`: Phase 1 is complete, or the clinician unlocked it.
+ * - `locked`: the case is still being assessed, or there is none yet. One
+ *   tap unlocks it; the page says whose case the taps will go into.
+ * - `finished`: the case was released. Its record is closed, and a tap here
+ *   would put another person's emergency into it, so nothing unlocks it.
+ */
+export function useLoggingGate() {
+  const patient = usePatientStore();
+  const recovery = useRecoveryStore();
+  const unlock = useUnlockStore();
+  const state = computed<LoggingState>(() => {
+    if (recovery.releasedAt !== null) return 'finished';
+    return patient.isPhase1Complete || unlock.unlocked ? 'on' : 'locked';
+  });
+  /** The patient the taps will be recorded under, or `null` before one is named. */
+  const owner = computed(() => patient.name.trim() || null);
+  return {
+    state,
+    owner,
+    unlock: () => {
+      unlock.unlocked = true;
+    },
+  };
+}
 
 /**
  * Tray drugs given from a protocol page are the same drug in the same
@@ -80,6 +127,21 @@ export function useEmergencyLog() {
     return `✓ ${fmtClock(last.timestamp)}${hits.length > 1 ? ` · ×${hits.length}` : ''}`;
   }
 
+  const dosing = useIvDosing();
+  /** The sedation screen's own handler, so the discharge hold follows. */
+  function reverse(pill: ReversalPill): void {
+    if (pill.drug === 'naloxone') dosing.logIvNaloxone(pill.route);
+    else dosing.logIvFlumazenil();
+  }
+
+  /** Like `lastGiven`: the last time and a count, so a repeat is a tap away. */
+  function lastReversal(pill: ReversalPill): string | undefined {
+    const given = iv.doses.filter((d) => d.drug === pill.drug && (d.route ?? 'IV') === pill.route);
+    const last = given.at(-1);
+    if (!last) return undefined;
+    return `✓ ${fmtClock(last.at)}${given.length > 1 ? ` · ×${given.length}` : ''}`;
+  }
+
   function stamp(what: TimeStamp): void {
     if (!REPEATABLE_STAMPS.has(what) && stamped(what) !== undefined) return;
     undo.stamp({ event: what, toast: { label: `✓ ${what}`, sub: nowClock(), tone: 'safe' } });
@@ -92,5 +154,5 @@ export function useEmergencyLog() {
     return `✓ ${fmtClock(last.timestamp)}${hits.length > 1 ? ` · ×${hits.length}` : ''}`;
   }
 
-  return { give, lastGiven, stamp, stamped };
+  return { give, lastGiven, reverse, lastReversal, stamp, stamped };
 }
