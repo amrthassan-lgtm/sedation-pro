@@ -178,7 +178,7 @@ interface Amount {
   readonly num: string;
   readonly unit: string;
 }
-/** Pills of one route, on a row of their own: an IM dose must not pass for IV. */
+/** Pills of one route (and second doses), on a row of their own: an IM dose must not pass for IV. */
 interface RouteGroup<T> {
   readonly route: string;
   readonly pills: ReadonlyArray<T>;
@@ -216,11 +216,13 @@ function amount(text: string): Amount {
   const m = /^([\d.]+(?:-[\d.]+)?) ([A-Za-z].*)$/.exec(text);
   return m ? { num: m[1]!, unit: m[2]! } : { num: text, unit: '' };
 }
-function byRoute<T extends { readonly route: string }>(
+function byRoute<T extends { readonly route: string; readonly secondDose?: true }>(
   pills: ReadonlyArray<T>,
 ): ReadonlyArray<RouteGroup<T>> {
-  const routes = [...new Set(pills.map((p) => p.route))];
-  return routes.map((route) => ({ route, pills: pills.filter((p) => p.route === route) }));
+  // A second dose derived from the first sits on a row of its own, under it.
+  const rowOf = (p: T) => (p.secondDose ? `${p.route} 2nd` : p.route);
+  const rows = [...new Set(pills.map(rowOf))];
+  return rows.map((route) => ({ route, pills: pills.filter((p) => rowOf(p) === route) }));
 }
 const PLAIN_VOLUME = /^[\d.]+(?:-[\d.]+)? ml$/;
 
@@ -687,6 +689,23 @@ function stepClass(step: ProtocolStep): string {
             </div>
           </li>
         </ol>
+        <!-- The same EMS arrived stamp as on the Call 911 card, again where a
+             long page ends, so a handover never means scrolling back up
+             (owner, Nov 2026). One stamp: either copy logs it, both show it. -->
+        <div v-if="logging && call911" class="steps-end">
+          <span class="steps-end-node" aria-hidden="true" />
+          <div class="drug-grid log-pills log-stamps">
+            <UiDrugButton
+              tone="zofran"
+              :tint="NEUTRAL_TINT"
+              name="Time stamp"
+              dose="EMS arrived"
+              :state="stampState('EMS arrived')"
+              :logged-at="rescue.stamped('EMS arrived')"
+              @click="rescue.stamp('EMS arrived')"
+            />
+          </div>
+        </div>
       </UiCard>
 
       <p class="footnote reviewed">{{ PROTOCOLS_REVIEWED }}</p>
@@ -936,12 +955,12 @@ function stepClass(step: ProtocolStep): string {
 
 /* Steps: one card, one line from the first step to the last. */
 .steps-card {
+  --node: 30px;
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
 }
 .steps {
-  --node: 30px;
   list-style: none;
   margin: var(--sp-2) 0 0;
   padding: 0;
@@ -1175,6 +1194,13 @@ function stepClass(step: ProtocolStep): string {
   color: var(--color-text-secondary);
 }
 
+/* The closing row lines up with the steps' text. */
+.steps-end {
+  display: grid;
+  grid-template-columns: var(--node) minmax(0, 1fr);
+  column-gap: var(--sp-3);
+  margin-top: calc(-1 * var(--sp-1));
+}
 /* Each route's pills on a row of their own: an IM dose never sits among IV ones. */
 .log-groups {
   display: flex;

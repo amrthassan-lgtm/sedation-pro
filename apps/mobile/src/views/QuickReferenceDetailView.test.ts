@@ -6,6 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router';
 import QuickReferenceDetailView from './QuickReferenceDetailView.vue';
 import { useInventoryStatus } from '@/composables/useInventoryStatus';
 import { protocolTitleHidden } from '@/composables/protocolTitle';
+import { useEventLogStore } from '@/stores/event-log';
 import { emergencySyringe, parseVolumeMl, syringeConfig } from '@/composables/useSyringeConfig';
 import { EMERGENCY_PROTOCOLS, emergencySyringeTint, findProtocol } from '@sedation-pro/clinical';
 
@@ -376,7 +377,7 @@ describe('logging from the page', () => {
       .findAll('.ui-drug-btn-dose')
       .map((d) => d.text());
     expect(help).toEqual(['911 called', 'EMS arrived']);
-    const inSteps = w.findAll('.steps-card .log-stamps .ui-drug-btn-dose').map((d) => d.text());
+    const inSteps = w.findAll('ol.steps .log-stamps .ui-drug-btn-dose').map((d) => d.text());
     expect(inSteps).toContain('CPR started');
     expect(inSteps).toContain('Shock given');
     expect(inSteps).not.toContain('911 called');
@@ -400,12 +401,15 @@ describe('logging from the page', () => {
     }
   });
 
-  it('on every page that calls 911, the steps never repeat the two stamps of the Call 911 card', async () => {
+  it('on every page that calls 911, no step repeats the Call 911 stamps; EMS arrived also closes the page', async () => {
     for (const p of EMERGENCY_PROTOCOLS.filter((p) => p.steps.some((s) => /911/.test(s.text)))) {
       const w = mountDetail(p.id);
       await w.find('.log-unlock').trigger('click');
       const help = w.findAll('.help .ui-drug-btn-dose').map((d) => d.text());
-      const inSteps = w.findAll('.steps-card .ui-drug-btn-dose').map((d) => d.text());
+      const inSteps = w.findAll('ol.steps .ui-drug-btn-dose').map((d) => d.text());
+      // The one repeat is on purpose: EMS arrived again where the page ends.
+      const end = w.findAll('.steps-end .ui-drug-btn-dose').map((d) => d.text());
+      expect(end, p.id).toEqual(['EMS arrived']);
       expect(help, p.id).toEqual(['911 called', 'EMS arrived']);
       expect(inSteps, p.id).not.toContain('911 called');
       expect(inSteps, p.id).not.toContain('EMS arrived');
@@ -632,5 +636,50 @@ describe('the top bar names the protocol once the title has gone under it', () =
     w.unmount();
     // Leaving the page never leaves a protocol name in the bar of another screen.
     expect(protocolTitleHidden.value).toBe(false);
+  });
+});
+
+describe('owner additions, Nov 2026', () => {
+  it('lidocaine shows its half second doses on a row of their own, one per weight', async () => {
+    const w = mountDetail('stable_vtach');
+    await w.find('.log-unlock').trigger('click');
+    const box = w
+      .findAll('.drug-callout')
+      .find((c) => c.find('.drug-name-text').text() === 'Cardiac Lidocaine')!;
+    const rows = box
+      .findAll('.log-groups > .log-pills')
+      .map((r) => r.findAll('.ui-drug-btn-dose').map((d) => d.text()));
+    expect(rows).toEqual([
+      ['90 mg IV', '120 mg IV', '150 mg IV'],
+      ['45 mg IV', '60 mg IV', '75 mg IV'],
+    ]);
+    // The weight table stays beside the pills.
+    expect(box.findAll('.drug-row').length).toBe(3);
+    w.unmount();
+  });
+
+  it('EMS arrived at the end and on the Call 911 card is one stamp: either logs it, both show it', async () => {
+    const w = mountDetail('vfib_vtach');
+    await w.find('.log-unlock').trigger('click');
+    const top = () =>
+      w.findAll('.help .ui-drug-btn').find((b) => b.text().includes('EMS arrived'))!;
+    const end = () => w.find('.steps-end .ui-drug-btn');
+    expect(top().classes()).not.toContain('is-logged');
+    await end().trigger('click');
+    const lines = useEventLogStore().events.filter((e) => e.event === 'EMS arrived');
+    expect(lines.length).toBe(1);
+    expect(top().text()).toContain('✓');
+    expect(end().text()).toContain('✓');
+    // Logged once, it locks in both places: a second tap adds nothing.
+    await top().trigger('click');
+    expect(useEventLogStore().events.filter((e) => e.event === 'EMS arrived').length).toBe(1);
+    w.unmount();
+  });
+
+  it('a page that never calls 911 has no closing EMS row', async () => {
+    const w = mountDetail('hypertension');
+    await w.find('.log-unlock').trigger('click');
+    expect(w.find('.steps-end').exists()).toBe(false);
+    w.unmount();
   });
 });

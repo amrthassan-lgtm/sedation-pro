@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-import { UiCard, UiTextInput } from '@sedation-pro/ui';
+import { UiCard, UiPillButton, UiTextInput } from '@sedation-pro/ui';
 
 /**
  * One editable practice pick-list — the staff roster, the IV supplies, the
@@ -105,14 +105,9 @@ function move(index: number, delta: number): void {
         </span>
         <span class="pl-chevron" :class="{ 'is-open': open }" aria-hidden="true">›</span>
       </button>
-      <button
-        v-if="open && entries.length > 0"
-        type="button"
-        class="pl-edit"
-        @click="editing = !editing"
-      >
-        {{ editing ? 'Done' : 'Edit' }}
-      </button>
+      <UiPillButton v-if="open && entries.length > 0" class="pl-edit" @click="editing = !editing">{{
+        editing ? 'Done' : 'Edit'
+      }}</UiPillButton>
     </div>
 
     <div v-if="open" :id="bodyId" class="pl-body">
@@ -162,10 +157,10 @@ function move(index: number, delta: number): void {
 
         <li v-if="adding" class="pl-row pl-row-add">
           <UiTextInput v-model="draft" placeholder="Name" autofocus @keyup.enter="add" />
-          <button type="button" class="pl-action" @click="cancelAdd">Cancel</button>
-          <button type="button" class="pl-action is-primary" :disabled="!canAdd" @click="add">
-            Add
-          </button>
+          <UiPillButton class="pl-action" @click="cancelAdd">Cancel</UiPillButton>
+          <UiPillButton tone="key" class="pl-action is-primary" :disabled="!canAdd" @click="add"
+            >Add</UiPillButton
+          >
         </li>
         <li v-else class="pl-row">
           <button type="button" class="pl-add" @click="adding = true">
@@ -179,9 +174,9 @@ function move(index: number, delta: number): void {
         “{{ trimmedDraft }}” is already on the list.
       </p>
 
-      <button v-if="overridden" type="button" class="pl-restore" @click="emit('restore')">
-        Restore the shipped list
-      </button>
+      <UiPillButton v-if="overridden" class="pl-restore" @click="emit('restore')"
+        >Restore the shipped list</UiPillButton
+      >
     </div>
   </UiCard>
 </template>
@@ -236,22 +231,6 @@ function move(index: number, delta: number): void {
 }
 .pl-chevron.is-open {
   transform: rotate(90deg);
-}
-/* Text button, iOS list-header idiom — no chrome, accent colour, right-aligned. */
-.pl-edit {
-  flex-shrink: 0;
-  border: 0;
-  font: inherit;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  min-height: 44px;
-  padding: 0 16px;
-  margin: 0;
-  border-radius: var(--r-pill);
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
-  font-size: var(--type-footnote);
-  font-weight: var(--weight-semibold);
 }
 .pl-body {
   display: flex;
@@ -357,41 +336,9 @@ function move(index: number, delta: number): void {
   font-size: 15px;
   line-height: 1;
 }
-.pl-action {
-  flex-shrink: 0;
-  font: inherit;
-  font-size: var(--type-body);
-  cursor: pointer;
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: var(--r-pill);
-  border: 0;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
-  font-weight: var(--weight-semibold);
-}
-.pl-action.is-primary {
-  background: var(--color-text-primary);
-  color: var(--color-bg);
-  font-weight: var(--weight-bold);
-}
-.pl-action:disabled {
-  cursor: default;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-disabled);
-}
+/* The pills are the shared UiPillButton; only their placement is local. */
 .pl-restore {
   align-self: flex-start;
-  font: inherit;
-  cursor: pointer;
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: var(--r-pill);
-  border: 0;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
-  font-weight: var(--weight-semibold);
-  font-size: var(--type-footnote);
 }
 @media (prefers-reduced-motion: reduce) {
   .pl-chevron {
