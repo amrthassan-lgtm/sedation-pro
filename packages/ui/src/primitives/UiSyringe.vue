@@ -43,6 +43,11 @@ interface Props {
    * Off by default, so the clinical app's cards are unchanged.
    */
   hero?: boolean;
+  /**
+   * No frame and no name above it: for a drawing that sits inside a box that
+   * already names the drug (the protocol page's drug box).
+   */
+  bare?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -50,6 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
   caption: '',
   compact: false,
   hero: false,
+  bare: false,
 });
 
 const fillFraction = computed(() => {
@@ -136,8 +142,11 @@ const ticks = computed(() => {
 </script>
 
 <template>
-  <figure class="syringe" :class="{ 'is-compact': props.compact, 'is-hero': props.hero }">
-    <figcaption class="syringe-label">{{ props.label }}</figcaption>
+  <figure
+    class="syringe"
+    :class="{ 'is-compact': props.compact, 'is-hero': props.hero, 'is-bare': props.bare }"
+  >
+    <figcaption v-if="!props.bare" class="syringe-label">{{ props.label }}</figcaption>
 
     <div class="syringe-stage">
       <svg
@@ -264,6 +273,11 @@ const ticks = computed(() => {
 }
 .syringe.is-compact {
   padding: 8px 10px;
+}
+.syringe.is-bare {
+  padding: 0;
+  background: transparent;
+  border: 0;
 }
 .syringe-label {
   font-size: var(--type-caption);

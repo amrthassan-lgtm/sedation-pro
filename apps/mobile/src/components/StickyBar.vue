@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onScopeDispose, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
 import { useSessionStore, type Phase } from '@/stores/session';
@@ -8,6 +8,8 @@ import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { lastSavedAt } from '@/stores/persistence';
 import { fmtClock } from '@/composables/format';
+import { protocolBarTitle } from '@/data/protocolNames';
+import { protocolTitleHidden } from '@/composables/protocolTitle';
 
 const router = useRouter();
 const session = useSessionStore();
@@ -80,7 +82,16 @@ const phaseMeta: Record<Phase, { label: string; sub: string }> = {
   note: { label: 'Clinical Note', sub: 'Signed record' },
 };
 
-const meta = computed(() => phaseMeta[currentPhase.value]);
+// On a protocol's page the bar names the protocol once the page's own title
+// has scrolled under it, so a long page still says where you are.
+const route = useRoute();
+const protocolMeta = computed(() => {
+  const id = route.params.id;
+  return route.name === 'quickref-detail' && typeof id === 'string' && protocolTitleHidden.value
+    ? protocolBarTitle(id)
+    : null;
+});
+const meta = computed(() => protocolMeta.value ?? phaseMeta[currentPhase.value]);
 const showClearance = computed(() => currentPhase.value === 'phase1');
 
 /**
@@ -148,7 +159,9 @@ function emergency() {
 
     <div class="sticky-bar-info">
       <div class="sticky-bar-phase">
-        <span class="sticky-bar-phase-label">{{ meta.label }}</span>
+        <Transition name="bar-title" mode="out-in">
+          <span :key="meta.label" class="sticky-bar-phase-label">{{ meta.label }}</span>
+        </Transition>
       </div>
       <div class="sticky-bar-sub">
         <!-- Tappable while incomplete: jumps to the first missing required
@@ -176,7 +189,9 @@ function emergency() {
           <span v-if="isPhase1Complete" class="sticky-bar-ready">✓ Ready</span>
         </button>
         <template v-else>
-          <span class="sticky-bar-phase-sub">{{ meta.sub }}</span>
+          <Transition name="bar-title" mode="out-in">
+            <span :key="meta.sub" class="sticky-bar-phase-sub">{{ meta.sub }}</span>
+          </Transition>
         </template>
       </div>
       <div v-if="barAlerts.length" class="sticky-bar-alerts">
@@ -300,6 +315,15 @@ function emergency() {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+/* The protocol name fades in as the page's own title goes under the bar. */
+.bar-title-enter-active,
+.bar-title-leave-active {
+  transition: opacity var(--dur-150) var(--ease-standard);
+}
+.bar-title-enter-from,
+.bar-title-leave-to {
+  opacity: 0;
 }
 .sticky-bar-phase-label {
   font-size: var(--type-footnote);

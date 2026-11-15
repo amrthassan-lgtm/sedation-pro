@@ -4,9 +4,21 @@ import {
   EMERGENCY_PROTOCOLS,
   findProtocol,
   type EmergencyDrugCallout,
+  type ProtocolStep,
 } from '@sedation-pro/clinical';
 
-import { logPills, RESCUE_EVENTS, REVERSAL_DOSES, reversalsFor, stepStamps } from './emergencyLog';
+import {
+  doseRows,
+  HELP_STAMPS,
+  logPills,
+  MEDICATION_GIVEN,
+  pillsCoverTable,
+  RESCUE_EVENTS,
+  REVERSAL_DOSES,
+  reversalsFor,
+  stepStamps,
+  type TimeStamp,
+} from './emergencyLog';
 import { useClinicalNote } from './useClinicalNote';
 import { useEmergencyLog, useLoggingGate } from './useEmergencyLog';
 import { useIvDosing } from './useIvDosing';
@@ -120,7 +132,82 @@ describe('the pills a drug box offers', () => {
   });
 });
 
+function stepOf(protocol: string, name: string): ProtocolStep {
+  const found = (findProtocol(protocol)?.steps ?? []).find((s) => s.drug?.name === name);
+  if (!found) throw new Error(`${protocol} has no ${name} step`);
+  return found;
+}
+
+describe('when the pills stand in for the dose rows', () => {
+  const steps = EMERGENCY_PROTOCOLS.flatMap((p) =>
+    p.steps.filter((s) => s.drug !== undefined).map((step) => ({ protocol: p.id, step })),
+  );
+
+  it('only when each row has its dose and its volume on the pill in the same place', () => {
+    for (const { protocol, step } of steps) {
+      if (!pillsCoverTable(step)) continue;
+      const rows = doseRows(step.drug!);
+      const pills = logPills(step.drug!, step.text);
+      const label = `${protocol}: ${step.drug!.name}`;
+      expect(pills.length, label).toBe(rows.length);
+      rows.forEach((row, i) => {
+        expect(row.label, label).toContain(pills[i]!.dose);
+        expect(pills[i]!.sub, label).toContain(/^[\d.]+ ml/.exec(row.value)![0]);
+      });
+    }
+  });
+
+  it('a second dose and a mixed push are covered by their pills', () => {
+    expect(pillsCoverTable(stepOf('vfib_vtach', 'Amiodarone'))).toBe(true);
+    expect(pillsCoverTable(stepOf('bradycardia', 'Push-dose Epinephrine'))).toBe(true);
+  });
+
+  it('a table by weight keeps its rows: the weight is what the eye looks up', () => {
+    expect(pillsCoverTable(stepOf('stable_vtach', 'Cardiac Lidocaine'))).toBe(false);
+    expect(pillsCoverTable(stepOf('vfib_vtach', 'Cardiac Lidocaine'))).toBe(false);
+    expect(pillsCoverTable(stepOf('last', 'Push-dose Epinephrine'))).toBe(false);
+  });
+
+  it('a table that says more than its pills keeps its rows', () => {
+    // One dose listed at two strengths, and one dose at two presentations.
+    expect(pillsCoverTable(stepOf('anaphylaxis', 'Dexamethasone'))).toBe(false);
+    expect(pillsCoverTable(stepOf('hypotension', 'Atropine'))).toBe(false);
+  });
+
+  it('a dose that may go IV or IM keeps its rows: the pills are twice as many', () => {
+    const step = stepOf('anaphylaxis', 'Diphenhydramine');
+    expect(step.text).toMatch(/Diphenhydramine IV or IM/);
+    expect(pillsCoverTable(step)).toBe(false);
+  });
+
+  it('a reversal always keeps its rows', () => {
+    for (const { protocol, step } of steps) {
+      if (reversalsFor(step).length === 0) continue;
+      expect(pillsCoverTable(step), `${protocol}: ${step.drug!.name}`).toBe(false);
+    }
+  });
+});
+
 describe('where the time stamps sit', () => {
+  it('every time stamp has one home: the Call 911 card, or a step', () => {
+    const offered = new Set<TimeStamp>();
+    for (const p of EMERGENCY_PROTOCOLS) {
+      const calls = p.steps.some((s) => /911/.test(s.text));
+      const inSteps = [...stepStamps(p.steps).values()]
+        .flat()
+        .filter((s) => !HELP_STAMPS.includes(s));
+      if (calls) HELP_STAMPS.forEach((s) => offered.add(s));
+      inSteps.forEach((s) => offered.add(s));
+      // No stamp is offered both on the card and in a step of the same page.
+      expect(
+        inSteps.filter((s) => calls && HELP_STAMPS.includes(s)),
+        p.id,
+      ).toEqual([]);
+    }
+    const stamps = [...RESCUE_EVENTS].filter((e) => e !== MEDICATION_GIVEN);
+    expect([...offered].sort()).toEqual(stamps.sort());
+  });
+
   it('each stamp appears once on a page, on the first step that names it', () => {
     const arrest = stepStamps(findProtocol('vfib_vtach')!.steps);
     expect([...arrest]).toEqual([

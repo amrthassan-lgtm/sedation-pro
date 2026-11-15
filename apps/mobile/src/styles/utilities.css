@@ -58,6 +58,17 @@
 }
 
 /*
+ * The grid the owner's drug pills sit in, on the sedation screen and in the
+ * protocols alike, so a pill wraps the same way wherever it is tapped.
+ * (Phase 1's test-dose grid keeps three fixed columns of its own.)
+ */
+.drug-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-2);
+}
+
+/*
  * Print hygiene — anything tagged `.no-print` (sticky bar, nav drawer, app
  * footer, sedation dock, undo toast, the per-view toolbars on the clinical
  * note) drops out of print output. The clinical note's paper body and the
