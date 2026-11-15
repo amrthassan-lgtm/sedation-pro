@@ -378,11 +378,10 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
             <div class="step-body">
               <p class="step-text">{{ step.text }}</p>
               <ProtocolFigure v-if="step.figure" :kind="step.figure" />
-              <div v-if="logging && stamps.has(index)" class="log-stamps">
+              <div v-if="logging && stamps.has(index)" class="log-pills log-stamps">
                 <UiDrugButton
                   v-for="stamp in stamps.get(index)"
                   :key="stamp"
-                  compact
                   tone="zofran"
                   :tint="NEUTRAL_TINT"
                   name="Time stamp"
@@ -507,9 +506,8 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
         <div v-if="logging && call911" class="step step--end">
           <span aria-hidden="true"></span>
           <div class="step-body">
-            <div class="log-stamps log-stamps--end">
+            <div class="log-pills log-stamps log-stamps--end">
               <UiDrugButton
-                compact
                 tone="zofran"
                 :tint="NEUTRAL_TINT"
                 name="Time stamp"
@@ -600,17 +598,12 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
   text-align: center;
 }
 
+/* Every logging pill, drug or time stamp, sits in the same full-width grid. */
 .log-pills {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: var(--sp-2);
   margin-top: var(--sp-2);
-}
-.log-stamps {
-  display: flex;
-  gap: var(--sp-2);
-  margin-top: var(--sp-2);
-  max-width: 320px;
 }
 .log-owner {
   margin: 0;
@@ -731,8 +724,12 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
   border-left: 3px solid transparent;
 }
 .step--critical {
-  background: var(--color-crisis-soft);
+  /* The red number and the red bar mark the step; no tint behind it, so the
+     drug boxes, syringes and pills inside read on the normal surface, and a
+     page with many critical steps does not turn pink. Square corners keep
+     the bar a straight line rather than a bracket. */
   border-left-color: var(--color-crisis);
+  border-radius: 0;
 }
 .step--final {
   background: var(--color-surface-elevated);
