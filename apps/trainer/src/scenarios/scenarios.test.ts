@@ -19,12 +19,20 @@ const VIAL_KEYS = new Set(CART_VIALS.map((v) => v.key));
  * this, a new step would quietly read as outside the run.
  */
 const LEFT_OUT: Readonly<Record<string, ReadonlyArray<readonly [string, string, string]>>> = {
+  crown: [
+    ['choking', 'Becomes unresponsive', 'the run stops at the arrest'],
+    ['choking', 'Cannot ventilate and cannot remove it', 'the run stops at the arrest'],
+    ['choking', 'Object lost and not found', 'the crown is recovered in this run'],
+    ['emesis_aspiration', 'Signs of aspiration', 'he breathes easily once his airway is clear'],
+    ['emesis_aspiration', 'Laryngospasm or bronchospasm after vomiting', 'neither follows here'],
+  ],
   quiet: [
     ['hypoventilation', 'No pulse: start CPR', 'the run stops at the arrest'],
     ['oversedation_opioid', 'No pulse: start CPR', 'the run stops at the arrest'],
     ['oversedation_opioid', 'Naloxone can wear off before fentanyl', 'after the run ends'],
     ['laryngospasm', 'Cannot ventilate: LMA or King', 'succinylcholine breaks the spasm'],
   ],
+  tight: [['bronchospasm', 'Cannot ventilate', 'he keeps breathing on his own in this run']],
   wheeze: [
     ['anaphylaxis', 'Push-dose Epinephrine IV', 'the mix bench is a later release'],
     ['anaphylaxis', 'Throat or tongue swelling', 'his airway stays open in this run'],

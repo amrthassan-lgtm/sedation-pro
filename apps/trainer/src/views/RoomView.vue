@@ -80,9 +80,20 @@ const NOW_LABELS: Readonly<Record<string, string>> = {
   saline: 'Saline running',
 };
 
+/** Done in a moment and over: nothing to show as still going on. */
+const MOMENTARY: ReadonlySet<string> = new Set([
+  'stimulate',
+  'suction',
+  'encourage_cough',
+  'back_blows',
+  'abdominal_thrusts',
+  'magill',
+  'finger_sweep',
+]);
+
 const now = computed(() =>
   CART_ACTIONS.filter((a) => (a.kind === 'toggle' ? run.isOn(a.id) : run.done(a.id)))
-    .filter((a) => a.id !== 'stimulate' && a.id !== 'suction')
+    .filter((a) => !MOMENTARY.has(a.id))
     .map((a) => NOW_LABELS[a.id] ?? a.label),
 );
 

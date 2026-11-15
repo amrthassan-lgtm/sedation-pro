@@ -6,6 +6,7 @@ import {
   doseRangeOf,
   gaveProtocolDose,
   minutesInStep,
+  numberInStep,
   overProtocolDose,
 } from './protocol';
 import type { DoseEvent } from './types';
@@ -38,6 +39,11 @@ describe('reading a protocol callout', () => {
   it('reads a wait from the step that states it, and throws when the words change', () => {
     expect(minutesInStep('anaphylaxis', 'second IM dose', /(\d+) min, not better/)).toBe(5);
     expect(() => minutesInStep('anaphylaxis', 'second IM dose', /(\d+) hours/)).toThrow();
+  });
+
+  it('reads a threshold from the step that states it, and throws when the words change', () => {
+    expect(numberInStep('bronchospasm', 'Auvi-Q 0.3 first', /SpO₂ under (\d+)%/)).toBe(92);
+    expect(() => numberInStep('bronchospasm', 'Auvi-Q 0.3 first', /SpO₂ over (\d+)%/)).toThrow();
   });
 });
 

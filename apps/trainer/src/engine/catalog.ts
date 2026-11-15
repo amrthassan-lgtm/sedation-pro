@@ -57,6 +57,7 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
     from: [
       { protocol: 'laryngospasm', step: 'Stop the procedure' },
       { protocol: 'bronchospasm', step: 'Stop the procedure' },
+      { protocol: 'emesis_aspiration', step: 'Stop. Turn to the side' },
     ],
   },
   {
@@ -68,6 +69,8 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
     from: [
       { protocol: 'laryngospasm', step: 'Call 911' },
       { protocol: 'anaphylaxis', step: 'DA calls 911' },
+      { protocol: 'bronchospasm', step: 'DA calls 911' },
+      { protocol: 'choking', step: 'Call 911' },
     ],
   },
   {
@@ -80,6 +83,8 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
       { protocol: 'hypoventilation', step: 'Turn off N₂O, 100% O₂' },
       { protocol: 'oversedation_opioid', step: 'N₂O off, 100% O₂' },
       { protocol: 'anaphylaxis', step: 'O₂ to >94%' },
+      { protocol: 'bronchospasm', step: 'O₂ to SpO₂ 93-95%' },
+      { protocol: 'emesis_aspiration', step: 'Turn off N₂O, 100% O₂' },
     ],
   },
   {
@@ -92,6 +97,14 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
       { protocol: 'hypoventilation', step: 'Stimulate: say their name loudly' },
       { protocol: 'oversedation_opioid', step: 'Stimulate: call their name, rub the sternum' },
     ],
+  },
+  {
+    id: 'encourage_cough',
+    group: 'breathing',
+    kind: 'instant',
+    label: 'Encourage coughing',
+    aliases: ['cough', 'keep coughing', 'cough it up'],
+    from: [{ protocol: 'choking', step: 'encourage coughing' }],
   },
   {
     id: 'bvm',
@@ -134,6 +147,8 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
     from: [
       { protocol: 'laryngospasm', step: 'Remove packs and gauze, suction the throat' },
       { protocol: 'hypoventilation', step: 'suction' },
+      { protocol: 'bronchospasm', step: 'remove packs' },
+      { protocol: 'emesis_aspiration', step: 'suction mouth and throat' },
     ],
   },
   {
@@ -153,6 +168,39 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
     from: [{ protocol: 'hypoventilation', step: 'oral airway or NPA' }],
   },
   {
+    id: 'back_blows',
+    group: 'airway',
+    kind: 'instant',
+    label: 'Back blows',
+    aliases: ['back slaps', 'blows', 'slap his back', 'slap her back'],
+    from: [{ protocol: 'choking', step: 'back blows' }],
+  },
+  {
+    id: 'abdominal_thrusts',
+    group: 'airway',
+    kind: 'instant',
+    label: 'Abdominal thrusts',
+    aliases: ['heimlich', 'thrusts', 'chest thrusts'],
+    from: [{ protocol: 'choking', step: 'abdominal thrusts' }],
+  },
+  {
+    id: 'magill',
+    group: 'airway',
+    kind: 'instant',
+    label: 'Magill forceps',
+    aliases: ['forceps', 'magills', 'laryngoscope', 'direct view'],
+    from: [{ protocol: 'choking', step: 'Magill forceps' }],
+  },
+  {
+    // On the cart because the protocol names it, as the thing not to do blind.
+    id: 'finger_sweep',
+    group: 'airway',
+    kind: 'instant',
+    label: 'Finger sweep',
+    aliases: ['sweep', 'finger', 'reach in'],
+    from: [{ protocol: 'choking', step: 'finger sweeps' }],
+  },
+  {
     id: 'pos_flat_legs_up',
     group: 'position',
     kind: 'toggle',
@@ -168,7 +216,10 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
     label: 'Sit up',
     aliases: ['upright', 'sit him up', 'sit her up'],
     excludes: POSITIONS.filter((p) => p !== 'pos_sit_up'),
-    from: [{ protocol: 'anaphylaxis', step: 'sit up if breathing hard' }],
+    from: [
+      { protocol: 'anaphylaxis', step: 'sit up if breathing hard' },
+      { protocol: 'bronchospasm', step: 'Sit upright' },
+    ],
   },
   {
     id: 'pos_side',
@@ -223,7 +274,10 @@ export const CART_DEVICES: ReadonlyArray<CartDevice> = [
     mcg: 300,
     route: 'IM',
     tint: EPI_TINT,
-    from: [{ protocol: 'anaphylaxis', step: 'Auvi-Q 0.3 first' }],
+    from: [
+      { protocol: 'anaphylaxis', step: 'Auvi-Q 0.3 first' },
+      { protocol: 'bronchospasm', step: 'Auvi-Q 0.3 first' },
+    ],
   },
   {
     // Not an Auvi-Q on the practice's cart, so it is not named or handled as one.
@@ -253,7 +307,10 @@ export const CART_DEVICES: ReadonlyArray<CartDevice> = [
     maxUnits: 8,
     route: 'inhaled',
     tint: 'var(--color-slate)',
-    from: [{ protocol: 'anaphylaxis', step: 'Albuterol (if wheezing)' }],
+    from: [
+      { protocol: 'anaphylaxis', step: 'Albuterol (if wheezing)' },
+      { protocol: 'bronchospasm', step: 'Albuterol inhaler' },
+    ],
   },
 ];
 
