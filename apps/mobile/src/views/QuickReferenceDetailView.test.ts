@@ -345,8 +345,8 @@ describe('logging from the page', () => {
     expect(await pills('oversedation_opioid')).toEqual([
       {
         text: expect.stringMatching(/^Naloxone IV/),
-        pills: ['0.4 mg IV', '0.4 mg IM'],
-        names: ['Naloxone', 'Naloxone'],
+        pills: ['0.4 mg IV', '2 mg IV', '0.4 mg IM', '2 mg IM'],
+        names: ['Naloxone', 'Naloxone', 'Naloxone', 'Naloxone'],
       },
     ]);
     expect(await pills('oversedation_benzo')).toEqual([

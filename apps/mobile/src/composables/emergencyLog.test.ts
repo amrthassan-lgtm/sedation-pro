@@ -6,7 +6,7 @@ import {
   type EmergencyDrugCallout,
 } from '@sedation-pro/clinical';
 
-import { logPills, RESCUE_EVENTS, REVERSAL_DOSE, reversalsFor, stepStamps } from './emergencyLog';
+import { logPills, RESCUE_EVENTS, REVERSAL_DOSES, reversalsFor, stepStamps } from './emergencyLog';
 import { useClinicalNote } from './useClinicalNote';
 import { useEmergencyLog, useLoggingGate } from './useEmergencyLog';
 import { useIvDosing } from './useIvDosing';
@@ -54,15 +54,32 @@ describe('the pills a drug box offers', () => {
   });
 
   it('a dose by weight becomes one pill per weight row, with the dose first', () => {
-    expect(logPills(callout('stable_vtach', 'Cardiac Lidocaine'))).toEqual([
+    const lidocaine = [
       { key: '90 mg', dose: '90 mg', route: 'IV', sub: '150 lb · 4.5 ml' },
       { key: '120 mg', dose: '120 mg', route: 'IV', sub: '200 lb · 6.0 ml' },
       { key: '150 mg', dose: '150 mg', route: 'IV', sub: '250 lb · 7.5 ml' },
-    ]);
+    ];
+    expect(logPills(callout('stable_vtach', 'Cardiac Lidocaine'))).toEqual(lidocaine);
+    expect(logPills(callout('vfib_vtach', 'Cardiac Lidocaine'))).toEqual(lidocaine);
     expect(doses(callout('last', 'Push-dose Epinephrine'))).toEqual([
       '50 mcg IV',
       '70 mcg IV',
       '100 mcg IV',
+    ]);
+  });
+
+  it('a second dose that differs from the first has its own pill, saying which it is', () => {
+    expect(logPills(callout('vfib_vtach', 'Amiodarone'))).toEqual([
+      { key: '300 mg', dose: '300 mg', route: 'IV', sub: '6.0 ml · 1st dose' },
+      { key: '150 mg', dose: '150 mg', route: 'IV', sub: '3.0 ml · 2nd dose' },
+    ]);
+    expect(logPills(callout('hypertensive_crisis', 'Labetalol'))).toEqual([
+      { key: '20 mg', dose: '20 mg', route: 'IV', sub: '4.0 ml' },
+      { key: '40 mg', dose: '40 mg', route: 'IV', sub: '8.0 ml · repeat' },
+    ]);
+    expect(logPills(callout('svt', 'Adenosine')).map((p) => p.sub)).toEqual([
+      '2.0 ml · 1st dose',
+      '4.0 ml · 2nd dose',
     ]);
   });
 
@@ -349,10 +366,12 @@ describe('naloxone and flumazenil in their steps', () => {
     setActivePinia(createPinia());
   });
 
-  const pill = (protocol: string, drug: string, route: 'IV' | 'IM') => {
+  const pill = (protocol: string, drug: string, route: 'IV' | 'IM', dose?: string) => {
     const step = findProtocol(protocol)!.steps.find((s) => reversalsFor(s).length > 0)!;
-    const found = reversalsFor(step).find((p) => p.drug === drug && p.route === route);
-    if (!found) throw new Error(`${protocol} has no ${drug} ${route} pill`);
+    const found = reversalsFor(step).find(
+      (p) => p.drug === drug && p.route === route && (dose === undefined || p.dose === dose),
+    );
+    if (!found) throw new Error(`${protocol} has no ${drug} ${dose ?? ''} ${route} pill`);
     return found;
   };
 
@@ -368,9 +387,9 @@ describe('naloxone and flumazenil in their steps', () => {
         ),
     );
     expect(carrying).toEqual([
-      'hypoventilation: naloxone IV + flumazenil IV',
-      'oversedation_benzo: flumazenil IV',
-      'oversedation_opioid: naloxone IV + naloxone IM',
+      'hypoventilation: naloxone 0.4 mg IV + flumazenil 0.2 mg IV',
+      'oversedation_benzo: flumazenil 0.2 mg IV',
+      'oversedation_opioid: naloxone 0.4 mg IV + naloxone 2 mg IV + naloxone 0.4 mg IM + naloxone 2 mg IM',
     ]);
   });
 
@@ -381,11 +400,40 @@ describe('naloxone and flumazenil in their steps', () => {
     expect(step.text).toContain('or IM if no IV');
   });
 
-  it('the pill shows the volume its callout says to draw', () => {
-    expect(callout('oversedation_opioid', 'Naloxone').volume).toMatch(
-      new RegExp(`^${REVERSAL_DOSE.naloxone.sub}`),
-    );
-    expect(callout('oversedation_benzo', 'Flumazenil').volume).toBe(REVERSAL_DOSE.flumazenil.sub);
+  it('every reversal pill is a dose its callout draws, at the same volume', () => {
+    const naloxone = callout('oversedation_opioid', 'Naloxone');
+    for (const d of REVERSAL_DOSES.naloxone.doses) {
+      const row = naloxone.drawTable?.find((r) => r.label.startsWith(`${d.dose}`));
+      expect(row?.ml, d.dose).toBe(d.sub);
+    }
+    const [flumazenil] = REVERSAL_DOSES.flumazenil.doses;
+    expect(callout('oversedation_benzo', 'Flumazenil').volume).toBe(flumazenil?.sub);
+    expect(callout('oversedation_benzo', 'Flumazenil').dose).toBe(flumazenil?.dose);
+  });
+
+  it('the 2 mg naloxone dose is recorded as 2 mg, and counts in the totals', () => {
+    const rescue = useEmergencyLog();
+    rescue.reverse(pill('oversedation_opioid', 'naloxone', 'IV', '2 mg'));
+    expect(useEventLogStore().events.at(-1)?.details).toEqual({
+      Drug: 'Naloxone',
+      Dose: '2 mg',
+      Route: 'IV',
+      Notes: 'opioid reversal',
+    });
+    expect(useIVStore().doses.map((d) => [d.drug, d.mg])).toEqual([['naloxone', 2]]);
+    const row = useClinicalNote()
+      .value.sections.flatMap((s) => s.rows)
+      .find(([l]) => l === 'Naloxone (reversal)');
+    expect(row?.[1]).toBe('2.0 mg IV');
+  });
+
+  it('the Hypoventilation step offers only the first doses: the full ones are on the pages it links to', () => {
+    const step = findProtocol('hypoventilation')!.steps.find((s) => s.text.startsWith('Reverse:'))!;
+    expect(reversalsFor(step).map((p) => `${p.name} ${p.dose} ${p.route}`)).toEqual([
+      'Naloxone 0.4 mg IV',
+      'Flumazenil 0.2 mg IV',
+    ]);
+    expect(step.goTo).toEqual(['oversedation_opioid', 'oversedation_benzo']);
   });
 
   it('a tap logs through the sedation screen, so the dose and the discharge hold follow', () => {
@@ -406,8 +454,8 @@ describe('naloxone and flumazenil in their steps', () => {
 
   it('naloxone into the muscle is recorded as IM, in the line, the totals and the sentence', () => {
     const rescue = useEmergencyLog();
-    rescue.reverse(pill('oversedation_opioid', 'naloxone', 'IV'));
-    rescue.reverse(pill('oversedation_opioid', 'naloxone', 'IM'));
+    rescue.reverse(pill('oversedation_opioid', 'naloxone', 'IV', '0.4 mg'));
+    rescue.reverse(pill('oversedation_opioid', 'naloxone', 'IM', '0.4 mg'));
     expect(useEventLogStore().events.map((e) => e.details.Route)).toEqual(['IV', 'IM']);
     // The discharge hold follows either route.
     expect(useIVStore().lastNaloxoneAt).not.toBeNull();
@@ -419,14 +467,17 @@ describe('naloxone and flumazenil in their steps', () => {
 
   it('each pill counts its own route, and none locks', () => {
     const rescue = useEmergencyLog();
-    const iv_ = pill('oversedation_opioid', 'naloxone', 'IV');
-    const im = pill('oversedation_opioid', 'naloxone', 'IM');
+    const iv_ = pill('oversedation_opioid', 'naloxone', 'IV', '0.4 mg');
+    const im = pill('oversedation_opioid', 'naloxone', 'IM', '0.4 mg');
+    const big = pill('oversedation_opioid', 'naloxone', 'IV', '2 mg');
     expect(rescue.lastReversal(iv_)).toBeUndefined();
     rescue.reverse(iv_);
     rescue.reverse(iv_);
     rescue.reverse(im);
     expect(rescue.lastReversal(iv_)).toContain('×2');
     expect(rescue.lastReversal(im)).not.toContain('×');
+    // Each dose counts only its own taps.
+    expect(rescue.lastReversal(big)).toBeUndefined();
   });
 
   it('the sedation screen still logs naloxone IV, as before', () => {
