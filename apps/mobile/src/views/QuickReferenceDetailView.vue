@@ -391,10 +391,10 @@ function stepClass(step: ProtocolStep): string {
   <main class="page">
     <nav class="toolbar" aria-label="Protocol navigation">
       <UiButton tone="nav" compact @click="goBack">‹ Back</UiButton>
-      <UiButton tone="nav" compact @click="goList">All protocols</UiButton>
       <UiButton tone="key" compact class="toolbar-case" @click="goCase">{{
         backToCaseLabel
       }}</UiButton>
+      <UiButton tone="nav" compact @click="goList">All protocols</UiButton>
     </nav>
 
     <template v-if="protocol">
@@ -731,21 +731,16 @@ function stepClass(step: ProtocolStep): string {
   margin-inline: auto;
 }
 
-/* Grey pills move between screens; the one white pill goes back to the case. */
+/* As it has always been, where the thumb expects it: Back, then the white
+   pill back to the case filling the middle, then the list. */
 .toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-2);
 }
 .toolbar-case {
-  margin-left: auto;
-}
-@media (max-width: 560px) {
-  .toolbar-case {
-    flex: 1 1 100%;
-    margin-left: 0;
-  }
+  flex: 1;
+  min-width: 0;
 }
 
 /* Plain hero, like Phase 3 and the protocol list: caption, large title. */
