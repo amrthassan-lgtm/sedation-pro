@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter } from 'vue-router';
 
 import QuickReferenceDetailView from './QuickReferenceDetailView.vue';
+import { protocolTitleHidden } from '@/composables/protocolTitle';
 import { emergencySyringe, parseVolumeMl, syringeConfig } from '@/composables/useSyringeConfig';
 import { EMERGENCY_PROTOCOLS, emergencySyringeTint, findProtocol } from '@sedation-pro/clinical';
 
@@ -30,6 +31,7 @@ function mountOn(day: string, id: string) {
 }
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('QuickReferenceDetailView drug boxes', () => {
@@ -552,5 +554,41 @@ describe('the page around the steps', () => {
     await flushPromises();
     expect(w.router.currentRoute.value.path).toBe(`/quick-reference/${ids[0]}`);
     w.unmount();
+  });
+});
+
+describe('the top bar names the protocol once the title has gone under it', () => {
+  it('follows the title across the foot of the bar, either way, and clears on leaving', () => {
+    let fire: (entry: object) => void = () => {};
+    let margin: string | undefined;
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(cb: IntersectionObserverCallback, opts?: IntersectionObserverInit) {
+          margin = opts?.rootMargin;
+          fire = (entry) =>
+            cb([entry as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const w = mountDetail('anaphylaxis');
+    const at = (top: number, isIntersecting: boolean) =>
+      fire({ isIntersecting, boundingClientRect: { top }, rootBounds: { top: 64 } });
+    // The line is the foot of the bar, not the top of the screen.
+    expect(margin).toBe('-64px 0px 0px 0px');
+    // An ordinary scroll: the title's foot crosses the line while its top is still on screen.
+    at(48, false);
+    expect(protocolTitleHidden.value).toBe(true);
+    at(70, true);
+    expect(protocolTitleHidden.value).toBe(false);
+    // Below the screen is not under the bar.
+    at(2000, false);
+    expect(protocolTitleHidden.value).toBe(false);
+    at(48, false);
+    w.unmount();
+    // Leaving the page never leaves a protocol name in the bar of another screen.
+    expect(protocolTitleHidden.value).toBe(false);
   });
 });

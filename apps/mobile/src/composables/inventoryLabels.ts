@@ -49,3 +49,23 @@ export function courseLine(course: CourseCoverage): string {
   const order = course.onOrderMg > 0 ? ` · ${course.onOrderMg} mg on order` : '';
   return `Have ${course.haveMg} mg · need ${course.needMg} mg${order}`;
 }
+
+/** Waiting for its photo: no date yet, so neither a problem nor in date. */
+export function awaitingDate(c: ClassifiedItem): boolean {
+  return Boolean(c.item.awaitingPhoto);
+}
+
+/**
+ * The pill a screen shows only by exception: null when the item is plainly
+ * fine. A date that does not read stays a problem, as the Inventory counts
+ * it, unless the item is waiting for its photo or is on its way.
+ */
+export function exceptionPill(
+  c: ClassifiedItem,
+): { readonly severity: Severity | 'empty'; readonly label: string } | null {
+  if (!awaitingDate(c) && !c.item.noExpiry && !c.status.valid && !isInbound(c)) {
+    return { severity: 'limit', label: pillLabel(c) };
+  }
+  const severity = pillSeverity(c);
+  return severity === 'safe' ? null : { severity, label: pillLabel(c) };
+}

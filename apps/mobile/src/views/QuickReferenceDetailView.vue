@@ -48,7 +48,12 @@ import {
 import { CATEGORY_LABEL, swatchFor } from '@/data/protocolCategories';
 import { protocolShortName } from '@/data/protocolNames';
 import { protocolTitleHidden } from '@/composables/protocolTitle';
-import { courseLine, formatExpiry, pillLabel, pillSeverity } from '@/composables/inventoryLabels';
+import {
+  awaitingDate,
+  courseLine,
+  exceptionPill,
+  formatExpiry,
+} from '@/composables/inventoryLabels';
 import { CASE_PHASE_ROUTE, CASE_PHASE_SHORT, useSessionStore } from '@/stores/session';
 
 interface Props {
@@ -127,19 +132,12 @@ function courseShort(name: string): string | null {
 
 /** The devices this protocol depends on (LMA sizes, King, NPAs), linked by id. */
 const kit = computed(() => (protocol.value ? inventory.equipmentFor(protocol.value.id) : []));
-/** The Inventory's own pill for an item, shown here only when it is not plain "OK". */
-function kitPill(c: ClassifiedItem): Issue | null {
-  const severity = pillSeverity(c);
-  return severity === 'safe' ? null : { severity, label: pillLabel(c) };
-}
-/** An item with no date to read is neither a problem nor in date. */
-function undated(c: ClassifiedItem): boolean {
-  return kitPill(c)?.label === 'No date';
-}
-const kitIssues = computed(() => kit.value.filter((c) => kitPill(c) !== null && !undated(c)));
-const kitUndated = computed(() => kit.value.filter(undated).length);
+const kitIssues = computed(() =>
+  kit.value.filter((c) => exceptionPill(c) !== null && !awaitingDate(c)),
+);
+const kitUndated = computed(() => kit.value.filter(awaitingDate).length);
 const kitTone = computed(() => {
-  if (kitIssues.value.some((c) => kitPill(c)?.severity !== 'caution')) return 'danger';
+  if (kitIssues.value.some((c) => exceptionPill(c)?.severity !== 'caution')) return 'danger';
   if (kitIssues.value.length > 0) return 'warn';
   return kitUndated.value > 0 ? 'muted' : 'good';
 });
@@ -163,7 +161,7 @@ const kitSummary = computed(() => {
   return n === 1 ? 'In date' : 'All in date';
 });
 function kitDesc(c: ClassifiedItem): string {
-  return c.item.noExpiry || undated(c)
+  return c.item.noExpiry || awaitingDate(c)
     ? c.item.description
     : `${c.item.description} · Exp ${formatExpiry(c.item.expiresOn)}`;
 }
@@ -365,12 +363,16 @@ const titleEl = ref<HTMLElement | null>(null);
 let titleWatch: IntersectionObserver | null = null;
 onMounted(() => {
   if (typeof IntersectionObserver === 'undefined' || titleEl.value === null) return;
+  // The line the title passes under: the foot of the top bar.
+  const bar = document.querySelector('.sticky-bar')?.getBoundingClientRect().bottom ?? 64;
   titleWatch = new IntersectionObserver(
     ([entry]) => {
-      if (entry)
-        protocolTitleHidden.value = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+      if (entry === undefined) return;
+      // Out of sight above that line, not below the screen.
+      const line = entry.rootBounds?.top ?? bar;
+      protocolTitleHidden.value = !entry.isIntersecting && entry.boundingClientRect.top < line;
     },
-    { rootMargin: '-80px 0px 0px 0px', threshold: 0 },
+    { rootMargin: `-${Math.round(bar)}px 0px 0px 0px`, threshold: 0 },
   );
   titleWatch.observe(titleEl.value);
 });
@@ -473,8 +475,10 @@ function stepClass(step: ProtocolStep): string {
             <template #leading><span class="dot dot--none" /></template>
             <span class="row-title">{{ c.item.drug }}</span>
             <span class="row-sub">{{ kitDesc(c) }}</span>
-            <template v-if="kitPill(c)" #trailing>
-              <UiStatusPill :severity="kitPill(c)!.severity">{{ kitPill(c)!.label }}</UiStatusPill>
+            <template v-if="exceptionPill(c)" #trailing>
+              <UiStatusPill :severity="exceptionPill(c)!.severity">{{
+                exceptionPill(c)!.label
+              }}</UiStatusPill>
             </template>
           </UiListRow>
         </div>
