@@ -24,17 +24,22 @@ export function doseRangeOf(callout: EmergencyDrugCallout): DoseRange {
 }
 
 /**
- * A number of minutes a protocol step states, read from the step's own
- * words (`/(\d+) min, not better/`). Throws when the step no longer says it,
- * so a scenario never keeps timing a wait the protocol has changed.
+ * A number a protocol step states, read from the step's own words
+ * (`/SpO₂ under (\d+)%/`). Throws when the step no longer says it, so a
+ * scenario never keeps acting on a figure the protocol has changed.
  */
-export function minutesInStep(protocolId: string, stepIncludes: string, pattern: RegExp): number {
+export function numberInStep(protocolId: string, stepIncludes: string, pattern: RegExp): number {
   const step = findProtocol(protocolId)?.steps.find((s) => s.text.includes(stepIncludes));
-  const minutes = Number(step ? pattern.exec(step.text)?.[1] : undefined);
-  if (!Number.isFinite(minutes)) {
+  const value = Number(step ? pattern.exec(step.text)?.[1] : undefined);
+  if (!Number.isFinite(value)) {
     throw new Error(`Step "${stepIncludes}" in "${protocolId}" no longer states ${pattern}`);
   }
-  return minutes;
+  return value;
+}
+
+/** A wait a protocol step states, in minutes (`/(\d+) min, not better/`). */
+export function minutesInStep(protocolId: string, stepIncludes: string, pattern: RegExp): number {
+  return numberInStep(protocolId, stepIncludes, pattern);
 }
 
 /** Float noise from repeated draws must not turn a correct 0.3 ml into a low dose. */
