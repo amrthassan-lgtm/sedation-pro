@@ -975,11 +975,6 @@ function onNaloxone() {
   font-family: var(--font-mono);
   letter-spacing: 0.2px;
 }
-.drug-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--sp-2);
-}
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

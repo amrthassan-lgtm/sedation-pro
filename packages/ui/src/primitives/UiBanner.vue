@@ -5,17 +5,20 @@ interface Props {
   tone?: BannerTone;
   title?: string | undefined;
   icon?: string | undefined;
+  /** Tighter padding, for a notice inside a box that already has its own. */
+  compact?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   tone: 'neutral',
   title: undefined,
   icon: undefined,
+  compact: false,
 });
 </script>
 
 <template>
-  <div class="ui-banner" :class="`ui-banner--${props.tone}`">
+  <div class="ui-banner" :class="[`ui-banner--${props.tone}`, { 'is-compact': props.compact }]">
     <span v-if="props.icon" class="ui-banner-icon" aria-hidden="true">{{ props.icon }}</span>
     <div class="ui-banner-body">
       <p v-if="props.title" class="ui-banner-title">{{ props.title }}</p>
@@ -33,6 +36,10 @@ const props = withDefaults(defineProps<Props>(), {
   border-radius: var(--r-md);
   /* The tinted variant fill carries the meaning — no border. */
   background: var(--color-surface);
+}
+.ui-banner.is-compact {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
 }
 .ui-banner-icon {
   font-size: 16px;

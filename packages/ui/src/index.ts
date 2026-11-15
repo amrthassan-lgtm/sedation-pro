@@ -3,18 +3,22 @@ export type {
   BannerTone,
   BpValue,
   ChipOption,
+  ListRowDisclosure,
+  PillButtonTone,
   SelectOption,
   TimerPillStatus,
 } from './primitive-types';
 
 // Layout
 export { default as UiCard } from './primitives/UiCard.vue';
+export { default as UiListRow } from './primitives/UiListRow.vue';
 export { default as UiRow } from './primitives/UiRow.vue';
 export { default as UiStack } from './primitives/UiStack.vue';
 
 // Action
 export { default as UiButton } from './primitives/UiButton.vue';
 export { default as UiDrugButton } from './primitives/UiDrugButton.vue';
+export { default as UiPillButton } from './primitives/UiPillButton.vue';
 
 // Form
 export { default as UiBpInput } from './primitives/UiBpInput.vue';
@@ -43,4 +47,4 @@ export { default as UiTimerPill } from './primitives/UiTimerPill.vue';
 export { default as UiModal } from './primitives/UiModal.vue';
 
 /** Pinned semver for the UI primitives library. */
-export const UI_LIB_VERSION = '0.1.0';
+export const UI_LIB_VERSION = '0.2.0';

@@ -92,6 +92,8 @@
   --color-danger-soft: rgba(251, 113, 133, 0.12);
   --color-crisis: #ef4444;
   --color-crisis-soft: rgba(239, 68, 68, 0.14);
+  /* The foot of the CALL 911 gradient: white text on it reads at 6.5:1. */
+  --color-crisis-deep: #b91c1c;
 
   /* Drug-tone palette — fixed identities used by buttons, pills, swatches.
    *

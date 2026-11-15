@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
@@ -12,10 +14,12 @@ import {
   UiDrugButton,
   UiDrugSwatch,
   UiField,
+  UiListRow,
   UiHeightInput,
   UiModal,
   UiNumberInput,
   UiPercentBar,
+  UiPillButton,
   UiRow,
   UiSelect,
   UiStack,
@@ -73,9 +77,14 @@ describe('@sedation-pro/ui', () => {
     w(UiCard, { tint: 'ph1', active: true });
     w(UiRow, { gap: 3, justify: 'between' });
     w(UiStack, { gap: 4, align: 'start' });
+    w(UiListRow);
+    w(UiListRow, { interactive: true, chevron: true, inset: 22 });
+    w(UiListRow, { interactive: true, disclosure: 'open' });
 
     // Action
     w(UiButton, { tone: 'primary' });
+    w(UiPillButton);
+    w(UiPillButton, { tone: 'key', disabled: true, block: true });
     w(UiButton, { state: 'locked' });
     w(UiButton, { state: 'logged', loggedAt: '10:23' });
     w(UiDrugButton, { tone: 'versed', name: 'Versed', dose: '1 mg', sub: '0.2 ml' });
@@ -124,6 +133,7 @@ describe('@sedation-pro/ui', () => {
       drawnMl: 2,
       color: '#facc15',
     });
+    w(UiSyringe, { label: 'Atropine', capacityMl: 3, drawnMl: 1, color: 'green', bare: true });
 
     // Health-style stat card variants.
     w(UiStatCard, {
@@ -453,5 +463,113 @@ describe('@sedation-pro/ui', () => {
       expect(wrapper.classes()).toContain(`ui-percent-bar--${severity}`);
       wrapper.unmount();
     }
+  });
+});
+
+describe('UiSyringe bare', () => {
+  it('drops its frame and its name when the box around it already names the drug', () => {
+    const framed = mount(UiSyringe, {
+      props: { label: 'Atropine', capacityMl: 3, drawnMl: 1, color: 'green' },
+    });
+    const bare = mount(UiSyringe, {
+      props: {
+        label: 'Atropine',
+        capacityMl: 3,
+        drawnMl: 1,
+        color: 'green',
+        bare: true,
+        caption: 'Draw 1.0 ml',
+      },
+    });
+    expect(framed.find('.syringe-label').text()).toBe('Atropine');
+    expect(bare.find('.syringe-label').exists()).toBe(false);
+    expect(bare.classes()).toContain('is-bare');
+    // The drawing still says what it shows, for a screen reader and for the eye.
+    expect(bare.find('svg').attributes('aria-label')).toContain('Atropine');
+    expect(bare.text()).toContain('Draw 1.0 ml');
+    framed.unmount();
+    bare.unmount();
+  });
+});
+
+describe('UiPillButton', () => {
+  it('is a button, grey (nav) by default and white (key) when asked', () => {
+    const nav = mount(UiPillButton, { slots: { default: 'Unlock' } });
+    const key = mount(UiPillButton, { props: { tone: 'key' }, slots: { default: 'Back to case' } });
+    expect(nav.element.tagName).toBe('BUTTON');
+    expect(nav.attributes('type')).toBe('button');
+    expect(nav.classes()).toContain('ui-pill-btn--nav');
+    expect(key.classes()).toContain('ui-pill-btn--key');
+    expect(nav.text()).toBe('Unlock');
+    nav.unmount();
+    key.unmount();
+  });
+
+  it('emits click, and not when disabled', async () => {
+    const on = mount(UiPillButton, { slots: { default: 'Go' } });
+    await on.trigger('click');
+    expect(on.emitted('click')).toHaveLength(1);
+    const off = mount(UiPillButton, { props: { disabled: true }, slots: { default: 'Go' } });
+    await off.trigger('click');
+    expect(off.emitted('click')).toBeUndefined();
+    on.unmount();
+    off.unmount();
+  });
+
+  it('a disabled key pill is disabled and keeps its tone class', () => {
+    const off = mount(UiPillButton, { props: { tone: 'key', disabled: true } });
+    expect(off.attributes('disabled')).toBeDefined();
+    expect(off.classes()).toContain('ui-pill-btn--key');
+    off.unmount();
+  });
+
+  it('its stylesheet sends a disabled pill back to the grey family, never a faded white slab', () => {
+    // happy-dom applies no scoped CSS, so the rule itself is what is checked.
+    const sfc = readFileSync(resolve(__dirname, 'primitives/UiPillButton.vue'), 'utf8');
+    const rule = /\.ui-pill-btn:disabled \{([^}]*)\}/.exec(sfc)?.[1] ?? '';
+    expect(rule).toContain('background: var(--color-surface-elevated)');
+    expect(rule).not.toContain('opacity');
+    expect(sfc).toMatch(/min-height: 44px/);
+  });
+});
+
+describe('UiListRow', () => {
+  it('is a plain row by default, and a button with a chevron when it opens something', async () => {
+    const plain = mount(UiListRow, { slots: { default: 'Equipment' } });
+    expect(plain.element.tagName).toBe('DIV');
+    expect(plain.find('.ui-list-row-chevron').exists()).toBe(false);
+    await plain.trigger('click');
+    expect(plain.emitted('click')).toBeUndefined();
+
+    const link = mount(UiListRow, {
+      props: { interactive: true, chevron: true, inset: 22 },
+      slots: { default: 'Anaphylaxis', leading: '<i class="dot" />', trailing: '2' },
+    });
+    expect(link.element.tagName).toBe('BUTTON');
+    expect(link.find('.ui-list-row-leading .dot').exists()).toBe(true);
+    expect(link.find('.ui-list-row-trailing').text()).toBe('2');
+    expect(link.find('.ui-list-row-chevron').exists()).toBe(true);
+    expect(link.attributes('style')).toContain('--ui-list-row-inset: 22px');
+    await link.trigger('click');
+    expect(link.emitted('click')).toHaveLength(1);
+    plain.unmount();
+    link.unmount();
+  });
+});
+
+describe('UiListRow disclosure', () => {
+  it('turns its chevron and says whether it is open; a plain row says nothing', () => {
+    const open = mount(UiListRow, { props: { interactive: true, disclosure: 'open' } });
+    const closed = mount(UiListRow, { props: { interactive: true, disclosure: 'closed' } });
+    const plain = mount(UiListRow, { props: { interactive: true } });
+    expect(open.attributes('aria-expanded')).toBe('true');
+    expect(open.find('.ui-list-row-chevron').classes()).toContain('is-open');
+    expect(closed.attributes('aria-expanded')).toBe('false');
+    expect(closed.find('.ui-list-row-chevron').classes()).not.toContain('is-open');
+    expect(plain.attributes('aria-expanded')).toBeUndefined();
+    expect(plain.find('.ui-list-row-chevron').exists()).toBe(false);
+    open.unmount();
+    closed.unmount();
+    plain.unmount();
   });
 });

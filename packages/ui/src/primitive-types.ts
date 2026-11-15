@@ -15,6 +15,12 @@ export type BannerTone = Severity | 'info' | 'neutral';
  *  neutral, no tone. The other three are timer-driven once a dose is logged. */
 export type TimerPillStatus = 'idle' | 'cooling' | 'ramping' | 'ready';
 
+/** `nav`: the grey inline pill. `key`: the one white inline action on a screen. */
+export type PillButtonTone = 'nav' | 'key';
+
+/** State of a `<UiListRow>` that shows or hides the rows under it. */
+export type ListRowDisclosure = 'open' | 'closed';
+
 /** Paired blood-pressure value used by `<UiBpInput>`. */
 export interface BpValue {
   readonly sbp: number | null;

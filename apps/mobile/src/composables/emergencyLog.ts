@@ -94,6 +94,48 @@ function pillsFor(drug: EmergencyDrugCallout): ReadonlyArray<LogPill> {
   ];
 }
 
+export interface DoseRow {
+  readonly label: string;
+  readonly value: string;
+}
+
+/** What to draw, as one list: the table's rows, or the single dose and its volume. */
+export function doseRows(drug: EmergencyDrugCallout): ReadonlyArray<DoseRow> {
+  if (drug.drawTable && drug.drawTable.length > 0) {
+    return drug.drawTable.map((r) => ({ label: r.label, value: r.ml }));
+  }
+  return drug.volume ? [{ label: drug.dose, value: drug.volume }] : [];
+}
+
+const VOLUME = /^[\d.]+ ml\b/;
+
+/**
+ * Whether a step's pills say everything its dose rows say, row for row: the
+ * row's dose and its volume on the pill in the same place. With logging on
+ * the page then shows the list once, as pills. A table that says more than
+ * its pills (one dose at two strengths, one dose by two routes) keeps its
+ * rows, and so does a reversal, whose pills are drawn from fixed doses. A
+ * table by weight keeps its rows too: the weight is what the eye looks up.
+ */
+export function pillsCoverTable(step: ProtocolStep): boolean {
+  const drug = step.drug;
+  if (drug === undefined || reversalsFor(step).length > 0) return false;
+  const rows = doseRows(drug);
+  if (rows.some((row) => /\blb\b/.test(row.label))) return false;
+  const pills = logPills(drug, step.text);
+  if (rows.length === 0 || pills.length !== rows.length) return false;
+  return rows.every((row, i) => {
+    const pill = pills[i];
+    const ml = VOLUME.exec(row.value)?.[0];
+    return (
+      pill !== undefined &&
+      ml !== undefined &&
+      row.label.includes(pill.dose) &&
+      pill.sub.includes(ml)
+    );
+  });
+}
+
 export type ReversalDrug = 'naloxone' | 'flumazenil';
 
 /**
@@ -162,6 +204,12 @@ export function reversalsFor(step: ProtocolStep): ReadonlyArray<ReversalPill> {
 }
 
 export type TimeStamp = '911 called' | 'CPR started' | 'Shock given' | 'EMS arrived';
+
+/**
+ * The two times that belong to the call itself. They sit on the Call 911
+ * card, so the steps carry only CPR and shocks.
+ */
+export const HELP_STAMPS: ReadonlyArray<TimeStamp> = ['911 called', 'EMS arrived'];
 
 /** A shock can be given more than once; the others happen once. */
 export const REPEATABLE_STAMPS: ReadonlySet<TimeStamp> = new Set(['Shock given']);

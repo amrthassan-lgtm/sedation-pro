@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { EXPIRY_WARN_DAYS, type Severity } from '@sedation-pro/clinical';
+import { EXPIRY_WARN_DAYS } from '@sedation-pro/clinical';
 import { UiBanner, UiCard, UiStack, UiStatCard, UiStatusPill, UiTextInput } from '@sedation-pro/ui';
 
 import type { InventoryItem } from '@/data/emergency-inventory';
@@ -11,6 +11,13 @@ import {
   useInventoryStatus,
   type ClassifiedItem,
 } from '@/composables/useInventoryStatus';
+import {
+  courseLine,
+  formatExpiry,
+  isInbound,
+  pillLabel,
+  pillSeverity,
+} from '@/composables/inventoryLabels';
 
 const inv = useInventoryStatus();
 
@@ -104,41 +111,6 @@ function groupsFor(entries: ReadonlyArray<ClassifiedItem>) {
 }
 
 // -------- Pills and lines -------------------------------------------------------
-function isInbound(c: ClassifiedItem): boolean {
-  return Boolean(c.item.onOrder) && !c.status.valid;
-}
-
-function pillSeverity(c: ClassifiedItem): Severity | 'empty' {
-  if (c.item.noExpiry) return 'safe';
-  if (isInbound(c)) return 'empty';
-  if (!c.status.valid) return 'empty';
-  return c.status.severity;
-}
-
-function pillLabel(c: ClassifiedItem): string {
-  if (c.item.awaitingPhoto) return 'No date';
-  if (c.item.noExpiry) return 'On hand';
-  if (isInbound(c)) return 'On order';
-  if (!c.status.valid) return 'No date';
-  if (c.status.daysLeft < 0) return 'Expired';
-  if (c.status.severity === 'caution') return `${c.status.daysLeft} d`;
-  return 'OK';
-}
-
-function formatExpiry(expiresOn: string): string {
-  const match = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(expiresOn);
-  if (!match) return '—';
-  const day = match[3];
-  return new Date(
-    Date.UTC(Number(match[1]), Number(match[2]) - 1, day === undefined ? 1 : Number(day)),
-  ).toLocaleDateString(undefined, {
-    ...(day === undefined ? {} : { day: 'numeric' }),
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-}
-
 function metaLine(item: InventoryItem): string {
   return [
     item.lot === '' ? 'Lot —' : `Lot ${item.lot}`,
@@ -251,13 +223,7 @@ function openProtocol(id: string): void {
             <span class="inv-main">
               <span class="inv-drug">{{ course.drug }}</span>
               <span class="inv-desc">{{ course.basis }}</span>
-              <span class="inv-meta"
-                >Have {{ course.haveMg }} mg · need {{ course.needMg }} mg<template
-                  v-if="course.onOrderMg > 0"
-                >
-                  · {{ course.onOrderMg }} mg on order</template
-                ></span
-              >
+              <span class="inv-meta">{{ courseLine(course) }}</span>
             </span>
             <span class="inv-pills">
               <UiStatusPill severity="limit">Short</UiStatusPill>
