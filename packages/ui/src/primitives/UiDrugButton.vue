@@ -15,6 +15,14 @@ interface Props {
   state?: ActionState;
   /** Time shown at the bottom of the button after the dose was logged. */
   loggedAt?: string | undefined;
+  /**
+   * Shown at the bottom while the button stays tappable: the last time a
+   * repeatable dose was logged ("✓ 2:14 PM · ×2"). `loggedAt` is for a
+   * button that locks once logged.
+   */
+  lastAt?: string | undefined;
+  /** A CSS colour for the top stripe, for a drug with no tone of its own. */
+  tint?: string | undefined;
   /** Disable interactions (e.g. diazepam locked because OSA not selected yet). */
   disabled?: boolean;
   /**
@@ -36,6 +44,8 @@ const props = withDefaults(defineProps<Props>(), {
   state: 'idle',
   sub: undefined,
   loggedAt: undefined,
+  lastAt: undefined,
+  tint: undefined,
   disabled: false,
   compact: false,
   cooldownMs: 1200,
@@ -74,6 +84,9 @@ const renderState = computed<ActionState>(() => {
       `ui-drug-btn--${renderState}`,
       { 'is-disabled': props.disabled, 'is-compact': props.compact },
     ]"
+    :style="
+      props.tint ? { backgroundImage: `linear-gradient(${props.tint}, ${props.tint})` } : undefined
+    "
     :disabled="props.disabled || renderState === 'locked'"
     @click="onClick"
   >
@@ -83,6 +96,7 @@ const renderState = computed<ActionState>(() => {
     <span v-if="renderState === 'logged' && props.loggedAt" class="ui-drug-btn-last">
       {{ props.loggedAt }}
     </span>
+    <span v-else-if="props.lastAt" class="ui-drug-btn-last">{{ props.lastAt }}</span>
     <span v-if="renderState === 'locked'" class="ui-drug-btn-overlay" aria-hidden="true">
       <span class="ui-drug-btn-check">✓</span>
     </span>

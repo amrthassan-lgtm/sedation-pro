@@ -14,6 +14,7 @@ import {
   type LocalCombinedResult,
 } from '@sedation-pro/clinical';
 import { monitorTraceDescription } from '@/config/site';
+import { RESCUE_EVENTS } from './emergencyLog';
 import { fmtClock as clock, parseCalendarDay } from './format';
 
 /** Single row in the chronological table of the printable note. */
@@ -278,6 +279,9 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
 
     // -------- Recovery + discharge -----------------------------------------
 
+    // Doses and times logged from a protocol page. The note describes none
+    // of them; it only must not contradict them.
+    const hasRescueEvents = events.value.some((e) => RESCUE_EVENTS.has(e.event));
     const recoveryRows: Array<readonly [string, string]> = [
       [
         'Recovery vitals',
@@ -330,7 +334,10 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       [
         'Sedation complications',
         recovery.sedationComplications.trim() === ''
-          ? 'None'
+          ? // A blank box must not print "None" above a record that shows otherwise.
+            hasRescueEvents
+            ? 'See chronological record'
+            : 'None'
           : recovery.sedationComplications.trim(),
       ],
       [
@@ -492,7 +499,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
     // Para 6 — Recovery + discharge
     {
       const sentences: string[] = [];
-      sentences.push('Recovery proceeded without complication.');
+      if (!hasRescueEvents) sentences.push('Recovery proceeded without complication.');
       const tolerance: string[] = [];
       if (recovery.ambulatory) tolerance.push('ambulatory');
       if (recovery.orientedX3) tolerance.push('oriented ×3');
@@ -529,7 +536,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       if (rx !== '') {
         sentences.push(`Prescriptions provided: ${rx}.`);
       }
-      narrative.push(sentences.join(' '));
+      if (sentences.length > 0) narrative.push(sentences.join(' '));
     }
 
     // -------- Encounter kind (derived) ------------------------------------

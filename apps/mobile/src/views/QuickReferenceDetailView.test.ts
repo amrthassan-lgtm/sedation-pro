@@ -297,3 +297,14 @@ describe('step drawings', () => {
     w.unmount();
   });
 });
+
+describe('logging from the page', () => {
+  it('shows no pill and no time stamp until a case is open: the page reads as it always did', () => {
+    for (const id of ['anaphylaxis', 'vfib_vtach', 'seizure']) {
+      const w = mountDetail(id);
+      expect(w.find('.log-pills').exists(), id).toBe(false);
+      expect(w.find('.log-stamps').exists(), id).toBe(false);
+      w.unmount();
+    }
+  });
+});
