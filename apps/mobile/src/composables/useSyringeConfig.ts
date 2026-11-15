@@ -1,5 +1,6 @@
 import {
   DEFAULT_FORMULARY,
+  emergencySyringeTint,
   type EmergencyDrugCallout,
   type Formulary,
 } from '@sedation-pro/clinical';
@@ -71,16 +72,11 @@ export function parseVolumeMl(volume: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/**
- * Emergency-only drugs that get a syringe drawing on their protocol card,
- * tinted like the label on the vial. They are not formulary drugs (nothing
- * on the sedation tray), so they cannot borrow a tray colour.
- */
-const EMERGENCY_TINTS: Readonly<Record<string, string>> = {
-  // Purple: the epinephrine ampule label.
-  Epinephrine: 'var(--color-purple)',
-  'Push-dose Epinephrine': 'var(--color-purple)',
-};
+/** "0.3-0.5 ml", with or without a trailing note in brackets: the two ends as written. */
+function parseVolumeRange(volume: string | undefined): { from: string; to: string } | null {
+  const m = /^([\d.]+)-([\d.]+) ml(?: \([^)]+\))?$/i.exec(volume ?? '');
+  return m?.[1] !== undefined && m[2] !== undefined ? { from: m[1], to: m[2] } : null;
+}
 
 export interface SyringeDrawing {
   readonly capacityMl: number;
@@ -92,15 +88,18 @@ export interface SyringeDrawing {
 }
 
 /**
- * Drawing for an emergency-only callout, or `null` when it has none.
+ * Drawing for an emergency-only callout, or `null` when it has none. The
+ * colour is the drug's family (`emergencySyringeTint`), shared with the
+ * training simulator's cart.
  *
- * A dose range draws its first row, the usual starting dose, and the caption
+ * A dose range draws its low end, the usual starting dose, and the caption
  * names the top of the range, so the picture never reads as the only answer.
  * A MIX FIRST callout draws the finished mix filling its syringe: that is
- * what is in the hand, and the dose is pushed from it.
+ * what is in the hand, and the dose is pushed from it. A dose by weight has
+ * no starting volume to draw, so its table stands alone.
  */
 export function emergencySyringe(drug: EmergencyDrugCallout): SyringeDrawing | null {
-  const color = EMERGENCY_TINTS[drug.name];
+  const color = emergencySyringeTint(drug.name, drug.mixFirst !== undefined);
   if (color === undefined || drug.syringeMl === undefined || drug.device !== undefined) {
     return null;
   }
@@ -114,6 +113,7 @@ export function emergencySyringe(drug: EmergencyDrugCallout): SyringeDrawing | n
       caption: `Mixed ${drug.syringeMl.toFixed(1)} ml · push ${drug.volume ?? ''}`.trim(),
     };
   }
+  if (/by weight/i.test(drug.volume ?? '')) return null;
   const exact = parseVolumeMl(drug.volume);
   if (exact !== null) {
     return {
@@ -124,16 +124,13 @@ export function emergencySyringe(drug: EmergencyDrugCallout): SyringeDrawing | n
       caption: `Draw ${drug.volume}`,
     };
   }
-  const first = drug.drawTable?.[0];
-  const start = parseVolumeMl(first?.ml);
-  if (first === undefined || start === null) return null;
-  const last = drug.drawTable?.at(-1);
-  const upTo = last !== undefined && last !== first ? ` (up to ${last.ml})` : '';
+  const range = parseVolumeRange(drug.volume);
+  if (range === null) return null;
   return {
     capacityMl: drug.syringeMl,
-    drawnMl: start,
+    drawnMl: parseFloat(range.from),
     color,
     concentration,
-    caption: `Draw ${first.ml}${upTo}`,
+    caption: `Draw ${range.from} ml (up to ${range.to} ml)`,
   };
 }

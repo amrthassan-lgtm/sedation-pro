@@ -1,4 +1,4 @@
-import { DEFAULT_FORMULARY } from '@sedation-pro/clinical';
+import { DEFAULT_FORMULARY, emergencySyringeTint } from '@sedation-pro/clinical';
 
 import type { StockVial } from './syringe';
 import type { ProtocolRef } from './types';
@@ -208,7 +208,8 @@ export interface CartDevice {
   readonly from: ReadonlyArray<ProtocolRef>;
 }
 
-const EPI_TINT = 'var(--color-purple)';
+const NEUTRAL_TINT = 'var(--color-slate)';
+const EPI_TINT = emergencySyringeTint('Epinephrine') ?? NEUTRAL_TINT;
 
 export const CART_DEVICES: ReadonlyArray<CartDevice> = [
   {
@@ -262,8 +263,6 @@ export interface CartVial extends StockVial {
   readonly callouts: ReadonlyArray<string>;
 }
 
-const NEUTRAL_TINT = 'var(--color-slate)';
-
 /** Tray drugs take their concentration and tape colour from the formulary, so the two cannot drift. */
 function fromFormulary(
   id: string,
@@ -289,6 +288,7 @@ function fromFormulary(
   };
 }
 
+/** An emergency-only vial: its colour is its family's, the one the clinical app draws. */
 function vial(
   key: string,
   name: string,
@@ -296,8 +296,9 @@ function vial(
   mcgPerMl: number,
   callouts: ReadonlyArray<string>,
   aliases: ReadonlyArray<string> = [],
-  tint: string = NEUTRAL_TINT,
 ): CartVial {
+  // A vial is stock strength, so a pressor is the solid purple here.
+  const tint = emergencySyringeTint(callouts[0] ?? '') ?? NEUTRAL_TINT;
   return { key, name, presentation, mcgPerMl, tint, callouts, aliases };
 }
 
@@ -330,7 +331,6 @@ export const CART_VIALS: ReadonlyArray<CartVial> = [
     1_000,
     ['Epinephrine', 'Push-dose Epinephrine'],
     ['epi', 'adrenaline', 'ampule', 'adrenalin'],
-    EPI_TINT,
   ),
   fromFormulary('fentanyl', 'fentanyl', 'Fentanyl', '50 mcg/ml', ['Fentanyl'], []),
   fromFormulary(

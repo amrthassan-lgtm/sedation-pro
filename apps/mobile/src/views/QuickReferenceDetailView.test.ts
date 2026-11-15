@@ -5,7 +5,7 @@ import { createMemoryHistory, createRouter } from 'vue-router';
 
 import QuickReferenceDetailView from './QuickReferenceDetailView.vue';
 import { emergencySyringe, parseVolumeMl, syringeConfig } from '@/composables/useSyringeConfig';
-import { findProtocol } from '@sedation-pro/clinical';
+import { EMERGENCY_PROTOCOLS, emergencySyringeTint, findProtocol } from '@sedation-pro/clinical';
 
 function mountDetail(id: string) {
   setActivePinia(createPinia());
@@ -168,11 +168,132 @@ describe('epinephrine syringe drawings', () => {
     expect(d?.caption).toBe('Mixed 10.0 ml · push 1.0-2.0 ml');
   });
 
+  it('the ampule is solid purple and the diluted mix is pale', () => {
+    expect(emergencySyringe(epi[1]!)?.color).toBe('var(--color-purple)');
+    expect(emergencySyringe(push!)?.color).toBe('var(--color-purple-pale)');
+  });
+
   it('renders both drawings on the anaphylaxis card, and the tray drugs keep theirs', () => {
     const w = mountDetail('anaphylaxis');
     const captions = w.findAll('figure.syringe').map((n) => n.text());
     expect(captions.some((t) => t.includes('Draw 0.3 ml (up to 0.5 ml)'))).toBe(true);
     expect(captions.some((t) => t.includes('Mixed 10.0 ml'))).toBe(true);
+    w.unmount();
+  });
+});
+
+describe('syringe drawings for the other emergency drugs', () => {
+  const callouts = EMERGENCY_PROTOCOLS.flatMap((p) =>
+    p.steps.flatMap((s) => (s.drug === undefined ? [] : [{ protocol: p.id, drug: s.drug }])),
+  );
+  const drawingOf = (protocol: string, name: string) => {
+    const hit = callouts.find((c) => c.protocol === protocol && c.drug.name === name);
+    if (hit === undefined) throw new Error(`${protocol} has no ${name} callout`);
+    return emergencySyringe(hit.drug);
+  };
+
+  it('every drug drawn into a syringe has a colour, from the tray or from its family', () => {
+    for (const { protocol, drug } of callouts) {
+      if (drug.syringeMl === undefined || drug.device !== undefined) continue;
+      const colour =
+        syringeConfig(drug.name)?.color ??
+        emergencySyringeTint(drug.name, drug.mixFirst !== undefined);
+      expect(colour, `${protocol}: ${drug.name}`).toBeDefined();
+    }
+  });
+
+  it('no drawing shows more than its syringe holds', () => {
+    for (const { protocol, drug } of callouts) {
+      const d = emergencySyringe(drug);
+      if (d === null) continue;
+      expect(d.drawnMl, `${protocol}: ${drug.name}`).toBeGreaterThan(0);
+      expect(d.drawnMl, `${protocol}: ${drug.name}`).toBeLessThanOrEqual(d.capacityMl);
+    }
+  });
+
+  it('the two hypotension mixes fill their 10 ml syringe in pale purple', () => {
+    for (const name of ['Ephedrine', 'Phenylephrine']) {
+      const d = drawingOf('hypotension', name);
+      expect(d, name).toMatchObject({
+        capacityMl: 10,
+        drawnMl: 10,
+        color: 'var(--color-purple-pale)',
+      });
+    }
+    expect(drawingOf('hypotension', 'Ephedrine')?.caption).toBe('Mixed 10.0 ml · push 0.5-1.0 ml');
+    expect(drawingOf('hypotension', 'Phenylephrine')?.caption).toBe('Mixed 10.0 ml · push 1.0 ml');
+  });
+
+  it('succinylcholine is red at its starting volume, atropine is green', () => {
+    expect(drawingOf('laryngospasm', 'Succinylcholine')).toMatchObject({
+      capacityMl: 3,
+      drawnMl: 1,
+      color: 'var(--color-red)',
+      caption: 'Draw 1.0 ml (up to 2.0 ml)',
+    });
+    expect(drawingOf('bradycardia', 'Atropine')).toMatchObject({
+      capacityMl: 3,
+      drawnMl: 1,
+      color: 'var(--color-green)',
+      caption: 'Draw 1.0 ml (vial)',
+    });
+  });
+
+  it('the arrest dose of amiodarone is drawn at twice the 150 mg dose', () => {
+    expect(drawingOf('afib', 'Amiodarone')).toMatchObject({ drawnMl: 3, caption: 'Draw 3.0 ml' });
+    expect(drawingOf('vfib_vtach', 'Amiodarone')).toMatchObject({
+      drawnMl: 6,
+      caption: 'Draw 6.0 ml',
+    });
+  });
+
+  it('dexamethasone is drawn for the stocked strength, never from the other strength in its table', () => {
+    expect(drawingOf('anaphylaxis', 'Dexamethasone')).toMatchObject({
+      drawnMl: 2,
+      caption: 'Draw 2.0 ml (up to 3.0 ml)',
+    });
+  });
+
+  it('a dose by weight has no drawing: no single volume is right for every patient', () => {
+    expect(drawingOf('stable_vtach', 'Cardiac Lidocaine')).toBeNull();
+    expect(drawingOf('vfib_vtach', 'Cardiac Lidocaine')).toBeNull();
+    expect(drawingOf('intraarterial', 'Cardiac Lidocaine')?.caption).toBe(
+      'Draw 1.0 ml (up to 5.0 ml)',
+    );
+  });
+
+  it('the prefilled dextrose has none: nothing is drawn', () => {
+    expect(drawingOf('hypoglycemia', 'D50W')).toBeNull();
+  });
+});
+
+describe('step drawings', () => {
+  it("draws Larson's point under its step on the laryngospasm page, once", () => {
+    const w = mountDetail('laryngospasm');
+    const figures = w.findAll('svg.figure');
+    expect(figures.length).toBe(1);
+    expect(figures[0]!.text()).toContain('Laryngospasm');
+    const step = figures[0]!.element.closest('.step');
+    expect(step?.querySelector('.step-text')?.textContent).toContain("Larson's");
+    w.unmount();
+  });
+
+  it('draws the auto-injector inside its callout on both pages that use it', () => {
+    for (const id of ['anaphylaxis', 'bronchospasm']) {
+      const w = mountDetail(id);
+      const figures = w.findAll('svg.figure');
+      expect(figures.length, id).toBe(1);
+      expect(figures[0]!.text(), id).toContain('Red guard off');
+      const callout = figures[0]!.element.closest('.drug-callout');
+      expect(callout?.textContent, id).toContain('pull off the red guard');
+      expect(callout?.textContent, id).toContain('hold 2 seconds');
+      w.unmount();
+    }
+  });
+
+  it('a page with neither has no drawing', () => {
+    const w = mountDetail('seizure');
+    expect(w.find('svg.figure').exists()).toBe(false);
     w.unmount();
   });
 });

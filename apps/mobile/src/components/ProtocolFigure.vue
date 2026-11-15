@@ -1,0 +1,164 @@
+<script setup lang="ts">
+/**
+ * Line drawings for the two things a protocol step cannot place in words
+ * under stress: where Larson's point is, and how the auto-injector meets the
+ * thigh. Every label is a phrase from the step or callout the drawing sits
+ * under, so the picture adds a place and never an instruction.
+ */
+export type ProtocolFigureKind = 'larsons-point' | 'auto-injector';
+
+defineProps<{ kind: ProtocolFigureKind }>();
+</script>
+
+<template>
+  <svg
+    v-if="kind === 'larsons-point'"
+    class="figure"
+    viewBox="0 0 340 200"
+    role="img"
+    aria-label="Side of the head: the laryngospasm notch is behind the earlobe, between the jaw and the mastoid"
+  >
+    <path
+      class="body"
+      d="M102 215 L100 164 C90 162 76 162 68 158 C60 156 55 152 56 146 C57 141 60 139 58 135 C53 133 53 128 57 124 C52 121 52 116 56 111 C50 110 44 107 44 103 C46 97 58 86 62 80 C59 76 60 70 63 64 C62 40 80 17 110 17 C152 15 188 44 188 84 C188 108 180 124 172 138 L176 215 Z"
+    />
+    <path class="hint" d="M70 78 C75 75 81 75 85 78" />
+    <path class="hint" d="M57 124 C61 124 64 123 67 121" />
+    <path class="bone" d="M66 152 C86 158 104 154 119 146 C125 136 127 122 129 109" />
+    <path class="bone" d="M154 96 C166 99 168 115 158 125" />
+    <path
+      class="ear"
+      d="M131 82 C142 75 151 86 148 98 C146 106 142 110 139 116 C136 120 131 117 132 111 C127 104 125 88 131 82 Z"
+    />
+    <path class="hint" d="M135 87 C141 85 144 91 142 97 C141 101 138 103 137 107" />
+    <circle class="halo" cx="149" cy="118" r="11" />
+    <circle class="point" cx="149" cy="118" r="5" />
+    <path class="press" d="M186 152 L166 133" />
+    <path class="press-head" d="M158 125 L171 129 L163 138 Z" />
+    <path class="leader" d="M214 80 L166 102" />
+    <text class="label" x="220" y="84">Mastoid</text>
+    <path class="leader" d="M214 114 L162 117" />
+    <text class="label label--key" x="220" y="111">Laryngospasm</text>
+    <text class="label label--key" x="220" y="127">notch</text>
+    <path class="leader" d="M214 172 L112 150" />
+    <text class="label" x="220" y="176">Jaw</text>
+  </svg>
+
+  <svg
+    v-else
+    class="figure"
+    viewBox="0 0 340 200"
+    role="img"
+    aria-label="Auto-injector with the red guard off, pressed into the outer thigh and held for 2 seconds"
+  >
+    <path
+      class="body"
+      d="M196 -6 C188 12 184 28 184 44 C184 104 190 156 196 215 L238 215 C242 160 247 114 251 74 C255 114 260 160 264 215 L306 215 C312 156 318 104 318 44 C318 28 314 12 306 -6 Z"
+    />
+    <rect class="pen" x="100" y="88" width="76" height="44" rx="8" />
+    <rect class="pen-window" x="116" y="100" width="32" height="20" rx="4" />
+    <rect class="pen-base" x="170" y="88" width="15" height="44" rx="4" />
+    <path class="press" d="M28 110 L74 110" />
+    <path class="press-head" d="M88 110 L74 102 L74 118 Z" />
+    <rect
+      class="guard"
+      x="143"
+      y="150"
+      width="15"
+      height="36"
+      rx="4"
+      transform="rotate(-24 150 168)"
+    />
+    <path class="pulled" d="M177 136 C177 150 172 158 164 163" />
+    <text class="label label--key" x="20" y="60">Press firmly,</text>
+    <text class="label label--key" x="20" y="77">hold 2 seconds</text>
+    <text class="label" x="20" y="174">Red guard off</text>
+    <path class="leader" d="M96 24 L186 60" />
+    <text class="label" x="20" y="28">Outer thigh</text>
+  </svg>
+</template>
+
+<style scoped>
+.figure {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  margin-top: var(--sp-2);
+}
+.body {
+  fill: var(--color-surface-elevated);
+  stroke: var(--color-text-tertiary);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.ear {
+  fill: var(--color-surface-elevated);
+  stroke: var(--color-text-secondary);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.hint,
+.bone,
+.leader,
+.pulled,
+.press {
+  fill: none;
+  stroke-linecap: round;
+}
+.hint {
+  stroke: var(--color-border-strong);
+  stroke-width: 1.2;
+}
+/* What lies under the skin is dashed: the jaw's edge and the mastoid. */
+.bone {
+  stroke: var(--color-text-tertiary);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 4;
+}
+.halo {
+  fill: var(--cat-airway);
+  opacity: 0.28;
+}
+.point {
+  fill: var(--cat-airway);
+}
+.press {
+  stroke: var(--color-text-primary);
+  stroke-width: 2.4;
+}
+.press-head {
+  fill: var(--color-text-primary);
+}
+.leader {
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+}
+.pulled {
+  stroke: var(--color-text-tertiary);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+.label {
+  fill: var(--color-text-secondary);
+  font-size: 13px;
+}
+.label--key {
+  fill: var(--color-text-primary);
+  font-weight: var(--weight-semibold);
+}
+/* The pen is the object in the hand, so it is drawn solid like the syringes. */
+.pen {
+  fill: #cbd5e1;
+}
+.pen-window {
+  fill: #5d6b85;
+}
+.pen-base {
+  fill: #0d1527;
+  stroke: #a8b6cf;
+  stroke-width: 1.2;
+}
+.guard {
+  fill: var(--color-red);
+}
+</style>

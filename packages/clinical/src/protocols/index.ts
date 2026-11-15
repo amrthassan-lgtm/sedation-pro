@@ -12,3 +12,4 @@ export {
   type EmergencyProtocol,
   type ProtocolStep,
 } from './emergency';
+export { EMERGENCY_TINT_NAMES, emergencySyringeTint } from './syringe-tint';

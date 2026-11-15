@@ -32,6 +32,7 @@ import {
   syringeConfig,
   type SyringeDrawing,
 } from '@/composables/useSyringeConfig';
+import ProtocolFigure from '@/components/ProtocolFigure.vue';
 import { useInventoryStatus, type ClassifiedItem } from '@/composables/useInventoryStatus';
 import { CATEGORY_LABEL, swatchFor } from '@/data/protocolCategories';
 
@@ -263,8 +264,8 @@ function routeLine(drug: EmergencyDrugCallout): string {
 
 /**
  * Returns the syringe drawing for a callout: the sedation-tray drugs with a
- * single draw volume, plus the emergency drugs `emergencySyringe` knows
- * (epinephrine). Otherwise `null` so the template can `v-if` past it.
+ * single draw volume, plus every emergency drug `emergencySyringe` has a
+ * colour and a volume for. Otherwise `null` so the template can `v-if` past it.
  */
 function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
   const emergency = emergencySyringe(drug);
@@ -375,6 +376,7 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
             <span class="step-num">{{ index + 1 }}</span>
             <div class="step-body">
               <p class="step-text">{{ step.text }}</p>
+              <ProtocolFigure v-if="step.figure" :kind="step.figure" />
               <div v-if="step.goTo && step.goTo.length > 0" class="step-links">
                 <button
                   v-for="id in step.goTo"
@@ -429,6 +431,7 @@ function syringeFor(drug: EmergencyDrugCallout): SyringeDrawing | null {
                 >
                   {{ courseLine(step.drug.name)!.text }}
                 </p>
+                <ProtocolFigure v-if="step.drug.device === 'auto-injector'" kind="auto-injector" />
                 <UiSyringe
                   v-if="syringeFor(step.drug)"
                   compact
