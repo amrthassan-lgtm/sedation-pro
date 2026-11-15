@@ -82,7 +82,7 @@ describe('the pills a drug box offers', () => {
 
   it('a second dose that differs from the first has its own pill, saying which it is', () => {
     expect(logPills(callout('vfib_vtach', 'Amiodarone'))).toEqual([
-      { key: '300 mg', dose: '300 mg', route: 'IV', sub: '6.0 ml · 1st dose' },
+      { key: '300 mg', dose: '300 mg', route: 'IV', sub: '2 × 3.0 ml · 1st dose' },
       { key: '150 mg', dose: '150 mg', route: 'IV', sub: '3.0 ml · 2nd dose' },
     ]);
     expect(logPills(callout('hypertensive_crisis', 'Labetalol'))).toEqual([
@@ -158,8 +158,12 @@ describe('when the pills stand in for the dose rows', () => {
   });
 
   it('a second dose and a mixed push are covered by their pills', () => {
-    expect(pillsCoverTable(stepOf('vfib_vtach', 'Amiodarone'))).toBe(true);
+    expect(pillsCoverTable(stepOf('svt', 'Adenosine'))).toBe(true);
     expect(pillsCoverTable(stepOf('bradycardia', 'Push-dose Epinephrine'))).toBe(true);
+  });
+
+  it('a dose in two syringes keeps its rows: "2 × 3.0 ml" is not one volume', () => {
+    expect(pillsCoverTable(stepOf('vfib_vtach', 'Amiodarone'))).toBe(false);
   });
 
   it('a table by weight keeps its rows: the weight is what the eye looks up', () => {

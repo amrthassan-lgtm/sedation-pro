@@ -262,11 +262,16 @@ describe('syringe drawings for the other emergency drugs', () => {
     });
   });
 
-  it('the arrest dose of amiodarone is drawn at twice the 150 mg dose', () => {
-    expect(drawingOf('afib', 'Amiodarone')).toMatchObject({ drawnMl: 3, caption: 'Draw 3.0 ml' });
+  it('amiodarone fills a 3 ml syringe, and the arrest dose is two of them (owner, Nov 2026)', () => {
+    expect(drawingOf('afib', 'Amiodarone')).toMatchObject({
+      capacityMl: 3,
+      drawnMl: 3,
+      caption: 'Draw 3.0 ml',
+    });
     expect(drawingOf('vfib_vtach', 'Amiodarone')).toMatchObject({
-      drawnMl: 6,
-      caption: 'Draw 6.0 ml',
+      capacityMl: 3,
+      drawnMl: 3,
+      caption: 'Draw 3.0 ml · 2 syringes',
     });
   });
 
@@ -436,17 +441,24 @@ describe('logging from the page', () => {
         .findAll('.drug-callout')
         .filter((c) => c.find('.drug-name-text').text() === name)
         .map((c) => c.findAll('.drug-row').length);
-    // Amiodarone in arrest: 300 mg 6.0 ml and 150 mg 3.0 ml, each a pill.
-    const arrest = mountDetail('vfib_vtach');
-    expect(rowsOf(arrest, 'Amiodarone')).toEqual([2]);
-    await arrest.find('.log-unlock').trigger('click');
-    expect(rowsOf(arrest, 'Amiodarone')).toEqual([0]);
-    const subs = arrest
+    // Adenosine: 6 mg 2.0 ml and 12 mg 4.0 ml, each a pill.
+    const svt = mountDetail('svt');
+    expect(rowsOf(svt, 'Adenosine')).toEqual([2]);
+    await svt.find('.log-unlock').trigger('click');
+    expect(rowsOf(svt, 'Adenosine')).toEqual([0]);
+    const subs = svt
       .findAll('.drug-callout')
-      .find((c) => c.find('.drug-name-text').text() === 'Amiodarone')!
+      .find((c) => c.find('.drug-name-text').text() === 'Adenosine')!
       .findAll('.ui-drug-btn-sub')
       .map((d) => d.text());
-    expect(subs).toEqual(['6.0 ml · 1st dose', '3.0 ml · 2nd dose']);
+    expect(subs).toEqual(['2.0 ml · 1st dose', '4.0 ml · 2nd dose']);
+    svt.unmount();
+    // Arrest amiodarone is two syringes: its rows stay beside the pills.
+    const arrest = mountDetail('vfib_vtach');
+    await arrest.find('.log-unlock').trigger('click');
+    expect(rowsOf(arrest, 'Amiodarone')).toEqual([2]);
+    const amio = arrest.findAll('.drug-callout').find((c) => c.text().includes('Amiodarone'))!;
+    expect(amio.findAll('.drug-row-value').map((v) => v.text())).toEqual(['2 × 3.0 ml', '3.0 ml']);
     arrest.unmount();
     // Atropine on hypotension lists one dose at two strengths: one pill, both rows stay.
     const two = mountDetail('hypotension');

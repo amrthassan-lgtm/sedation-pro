@@ -855,7 +855,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Amiodarone',
           dose: '150 mg',
           route: 'IV',
-          syringeMl: 10,
+          // A whole 150 mg/3 ml vial fills a 3 ml syringe, marked every
+          // 0.1 ml, so each 0.3 ml push lands on a mark (owner, Nov 2026).
+          syringeMl: 3,
           volume: '3.0 ml',
           concentration: '50 mg/ml',
           notes:
@@ -924,7 +926,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Amiodarone',
           dose: '150 mg',
           route: 'IV',
-          syringeMl: 10,
+          // A whole 150 mg/3 ml vial fills a 3 ml syringe, marked every
+          // 0.1 ml, so each 0.3 ml push lands on a mark (owner, Nov 2026).
+          syringeMl: 3,
           volume: '3.0 ml',
           concentration: '50 mg/ml',
           notes:
@@ -954,7 +958,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Amiodarone',
           dose: '150 mg',
           route: 'IV',
-          syringeMl: 10,
+          // A whole 150 mg/3 ml vial fills a 3 ml syringe, marked every
+          // 0.1 ml, so each 0.3 ml push lands on a mark (owner, Nov 2026).
+          syringeMl: 3,
           volume: '3.0 ml',
           concentration: '50 mg/ml',
           notes:
@@ -1002,7 +1008,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Amiodarone',
           dose: '150 mg',
           route: 'IV',
-          syringeMl: 10,
+          // A whole 150 mg/3 ml vial fills a 3 ml syringe, marked every
+          // 0.1 ml, so each 0.3 ml push lands on a mark (owner, Nov 2026).
+          syringeMl: 3,
           volume: '3.0 ml',
           concentration: '50 mg/ml',
           notes:
@@ -1054,15 +1062,17 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           name: 'Amiodarone',
           dose: '300 mg',
           route: 'IV',
-          syringeMl: 10,
-          volume: '6.0 ml',
+          // Two 3 ml syringes, each a whole vial, as two prefilled syringes
+          // would be (owner, Nov 2026).
+          syringeMl: 3,
+          volume: '2 × 3.0 ml',
           concentration: '50 mg/ml',
           drawTable: [
-            { label: '300 mg (1st dose)', ml: '6.0 ml' },
+            { label: '300 mg (1st dose)', ml: '2 × 3.0 ml' },
             { label: '150 mg (2nd dose)', ml: '3.0 ml' },
           ],
           notes:
-            'IV PUSH; 300 mg = two 150 mg/3 ml vials; second dose 150 mg (3.0 ml) at the next cycle; label the syringe',
+            'IV PUSH; 300 mg = two 3 ml syringes, one per vial, pushed one after the other; second dose 150 mg (3.0 ml) at the next cycle = a third 3 ml syringe drawn from the 900 mg/18 ml vial; label the syringes',
         },
         severity: 'critical',
       },

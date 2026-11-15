@@ -114,6 +114,18 @@ export function emergencySyringe(drug: EmergencyDrugCallout): SyringeDrawing | n
     };
   }
   if (/by weight/i.test(drug.volume ?? '')) return null;
+  // The same draw in several syringes ("2 × 3.0 ml"): one is drawn, and the
+  // caption says how many.
+  const several = /^(\d+) × ([\d.]+) ml$/.exec(drug.volume ?? '');
+  if (several !== null) {
+    return {
+      capacityMl: drug.syringeMl,
+      drawnMl: parseFloat(several[2]!),
+      color,
+      concentration,
+      caption: `Draw ${several[2]} ml · ${several[1]} syringes`,
+    };
+  }
   const exact = parseVolumeMl(drug.volume);
   if (exact !== null) {
     return {
