@@ -18,7 +18,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the nine-phase plan.
 
 - **Phase 0 — Foundation scaffold:** done.
 - **Phase 1 — Clinical engine:** done (`@sedation-pro/clinical` v0.1.0).
-- **Version 1 (Nov 2026, now 1.1.12):** the app the practice runs: assessment, oral
+- **Version 1 (Nov 2026, now 1.1.13):** the app the practice runs: assessment, oral
   and IV sedation, recovery, clinical note, Open Dental filing, emergency
   protocols and the crash-cart inventory. `APP_VERSION` in
   `apps/mobile/src/config/version.ts` is the number shown on screen and on
@@ -146,6 +146,19 @@ pnpm --filter @sedation-pro/mobile dev
   is written only from the box that was ticked. Any new sentence
   the note writes by itself, and any new log line, is shown to the owner for
   approval first. Audit for this whenever the note or the log is touched.
+- **No staff names in the code (owner, Nov 2026).** The repo and the site
+  are public. `DEFAULT_PICKLISTS.providers` and `.dentalAssistants` ship
+  empty and `default.test.ts` keeps them so; test fixtures use invented
+  names. Each tablet types its doctors and assistants at first-run setup
+  (`components/DeviceGate.vue`), at least one of each. A new case
+  pre-selects the top entry of the doctors, assistants, IV sites, IV fluids
+  and catheter gauges (`PRESELECTED_LISTS` in `stores/formulary.ts`), and
+  those five lists can never be emptied, so a case never opens blank. The four-digit app PIN (`stores/device.ts`, salted SHA-256) is
+  asked again after 12 hours without use: a gate against a casual hand, not
+  encryption. The protocol pages (`OPEN_ROUTES` in
+  `composables/useDeviceGate.ts`) are never behind setup or the PIN, setup
+  waits while a sedation is underway, Reset this tablet is refused during
+  one, and nothing in setup writes to the case or its event log.
 - **Do not touch the legacy `sedation-app` GitHub repo.** It's the only
   copy of the original single-file app now (the local `tools/legacy-source/`
   copy was removed, Nov 2026) and is read-only reference. Changes go in

@@ -1,9 +1,22 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-import { UiBanner, UiButton, UiCard, UiField, UiStack, UiTextInput } from '@sedation-pro/ui';
+import {
+  UiBanner,
+  UiButton,
+  UiCard,
+  UiField,
+  UiListRow,
+  UiModal,
+  UiPillButton,
+  UiStack,
+  UiTextInput,
+} from '@sedation-pro/ui';
 
+import DeviceGate from '@/components/DeviceGate.vue';
 import PicklistEditor from '@/components/PicklistEditor.vue';
+import { eraseThisTablet } from '@/composables/useCaseReset';
+import { useSedationUnderway } from '@/composables/useDeviceGate';
 import { useFormularyStore, type PicklistKey } from '@/stores/formulary';
 import {
   clearCredentials,
@@ -28,10 +41,16 @@ import { describeOdError, getPatient, isOdError } from '@/services/opendental';
 
 const formulary = useFormularyStore();
 
+const changingPin = ref(false);
+const resetOpen = ref(false);
+// Erasing the tablet mid-sedation would take the open case with it.
+const sedationUnderway = useSedationUnderway();
+
 /**
  * Grouped so the roster a practice actually edits at setup sits above the
  * vocabulary they rarely touch. `firstIsDefault` marks the two lists whose
- * head entry pre-fills a new case.
+ * head entry pre-fills a new case. `tabletOnly` lists ship empty (names never
+ * live in the code), so there is no shipped list to restore.
  */
 const PICKLIST_GROUPS: ReadonlyArray<{
   readonly title: string;
@@ -40,6 +59,7 @@ const PICKLIST_GROUPS: ReadonlyArray<{
     readonly label: string;
     readonly hint?: string;
     readonly firstIsDefault?: boolean;
+    readonly tabletOnly?: boolean;
   }>;
 }> = [
   {
@@ -48,14 +68,16 @@ const PICKLIST_GROUPS: ReadonlyArray<{
       {
         key: 'providers',
         label: 'Sedation providers',
-        hint: 'Named as the attending provider on the note.',
+        hint: 'Named as the attending provider on the note. Kept on this tablet only.',
         firstIsDefault: true,
+        tabletOnly: true,
       },
       {
         key: 'dentalAssistants',
         label: 'Dental assistants',
-        hint: 'Include the credential — the name prints on the note exactly as typed.',
+        hint: 'Include the credential — the name prints on the note exactly as typed. Kept on this tablet only.',
         firstIsDefault: true,
+        tabletOnly: true,
       },
     ],
   },
@@ -174,6 +196,33 @@ async function testConnection(): Promise<void> {
       <h1 class="title-display">Settings</h1>
     </header>
 
+    <h2 class="settings-section">This tablet</h2>
+
+    <UiCard>
+      <UiListRow>
+        <span class="settings-row-text">
+          <span class="settings-row-title">PIN</span>
+          <span class="settings-note">Asked again after 12 hours without use</span>
+        </span>
+        <template #trailing>
+          <UiPillButton @click="changingPin = true">Change PIN</UiPillButton>
+        </template>
+      </UiListRow>
+      <UiListRow>
+        <span class="settings-row-text">
+          <span class="settings-row-title">Reset this tablet</span>
+          <span class="settings-note">{{
+            sedationUnderway
+              ? 'Not during a sedation. Release the patient first.'
+              : 'Erases the names, the PIN and everything stored on this tablet, then setup runs again'
+          }}</span>
+        </span>
+        <template #trailing>
+          <UiPillButton :disabled="sedationUnderway" @click="resetOpen = true">Reset…</UiPillButton>
+        </template>
+      </UiListRow>
+    </UiCard>
+
     <h2 class="settings-section">This practice</h2>
 
     <UiCard>
@@ -198,7 +247,7 @@ async function testConnection(): Promise<void> {
         :label="list.label"
         :hint="list.hint"
         :entries="formulary.picklists[list.key]"
-        :overridden="formulary.isOverridden(list.key)"
+        :overridden="!list.tabletOnly && formulary.isOverridden(list.key)"
         :first-is-default="list.firstIsDefault"
         @update="formulary.setList(list.key, $event)"
         @restore="formulary.restoreList(list.key)"
@@ -279,6 +328,21 @@ async function testConnection(): Promise<void> {
         </p>
       </UiStack>
     </UiCard>
+
+    <DeviceGate v-if="changingPin" mode="change" @close="changingPin = false" />
+
+    <UiModal
+      :open="resetOpen"
+      title="Reset this tablet?"
+      tone="danger"
+      confirm-label="Erase this tablet"
+      cancel-label="Cancel"
+      @confirm="eraseThisTablet"
+      @cancel="resetOpen = false"
+    >
+      This erases the names, the PIN and everything stored on this tablet, including any note not
+      yet sent to Open Dental. Notes already in Open Dental are not affected. Setup then runs again.
+    </UiModal>
   </main>
 </template>
 
@@ -313,6 +377,14 @@ async function testConnection(): Promise<void> {
 .settings-note {
   font-size: var(--type-footnote);
   color: var(--color-text-secondary);
+}
+.settings-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.settings-row-title {
+  font-weight: var(--weight-semibold);
 }
 .settings-body {
   font-size: var(--type-body);

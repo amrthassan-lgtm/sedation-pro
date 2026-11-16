@@ -9,7 +9,7 @@ import {
 const ALL_FILLED: Record<string, unknown> = {
   pt: 'Jane Doe',
   mrn: '123456',
-  prov: 'Dr. Hassan',
+  prov: 'Dr. Rivera',
   care_name: 'John Doe',
   care_phone: '555-1234',
   weight: 175,

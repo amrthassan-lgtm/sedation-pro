@@ -122,6 +122,31 @@ describe('adding', () => {
 });
 
 describe('editing', () => {
+  it('keeps the last entry of a list a new case pre-selects from', async () => {
+    const wrapper = mount(PicklistEditor, {
+      props: {
+        label: 'IV sites',
+        entries: ['Right dorsal hand'],
+        overridden: false,
+        firstIsDefault: true,
+      },
+    });
+    await wrapper.get('.pl-disclosure').trigger('click');
+    await wrapper.get('.pl-edit').trigger('click');
+
+    const remove = wrapper.get('[aria-label="Remove Right dorsal hand"]');
+    expect(remove.attributes('disabled')).toBeDefined();
+    await remove.trigger('click');
+    expect(wrapper.emitted('update')).toBeUndefined();
+    expect(wrapper.text()).toContain('This list keeps at least one entry');
+  });
+
+  it('lets any list without a pre-selection be emptied', async () => {
+    const wrapper = await edit(['Hematoma']);
+    await wrapper.get('[aria-label="Remove Hematoma"]').trigger('click');
+    expect(lastUpdate(wrapper)).toEqual([]);
+  });
+
   it('removes the entry that was tapped, not the one beside it', async () => {
     const wrapper = await edit();
 

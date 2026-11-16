@@ -11,6 +11,7 @@ import {
 import type { BpValue } from '@sedation-pro/ui';
 
 import { haptic } from '@/composables/useHaptics';
+import { useFormularyStore } from './formulary';
 import { persistRefs } from './persistence';
 import { usePatientStore } from './patient';
 
@@ -72,10 +73,13 @@ export const useIVStore = defineStore('iv', () => {
   const o2OnlyOn = ref(false);
 
   const ivStarted = ref(false);
-  const ivCatheterGauge = ref('22');
+  // A new case pre-selects the top of each practice list (owner, Nov 2026):
+  // reordering a list in Settings changes what the next case starts with.
+  const formulary = useFormularyStore();
+  const ivCatheterGauge = ref(formulary.picklists.catheterGauges[0] ?? '');
   const ivCatheterAttempts = ref<number>(1);
-  const ivSite = ref('Right dorsal hand');
-  const ivFluid = ref('D5W 100 mL');
+  const ivSite = ref(formulary.picklists.ivSites[0] ?? '');
+  const ivFluid = ref(formulary.picklists.ivFluids[0] ?? '');
 
   const preOpVitals = ref<VitalsStamp | null>(null);
   const sedationVitals = ref<VitalsStamp | null>(null);

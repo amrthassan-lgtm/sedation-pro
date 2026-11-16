@@ -213,16 +213,20 @@ const DEFAULT_TIMINGS: FormularyTimings = {
 };
 
 /**
- * First entry of each list is the shipped default the corresponding store
- * seeds — provider `'Dr. Amr Hassan'`, IV site `'Right dorsal hand'`, fluid
- * `'D5W 100 mL'`, gauge `'22'`, first assistant `'Raycha Dobbins, EFDA'`.
- * Keep them first (and present) so a fresh chart opens pre-selected and
- * `default.test.ts` guards against silently dropping a shipped default.
+ * The top entry of each list is what a new case pre-selects (owner, Nov
+ * 2026): IV site `'Right dorsal hand'`, fluid `'D5W 100 mL'`, gauge `'22'`.
+ * Reordering a list in Settings moves the pre-selection with it, and
+ * `default.test.ts` guards the shipped order.
  * Companion relation has no pre-selection (recovery store seeds `''` behind a
  * "Select…" placeholder), so its order is just convenience.
+ *
+ * The staff lists ship empty on purpose (owner, Nov 2026). The code is
+ * public, so no clinician's name may live in it: each tablet types its own
+ * doctors and assistants at first-run setup, and the first one typed is the
+ * pre-selection.
  */
 const DEFAULT_PICKLISTS: PracticePicklists = {
-  providers: ['Dr. Amr Hassan', 'Dr. Camila Flach'],
+  providers: [],
   ivSites: [
     'Right dorsal hand',
     'Left dorsal hand',
@@ -240,10 +244,8 @@ const DEFAULT_PICKLISTS: PracticePicklists = {
     "Lactated Ringer's 250 mL",
     'Saline lock (no infusion)',
   ],
-  catheterGauges: ['20', '22'],
-  // Apex Dental's EFDA roster (carried over from the legacy app's staff
-  // checkbox group). A different practice replaces this list at setup.
-  dentalAssistants: ['Raycha Dobbins, EFDA', 'Yvette Vega, EFDA', 'Arlet Torres, EFDA'],
+  catheterGauges: ['22', '20'],
+  dentalAssistants: [],
   companionRelations: [
     'Spouse',
     'Partner',

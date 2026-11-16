@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 
+import { useFormularyStore } from './formulary';
 import { useIVStore } from './iv';
 
 describe('useIVStore sedative anchor', () => {
@@ -33,5 +34,30 @@ describe('useIVStore sedative anchor', () => {
     iv.logDose({ drug: 'versed', mg: 1 });
     const fentanyl = iv.logDose({ drug: 'fentanyl', mcg: 25 });
     expect(iv.lastIvSedativeAt).toBe(fentanyl.at);
+  });
+});
+
+describe('what a new case starts with', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  it('the top of each IV list, as shipped: right dorsal hand, D5W 100 mL, 22 gauge', () => {
+    const iv = useIVStore();
+    expect(iv.ivSite).toBe('Right dorsal hand');
+    expect(iv.ivFluid).toBe('D5W 100 mL');
+    expect(iv.ivCatheterGauge).toBe('22');
+  });
+
+  it('follows the practice when it moves another entry to the top (owner, Nov 2026)', () => {
+    const formulary = useFormularyStore();
+    formulary.setList('ivSites', ['Left forearm', 'Right dorsal hand']);
+    formulary.setList('ivFluids', ["Lactated Ringer's 250 mL", 'D5W 100 mL']);
+    formulary.setList('catheterGauges', ['20', '22']);
+    const iv = useIVStore();
+    expect(iv.ivSite).toBe('Left forearm');
+    expect(iv.ivFluid).toBe("Lactated Ringer's 250 mL");
+    expect(iv.ivCatheterGauge).toBe('20');
   });
 });

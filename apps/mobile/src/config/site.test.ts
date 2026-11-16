@@ -30,7 +30,7 @@ describe('the active site', () => {
 
   it('attributes the note to the provider on the case, not a fixed name', () => {
     expect(ACTIVE_SITE.noteAttribution('Dr. Chen, DMD')).toContain('Dr. Chen, DMD');
-    expect(ACTIVE_SITE.noteAttribution('Dr. Chen, DMD')).not.toContain('Hassan');
+    expect(ACTIVE_SITE.noteAttribution('Dr. Rivera')).not.toContain('Chen');
   });
 
   it('falls back to a neutral phrase rather than naming nobody', () => {

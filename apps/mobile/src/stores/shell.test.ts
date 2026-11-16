@@ -137,7 +137,7 @@ describe('shell stores — single sources of truth', () => {
 
     patient.name = 'Jane Doe';
     patient.mrn = '12345';
-    patient.provider = 'Dr. Hassan';
+    patient.provider = 'Dr. Rivera';
     patient.careName = 'John Doe';
     patient.carePhone = '5551234567';
     patient.weightLb = 180;
@@ -190,7 +190,7 @@ describe('shell stores — single sources of truth', () => {
     // tick so the red rings auto-dismiss.
     patient.name = 'Jane Doe';
     patient.mrn = '12345';
-    patient.provider = 'Dr. Hassan';
+    patient.provider = 'Dr. Rivera';
     patient.careName = 'John Doe';
     patient.carePhone = '5551234567';
     patient.weightLb = 180;

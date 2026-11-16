@@ -80,14 +80,12 @@ describe('DEFAULT_FORMULARY', () => {
     expect(DEFAULT_FORMULARY.practiceName).toBe('Apex Dental');
   });
 
-  it('ships non-empty charting pick-lists', () => {
+  it('ships non-empty charting pick-lists, except the staff', () => {
     const p = DEFAULT_FORMULARY.picklists;
-    expect(p.providers.length).toBeGreaterThan(0);
     expect(p.ivSites.length).toBeGreaterThan(0);
     expect(p.ivFluids.length).toBeGreaterThan(0);
     expect(p.catheterGauges.length).toBeGreaterThan(0);
     expect(p.companionRelations.length).toBeGreaterThan(0);
-    expect(p.dentalAssistants.length).toBeGreaterThan(0);
     expect(p.sedationComplications.length).toBeGreaterThan(0);
     expect(p.venipunctureComplications.length).toBeGreaterThan(0);
   });
@@ -106,25 +104,19 @@ describe('DEFAULT_FORMULARY', () => {
     ]);
   });
 
-  it('ships the practice provider + EFDA rosters', () => {
-    expect(DEFAULT_FORMULARY.picklists.providers).toEqual(['Dr. Amr Hassan', 'Dr. Camila Flach']);
-    expect(DEFAULT_FORMULARY.picklists.dentalAssistants).toEqual([
-      'Raycha Dobbins, EFDA',
-      'Yvette Vega, EFDA',
-      'Arlet Torres, EFDA',
-    ]);
+  it('ships no staff names: each tablet types its own at setup (owner, Nov 2026)', () => {
+    // The code is public. A name here would be published with every deploy.
+    expect(DEFAULT_FORMULARY.picklists.providers).toEqual([]);
+    expect(DEFAULT_FORMULARY.picklists.dentalAssistants).toEqual([]);
   });
 
-  it('keeps every shipped store default a valid pick-list option', () => {
-    // Regression guard: the IV store seeds these exact strings. If a list
-    // drops one, a fresh chart would open with the dropdown showing the
-    // value as "Other" instead of the intended pre-selection.
+  it('puts the pre-selection a new case opens on at the top of each IV list', () => {
+    // A new case pre-selects the top entry, so the shipped order is the
+    // practice's default: right dorsal hand, D5W 100 mL, 22 gauge.
     const p = DEFAULT_FORMULARY.picklists;
-    expect(p.providers[0]).toBe('Dr. Amr Hassan');
-    expect(p.dentalAssistants[0]).toBe('Raycha Dobbins, EFDA');
-    expect(p.ivSites).toContain('Right dorsal hand');
-    expect(p.ivFluids).toContain('D5W 100 mL');
-    expect(p.catheterGauges).toContain('22');
+    expect(p.ivSites[0]).toBe('Right dorsal hand');
+    expect(p.ivFluids[0]).toBe('D5W 100 mL');
+    expect(p.catheterGauges[0]).toBe('22');
     expect(p.companionRelations).toContain('Spouse');
     expect(p.companionRelations).toContain('Other');
   });

@@ -1,4 +1,5 @@
 import { CREDENTIALS_KEY } from '@/services/od-credentials';
+import { DEVICE_KEY } from '@/stores/device';
 import { FORMULARY_KEY } from '@/stores/formulary';
 import { NOTE_ARCHIVE_KEY } from '@/stores/note-archive';
 
@@ -43,7 +44,26 @@ export const PRESERVED_KEYS: ReadonlySet<string> = new Set([
   // Carries the new patient's MRN across the wipe-and-reload so switching
   // patients doesn't make the clinician retype the number they just entered.
   PENDING_MRN_KEY,
+  // This tablet's PIN. A new case is not a new tablet.
+  DEVICE_KEY,
 ]);
+
+/**
+ * Forgot PIN / Reset this tablet: everything this app keeps on the tablet
+ * goes, the per-practice keys above included, and setup runs again. The
+ * training simulator's own `sedation-trainer:` keys are another app's and
+ * stay.
+ */
+export function eraseThisTablet(): void {
+  if (typeof window === 'undefined') return;
+  const keys: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const k = window.localStorage.key(i);
+    if (k?.startsWith('sedation-pro:')) keys.push(k);
+  }
+  keys.forEach((k) => window.localStorage.removeItem(k));
+  window.location.assign(import.meta.env.BASE_URL);
+}
 
 export function useCaseReset(): { reset: () => void } {
   function reset(): void {

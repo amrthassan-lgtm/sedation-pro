@@ -9,6 +9,8 @@ import SedationDock from '@/components/SedationDock.vue';
 import StickyBar from '@/components/StickyBar.vue';
 import NavDrawer from '@/components/NavDrawer.vue';
 import UndoToast from '@/components/UndoToast.vue';
+import DeviceGate from '@/components/DeviceGate.vue';
+import { useDeviceGate } from '@/composables/useDeviceGate';
 import { useAlarms, unlockAudio } from '@/composables/useAlarms';
 import { useDockVisibility } from '@/composables/useDockVisibility';
 import { useWakeLock } from '@/composables/useWakeLock';
@@ -22,6 +24,12 @@ import { UiModal } from '@sedation-pro/ui';
 
 /** Sedation Dock is only mounted in Phase 3 — every other screen hides it. */
 const route = useRoute();
+
+/**
+ * First-run setup and the twelve-hour PIN take the whole screen instead of
+ * the app, so no chart sits underneath. Protocol pages are never gated.
+ */
+const { view: gate, ready: routerReady } = useDeviceGate();
 const showSedationDock = computed(() => route.path === '/phase/3');
 
 /**
@@ -126,45 +134,51 @@ if (typeof window !== 'undefined') {
 </script>
 
 <template>
-  <StickyBar class="no-print" />
-  <!-- NavDrawer + UndoToast teleport their roots into <body>, so a class
+  <template v-if="routerReady">
+    <DeviceGate v-if="gate" :key="gate" :mode="gate" />
+    <template v-else>
+      <StickyBar class="no-print" />
+      <!-- NavDrawer + UndoToast teleport their roots into <body>, so a class
        attribute on the component tag doesn't reach the rendered DOM. They
        tag their own root elements with `no-print` internally. -->
-  <NavDrawer />
-  <UndoToast />
-  <div class="app-shell" :class="{ 'has-dock': dockReservesSpace }">
-    <InventoryAlertBanner />
-    <RouterView v-slot="{ Component }">
-      <transition name="page" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </RouterView>
-    <AppFooter class="no-print" />
-  </div>
-  <SedationDock v-if="showSedationDock" class="no-print" />
-  <AppUpdatePrompt />
+      <NavDrawer />
+      <UndoToast />
+      <div class="app-shell" :class="{ 'has-dock': dockReservesSpace }">
+        <InventoryAlertBanner />
+        <RouterView v-slot="{ Component }">
+          <transition name="page" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </RouterView>
+        <AppFooter class="no-print" />
+      </div>
+      <SedationDock v-if="showSedationDock" class="no-print" />
 
-  <UiModal
-    :open="resumeGateOpen"
-    title="Previous session found"
-    tone="primary"
-    confirm-label="Resume patient"
-    cancel-label="Start new case"
-    :dismiss-on-backdrop="false"
-    @confirm="resumeSession"
-    @cancel="discardSession"
-  >
-    A chart from <strong>{{ resumeSavedDate }}</strong> is still loaded. Is this the
-    <strong>same patient</strong>?
-    <ul class="resume-gate-list">
-      <li>
-        <strong>{{ resumePatientLine }}</strong>
-      </li>
-      <li>{{ resumeProcedure }}</li>
-      <li>{{ resumeProvider }}</li>
-    </ul>
-    Choosing <strong>Start new case</strong> permanently clears the loaded chart.
-  </UiModal>
+      <UiModal
+        :open="resumeGateOpen"
+        title="Previous session found"
+        tone="primary"
+        confirm-label="Resume patient"
+        cancel-label="Start new case"
+        :dismiss-on-backdrop="false"
+        @confirm="resumeSession"
+        @cancel="discardSession"
+      >
+        A chart from <strong>{{ resumeSavedDate }}</strong> is still loaded. Is this the
+        <strong>same patient</strong>?
+        <ul class="resume-gate-list">
+          <li>
+            <strong>{{ resumePatientLine }}</strong>
+          </li>
+          <li>{{ resumeProcedure }}</li>
+          <li>{{ resumeProvider }}</li>
+        </ul>
+        Choosing <strong>Start new case</strong> permanently clears the loaded chart.
+      </UiModal>
+    </template>
+  </template>
+  <!-- Outside the gate, so a fix for a broken screen can still arrive. -->
+  <AppUpdatePrompt />
 </template>
 
 <style scoped>
