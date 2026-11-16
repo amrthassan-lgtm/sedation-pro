@@ -1458,7 +1458,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '155 lb (70 mcg)', ml: '7.0 ml' },
             { label: '220 lb (100 mcg)', ml: '10.0 ml' },
           ],
-          notes: 'never the 1 mg ampule undiluted',
+          notes:
+            'push, then a 20 ml saline flush and raise the arm for 10-20 seconds; never the 1 mg ampule undiluted',
         },
         severity: 'critical',
         goTo: ['vfib_vtach', 'pea_asystole'],

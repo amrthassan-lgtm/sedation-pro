@@ -730,6 +730,11 @@ describe('emergency protocols', () => {
       for (const name of ['Amiodarone', 'Cardiac Lidocaine']) {
         expect(drugAt('vfib_vtach', name)?.drug?.notes, name).toContain(FLUSH);
       }
+      // LAST changes the drugs and doses, not how a drug reaches the heart
+      // during CPR, so its small epinephrine doses are flushed in the same way.
+      expect(drugAt('last', 'Push-dose Epinephrine')?.drug?.notes).toBe(
+        'push, then a 20 ml saline flush and raise the arm for 10-20 seconds; never the 1 mg ampule undiluted',
+      );
       expect(drugAt('vfib_vtach', 'Amiodarone')?.drug?.notes).toMatch(/^IV PUSH, then a 20 ml/);
       expect(JSON.stringify(EMERGENCY_PROTOCOLS)).not.toContain('wide open for 10-20 seconds');
     });
