@@ -2,7 +2,7 @@ import { computed, ref } from 'vue';
 import type { Ref } from 'vue';
 import { defineStore } from 'pinia';
 
-import { persistRefs } from './persistence';
+import { persistRefs, reportWrite } from './persistence';
 
 /**
  * The durable record of what has already been written into the patient's
@@ -157,11 +157,14 @@ export const useChartSendStore = defineStore('chart-send', () => {
     if (!STORAGE_AVAILABLE) return;
     try {
       window.localStorage.setItem(CHART_SEND_STORAGE_KEY, JSON.stringify(snapshot()));
+      reportWrite(CHART_SEND_STORAGE_KEY, true);
     } catch {
       // Storage disabled or over quota. In-memory state stays authoritative
-      // for this session and the deep watcher retries on the next change;
-      // there is nothing better to do from here, and throwing mid-send would
-      // strand the caller between two irreversible writes.
+      // for this session and the deep watcher retries on the next change.
+      // Throwing mid-send would strand the caller between two irreversible
+      // writes; listing the key instead warns, and blocks the next send
+      // until this record is saved.
+      reportWrite(CHART_SEND_STORAGE_KEY, false);
     }
   }
 

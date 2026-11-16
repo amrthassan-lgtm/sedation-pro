@@ -1,10 +1,10 @@
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import type { EncounterKind } from '@sedation-pro/clinical';
 
 import type { ClinicalNote } from '@/composables/useClinicalNote';
-import { persistRefs } from './persistence';
+import { persistRefs, recheckStorage } from './persistence';
 
 /**
  * Practice-level and deliberately outside the per-case keys: this is the one
@@ -61,6 +61,8 @@ export const useNoteArchiveStore = defineStore('note-archive', () => {
       frozenAt: Date.now(),
     };
     notes.value = [...notes.value, frozen];
+    // After the write lands: a new note is what brings storage near full.
+    void nextTick(recheckStorage);
     return frozen;
   }
 
@@ -71,6 +73,8 @@ export const useNoteArchiveStore = defineStore('note-archive', () => {
   function remove(id: string): boolean {
     const before = notes.value.length;
     notes.value = notes.value.filter((n) => n.id !== id);
+    // After the write lands, the freed room lets anything unsaved save again.
+    void nextTick(recheckStorage);
     return notes.value.length !== before;
   }
 

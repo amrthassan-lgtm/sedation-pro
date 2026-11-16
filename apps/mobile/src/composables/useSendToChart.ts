@@ -17,6 +17,7 @@ import {
 } from '@/services/opendental';
 import { usePatientStore } from '@/stores/patient';
 import { useChartSendStore, type ArtifactKind } from '@/stores/chart-send';
+import { hasRoomFor, unsavedKeys } from '@/stores/persistence';
 
 /**
  * "Send to chart" — files the clinical note into Open Dental as a commlog
@@ -104,6 +105,16 @@ export interface UseSendToChart {
   cancelSend: () => void;
 }
 
+/**
+ * A send this tablet cannot remember can be repeated after a reload, and every
+ * send is permanent in the chart. So nothing goes out while storage is failing,
+ * or without room to record the result: a few thousand characters, many times
+ * what the send record grows by.
+ */
+export const STORAGE_FULL_REASON =
+  "This tablet's storage is full, so it could not record the send. Delete notes you no longer need in Saved Notes first.";
+const SEND_RECORD_ROOM = 4096;
+
 export function useSendToChart(
   note: Ref<ClinicalNote> | ComputedRef<ClinicalNote>,
 ): UseSendToChart {
@@ -130,6 +141,9 @@ export function useSendToChart(
         reason: 'Open Dental is not connected on this device.',
         needsSettings: true,
       };
+    }
+    if (unsavedKeys.value.length > 0) {
+      return { ready: false, reason: STORAGE_FULL_REASON, needsSettings: false };
     }
     if (parsedMrn.value === null) {
       return {
@@ -166,7 +180,12 @@ export function useSendToChart(
   });
 
   /** Re-sending something already filed is possible, but never the primary. */
-  const canResend = computed(() => send.anythingSent && precondition.value.needsSettings === false);
+  const canResend = computed(
+    () =>
+      send.anythingSent &&
+      precondition.value.needsSettings === false &&
+      unsavedKeys.value.length === 0,
+  );
 
   // -------- Lookup + confirm ------------------------------------------------
 
@@ -252,6 +271,12 @@ export function useSendToChart(
     const target = confirmTarget.value;
     const creds = readCredentials();
     if (target === null || creds === null) return;
+    if (!hasRoomFor(SEND_RECORD_ROOM)) {
+      confirmTarget.value = null;
+      resending.value = false;
+      lookupError.value = STORAGE_FULL_REASON;
+      return;
+    }
 
     confirmTarget.value = null;
     busy.value = true;

@@ -6,6 +6,7 @@ import AppFooter from '@/components/AppFooter.vue';
 import AppUpdatePrompt from '@/components/AppUpdatePrompt.vue';
 import InventoryAlertBanner from '@/components/InventoryAlertBanner.vue';
 import SedationDock from '@/components/SedationDock.vue';
+import StorageAlertBanner from '@/components/StorageAlertBanner.vue';
 import StickyBar from '@/components/StickyBar.vue';
 import NavDrawer from '@/components/NavDrawer.vue';
 import UndoToast from '@/components/UndoToast.vue';
@@ -19,7 +20,7 @@ import { useEncounterReopen } from '@/composables/useEncounterReopen';
 import { useNoteFreeze } from '@/composables/useNoteFreeze';
 import { usePatientStore } from '@/stores/patient';
 import { useEventLogStore } from '@/stores/event-log';
-import { readPersistedSavedAt, isStaleSession } from '@/stores/persistence';
+import { checkHeadroom, readPersistedSavedAt, isStaleSession } from '@/stores/persistence';
 import { UiModal } from '@sedation-pro/ui';
 
 /** Sedation Dock is only mounted in Phase 3 — every other screen hides it. */
@@ -30,6 +31,9 @@ const route = useRoute();
  * the app, so no chart sits underneath. Protocol pages are never gated.
  */
 const { view: gate, ready: routerReady } = useDeviceGate();
+// Once per launch: a tablet that filled up between sessions warns before
+// the first save fails, not after.
+checkHeadroom();
 const showSedationDock = computed(() => route.path === '/phase/3');
 
 /**
@@ -144,6 +148,7 @@ if (typeof window !== 'undefined') {
       <NavDrawer />
       <UndoToast />
       <div class="app-shell" :class="{ 'has-dock': dockReservesSpace }">
+        <StorageAlertBanner />
         <InventoryAlertBanner />
         <RouterView v-slot="{ Component }">
           <transition name="page" mode="out-in">

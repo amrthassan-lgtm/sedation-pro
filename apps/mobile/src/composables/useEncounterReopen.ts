@@ -11,6 +11,7 @@ export const REOPEN_EVENT = 'Record reopened for sedation visit';
 interface ClosedAssessment {
   readonly releasedAt: number;
   readonly signature: string | null;
+  readonly signedAt: number | null;
   readonly noteFrozenId: string | null;
   readonly releaseAttempted: boolean;
   readonly chart: {
@@ -73,6 +74,7 @@ export function useEncounterReopen(): void {
     closed = {
       releasedAt,
       signature: recovery.providerSignatureDataUrl,
+      signedAt: recovery.providerSignedAt,
       noteFrozenId: recovery.noteFrozenId,
       releaseAttempted: recovery.releaseAttempted,
       chart: {
@@ -98,6 +100,9 @@ export function useEncounterReopen(): void {
     recovery.noteFrozenId = snapshot.noteFrozenId;
     recovery.releasedAt = snapshot.releasedAt;
     recovery.providerSignatureDataUrl = snapshot.signature;
+    // After the signature: putting it back stamps the current time, and the
+    // assessment's own signing time must win.
+    recovery.providerSignedAt = snapshot.signedAt;
     recovery.releaseAttempted = snapshot.releaseAttempted;
     chart.patNum = snapshot.chart.patNum;
     chart.patientLabel = snapshot.chart.patientLabel;

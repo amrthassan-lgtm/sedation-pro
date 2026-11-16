@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter } from 'vue-router';
@@ -6,6 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router';
 import StickyBar from './StickyBar.vue';
 import { protocolTitleHidden } from '@/composables/protocolTitle';
 import { useSessionStore } from '@/stores/session';
+import { lastSavedAt, unsavedKeys } from '@/stores/persistence';
 
 const Stub = { template: '<div />' };
 
@@ -69,5 +70,32 @@ describe('the top bar title on other screens', () => {
     const protocol = await barAt('/quick-reference/anaphylaxis');
     expect(protocol.fade).toBe('bar-title');
     protocol.unmount();
+  });
+});
+
+describe('the save pill (v1 audit)', () => {
+  afterEach(() => {
+    unsavedKeys.value = [];
+  });
+
+  it('never says Saved while a save is failing', async () => {
+    setActivePinia(createPinia());
+    useSessionStore().setPhase('quickref');
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:pathMatch(.*)*', component: Stub }],
+    });
+    await router.push('/quick-reference');
+    await router.isReady();
+    lastSavedAt.value = Date.now();
+    unsavedKeys.value = ['sedation-pro:recovery:v6'];
+
+    const w = mount(StickyBar, { global: { plugins: [router] } });
+    const pill = w.get('.sticky-bar-saved');
+
+    expect(pill.text()).toContain('Not saved');
+    expect(pill.text()).not.toContain('Saved ·');
+    expect(pill.classes()).toContain('is-failed');
+    w.unmount();
   });
 });

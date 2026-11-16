@@ -254,10 +254,21 @@ describe('emergency protocols', () => {
   it('every MIX FIRST recipe reads as numbered steps ending with a label and the stock-vial guard', () => {
     for (const drug of allCallouts().filter((d) => d.mixFirst)) {
       const parts = drug.mixFirst!.split('; ');
-      expect(parts[0], drug.name).toBe('MIX FIRST: one 10 ml syringe, saline from the IV bag port');
-      expect(parts[1], drug.name).toMatch(/^Draw 1 ml .* \+ 9 ml saline = /);
+      expect(parts[0], drug.name).toBe(
+        'MIX FIRST: one 10 ml syringe, saline or D5W from the IV bag port',
+      );
+      expect(parts[1], drug.name).toMatch(/^Draw 1 ml .* \+ 9 ml saline or D5W = /);
       expect(parts.at(-2), drug.name).toMatch(/^Label it /);
       expect(parts.at(-1), drug.name).toBe('Never inject from the stock vial');
+    }
+  });
+
+  it('every mix can be made from either bag, since the bag running may be the D5W (owner, Nov 2026)', () => {
+    // The ephedrine, phenylephrine and epinephrine labels all allow saline or
+    // D5W, and the epinephrine label prefers dextrose. Each step that names
+    // the fluid names both, so no step reads as saline only.
+    for (const drug of allCallouts().filter((d) => d.mixFirst)) {
+      expect(drug.mixFirst, drug.name).not.toMatch(/saline(?! or D5W)/);
     }
   });
 
@@ -663,11 +674,19 @@ describe('emergency protocols', () => {
     it('amiodarone over ten minutes says how: a third of a millilitre a minute', () => {
       for (const id of STABLE_RHYTHM_PAGES) {
         expect(drugAt(id, 'Amiodarone')?.drug?.notes, id).toContain(
-          'give over 10 minutes: 0.3 ml every minute into the running D5W, check BP each minute and stop if SBP falls',
+          'give over 10 minutes: 0.3 ml every minute into the running D5W; keep the D5W running freely; check BP each minute and stop if SBP falls',
         );
       }
       // The arrest dose is still a push.
       expect(drugAt('vfib_vtach', 'Amiodarone')?.drug?.notes).toContain('IV PUSH');
+    });
+
+    it('amiodarone with a pulse goes into a D5W kept running freely (owner, Nov 2026)', () => {
+      // Undiluted amiodarone irritates a hand vein; an open drip carries
+      // each 0.3 ml in diluted. Its label mixes it only in D5W.
+      for (const id of STABLE_RHYTHM_PAGES) {
+        expect(drugAt(id, 'Amiodarone')?.drug?.notes, id).toContain('keep the D5W running freely');
+      }
     });
 
     it('amiodarone is drawn in the 3 ml syringe, whose 0.1 ml marks every 0.3 ml push lands on (owner, Nov 2026)', () => {
@@ -699,6 +718,15 @@ describe('emergency protocols', () => {
       for (const id of ['anaphylaxis', 'bronchospasm']) {
         expect(drugAt(id, 'Methylprednisolone (Solu-Medrol)')?.drug?.notes, id).toContain(
           'push over several minutes',
+        );
+      }
+    });
+
+    it('dexamethasone warns an awake patient about the brief groin burning a fast push can cause (owner, Nov 2026)', () => {
+      // On the label, and harmless, but frightening when it comes unannounced.
+      for (const id of ['anaphylaxis', 'bronchospasm']) {
+        expect(drugAt(id, 'Dexamethasone')?.drug?.notes, id).toBe(
+          'warn an awake patient that a fast push can briefly burn or tingle in the groin; label the syringe',
         );
       }
     });

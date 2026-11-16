@@ -127,6 +127,23 @@ describe('a completed assessment that goes on to sedation', () => {
     expect(useEventLogStore().events.some((e) => e.event === REOPEN_EVENT)).toBe(false);
   });
 
+  it('gives the assessment back its own signing time, not the time of the undo', async () => {
+    mount();
+    const releasedAt = Date.now() - 21 * DAY;
+    await completedAssessment(releasedAt);
+    const recovery = useRecoveryStore();
+    recovery.providerSignedAt = releasedAt - 60_000;
+    const iv = useIVStore();
+    const dose = iv.logDose({ drug: 'versed', mg: 2 });
+    await nextTick();
+    expect(recovery.providerSignedAt).toBeNull();
+
+    iv.removeDoseById(dose.id);
+    await nextTick();
+
+    expect(recovery.providerSignedAt).toBe(releasedAt - 60_000);
+  });
+
   it('repairs a case that was already in the broken state at launch', async () => {
     const recovery = useRecoveryStore();
     recovery.providerSignatureDataUrl = SIGNED;

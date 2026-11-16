@@ -41,7 +41,8 @@ export interface EmergencyDrugCallout {
   /**
    * Dilution recipe rendered as a warning band ABOVE the draw line.
    * Always starts with "MIX FIRST:". The only free-text field allowed to
-   * use "→" (for the dilution result).
+   * use "→" (for the dilution result). Its fluid is "saline or D5W": either
+   * bag may be the one running, and every mix on the cart allows both.
    */
   readonly mixFirst?: string;
   /**
@@ -259,7 +260,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '10 mg/ml: 8 mg', ml: '0.8 ml' },
             { label: '10 mg/ml: 12 mg', ml: '1.2 ml' },
           ],
-          notes: 'label the syringe',
+          notes:
+            'warn an awake patient that a fast push can briefly burn or tingle in the groin; label the syringe',
         },
       },
       {
@@ -729,7 +731,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '0.5-1.0 ml',
           concentration: '5 mg/ml (after dilution)',
           mixFirst:
-            'MIX FIRST: one 10 ml syringe, saline from the IV bag port; Draw 1 ml ephedrine 50 mg/ml + 9 ml saline = 5 mg/ml; Label it EPHEDRINE 5 mg/ml; Never inject from the stock vial',
+            'MIX FIRST: one 10 ml syringe, saline or D5W from the IV bag port; Draw 1 ml ephedrine 50 mg/ml + 9 ml saline or D5W = 5 mg/ml; Label it EPHEDRINE 5 mg/ml; Never inject from the stock vial',
           drawTable: [
             { label: '2.5 mg', ml: '0.5 ml' },
             { label: '5 mg', ml: '1.0 ml' },
@@ -747,7 +749,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '1.0 ml',
           concentration: '100 mcg/ml (after dilution)',
           mixFirst:
-            'MIX FIRST: one 10 ml syringe, saline from the IV bag port; Draw 1 ml phenylephrine 10 mg/ml + 9 ml saline = 1 mg/ml; WASTE DOWN TO 1 ml; Draw saline back up to 10 ml = 100 mcg/ml; Label it PHENYLEPHRINE 100 mcg/ml; Never inject from the stock vial',
+            'MIX FIRST: one 10 ml syringe, saline or D5W from the IV bag port; Draw 1 ml phenylephrine 10 mg/ml + 9 ml saline or D5W = 1 mg/ml; WASTE DOWN TO 1 ml; Draw saline or D5W back up to 10 ml = 100 mcg/ml; Label it PHENYLEPHRINE 100 mcg/ml; Never inject from the stock vial',
         },
       },
       { text: 'Phenylephrine not in stock: fluids, legs up, call 911 if SBP stays <90' },
@@ -800,7 +802,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '0.5-1.0 ml',
           concentration: '10 mcg/ml (after dilution)',
           mixFirst:
-            'MIX FIRST: one 10 ml syringe, saline from the IV bag port; Draw 1 ml epinephrine 1 mg/ml + 9 ml saline = 100 mcg/ml; WASTE DOWN TO 1 ml; Draw saline back up to 10 ml = 10 mcg/ml; Label it EPI 10 mcg/ml; Never inject from the stock vial',
+            'MIX FIRST: one 10 ml syringe, saline or D5W from the IV bag port; Draw 1 ml epinephrine 1 mg/ml + 9 ml saline or D5W = 100 mcg/ml; WASTE DOWN TO 1 ml; Draw saline or D5W back up to 10 ml = 10 mcg/ml; Label it EPI 10 mcg/ml; Never inject from the stock vial',
           drawTable: [
             { label: '5 mcg', ml: '0.5 ml' },
             { label: '10 mcg', ml: '1.0 ml' },
@@ -861,7 +863,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '3.0 ml',
           concentration: '50 mg/ml',
           notes:
-            'give over 10 minutes: 0.3 ml every minute into the running D5W, check BP each minute and stop if SBP falls; label the syringe',
+            'give over 10 minutes: 0.3 ml every minute into the running D5W; keep the D5W running freely; check BP each minute and stop if SBP falls; label the syringe',
         },
       },
     ],
@@ -932,7 +934,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '3.0 ml',
           concentration: '50 mg/ml',
           notes:
-            'give over 10 minutes: 0.3 ml every minute into the running D5W, check BP each minute and stop if SBP falls; label the syringe',
+            'give over 10 minutes: 0.3 ml every minute into the running D5W; keep the D5W running freely; check BP each minute and stop if SBP falls; label the syringe',
         },
       },
     ],
@@ -964,7 +966,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '3.0 ml',
           concentration: '50 mg/ml',
           notes:
-            'give over 10 minutes: 0.3 ml every minute into the running D5W, check BP each minute and stop if SBP falls; repeat 150 mg if it recurs; label the syringe',
+            'give over 10 minutes: 0.3 ml every minute into the running D5W; keep the D5W running freely; check BP each minute and stop if SBP falls; repeat 150 mg if it recurs; label the syringe',
         },
       },
       {
@@ -1014,7 +1016,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '3.0 ml',
           concentration: '50 mg/ml',
           notes:
-            'give over 10 minutes: 0.3 ml every minute into the running D5W, check BP each minute and stop if SBP falls; repeat 150 mg if it recurs; label the syringe',
+            'give over 10 minutes: 0.3 ml every minute into the running D5W; keep the D5W running freely; check BP each minute and stop if SBP falls; repeat 150 mg if it recurs; label the syringe',
         },
       },
     ],
@@ -1204,7 +1206,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '1.0-2.0 ml',
           concentration: '10 mcg/ml (after dilution)',
           mixFirst:
-            'MIX FIRST: one 10 ml syringe, saline from the IV bag port; Draw 1 ml epinephrine 1 mg/ml + 9 ml saline = 100 mcg/ml; WASTE DOWN TO 1 ml; Draw saline back up to 10 ml = 10 mcg/ml; Label it EPI 10 mcg/ml; Never inject from the stock vial',
+            'MIX FIRST: one 10 ml syringe, saline or D5W from the IV bag port; Draw 1 ml epinephrine 1 mg/ml + 9 ml saline or D5W = 100 mcg/ml; WASTE DOWN TO 1 ml; Draw saline or D5W back up to 10 ml = 10 mcg/ml; Label it EPI 10 mcg/ml; Never inject from the stock vial',
           drawTable: [
             { label: '10 mcg', ml: '1.0 ml' },
             { label: '20 mcg', ml: '2.0 ml' },
@@ -1258,7 +1260,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
             { label: '10 mg/ml: 8 mg', ml: '0.8 ml' },
             { label: '10 mg/ml: 12 mg', ml: '1.2 ml' },
           ],
-          notes: 'label the syringe',
+          notes:
+            'warn an awake patient that a fast push can briefly burn or tingle in the groin; label the syringe',
         },
       },
       {
@@ -1452,7 +1455,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           volume: '5.0-10.0 ml (by weight)',
           concentration: '10 mcg/ml (after dilution)',
           mixFirst:
-            'MIX FIRST: one 10 ml syringe, saline from the IV bag port; Draw 1 ml epinephrine 1 mg/ml + 9 ml saline = 100 mcg/ml; WASTE DOWN TO 1 ml; Draw saline back up to 10 ml = 10 mcg/ml; Label it EPI 10 mcg/ml; Never inject from the stock vial',
+            'MIX FIRST: one 10 ml syringe, saline or D5W from the IV bag port; Draw 1 ml epinephrine 1 mg/ml + 9 ml saline or D5W = 100 mcg/ml; WASTE DOWN TO 1 ml; Draw saline or D5W back up to 10 ml = 10 mcg/ml; Label it EPI 10 mcg/ml; Never inject from the stock vial',
           drawTable: [
             { label: '110 lb (50 mcg)', ml: '5.0 ml' },
             { label: '155 lb (70 mcg)', ml: '7.0 ml' },

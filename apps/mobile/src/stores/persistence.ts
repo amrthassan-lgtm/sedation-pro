@@ -60,17 +60,82 @@ function safeRead<T>(key: string): T | undefined {
   }
 }
 
+/**
+ * Keys whose latest write failed. A full tablet used to fail in silence: the
+ * case went on in memory and was gone after the next reload, and a lost
+ * "sent to chart" record invited a second, permanent send. While any key is
+ * listed, something on screen is not saved and the app says so.
+ */
+export const unsavedKeys: Ref<ReadonlyArray<string>> = ref([]);
+
+/** Records how a write went, so the warning clears once that key saves again. */
+export function reportWrite(key: string, ok: boolean): void {
+  const listed = unsavedKeys.value.includes(key);
+  if (ok && listed) unsavedKeys.value = unsavedKeys.value.filter((k) => k !== key);
+  else if (!ok && !listed) unsavedKeys.value = [...unsavedKeys.value, key];
+}
+
+const PROBE_KEY = 'sedation-pro:storage-probe:v1';
+
+/** True when `chars` more characters would still fit. Writes and removes a probe. */
+export function hasRoomFor(chars: number): boolean {
+  if (!STORAGE_AVAILABLE) return false;
+  let fits = true;
+  try {
+    window.localStorage.setItem(PROBE_KEY, 'x'.repeat(chars));
+  } catch {
+    fits = false;
+  }
+  try {
+    window.localStorage.removeItem(PROBE_KEY);
+  } catch {
+    // Nothing to remove when the probe did not fit.
+  }
+  return fits;
+}
+
+/**
+ * Room for about four more signed notes (each near 65,000 characters with
+ * its signature). Below it the app warns while there is still time to act,
+ * rather than only after a save has failed.
+ */
+export const HEADROOM_CHARS = 250_000;
+
+export const storageLow: Ref<boolean> = ref(false);
+
+export function checkHeadroom(): void {
+  if (STORAGE_AVAILABLE) storageLow.value = !hasRoomFor(HEADROOM_CHARS);
+}
+
+const rewriters = new Map<string, () => void>();
+
+/**
+ * Freeing space (deleting a saved note) re-saves whatever could not be saved,
+ * so the warning goes away without waiting for each screen to change again.
+ */
+export function recheckStorage(): void {
+  for (const key of [...unsavedKeys.value]) rewriters.get(key)?.();
+  checkHeadroom();
+}
+
 function safeWrite(key: string, value: unknown) {
   if (!STORAGE_AVAILABLE) return;
   try {
-    const now = Date.now();
     window.localStorage.setItem(key, JSON.stringify(value));
-    window.localStorage.setItem(LAST_SAVED_KEY, String(now));
-    lastSavedAt.value = now;
   } catch {
-    // Quota exceeded or storage disabled — ignore silently. Persistence is a
-    // convenience, not a clinical-safety boundary.
+    // Quota exceeded or storage disabled: listed, so the app warns.
+    reportWrite(key, false);
+    checkHeadroom();
+    return;
   }
+  reportWrite(key, true);
+  const now = Date.now();
+  try {
+    window.localStorage.setItem(LAST_SAVED_KEY, String(now));
+  } catch {
+    // Only the resume gate's day check reads this; the data itself is saved.
+  }
+  lastSavedAt.value = now;
 }
 
 /**
@@ -93,15 +158,13 @@ export function persistRefs<T extends Record<string, Ref<unknown>>>(key: string,
     }
   }
 
-  watch(
-    () => {
-      const out: Record<string, unknown> = {};
-      for (const [field, r] of Object.entries(refs)) {
-        out[field] = r.value;
-      }
-      return out;
-    },
-    (value) => safeWrite(key, value),
-    { deep: true },
-  );
+  const collect = (): Record<string, unknown> => {
+    const out: Record<string, unknown> = {};
+    for (const [field, r] of Object.entries(refs)) {
+      out[field] = r.value;
+    }
+    return out;
+  };
+  rewriters.set(key, () => safeWrite(key, collect()));
+  watch(collect, (value) => safeWrite(key, value), { deep: true });
 }

@@ -1064,7 +1064,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2030-05-01',
     category: 'equipment',
     protocolIds: ['npa'],
-    // Lot and date from Young inv 3749491 (2026-11-10); the pouch itself has not been photographed.
+    // Lot and date confirmed on the pouch (photo, 2026-11-16); they match Young inv 3749491 (2026-11-10).
   },
   {
     id: 'npa-8',

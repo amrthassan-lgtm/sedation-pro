@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 
 import { patientIntro, useClinicalNote } from './useClinicalNote';
@@ -142,5 +142,59 @@ describe('a new case on a set-up tablet (owner, Nov 2026)', () => {
     expect(text).toContain(
       'An IV catheter (22g) was placed in the Right dorsal hand after 1 attempt; D5W 100 mL was initiated.',
     );
+  });
+});
+
+describe('the note dates itself from the case, not from the day it is opened (v1 audit)', () => {
+  const SIGNED = 'data:image/png;base64,iVBORw0KGgo=';
+  const CASE_DAY = new Date(2026, 10, 9, 14, 0).getTime();
+
+  beforeEach(async () => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+    const { useEventLogStore } = await import('@/stores/event-log');
+    useEventLogStore().events = [
+      { id: 'a', timestamp: CASE_DAY, event: 'IV Started', details: { Gauge: '22' } },
+      { id: 'b', timestamp: CASE_DAY + 30 * 60_000, event: 'Procedure Start', details: {} },
+    ];
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('a note opened the morning after carries the day of the case', () => {
+    vi.useFakeTimers({ now: new Date(2026, 10, 10, 8, 30) });
+    const note = useClinicalNote().value;
+    expect(note.header.date).toBe('November 9, 2026');
+    expect(note.narrative.join(' ')).toContain(' on November 9, 2026 for ');
+  });
+
+  it('a case with nothing logged yet is dated today', async () => {
+    const { useEventLogStore } = await import('@/stores/event-log');
+    useEventLogStore().events = [];
+    vi.useFakeTimers({ now: new Date(2026, 10, 16, 9, 0) });
+    expect(useClinicalNote().value.header.date).toBe('November 16, 2026');
+  });
+
+  it('prints the time the signature was drawn, not the time the note is opened', () => {
+    vi.useFakeTimers({ now: new Date(2026, 10, 9, 15, 42) });
+    useRecoveryStore().providerSignatureDataUrl = SIGNED;
+    vi.setSystemTime(new Date(2026, 10, 9, 17, 5));
+    expect(useClinicalNote().value.signatures.signedAt).toBe('03:42 PM');
+  });
+
+  it('names the date when the signature was drawn on a later day', () => {
+    vi.useFakeTimers({ now: new Date(2026, 10, 10, 8, 15) });
+    useRecoveryStore().providerSignatureDataUrl = SIGNED;
+    expect(useClinicalNote().value.signatures.signedAt).toBe('Nov 10, 2026, 08:15 AM');
+  });
+
+  it('a signature from before the time was kept prints no time rather than a wrong one', () => {
+    localStorage.setItem(
+      'sedation-pro:recovery:v6',
+      JSON.stringify({ providerSignatureDataUrl: SIGNED }),
+    );
+    setActivePinia(createPinia());
+    expect(useClinicalNote().value.signatures.signedAt).toBeNull();
   });
 });
