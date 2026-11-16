@@ -30,7 +30,9 @@ vi.mock('./clinicalNoteToPdf', () => ({
 }));
 
 const { OdError } = await import('@/services/opendental');
-const { useSendToChart, RATE_LIMIT_SPACING_MS } = await import('./useSendToChart');
+const { useSendToChart, RATE_LIMIT_SPACING_MS, STORAGE_FULL_REASON } =
+  await import('./useSendToChart');
+const { unsavedKeys } = await import('@/stores/persistence');
 const { useChartSendStore } = await import('@/stores/chart-send');
 const { usePatientStore } = await import('@/stores/patient');
 
@@ -458,5 +460,38 @@ describe('resending after everything is already filed', () => {
 
     expect(postCommlog).toHaveBeenCalledTimes(1);
     expect(uploadDocument).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('a full tablet sends nothing it could not remember (v1 audit)', () => {
+  afterEach(() => {
+    unsavedKeys.value = [];
+  });
+
+  it('while a save is failing, the send waits and says why', async () => {
+    const { chart } = setup();
+    unsavedKeys.value = ['sedation-pro:recovery:v6'];
+
+    expect(chart.precondition.value.ready).toBe(false);
+    expect(chart.precondition.value.reason).toBe(STORAGE_FULL_REASON);
+    await chart.requestSend();
+    expect(getPatient).not.toHaveBeenCalled();
+    expect(postCommlog).not.toHaveBeenCalled();
+  });
+
+  it('with no room left to record the result, nothing is written to the chart', async () => {
+    const { chart, send } = setup();
+    await chart.requestSend();
+    const full = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+    });
+
+    await chart.confirmSend();
+    full.mockRestore();
+
+    expect(postCommlog).not.toHaveBeenCalled();
+    expect(uploadDocument).not.toHaveBeenCalled();
+    expect(chart.lookupError.value).toBe(STORAGE_FULL_REASON);
+    expect(send.anythingSent).toBe(false);
   });
 });

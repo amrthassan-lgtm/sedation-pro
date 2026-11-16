@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { UiCard } from '@sedation-pro/ui';
+import { UiCard, UiModal } from '@sedation-pro/ui';
 
 import { useNoteArchiveStore, type FrozenNote } from '@/stores/note-archive';
 
@@ -20,6 +20,17 @@ const archive = useNoteArchiveStore();
 const editing = ref(false);
 
 const notes = computed(() => archive.byNewest);
+
+/**
+ * A saved note may be the only copy of a signed record, so "−" asks first.
+ * It used to delete on the spot, with no undo.
+ */
+const pendingDelete = ref<FrozenNote | null>(null);
+
+function confirmDelete(): void {
+  if (pendingDelete.value !== null) archive.remove(pendingDelete.value.id);
+  pendingDelete.value = null;
+}
 
 function openNote(id: string): void {
   void router.push(`/notes/${id}`);
@@ -69,7 +80,7 @@ function describe(n: FrozenNote): string {
             type="button"
             class="sn-remove"
             :aria-label="`Delete the note for ${n.patientName}`"
-            @click="archive.remove(n.id)"
+            @click="pendingDelete = n"
           >
             <span aria-hidden="true">−</span>
           </button>
@@ -83,6 +94,22 @@ function describe(n: FrozenNote): string {
         </li>
       </ul>
     </UiCard>
+
+    <UiModal
+      :open="pendingDelete !== null"
+      title="Delete this note?"
+      tone="danger"
+      confirm-label="Delete note"
+      cancel-label="Keep it"
+      @confirm="confirmDelete"
+      @cancel="pendingDelete = null"
+    >
+      <template v-if="pendingDelete">
+        <strong>{{ pendingDelete.patientName || 'Unnamed patient' }}</strong> ·
+        {{ describe(pendingDelete) }}. It is removed from this tablet only. A note that was never
+        sent to Open Dental or printed cannot be recovered.
+      </template>
+    </UiModal>
   </main>
 </template>
 

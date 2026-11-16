@@ -6,7 +6,7 @@ import { storeToRefs } from 'pinia';
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
-import { lastSavedAt } from '@/stores/persistence';
+import { lastSavedAt, unsavedKeys } from '@/stores/persistence';
 import { fmtClock } from '@/composables/format';
 import { protocolBarTitle } from '@/data/protocolNames';
 import { protocolTitleHidden } from '@/composables/protocolTitle';
@@ -64,6 +64,7 @@ onScopeDispose(() => {
   if (savingTimer) clearTimeout(savingTimer);
 });
 const savedLabel = computed<string | null>(() => {
+  if (unsavedKeys.value.length > 0) return 'Not saved';
   const ts = lastSavedAt.value;
   if (ts === null) return null;
   if (saving.value) return 'Saving…';
@@ -215,9 +216,15 @@ function emergency() {
       <span
         v-if="savedLabel"
         class="sticky-bar-saved"
-        :class="{ 'is-saving': savedLabel === 'Saving…' }"
+        :class="{ 'is-saving': savedLabel === 'Saving…', 'is-failed': savedLabel === 'Not saved' }"
       >
         <span v-if="savedLabel === 'Saving…'" class="sticky-bar-saved-dot" aria-hidden="true" />
+        <span
+          v-else-if="savedLabel === 'Not saved'"
+          class="sticky-bar-saved-alert"
+          aria-hidden="true"
+          >!</span
+        >
         <span v-else class="sticky-bar-saved-check" aria-hidden="true">✓</span>
         {{ savedLabel }}
       </span>
@@ -556,6 +563,15 @@ function emergency() {
 }
 .sticky-bar-saved-check {
   color: var(--color-good);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+}
+/* A failing write is the one state here that needs the eye. */
+.sticky-bar-saved.is-failed {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+.sticky-bar-saved-alert {
   font-size: 11px;
   font-weight: var(--weight-bold);
 }

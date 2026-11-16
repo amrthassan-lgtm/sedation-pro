@@ -87,6 +87,18 @@ function fmtClock(ms: number | null | undefined): string {
   return clock(ms) ?? '—';
 }
 
+/** The signing time, with its date in front when it is not the day of service. */
+function fmtSignedAt(at: number, serviceAt: number): string {
+  const time = fmtClock(at);
+  if (new Date(at).toDateString() === new Date(serviceAt).toDateString()) return time;
+  const day = new Date(at).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  return `${day}, ${time}`;
+}
+
 function fmtDate(s: string | null | undefined): string {
   if (!s) return '—';
   const d = parseCalendarDay(s);
@@ -142,7 +154,11 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
   const { events } = storeToRefs(eventLog);
 
   return computed<ClinicalNote>(() => {
-    const today = new Date().toLocaleDateString(undefined, {
+    // The case's own day, from its last logged event, not the day the note is
+    // opened: a note sent the morning after carried the wrong date of service.
+    const lastEvent = events.value[events.value.length - 1];
+    const serviceAt = lastEvent ? lastEvent.timestamp : Date.now();
+    const serviceDate = new Date(serviceAt).toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -390,7 +406,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       const asst = patient.assistants?.trim();
       const asstSentence = asst ? ` Dental assistant: ${asst}.` : '';
       narrative.push(
-        `${intro} presented to ${formulary.practiceName} on ${today} for ${proc} under moderate IV sedation. Attending provider: ${prov}.${asstSentence}`,
+        `${intro} presented to ${formulary.practiceName} on ${serviceDate} for ${proc} under moderate IV sedation. Attending provider: ${prov}.${asstSentence}`,
       );
     }
 
@@ -563,8 +579,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
     // A case can span two visits. Rows carry a clock time only, so a row
     // from an earlier day than the latest one names its date, or the
     // assessment would read as if it happened on the day of sedation.
-    const lastEvent = events.value[events.value.length - 1];
-    const serviceDay = lastEvent ? new Date(lastEvent.timestamp).toDateString() : null;
+    const serviceDay = new Date(serviceAt).toDateString();
     const chronology: ClinicalNoteRow[] = events.value.map((e: LogEvent) => {
       const detail = fmtDetail(e.details);
       const when = new Date(e.timestamp);
@@ -580,14 +595,16 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       };
     });
 
-    const providerSignedAt = recovery.providerSignatureDataUrl ? Date.now() : null;
+    // The time ink first went on the pad. A signature from before that was
+    // recorded prints no time rather than a wrong one.
+    const signedAt = recovery.providerSignatureDataUrl ? recovery.providerSignedAt : null;
 
     return {
       header: {
         practice: formulary.practiceName,
         patient: patient.name || '[Patient Name]',
         mrn: patient.mrn || '—',
-        date: today,
+        date: serviceDate,
         provider: patient.provider || '—',
         assistants: patient.assistants?.trim() || '—',
         procedure: patient.procedure?.trim() || 'Moderate IV sedation',
@@ -603,7 +620,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       chronology,
       signatures: {
         providerDataUrl: recovery.providerSignatureDataUrl,
-        signedAt: providerSignedAt !== null ? fmtClock(providerSignedAt) : null,
+        signedAt: signedAt === null ? null : fmtSignedAt(signedAt, serviceAt),
       },
       disposition: {
         kind,

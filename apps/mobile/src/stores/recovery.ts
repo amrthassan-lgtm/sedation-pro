@@ -36,6 +36,12 @@ export const useRecoveryStore = defineStore('recovery', () => {
   const companionRelation = ref('');
   /** Provider signature data URL — written by the signature pad on pointer-up. */
   const providerSignatureDataUrl = ref<string | null>(null);
+  /**
+   * When ink first went on the pad. The note prints this; it used to print the
+   * moment the note was regenerated, usually when it was sent, which is not
+   * when anyone signed.
+   */
+  const providerSignedAt = ref<number | null>(null);
 
   // ------- Discharge checklist (manual confirmations) -----------------------
 
@@ -154,6 +160,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     companionName.value = '';
     companionRelation.value = '';
     providerSignatureDataUrl.value = null;
+    providerSignedAt.value = null;
     discharge.value = {
       escortedToVehicle: false,
       verbalInstructionsGiven: false,
@@ -207,6 +214,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     companionName,
     companionRelation,
     providerSignatureDataUrl,
+    providerSignedAt,
     discharge,
     prescriptions,
     sedationRating,
@@ -221,6 +229,18 @@ export const useRecoveryStore = defineStore('recovery', () => {
     noteFrozenId,
     releaseAttempted,
   });
+
+  // After hydration, so a restored case keeps its own time. Sync, so a caller
+  // that puts a signature back (undoing a reopen) can put its time back
+  // straight after. Clearing the pad clears the time; signing again restamps.
+  watch(
+    providerSignatureDataUrl,
+    (next, prev) => {
+      if (next === null) providerSignedAt.value = null;
+      else if (prev === null) providerSignedAt.value = Date.now();
+    },
+    { flush: 'sync' },
+  );
 
   return {
     // form refs
@@ -239,6 +259,7 @@ export const useRecoveryStore = defineStore('recovery', () => {
     companionName,
     companionRelation,
     providerSignatureDataUrl,
+    providerSignedAt,
     discharge,
     prescriptions,
     sedationRating,
