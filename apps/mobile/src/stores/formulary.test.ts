@@ -69,13 +69,20 @@ describe('editing a list', () => {
     expect(f.picklists.dentalAssistants).toEqual(['Kim Lee, EFDA', 'Jo Diaz, EFDA']);
   });
 
-  it('accepts an emptied list, since a practice may have no assistants', () => {
+  it('accepts an emptied list, since a practice may not use one', () => {
     const f = useFormularyStore();
 
-    f.setList('dentalAssistants', []);
+    f.setList('venipunctureComplications', []);
 
+    expect(f.picklists.venipunctureComplications).toEqual([]);
+    expect(f.isOverridden('venipunctureComplications')).toBe(true);
+  });
+
+  it('a tablet that was never set up has no staff names at all', () => {
+    // Names are typed at setup on each tablet; none ship in the public code.
+    const f = useFormularyStore();
+    expect(f.picklists.providers).toEqual([]);
     expect(f.picklists.dentalAssistants).toEqual([]);
-    expect(f.isOverridden('dentalAssistants')).toBe(true);
   });
 
   /**
@@ -86,32 +93,51 @@ describe('editing a list', () => {
   it('drops the override when a list is set back to the shipped values', () => {
     const f = useFormularyStore();
 
-    f.setList('providers', ['Dr. Ada Lovelace']);
-    f.setList('providers', [...DEFAULT_FORMULARY.picklists.providers]);
+    f.setList('ivFluids', ['Saline lock (no infusion)']);
+    f.setList('ivFluids', [...DEFAULT_FORMULARY.picklists.ivFluids]);
 
-    expect(f.isOverridden('providers')).toBe(false);
+    expect(f.isOverridden('ivFluids')).toBe(false);
     expect(f.active).toBe(DEFAULT_FORMULARY);
   });
 
   it('restores one list without disturbing another', () => {
     const f = useFormularyStore();
-    f.setList('providers', ['Dr. Ada Lovelace']);
+    f.setList('ivSites', ['Left forearm']);
     f.setList('catheterGauges', ['18']);
 
-    f.restoreList('providers');
+    f.restoreList('ivSites');
 
-    expect(f.picklists.providers).toEqual(DEFAULT_FORMULARY.picklists.providers);
+    expect(f.picklists.ivSites).toEqual(DEFAULT_FORMULARY.picklists.ivSites);
     expect(f.picklists.catheterGauges).toEqual(['18']);
   });
 
   it('restores everything at once', () => {
     const f = useFormularyStore();
-    f.setList('providers', ['Dr. Ada Lovelace']);
+    f.setList('ivSites', ['Left forearm']);
     f.practiceNameOverride = 'Second Office';
 
     f.restoreAll();
 
     expect(f.active).toBe(DEFAULT_FORMULARY);
+  });
+
+  it('never empties a list a new case pre-selects from (owner, Nov 2026)', () => {
+    const f = useFormularyStore();
+    f.setList('providers', ['Dr. Ada Lovelace']);
+    f.setList('providers', []);
+    f.setList('ivSites', ['  ']);
+    expect(f.picklists.providers).toEqual(['Dr. Ada Lovelace']);
+    expect(f.picklists.ivSites).toEqual(DEFAULT_FORMULARY.picklists.ivSites);
+  });
+
+  it('never restores the staff to the shipped list, which is empty', () => {
+    const f = useFormularyStore();
+    f.setList('providers', ['Dr. Ada Lovelace']);
+    f.setList('dentalAssistants', ['Kim Lee, EFDA']);
+    f.restoreList('providers');
+    f.restoreAll();
+    expect(f.picklists.providers).toEqual(['Dr. Ada Lovelace']);
+    expect(f.picklists.dentalAssistants).toEqual(['Kim Lee, EFDA']);
   });
 });
 

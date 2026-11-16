@@ -3,27 +3,27 @@ import { ref } from 'vue';
 
 import { OTHER_OPTION, useOtherableSelect } from './useOtherableSelect';
 
-const CHOICES = ['Dr. Amr Hassan', 'Dr. Camila Flach'];
+const CHOICES = ['Dr. Jordan Rivera', 'Dr. Sam Patel'];
 
 describe('useOtherableSelect', () => {
   it('reflects an in-list default as the selected value, not Other', () => {
-    const model = ref('Dr. Amr Hassan');
+    const model = ref('Dr. Jordan Rivera');
     const s = useOtherableSelect(model, CHOICES);
     expect(s.isOther.value).toBe(false);
-    expect(s.selectValue.value).toBe('Dr. Amr Hassan');
+    expect(s.selectValue.value).toBe('Dr. Jordan Rivera');
   });
 
   it('appends a single trailing Other… option', () => {
-    const s = useOtherableSelect(ref('Dr. Amr Hassan'), CHOICES);
+    const s = useOtherableSelect(ref('Dr. Jordan Rivera'), CHOICES);
     expect(s.options.value.map((o) => o.value)).toEqual([
-      'Dr. Amr Hassan',
-      'Dr. Camila Flach',
+      'Dr. Jordan Rivera',
+      'Dr. Sam Patel',
       OTHER_OPTION,
     ]);
   });
 
   it('choosing Other… clears the model and reveals the free-text path', () => {
-    const model = ref('Dr. Amr Hassan');
+    const model = ref('Dr. Jordan Rivera');
     const s = useOtherableSelect(model, CHOICES);
     s.selectValue.value = OTHER_OPTION;
     expect(model.value).toBe('');
@@ -48,8 +48,8 @@ describe('useOtherableSelect', () => {
   it('selecting a list entry writes it straight through', () => {
     const model = ref('');
     const s = useOtherableSelect(model, CHOICES);
-    s.selectValue.value = 'Dr. Camila Flach';
-    expect(model.value).toBe('Dr. Camila Flach');
+    s.selectValue.value = 'Dr. Sam Patel';
+    expect(model.value).toBe('Dr. Sam Patel');
     expect(s.isOther.value).toBe(false);
   });
 });

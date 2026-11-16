@@ -17,7 +17,7 @@ type Patient = ReturnType<typeof usePatientStore>;
 function fillAllRequiredFields(patient: Patient): void {
   patient.name = 'Jane Doe';
   patient.mrn = '12345';
-  patient.provider = 'Dr. Hassan';
+  patient.provider = 'Dr. Rivera';
   patient.careName = 'John Doe';
   patient.carePhone = '5551234567';
   patient.weightLb = 180;

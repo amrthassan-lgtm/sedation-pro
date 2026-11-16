@@ -25,6 +25,8 @@ const props = defineProps<{
   overridden: boolean;
   /** Set when the first entry is what a new case is pre-filled with. */
   firstIsDefault?: boolean | undefined;
+  /** Open on arrival, for first-run setup where the list is the whole screen. */
+  startOpen?: boolean | undefined;
 }>();
 
 const emit = defineEmits<{
@@ -32,7 +34,7 @@ const emit = defineEmits<{
   restore: [];
 }>();
 
-const open = ref(false);
+const open = ref(props.startOpen === true);
 const editing = ref(false);
 const adding = ref(false);
 const draft = ref('');
@@ -47,6 +49,10 @@ watch(open, (isOpen) => {
     draft.value = '';
   }
 });
+
+// A list whose top entry pre-fills a new case keeps at least one entry, so
+// a new case never opens blank (owner, Nov 2026).
+const lastOneStays = computed(() => props.firstIsDefault === true && props.entries.length === 1);
 
 const trimmedDraft = computed(() => draft.value.trim());
 const isDuplicate = computed(() =>
@@ -67,6 +73,7 @@ function cancelAdd(): void {
 }
 
 function removeAt(index: number): void {
+  if (lastOneStays.value) return;
   emit(
     'update',
     props.entries.filter((_, i) => i !== index),
@@ -123,6 +130,7 @@ function move(index: number, delta: number): void {
             v-if="editing"
             type="button"
             class="pl-remove"
+            :disabled="lastOneStays"
             :aria-label="`Remove ${entry}`"
             @click="removeAt(i)"
           >
@@ -152,7 +160,11 @@ function move(index: number, delta: number): void {
         </li>
 
         <li v-if="entries.length === 0" class="pl-row pl-row-empty">
-          Nothing on this list. A new case leaves the matching field blank.
+          {{
+            firstIsDefault
+              ? 'Nothing on this list yet.'
+              : 'Nothing on this list. A new case leaves the matching field blank.'
+          }}
         </li>
 
         <li v-if="adding" class="pl-row pl-row-add">
@@ -172,6 +184,10 @@ function move(index: number, delta: number): void {
 
       <p v-if="adding && isDuplicate" class="pl-note">
         “{{ trimmedDraft }}” is already on the list.
+      </p>
+      <p v-if="editing && lastOneStays" class="pl-note">
+        This list keeps at least one entry: the top one is pre-selected on every new case. Add
+        another before removing this one.
       </p>
 
       <UiPillButton v-if="overridden" class="pl-restore" @click="emit('restore')"
@@ -292,6 +308,11 @@ function move(index: number, delta: number): void {
   background: var(--color-danger);
   font-size: 20px;
   line-height: 1;
+}
+.pl-remove:disabled {
+  color: var(--color-text-disabled);
+  background: var(--color-surface-elevated);
+  cursor: default;
 }
 .pl-reorder {
   display: flex;

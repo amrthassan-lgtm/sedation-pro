@@ -9,7 +9,7 @@ const BASE: ClinicalNote = {
     patient: 'Jane Doe',
     mrn: '12345',
     date: 'May 16, 2026',
-    provider: 'Dr. Hassan',
+    provider: 'Dr. Rivera',
     assistants: 'A. Smith',
     procedure: 'EXT #19',
   },
@@ -53,7 +53,7 @@ describe('clinicalNoteToText', () => {
     expect(text).toContain('Provider: signed · 11:02');
     // The companion signs nothing; no signature line for them.
     expect(text).not.toContain('Responsible companion');
-    expect(text).toContain('Generated 5/16/2026, 11:05:00 AM · Sedation Pro v1.1.12');
+    expect(text).toContain('Generated 5/16/2026, 11:05:00 AM · Sedation Pro v1.1.13');
   });
 
   it('flags an unsigned note explicitly', () => {

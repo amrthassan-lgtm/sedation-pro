@@ -2,6 +2,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 
 import { patientIntro, useClinicalNote } from './useClinicalNote';
+import { useFormularyStore } from '@/stores/formulary';
+import { useIVStore } from '@/stores/iv';
 import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 
@@ -116,5 +118,29 @@ describe('chronology rows from an earlier visit name their day', () => {
     const rows = useClinicalNote().value.chronology;
 
     expect(rows.map((r) => r.detail)).toEqual(['Gauge: 22', '']);
+  });
+});
+
+describe('a new case on a set-up tablet (owner, Nov 2026)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  it('the note names the staff typed at setup and the IV the practice lists start with', () => {
+    const formulary = useFormularyStore();
+    formulary.setList('providers', ['Dr. Jordan Rivera', 'Dr. Sam Patel']);
+    formulary.setList('dentalAssistants', ['Alex Morgan, EFDA']);
+    // The case is created after the lists, as it is on a new case.
+    usePatientStore();
+    useIVStore().ivStarted = true;
+
+    const text = useClinicalNote().value.narrative.join(' ');
+    expect(text).toContain(
+      'Attending provider: Dr. Jordan Rivera. Dental assistant: Alex Morgan, EFDA.',
+    );
+    expect(text).toContain(
+      'An IV catheter (22g) was placed in the Right dorsal hand after 1 attempt; D5W 100 mL was initiated.',
+    );
   });
 });

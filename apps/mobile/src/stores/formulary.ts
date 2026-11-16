@@ -14,6 +14,19 @@ export const FORMULARY_KEY = 'sedation-pro:formulary:v1';
 
 export type PicklistKey = keyof PracticePicklists;
 
+/**
+ * Lists whose top entry a new case pre-selects (owner, Nov 2026). They always
+ * keep at least one entry, so a new case opens on the practice's choice and
+ * never on a blank.
+ */
+export const PRESELECTED_LISTS: ReadonlySet<PicklistKey> = new Set<PicklistKey>([
+  'providers',
+  'dentalAssistants',
+  'ivSites',
+  'ivFluids',
+  'catheterGauges',
+]);
+
 function sameList(a: ReadonlyArray<string>, b: ReadonlyArray<string>): boolean {
   return a.length === b.length && a.every((entry, i) => entry === b[i]);
 }
@@ -58,14 +71,15 @@ export const useFormularyStore = defineStore('formulary', () => {
 
   /**
    * Entries are trimmed and de-duplicated because they are typed by hand and
-   * land verbatim on a medicolegal note — "Dr. Amr Hassan " and
-   * "Dr. Amr Hassan" must not read as two different clinicians.
+   * land verbatim on a medicolegal note — "Dr. Jordan Rivera " and
+   * "Dr. Jordan Rivera" must not read as two different clinicians.
    *
    * Setting a list back to the shipped values drops the override rather than
    * recording an identical one, so "unchanged" stays a real state.
    */
   function setList(key: PicklistKey, entries: ReadonlyArray<string>): void {
     const cleaned = [...new Set(entries.map((entry) => entry.trim()).filter((e) => e !== ''))];
+    if (cleaned.length === 0 && PRESELECTED_LISTS.has(key)) return;
     if (sameList(cleaned, shippedList(key))) {
       delete picklistOverrides.value[key];
       return;
@@ -73,12 +87,14 @@ export const useFormularyStore = defineStore('formulary', () => {
     picklistOverrides.value[key] = cleaned;
   }
 
+  /** The staff lists ship empty, so "restoring" them would empty the tablet's roster: refused. */
   function restoreList(key: PicklistKey): void {
+    if (PRESELECTED_LISTS.has(key) && shippedList(key).length === 0) return;
     delete picklistOverrides.value[key];
   }
 
   function restoreAll(): void {
-    picklistOverrides.value = {};
+    for (const key of Object.keys(picklistOverrides.value) as PicklistKey[]) restoreList(key);
     practiceNameOverride.value = '';
   }
 
