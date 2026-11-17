@@ -1,6 +1,7 @@
 import { DEFAULT_FORMULARY, emergencySyringeTint } from '@sedation-pro/clinical';
 
 import type { StockVial } from './syringe';
+import { calloutAt } from './protocol';
 import type { ProtocolRef } from './types';
 
 /**
@@ -551,4 +552,20 @@ export function searchCart(query: string, limit = 6): ReadonlyArray<CartEntry> {
     .sort((a, b) => b.score - a.score || a.entry.label.localeCompare(b.entry.label))
     .slice(0, limit)
     .map((s) => s.entry);
+}
+
+/**
+ * What a pen says once it is out of its case, or null for one that says
+ * nothing. Read from the protocol's own note for the pen ("Auvi-Q talks you
+ * through it: <steps>; <aside>"), so the trainer adds no technique of its
+ * own and a reworded note is what the pen then says.
+ */
+export function spokenInstruction(deviceId: string): string | null {
+  const ref = findDevice(deviceId)?.from[0];
+  if (!ref || !('step' in ref)) return null;
+  const notes = calloutAt(ref.protocol, ref.step).notes ?? '';
+  const m = /talks you through it: ([^;]+)/.exec(notes);
+  if (!m?.[1]) return null;
+  const steps = m[1].trim();
+  return `${steps.charAt(0).toUpperCase()}${steps.slice(1)}.`;
 }

@@ -5,7 +5,7 @@ import { hush, say } from '@/audio/voice';
 import { Simulation } from '@/engine/engine';
 import { gradeRun } from '@/engine/grade';
 import type { SyringeSize } from '@/engine/syringe';
-import type { CutRecord, Scenario } from '@/engine/types';
+import type { CutRecord, Scenario, Voice } from '@/engine/types';
 import { addRecord, recordsFor, setLastRun, settings } from '@/session';
 
 /** The sim advances four times a second; the monitor animates on its own frame clock. */
@@ -224,6 +224,10 @@ export function useRun(scenario: Scenario) {
     useDevice: (id: string, units = 1) => play(() => sim.useDevice(id, units)),
     answer: (optionId: string) => play(() => sim.answer(optionId)),
     cycleCuff: () => play(() => sim.cycleCuff()),
+    /** A device's own voice, under the same Sound and Voice switches as the room. */
+    speak: (line: Voice): void => {
+      if (settings.sound && settings.voice) say(line);
+    },
     pauseAlarm: (): void => {
       alarmPausedUntil.value = wall.value + ALARM_PAUSE_SEC;
       stopAlarms();

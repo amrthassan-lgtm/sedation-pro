@@ -549,23 +549,29 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <p class="heading"><span class="heading-step">14</span> Discharge Handoff</p>
       <UiStack :gap="3" class="mt-2">
         <p class="caption">Post-op confirmations</p>
-        <UiStack :gap="1">
+        <!-- The same rows as section 13 beside it (owner, Nov 2026): optional
+             here, but a tablet row under 44 px is a missed tap. -->
+        <UiStack :gap="2">
           <UiCheckbox
+            size="tap-target"
             :model-value="!!discharge.escortedToVehicle"
             label="Escorted to vehicle"
             @update:model-value="(v) => recovery.setDischarge('escortedToVehicle', v)"
           />
           <UiCheckbox
+            size="tap-target"
             :model-value="!!discharge.verbalInstructionsGiven"
             label="Verbal post-op instructions given"
             @update:model-value="(v) => recovery.setDischarge('verbalInstructionsGiven', v)"
           />
           <UiCheckbox
+            size="tap-target"
             :model-value="!!discharge.writtenInstructionsGiven"
             label="Written instructions handed off"
             @update:model-value="(v) => recovery.setDischarge('writtenInstructionsGiven', v)"
           />
           <UiCheckbox
+            size="tap-target"
             :model-value="!!discharge.propertyReturned"
             label="Patient property returned"
             @update:model-value="(v) => recovery.setDischarge('propertyReturned', v)"

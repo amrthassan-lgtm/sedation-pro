@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
-import { findDevice } from '@/engine/catalog';
+import { findDevice, spokenInstruction } from '@/engine/catalog';
 import { calloutAt } from '@/engine/protocol';
 import type { Run } from '@/composables/useRun';
 
@@ -31,6 +31,15 @@ const guard = computed(() =>
     ? { pull: 'Pull off the red guard', off: 'Red guard off' }
     : { pull: 'Take the safety off', off: 'Safety off' },
 );
+
+/**
+ * The adult Auvi-Q talks the moment it leaves its case, as the real one does
+ * (owner, Nov 2026). Written here too, for a room with the sound off.
+ */
+const instruction = computed(() => spokenInstruction(props.deviceId));
+onMounted(() => {
+  if (instruction.value) props.run.speak({ who: 'Pen', line: instruction.value });
+});
 
 const guardOff = ref(false);
 const held = ref(0);
@@ -83,6 +92,9 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
     /></template>
     <template v-if="device && isPen">
       <p class="hint">{{ device.detail }}</p>
+      <p v-if="instruction" class="pen-says">
+        <span class="pen-says-who">The pen says</span> “{{ instruction }}”
+      </p>
       <button
         type="button"
         class="btn btn--tall"
@@ -144,6 +156,21 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
 <style scoped>
 .hint {
   margin: 0;
+  color: var(--color-text-secondary);
+}
+/* The pen's words, for a room with the sound off. */
+.pen-says {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--type-body);
+}
+.pen-says-who {
+  display: block;
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-semibold);
   color: var(--color-text-secondary);
 }
 .hold {
