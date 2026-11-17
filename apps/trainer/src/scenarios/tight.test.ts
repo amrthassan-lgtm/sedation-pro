@@ -50,7 +50,7 @@ function endWithoutEms(sim: Simulation): void {
   expect(untilEnd(sim)).toBe(true);
 }
 
-describe('"Tight", played by the protocol', () => {
+describe('"Cough", played by the protocol', () => {
   it('the ideal run hands him to EMS with every core step done', () => {
     const sim = start();
     ideal(sim);
@@ -114,7 +114,7 @@ describe('"Tight", played by the protocol', () => {
   });
 });
 
-describe('"Tight": the inhaler comes first', () => {
+describe('"Cough": the inhaler comes first', () => {
   it('fewer puffs than a round do not ease him', () => {
     const sim = start();
     advance(sim, 12);
@@ -200,7 +200,7 @@ describe('"Tight": the inhaler comes first', () => {
   });
 });
 
-describe('"Tight": the signs that call for the pen', () => {
+describe('"Cough": the signs that call for the pen', () => {
   it('reads the saturation line from the protocol step', () => {
     const step = findProtocol('bronchospasm')!.steps.find((s) =>
       s.text.includes('Auvi-Q 0.3 first'),
@@ -278,7 +278,7 @@ describe('"Tight": the signs that call for the pen', () => {
   });
 });
 
-describe('"Tight": after the pen', () => {
+describe('"Cough": after the pen', () => {
   function toBetter(sim: Simulation): void {
     firstRound(sim);
     until(sim, 'severe');

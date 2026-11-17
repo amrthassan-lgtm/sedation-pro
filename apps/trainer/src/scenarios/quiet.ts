@@ -18,8 +18,9 @@ import {
 } from './shared';
 
 /**
- * "Quiet": a sedated patient stops breathing well, is bagged and reversed,
- * wakes, then goes into laryngospasm.
+ * "Shallow": a sedated patient stops breathing well, is bagged and reversed,
+ * wakes, then goes into laryngospasm. Its first name was "Quiet", which is
+ * still its id: run records are kept under the id.
  *
  * Graded against Hypoventilation, Oversedation (Opioid) and Laryngospasm.
  * The numbers below are pacing, not pharmacology: how fast the saturation
@@ -127,7 +128,7 @@ const sedativeGiven: Reaction = (_ctx, e) => {
 
 export const quiet: Scenario = {
   id: 'quiet',
-  title: 'Quiet',
+  title: 'Shallow',
   tagline: 'The room is calm. Then the monitor changes.',
   protocols: ['hypoventilation', 'oversedation_opioid', 'laryngospasm'],
   floridaTopics: ['Hyperventilation / hypoventilation', 'Laryngospasm'],

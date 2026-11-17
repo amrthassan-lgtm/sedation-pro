@@ -39,7 +39,7 @@ function row(sim: Simulation, id: string) {
   return found;
 }
 
-describe('"Quiet", played by the protocols', () => {
+describe('"Shallow", played by the protocols', () => {
   it('the ideal run recovers with every core step done', () => {
     const sim = start();
     idealUntilSpasm(sim);

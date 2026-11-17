@@ -21,8 +21,9 @@ import {
 } from './shared';
 
 /**
- * "Tight": an asthmatic who starts to wheeze during a crown preparation,
- * awake enough to talk, with no rash.
+ * "Cough": an asthmatic who starts to wheeze during a crown preparation,
+ * awake enough to talk, with no rash. Its first name was "Tight", which is
+ * still its id: run records are kept under the id.
  *
  * Graded against Bronchospasm. It is the counterpart to "Wheeze": there the
  * mistake is waiting on epinephrine, here it is reaching for it before the
@@ -126,8 +127,8 @@ const EPINEPHRINE_WORKS: Transition = {
 
 export const tight: Scenario = {
   id: 'tight',
-  title: 'Tight',
-  tagline: 'A cough that will not settle.',
+  title: 'Cough',
+  tagline: 'A crown preparation that keeps being interrupted.',
   protocols: ['bronchospasm'],
   floridaTopics: ['Bronchospasm'],
   patient: { name: 'Mr. Brooks', summary: '38-year-old man, 175 lb' },

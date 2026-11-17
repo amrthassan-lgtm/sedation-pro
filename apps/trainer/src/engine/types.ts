@@ -240,9 +240,10 @@ export type RubricItem = RubricBase &
 export interface Scenario {
   readonly id: string;
   /**
-   * One word, in quotes on screen: "Quiet". It may be the sign the team would
-   * see ("Stridor": owner, Nov 2026, so a drill can be found by it). It is
-   * never the name of the emergency.
+   * One word, in quotes on screen: "Stridor". A sign the team would see, so
+   * the drill can be found by it, but not the first, classic one on the page
+   * (owner, Nov 2026): the name hints at the emergency without handing it
+   * over. Never the emergency's name. "Crown" is named for what was dropped.
    */
   readonly title: string;
   /** One line for the scenario card. No spoilers. */

@@ -47,6 +47,31 @@ const LEFT_OUT: Readonly<Record<string, ReadonlyArray<readonly [string, string, 
   ],
 };
 
+function wordsOf(texts: ReadonlyArray<string>, longerThan: number): string[] {
+  return texts
+    .flatMap((text) => text.toLowerCase().split(/[^a-z]+/))
+    .filter((word) => word.length > longerThan);
+}
+
+/** "wheezing" and "wheeze", "hives" and "hive": one word for this purpose. */
+function stem(word: string): string {
+  return word.replace(/(ing|es|ed|s|e)$/, '');
+}
+
+/**
+ * A drill is titled with a sign the team would see, so it can be found by it,
+ * but not the first one on the page (owner, Nov 2026): the name hints at the
+ * emergency without handing it over. The emergency's own name is barred too.
+ */
+function titleGivesAway(title: string, protocolIds: ReadonlyArray<string>): boolean {
+  const protocols = protocolIds.map((id) => findProtocol(id)!);
+  const barred = wordsOf(
+    protocols.flatMap((p) => [p.name, p.signs[0] ?? '']),
+    3,
+  ).map(stem);
+  return wordsOf([title], 3).some((word) => barred.includes(stem(word)));
+}
+
 describe('every scenario', () => {
   it('has a unique id and can be found by it', () => {
     const ids = SCENARIOS.map((s) => s.id);
@@ -167,21 +192,31 @@ describe('every scenario', () => {
   );
 
   it.each(SCENARIOS.map((s) => [s.id, s] as const))(
-    '%s: neither the title nor the tagline names the emergency, and the tagline gives no sign away',
+    '%s: the title is neither the name of the emergency nor its classic sign, and the tagline gives no sign away',
     (_id, scenario) => {
-      const words = (texts: ReadonlyArray<string>): string[] =>
-        texts.flatMap((w) => w.toLowerCase().split(/[^a-z]+/)).filter((w) => w.length > 5);
+      expect(titleGivesAway(scenario.title, scenario.protocols)).toBe(false);
       const protocols = scenario.protocols.map((id) => findProtocol(id)!);
-      const names = words(protocols.map((p) => p.name));
-      const signs = words(protocols.flatMap((p) => p.signs));
-      // A drill may carry the sign the team would see as its title (owner, Nov 2026),
-      // so it can be found by it. The diagnosis itself stays out of both lines.
-      const title = scenario.title.toLowerCase();
-      for (const word of names) expect(title, word).not.toContain(word);
+      const spoilers = wordsOf(
+        [...protocols.map((p) => p.name), ...protocols.flatMap((p) => p.signs)],
+        5,
+      );
       const tagline = scenario.tagline.toLowerCase();
-      for (const word of [...names, ...signs]) expect(tagline, word).not.toContain(word);
+      for (const word of spoilers) expect(tagline, word).not.toContain(word);
     },
   );
+
+  it('the title rule would catch a classic sign or a diagnosis, and lets a later sign through', () => {
+    expect(titleGivesAway('Crowing', ['laryngospasm'])).toBe(true);
+    expect(titleGivesAway('Stridor', ['laryngospasm'])).toBe(false);
+    expect(titleGivesAway('Wheeze', ['bronchospasm'])).toBe(true);
+    expect(titleGivesAway('Cough', ['bronchospasm'])).toBe(false);
+    expect(titleGivesAway('Hives', ['anaphylaxis'])).toBe(true);
+    expect(titleGivesAway('Wheeze', ['anaphylaxis'])).toBe(false);
+    expect(titleGivesAway('Slow', ['hypoventilation'])).toBe(true);
+    expect(titleGivesAway('Shallow', ['hypoventilation'])).toBe(false);
+    expect(titleGivesAway('Asthma', ['bronchospasm'])).toBe(true);
+    expect(titleGivesAway('Laryngospasm', ['hypoventilation', 'laryngospasm'])).toBe(true);
+  });
 
   it.each(SCENARIOS.map((s) => [s.id, s] as const))(
     '%s: hands off, the patient is lost; the run always ends',

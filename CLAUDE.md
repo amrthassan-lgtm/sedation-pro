@@ -218,12 +218,14 @@ the clinical app and must stay that way:
   every room lives in `scenarios/shared.ts`; a dose of a drug the run's
   protocols never mention is listed in the debrief and withholds "Clean
   run" (`outsideProtocols` in `engine/grade.ts`).
-- **A drill's title may be its sign (owner, Nov 2026)**: the one the team
-  would see, so the drill can be found by it ("Stridor"). Neither the title
-  nor the tagline uses the name of the emergency, and the tagline gives no
-  sign away; `scenarios.test.ts` holds both. Run records are kept per
-  scenario `id`: rename a drill by its `title`, never by reusing another
-  drill's `id`.
+- **A drill is titled with a sign, but not the classic one (owner, Nov
+  2026).** The second sign on the page hints at the emergency without
+  handing it over: "Stridor", "Cough", "Shallow", and "Wheeze" for the
+  anaphylaxis drill. "Crown" is the exception, named for what was dropped.
+  The title is never the emergency's name or the page's first sign, and the
+  tagline gives no sign away; `scenarios.test.ts` holds both. Run records
+  are kept per scenario `id`, so a drill is renamed by its `title` alone:
+  "Shallow" is still `quiet` and "Cough" is still `tight`.
 - `pnpm dev:trainer` runs it locally on port 5174.
 
 ## Branching and commits
