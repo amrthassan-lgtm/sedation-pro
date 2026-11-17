@@ -32,6 +32,13 @@ const LEFT_OUT: Readonly<Record<string, ReadonlyArray<readonly [string, string, 
     ['oversedation_opioid', 'Naloxone can wear off before fentanyl', 'after the run ends'],
     ['laryngospasm', 'Cannot ventilate: LMA or King', 'succinylcholine breaks the spasm'],
   ],
+  stridor: [
+    [
+      'laryngospasm',
+      'Cannot ventilate: LMA or King',
+      'the mask or succinylcholine breaks the spasm',
+    ],
+  ],
   tight: [['bronchospasm', 'Cannot ventilate', 'he keeps breathing on his own in this run']],
   wheeze: [
     ['anaphylaxis', 'Throat or tongue swelling', 'his airway stays open in this run'],
@@ -160,16 +167,19 @@ describe('every scenario', () => {
   );
 
   it.each(SCENARIOS.map((s) => [s.id, s] as const))(
-    '%s: the title and tagline never name the emergency',
+    '%s: neither the title nor the tagline names the emergency, and the tagline gives no sign away',
     (_id, scenario) => {
-      const spoilers = scenario.protocols.flatMap((id) => {
-        const p = findProtocol(id)!;
-        return [p.name, ...p.signs]
-          .flatMap((w) => w.toLowerCase().split(/[^a-z]+/))
-          .filter((w) => w.length > 5);
-      });
-      const shown = `${scenario.title} ${scenario.tagline}`.toLowerCase();
-      for (const word of spoilers) expect(shown, word).not.toContain(word);
+      const words = (texts: ReadonlyArray<string>): string[] =>
+        texts.flatMap((w) => w.toLowerCase().split(/[^a-z]+/)).filter((w) => w.length > 5);
+      const protocols = scenario.protocols.map((id) => findProtocol(id)!);
+      const names = words(protocols.map((p) => p.name));
+      const signs = words(protocols.flatMap((p) => p.signs));
+      // A drill may carry the sign the team would see as its title (owner, Nov 2026),
+      // so it can be found by it. The diagnosis itself stays out of both lines.
+      const title = scenario.title.toLowerCase();
+      for (const word of names) expect(title, word).not.toContain(word);
+      const tagline = scenario.tagline.toLowerCase();
+      for (const word of [...names, ...signs]) expect(tagline, word).not.toContain(word);
     },
   );
 

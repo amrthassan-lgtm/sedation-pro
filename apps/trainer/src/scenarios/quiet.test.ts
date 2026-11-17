@@ -369,6 +369,82 @@ describe('"Quiet", played by the protocols', () => {
     expect(sim.cuts[1]!.at - entered).toBeGreaterThanOrEqual(14);
   });
 
+  it('succinylcholine pushed once he is breathing still paralyses him before the story closes', () => {
+    const sim = start();
+    idealUntilSpasm(sim);
+    idealSpasm(sim);
+    expect(until(sim, 'breathing')).toBe(true);
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(until(sim, 'paralyzed', 30)).toBe(true);
+    expect(sim.ending).toBeNull();
+    expect(sim.log.at(-1)).toMatchObject({ text: 'Paralysed by succinylcholine', tone: 'bad' });
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.cuts).toHaveLength(2);
+  });
+
+  it('two pushes inside the protocol range are one paralysis, not two', () => {
+    const sim = start();
+    idealUntilSpasm(sim);
+    sim.act('stop');
+    sim.act('suction');
+    sim.act('larson');
+    sim.act('cpap');
+    sim.act('call_911');
+    drawAndGive(sim, 'succinylcholine', 1);
+    advance(sim, 10);
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(until(sim, 'breathing')).toBe(true);
+    advance(sim, 3);
+    expect(sim.phase).toBe('breathing');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.cuts).toHaveLength(1);
+    expect(gradeRun(quiet, sim).clean).toBe(true);
+  });
+
+  it('a dose into the muscle does not stop a later dose into the vein from working, and is marked', () => {
+    const sim = start();
+    idealUntilSpasm(sim);
+    sim.act('stop');
+    sim.act('suction');
+    sim.act('larson');
+    sim.act('cpap');
+    sim.act('call_911');
+    drawAndGive(sim, 'succinylcholine', 1, { route: 'IM' });
+    advance(sim, 5);
+    drawAndGive(sim, 'succinylcholine', 1);
+    const pushed = sim.t;
+    expect(until(sim, 'paralyzed', 30)).toBe(true);
+    expect(sim.t - pushed).toBeCloseTo(18, 0);
+    untilEnd(sim);
+    expect(row(sim, 'sux').parts[0]).toEqual({ quote: 'Succinylcholine IV', result: 'missed' });
+  });
+
+  it('"It’s going in!" is only said by someone holding a bag or a mask', () => {
+    const sim = start();
+    sim.act('o2');
+    sim.act('bvm');
+    advance(sim, 6);
+    drawAndGive(sim, 'naloxone', 1);
+    expect(until(sim, 'spasm')).toBe(true);
+    sim.act('bvm');
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(until(sim, 'paralyzed', 30)).toBe(true);
+    expect(sim.voices.at(-1)?.line).toBe('He’s gone limp!');
+    expect(sim.scene).not.toContain('the bag gives');
+  });
+
+  it('stock epinephrine in the vein during the spasm does not open his airway', () => {
+    const sim = start();
+    idealUntilSpasm(sim);
+    advance(sim, 3);
+    drawAndGive(sim, 'epinephrine', 0.3);
+    advance(sim, 6);
+    expect(sim.phase).toBe('overdose');
+    expect(sim.monitor).toMatchObject({ rr: 0, etco2: null, bagged: false, rhythm: 'vtach' });
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.ending?.outcome).toBe('harm');
+  });
+
   it('flumazenil once he is breathing is not "only if still not breathing well"', () => {
     const sim = start();
     sim.act('bvm');

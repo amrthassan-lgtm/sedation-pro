@@ -265,6 +265,17 @@ describe('"Tight": the signs that call for the pen', () => {
     expect(flat.monitor.spo2).toBeLessThanOrEqual(upright.monitor.spo2);
     expect(flat.run.vitals.spo2).toBeLessThan(upright.run.vitals.spo2);
   });
+
+  it('he pushes the bag away: it does not stay on, and the monitor keeps his own rate', () => {
+    const sim = start();
+    advance(sim, 12);
+    const own = sim.monitor.rr;
+    sim.act('bvm');
+    advance(sim, 2);
+    expect(sim.scene).toContain('pushes the mask away');
+    expect(sim.isOn('bvm')).toBe(false);
+    expect(sim.monitor).toMatchObject({ bagged: false, rr: own });
+  });
 });
 
 describe('"Tight": after the pen', () => {
@@ -307,6 +318,20 @@ describe('"Tight": after the pen', () => {
     expect(untilEnd(sim)).toBe(true);
     expect(sim.ending?.outcome).toBe('harm');
     expect(part(sim, 'pen_when_severe', 'NEVER')).toBe('missed');
+  });
+
+  it('paralysed by succinylcholine he takes the bag: nobody pushes a mask away then', () => {
+    const sim = start();
+    advance(sim, 12);
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(until(sim, 'paralysed', 30)).toBe(true);
+    sim.act('bvm');
+    advance(sim, 3);
+    expect(sim.isOn('bvm')).toBe(true);
+    expect(sim.monitor).toMatchObject({ bagged: true, rr: 10 });
+    expect(sim.scene).not.toContain('pushes the mask away');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.endingKey).toBe('paralysed');
   });
 
   it('succinylcholine stops a patient who was breathing', () => {

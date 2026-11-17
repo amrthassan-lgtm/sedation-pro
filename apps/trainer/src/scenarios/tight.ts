@@ -424,9 +424,13 @@ export const tight: Scenario = {
           }
         : undefined,
 
-    bvm: (_ctx, e) =>
-      e.kind === 'action' && e.on
-        ? { scene: 'He pushes the mask away. He is awake and breathing for himself.' }
+    // Only while he can: paralysed by the wrong drug, he takes the bag.
+    bvm: (ctx, e) =>
+      e.kind === 'action' && e.on && ctx.phase !== PARALYSED.key
+        ? {
+            scene: 'He pushes the mask away. He is awake and breathing for himself.',
+            off: ['bvm'],
+          }
         : undefined,
 
     call_911: (ctx) =>
