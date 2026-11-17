@@ -141,7 +141,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     summary:
       'Crowing, stridor, no air movement · Jaw thrust + CPAP, then Succinylcholine 20-40mg IV',
     signs: ['crowing', 'stridor', 'bucking respiratory pattern'],
-    relatedProtocols: ['hypoventilation', 'npa', 'lma'],
+    // Malignant hyperthermia can follow its succinylcholine; the atropine for a
+    // slow heart rate after it is drawn on the bradycardia page.
+    relatedProtocols: ['hypoventilation', 'npa', 'lma', 'malignant_hyperthermia', 'bradycardia'],
     steps: [
       { text: 'Stop the procedure. Remove packs and gauze, suction the throat' },
       {
@@ -203,7 +205,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IM',
           device: 'auto-injector',
           notes:
-            'Auvi-Q: pull off the red guard, press firmly into the outer thigh, hold 2 seconds; through clothing is fine',
+            'Auvi-Q talks you through it: pull off the red guard, press firmly into the outer thigh, hold 2 seconds; through clothing is fine',
         },
         severity: 'critical',
       },
@@ -287,6 +289,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       {
         text: 'Check SpO₂ and BP first: low SpO₂, chest pain or wheeze means it is not anxiety (see Hypoventilation, Bronchospasm, Angina)',
         severity: 'critical',
+        goTo: ['hypoventilation', 'bronchospasm', 'angina'],
       },
       {
         text: 'Coach slow breathing: in through the nose, out through pursed lips or cupped hands. No paper bag',
@@ -750,6 +753,8 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           concentration: '100 mcg/ml (after dilution)',
           mixFirst:
             'MIX FIRST: one 10 ml syringe, saline or D5W from the IV bag port; Draw 1 ml phenylephrine 10 mg/ml + 9 ml saline or D5W = 1 mg/ml; WASTE DOWN TO 1 ml; Draw saline or D5W back up to 10 ml = 100 mcg/ml; Label it PHENYLEPHRINE 100 mcg/ml; Never inject from the stock vial',
+          // One bolus lasts minutes, and the mix holds ten doses (owner, Nov 2026).
+          notes: 'repeat q2-3 min if SBP still under 90; expect the heart rate to slow',
         },
       },
       { text: 'Phenylephrine not in stock: fluids, legs up, call 911 if SBP stays <90' },
@@ -1166,7 +1171,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           route: 'IM',
           device: 'auto-injector',
           notes:
-            'Auvi-Q: pull off the red guard, press firmly into the outer thigh, hold 2 seconds; through clothing is fine',
+            'Auvi-Q talks you through it: pull off the red guard, press firmly into the outer thigh, hold 2 seconds; through clothing is fine',
         },
         severity: 'critical',
       },

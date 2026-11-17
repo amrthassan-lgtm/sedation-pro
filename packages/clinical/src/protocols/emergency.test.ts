@@ -328,6 +328,45 @@ describe('emergency protocols', () => {
     }
   });
 
+  it('the Auvi-Q box says the pen talks the team through it (owner, Nov 2026)', () => {
+    // The adult pen speaks its steps from the moment it leaves its case; the
+    // AED step already says to follow its prompts.
+    for (const drug of allCallouts().filter((d) => d.device === 'auto-injector')) {
+      expect(drug.notes).toBe(
+        'Auvi-Q talks you through it: pull off the red guard, press firmly into the outer thigh, hold 2 seconds; through clothing is fine',
+      );
+    }
+  });
+
+  it('the hyperventilation check links to the three pages it names (owner, Nov 2026)', () => {
+    const step = findProtocol('hyperventilation')?.steps.find((s) =>
+      s.text.includes('it is not anxiety'),
+    );
+    expect(step?.text).toContain('(see Hypoventilation, Bronchospasm, Angina)');
+    expect(step?.goTo).toEqual(['hypoventilation', 'bronchospasm', 'angina']);
+  });
+
+  it('laryngospasm links to what can follow its succinylcholine (owner, Nov 2026)', () => {
+    // Malignant hyperthermia can follow succinylcholine, and the atropine for
+    // a slow heart rate after it is drawn on the bradycardia page.
+    expect(findProtocol('laryngospasm')?.relatedProtocols).toEqual([
+      'hypoventilation',
+      'npa',
+      'lma',
+      'malignant_hyperthermia',
+      'bradycardia',
+    ]);
+  });
+
+  it('phenylephrine says when it may be repeated, like the other pressors (owner, Nov 2026)', () => {
+    const phenylephrine = findProtocol('hypotension')?.steps.find(
+      (s) => s.drug?.name === 'Phenylephrine',
+    );
+    expect(phenylephrine?.drug?.notes).toBe(
+      'repeat q2-3 min if SBP still under 90; expect the heart rate to slow',
+    );
+  });
+
   it('reversal agents state the stocked concentration', () => {
     const flumazenil = allCallouts().find((d) => d.name === 'Flumazenil');
     expect(flumazenil?.concentration).toContain('0.1 mg/ml');

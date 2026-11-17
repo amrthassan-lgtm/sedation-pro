@@ -11,6 +11,7 @@ import {
   CART_VIALS,
   findVial,
   searchCart,
+  spokenInstruction,
   vialForCallout,
 } from './catalog';
 import { formatMass, parseConcentrationMcgPerMl } from './dose';
@@ -182,5 +183,19 @@ describe('the cart is coloured like the clinical app', () => {
     for (const pen of CART_DEVICES.filter((d) => d.drugKey === 'epinephrine')) {
       expect(pen.tint, pen.id).toBe('var(--color-purple)');
     }
+  });
+});
+
+describe('the pen that talks (owner, Nov 2026)', () => {
+  it("the Auvi-Q says the protocol's own steps, read from its note", () => {
+    expect(spokenInstruction('auviq_adult')).toBe(
+      'Pull off the red guard, press firmly into the outer thigh, hold 2 seconds.',
+    );
+  });
+
+  it('nothing else on the cart speaks', () => {
+    expect(spokenInstruction('pen_peds')).toBeNull();
+    expect(spokenInstruction('albuterol')).toBeNull();
+    expect(spokenInstruction('no-such-device')).toBeNull();
   });
 });

@@ -60,7 +60,8 @@ export interface Drive {
   readonly look?: Look;
 }
 
-export type Speaker = 'DA' | 'Front desk' | 'Patient' | 'You' | 'EMS';
+/** 'Pen': the adult Auvi-Q, which speaks its own steps once out of its case. */
+export type Speaker = 'DA' | 'Front desk' | 'Patient' | 'You' | 'EMS' | 'Pen';
 
 export interface Voice {
   readonly who: Speaker;
