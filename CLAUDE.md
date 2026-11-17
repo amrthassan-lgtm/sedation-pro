@@ -18,7 +18,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the nine-phase plan.
 
 - **Phase 0 — Foundation scaffold:** done.
 - **Phase 1 — Clinical engine:** done (`@sedation-pro/clinical` v0.1.0).
-- **Version 1 (Nov 2026, now 1.1.16):** the app the practice runs: assessment, oral
+- **Version 1 (Nov 2026, now 1.1.17):** the app the practice runs: assessment, oral
   and IV sedation, recovery, clinical note, Open Dental filing, emergency
   protocols and the crash-cart inventory. `APP_VERSION` in
   `apps/mobile/src/config/version.ts` is the number shown on screen and on
@@ -159,6 +159,20 @@ pnpm --filter @sedation-pro/mobile dev
   `composables/useDeviceGate.ts`) are never behind setup or the PIN, setup
   waits while a sedation is underway, Reset this tablet is refused during
   one, and nothing in setup writes to the case or its event log.
+- **Yearly evidence review (owner, Nov 2026).** The inventory row
+  `evidence-review-annual` comes due each November and warns on every tablet
+  like an expiring drug. When it does, re-check every emergency protocol
+  against the highest current authority: AHA ACLS (adult ALS, the bradycardia
+  and tachycardia algorithms, special circumstances), the ACC/AHA atrial
+  fibrillation and SVT guidelines, the anaphylaxis guidelines (AAAAI/ACAAI,
+  Resuscitation Council UK), ASRA's LAST checklist and Florida 64B5-14.009.
+  Show the owner each change as current vs proposed. A step that departs
+  from its guideline says "office" in its text and joins the departure list
+  in `emergency.test.ts` only after the owner approves it with the evidence
+  in front of him: a label is never a substitute for that decision (the AF,
+  junctional and anaphylaxis steps stayed off-guideline for ten days behind
+  labels). Then move the row's date forward a year. This environment blocks
+  heart.org; say which sources were read and which were summaries.
 - **Do not touch the legacy `sedation-app` GitHub repo.** It's the only
   copy of the original single-file app now (the local `tools/legacy-source/`
   copy was removed, Nov 2026) and is read-only reference. Changes go in
