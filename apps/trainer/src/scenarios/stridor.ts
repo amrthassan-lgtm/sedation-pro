@@ -22,7 +22,7 @@ import {
  * a patient who is getting light. He starts to crow on every breath in.
  *
  * Graded against Laryngospasm alone. It is the counterpart to the second
- * half of "Quiet": there the cords are shut from the first breath and only
+ * half of "Shallow": there the cords are shut from the first breath and only
  * succinylcholine opens them. Here they are part shut, and the first three
  * steps done promptly break the spasm with no drug. Left too long he goes
  * silent, and from then on only succinylcholine works. The trap is the
