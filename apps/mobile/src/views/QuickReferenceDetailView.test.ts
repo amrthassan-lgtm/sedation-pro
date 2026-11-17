@@ -173,7 +173,11 @@ describe('useSyringeConfig', () => {
 describe('epinephrine syringe drawings', () => {
   const steps = findProtocol('anaphylaxis')?.steps ?? [];
   const epi = steps.filter((s) => s.drug?.name === 'Epinephrine').map((s) => s.drug!);
-  const push = steps.find((s) => s.drug?.name === 'Push-dose Epinephrine')?.drug;
+  // The diluted mix is no longer on the anaphylaxis page (owner, Nov 2026);
+  // bradycardia mixes the same recipe.
+  const push = findProtocol('bradycardia')?.steps.find(
+    (s) => s.drug?.name === 'Push-dose Epinephrine',
+  )?.drug;
 
   it('draws none for the auto-injector, since nothing is drawn', () => {
     expect(epi[0]?.device).toBe('auto-injector');
@@ -189,7 +193,7 @@ describe('epinephrine syringe drawings', () => {
   it('draws the push-dose mix filling its 10 ml syringe, with the push volume', () => {
     const d = emergencySyringe(push!);
     expect(d).toMatchObject({ capacityMl: 10, drawnMl: 10 });
-    expect(d?.caption).toBe('Mixed 10.0 ml · push 1.0-2.0 ml');
+    expect(d?.caption).toBe('Mixed 10.0 ml · push 0.5-1.0 ml');
   });
 
   it('the ampule is solid purple and the diluted mix is pale', () => {
@@ -197,11 +201,11 @@ describe('epinephrine syringe drawings', () => {
     expect(emergencySyringe(push!)?.color).toBe('var(--color-purple-pale)');
   });
 
-  it('renders both drawings on the anaphylaxis card, and the tray drugs keep theirs', () => {
+  it('the anaphylaxis card draws the IM ampule dose and no IV mix (owner, Nov 2026)', () => {
     const w = mountDetail('anaphylaxis');
     const captions = w.findAll('figure.syringe').map((n) => n.text());
     expect(captions.some((t) => t.includes('Draw 0.3 ml (up to 0.5 ml)'))).toBe(true);
-    expect(captions.some((t) => t.includes('Mixed 10.0 ml'))).toBe(true);
+    expect(captions.some((t) => t.includes('Mixed 10.0 ml'))).toBe(false);
     w.unmount();
   });
 });

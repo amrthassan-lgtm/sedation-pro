@@ -29,8 +29,7 @@ import {
  * port. As in every scenario, the rates and delays here are pacing; what is
  * correct comes from the protocol text the rubric points at.
  *
- * This version resolves after the second IM dose and fluids. The push-dose
- * mix is a later release, so that protocol step is not part of this run.
+ * This version resolves after the second IM dose and fluids.
  */
 
 const PEN = calloutAt('anaphylaxis', 'Auvi-Q 0.3 first');

@@ -272,14 +272,17 @@ describe('emergency protocols', () => {
     }
   });
 
-  it('anaphylaxis gives epinephrine IM, and IV only as the diluted push-dose', () => {
+  it('anaphylaxis gives epinephrine IM, and IV only in an arrest (owner, Nov 2026)', () => {
     const steps = findProtocol('anaphylaxis')?.steps ?? [];
     const im = steps.find((s) => s.drug?.name === 'Epinephrine');
     expect(im?.drug?.route).toBe('IM');
     expect(im?.text).toContain('NEVER 1 mg/ml IV');
-    const push = steps.find((s) => s.drug?.name === 'Push-dose Epinephrine');
-    expect(push?.drug?.concentration).toBe('10 mcg/ml (after dilution)');
-    expect(push?.drug?.mixFirst).toContain('WASTE DOWN TO 1 ml');
+    // Shock that outlasts two IM doses and fluids needs an infusion in
+    // experienced hands, which EMS brings; the office repeats IM until then.
+    expect(steps.some((s) => s.drug?.route === 'IV' && /epinephrine/i.test(s.drug.name))).toBe(
+      false,
+    );
+    expect(steps.find((s) => s.text.startsWith('No pulse'))?.text).toContain('Epinephrine 1 mg IV');
     // Epinephrine first, 911 in parallel, and every case leaves for the ER.
     expect(steps[0]?.drug?.name).toBe('Epinephrine');
     expect(steps[0]?.drug?.device).toBe('auto-injector');
@@ -287,7 +290,7 @@ describe('emergency protocols', () => {
     expect(steps.at(-1)?.text).toContain('goes to the ER');
   });
 
-  it('anaphylaxis: the pen first, then the ampule, before any push-dose (one pen on the cart)', () => {
+  it('anaphylaxis: the pen first, then the ampule (one pen on the cart)', () => {
     const steps = findProtocol('anaphylaxis')?.steps ?? [];
     const epiIdx = steps
       .map((s, i) => (s.drug?.name === 'Epinephrine' ? i : -1))
@@ -301,8 +304,6 @@ describe('emergency protocols', () => {
     expect(ampule?.drug?.syringeMl).toBe(3);
     expect(ampule?.drug?.concentration).toBe('1 mg/ml');
     expect(ampule?.drug?.drawTable?.[0]).toEqual({ label: '0.3 mg', ml: '0.3 ml' });
-    const pushIdx = steps.findIndex((s) => s.drug?.name === 'Push-dose Epinephrine');
-    expect(epiIdx[1]!).toBeLessThan(pushIdx);
   });
 
   it('every IM epinephrine protocol gives the pen first, then the ampule', () => {
@@ -839,9 +840,9 @@ describe('emergency protocols', () => {
       expect(step?.goTo).toEqual(ARREST_PAGES);
       expect(step?.drug?.name).toBe('Push-dose Epinephrine');
       expect(step?.drug?.concentration).toBe('10 mcg/ml (after dilution)');
-      // The same recipe the anaphylaxis page mixes, so the team learns one.
+      // The same recipe the bradycardia page mixes, so the team learns one.
       expect(step?.drug?.mixFirst).toBe(
-        drugAt('anaphylaxis', 'Push-dose Epinephrine')?.drug?.mixFirst,
+        drugAt('bradycardia', 'Push-dose Epinephrine')?.drug?.mixFirst,
       );
       expect(step?.drug?.drawTable).toEqual([
         { label: '110 lb (50 mcg)', ml: '5.0 ml' },

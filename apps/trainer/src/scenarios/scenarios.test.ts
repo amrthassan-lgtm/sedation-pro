@@ -34,7 +34,6 @@ const LEFT_OUT: Readonly<Record<string, ReadonlyArray<readonly [string, string, 
   ],
   tight: [['bronchospasm', 'Cannot ventilate', 'he keeps breathing on his own in this run']],
   wheeze: [
-    ['anaphylaxis', 'Push-dose Epinephrine IV', 'the mix bench is a later release'],
     ['anaphylaxis', 'Throat or tongue swelling', 'his airway stays open in this run'],
     ['anaphylaxis', 'No pulse: CPR + AED', 'the run stops at the arrest'],
     ['anaphylaxis', 'Monitor vitals continuously', 'not an act the cart offers'],
