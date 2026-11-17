@@ -687,3 +687,26 @@ describe('owner additions, Nov 2026', () => {
     w.unmount();
   });
 });
+
+describe('the page header (owner, Nov 2026)', () => {
+  it('gives the signs on one line, the classic sign first and in bold', () => {
+    const w = mountDetail('laryngospasm');
+    expect(w.get('.title-display').text()).toBe('Laryngospasm');
+    expect(w.get('.sign-classic').text()).toBe('Crowing');
+    expect(w.get('.signs').text()).toBe('Crowing · stridor · bucking respiratory pattern');
+    w.unmount();
+  });
+
+  it('does not repeat them in a description above', () => {
+    const w = mountDetail('anaphylaxis');
+    expect(w.find('.hero-summary').exists()).toBe(false);
+    expect(w.get('.hero').text()).not.toContain('Epinephrine IM THIGH first');
+    w.unmount();
+  });
+
+  it('leaves a sign that starts with an abbreviation as it is written', () => {
+    const w = mountDetail('king_lt');
+    expect(w.get('.signs').text()).toBe('LMA failed');
+    w.unmount();
+  });
+});

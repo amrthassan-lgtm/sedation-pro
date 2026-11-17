@@ -87,11 +87,15 @@ export interface ProtocolStep {
 export interface EmergencyProtocol {
   readonly id: string;
   readonly category: EmergencyCategory;
-  /** Display name — "Laryngospasm (Crowing/Stridor)". */
+  /** Display name — "Anaphylaxis (Severe Allergic Reaction)". Never the signs: they have their own line. */
   readonly name: string;
   /** Short tagline — drives chips + category list rows. */
   readonly summary: string;
-  /** Signs/symptoms keywords — drives search + the signs pill in detail header. */
+  /**
+   * Signs and symptoms. The first is the classic one, the thing the page is
+   * recognised by: the detail header shows it in bold and the rest after it.
+   * All of them drive search.
+   */
   readonly signs: ReadonlyArray<string>;
   readonly steps: ReadonlyArray<ProtocolStep>;
   /** Yellow banner at top of detail when populated. */
@@ -137,7 +141,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
   {
     id: 'laryngospasm',
     category: 'airway',
-    name: 'Laryngospasm (Crowing/Stridor)',
+    name: 'Laryngospasm',
     summary:
       'Crowing, stridor, no air movement · Jaw thrust + CPAP, then Succinylcholine 20-40mg IV',
     signs: ['crowing', 'stridor', 'bucking respiratory pattern'],
@@ -184,7 +188,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
   {
     id: 'bronchospasm',
     category: 'airway',
-    name: 'Bronchospasm / Asthma (Wheezing)',
+    name: 'Bronchospasm / Asthma',
     summary: 'Wheezing, cough, dyspnea · Albuterol 4-8 puffs, Epinephrine IM if severe',
     signs: ['wheezing', 'cough', 'dyspnea'],
     relatedProtocols: ['anaphylaxis', 'lma', 'king_lt'],
@@ -317,9 +321,9 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
   {
     id: 'hypoventilation',
     category: 'airway',
-    name: 'Hypoventilation (Shallow/Slow Breathing)',
+    name: 'Hypoventilation',
     summary: 'SpO₂ dropping, slow/shallow breaths · BVM + Flumazenil or Naloxone',
-    signs: ['SpO₂ dropping', 'slow breaths', 'shallow breaths'],
+    signs: ['slow breaths', 'shallow breaths', 'SpO₂ dropping'],
     steps: [
       { text: 'Turn off N₂O, 100% O₂. Stop giving sedatives', severity: 'critical' },
       { text: 'Stimulate: say their name loudly, shake the shoulder' },
@@ -694,7 +698,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     category: 'cardiac-ischemia',
     name: 'Hypotension (Low BP)',
     summary: 'Dizzy, SBP <90, pale · Fluids, legs up, then drug by heart rate',
-    signs: ['dizzy', 'SBP <90', 'pale'],
+    signs: ['SBP <90', 'dizzy', 'pale'],
     relatedProtocols: [
       'bradycardia',
       'anaphylaxis',
@@ -843,7 +847,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Junctional Tachycardia',
     summary:
       'Regular narrow tachycardia with no P wave before the QRS (or an upside-down P), HR 100-180 · Treat as SVT; 911',
-    signs: ['regular narrow tachycardia', 'no P waves or inverted P waves', 'HR 100-180'],
+    signs: ['no P waves or inverted P waves', 'regular narrow tachycardia', 'HR 100-180'],
     relatedProtocols: ['svt', 'afib', 'wide_complex', 'stable_vtach'],
     steps: [
       {
@@ -1301,7 +1305,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     name: 'Oversedation (Opioid)',
     summary:
       'Excessive sedation, pinpoint pupils, hypoventilation · Airway, BVM + Naloxone 0.4mg IV',
-    signs: ['excessive sedation', 'pinpoint pupils', 'hypoventilation'],
+    signs: ['pinpoint pupils', 'excessive sedation', 'hypoventilation'],
     steps: [
       { text: 'Stop sedatives. N₂O off, 100% O₂', severity: 'critical' },
       { text: 'Stimulate: call their name, rub the sternum' },
@@ -1545,7 +1549,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
   {
     id: 'hypoglycemia',
     category: 'other',
-    name: 'Hypoglycemia (Diabetic - Sweaty, Confused, Shaky)',
+    name: 'Hypoglycemia (Diabetic)',
     summary: 'Sweaty, confused, glucose <70 · Gel 15 g if awake, D50W 25g IV if not',
     signs: ['sweaty', 'dizzy', 'confused', 'shaky'],
     steps: [
@@ -1584,7 +1588,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     category: 'other',
     name: 'Phlebitis',
     summary: 'Edema, warmth, tenderness along vein · Remove IV + warm compress + elevate',
-    signs: ['edema', 'warmth', 'tenderness along vein'],
+    signs: ['tenderness along vein', 'warmth', 'edema'],
     relatedProtocols: ['intraarterial'],
     steps: [
       { text: 'Remove all rings immediately' },

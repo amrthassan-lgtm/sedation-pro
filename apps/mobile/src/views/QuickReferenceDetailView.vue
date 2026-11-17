@@ -110,6 +110,19 @@ function open(id: string) {
 // read aloud across the room, and a tel: link where the device can dial.
 const call911 = computed(() => protocol.value?.steps.some((s) => /911/.test(s.text)) ?? false);
 
+/**
+ * The first sign listed is the classic one, the thing the page is recognised
+ * by, so it leads the line in bold and the others follow (owner, Nov 2026).
+ */
+const classicSign = computed(() => {
+  const first = protocol.value?.signs[0] ?? '';
+  return first.charAt(0).toUpperCase() + first.slice(1);
+});
+const otherSigns = computed(() => {
+  const rest = (protocol.value?.signs ?? []).slice(1);
+  return rest.length > 0 ? ` · ${rest.join(' · ')}` : '';
+});
+
 // -------- Stock, shown by exception -----------------------------------------------
 /**
  * The inventory answers "can I grab one in date right now?". The page says
@@ -407,11 +420,13 @@ function stepClass(step: ProtocolStep): string {
           <span class="caption">{{ CATEGORY_LABEL[protocol.category] }}</span>
         </p>
         <h1 ref="titleEl" class="title-display">{{ protocol.name }}</h1>
-        <p class="hero-summary">{{ protocol.summary }}</p>
-        <!-- Plain text: a sign is something to look for, not something to tap. -->
+        <!-- The signs alone: the description opened with the same words. Plain
+             text: a sign is something to look for, not something to tap. -->
         <p v-if="protocol.signs.length > 0" class="signs">
-          <span class="caption signs-label">Signs</span>{{ protocol.signs.join(' · ') }}
+          <strong class="sign-classic">{{ classicSign }}</strong
+          >{{ otherSigns }}
         </p>
+        <p v-else class="hero-summary">{{ protocol.summary }}</p>
       </header>
 
       <section
@@ -783,12 +798,15 @@ function stepClass(step: ProtocolStep): string {
 }
 .signs {
   margin: 0;
-  font-size: var(--type-footnote);
+  font-size: var(--type-body);
   line-height: var(--leading-normal);
   color: var(--color-text-secondary);
 }
-.signs-label {
-  margin-right: var(--sp-2);
+/* Weight and the page's own white, not a colour: red is CALL 911's, and a
+   group colour would read as a link on one page and a caution on another. */
+.sign-classic {
+  color: var(--color-text-primary);
+  font-weight: var(--weight-bold);
 }
 
 /* Call 911. While logging, the red link and its two times sit on one card,
@@ -813,9 +831,8 @@ function stepClass(step: ProtocolStep): string {
   min-height: 72px;
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg);
-  /* Deepens toward the foot so the spoken line under the number keeps its contrast. */
-  background:
-    var(--surface-highlight), linear-gradient(180deg, var(--color-crisis), var(--color-crisis-deep));
+  /* One flat colour, like every other button in the app (owner, Nov 2026). */
+  background: var(--color-crisis-fill);
   box-shadow: var(--shadow-md);
   color: var(--color-text-primary);
   text-decoration: none;
