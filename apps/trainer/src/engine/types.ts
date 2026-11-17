@@ -92,6 +92,8 @@ export interface Beat {
   readonly flags?: ReadonlyArray<string>;
   /** Cart actions this beat counts as done (the front desk calls 911 once told to). */
   readonly counts?: ReadonlyArray<string>;
+  /** Toggles this beat switches back off (an awake patient pushes the mask away). */
+  readonly off?: ReadonlyArray<string>;
   readonly prompt?: Prompt;
   /** Immediate nudge to the vitals (a stimulated breath, a cough). */
   readonly bump?: Partial<Record<'spo2' | 'hr' | 'sbp' | 'dbp', number>>;
@@ -237,7 +239,11 @@ export type RubricItem = RubricBase &
 
 export interface Scenario {
   readonly id: string;
-  /** One word, in quotes on screen: "Quiet". Must not name the emergency. */
+  /**
+   * One word, in quotes on screen: "Quiet". It may be the sign the team would
+   * see ("Stridor": owner, Nov 2026, so a drill can be found by it). It is
+   * never the name of the emergency.
+   */
   readonly title: string;
   /** One line for the scenario card. No spoilers. */
   readonly tagline: string;

@@ -246,12 +246,14 @@ export class Simulation {
 
   get monitor(): MonitorView {
     const bagged = this.toggles.has('bvm') && this.airwayOpen;
+    const own = Math.round(this.body.rr);
     const alarms = this.alarms();
     return {
       hr: Math.round(this.body.hr),
       spo2: Math.round(this.body.spo2),
       etco2: this.body.etco2 === null ? null : Math.round(this.body.etco2),
-      rr: bagged ? BAG_RATE : Math.round(this.body.rr),
+      // The bag sets the rate only for a patient breathing slower than it.
+      rr: bagged ? Math.max(BAG_RATE, own) : own,
       bagged,
       capno: this.capnoNow,
       rhythm: this.rhythmNow,
@@ -461,6 +463,7 @@ export class Simulation {
     }
     for (const flag of beat.flags ?? []) this.flagSet.add(flag);
     for (const action of beat.counts ?? []) this.note(action);
+    for (const toggle of beat.off ?? []) this.toggles.delete(toggle);
     if (beat.prompt) this.openPrompt = beat.prompt;
     if (beat.bump) {
       const b = beat.bump;
@@ -519,11 +522,12 @@ export class Simulation {
         for (const other of action.excludes ?? []) this.toggles.delete(other);
         this.toggles.add(id);
         this.note(id);
-        this.holdToggles();
       } else {
         this.toggles.delete(id);
       }
       const spoke = this.react(id, { kind: 'action', id, on: turningOn });
+      // After the reaction: a toggle the story switched straight back off was never held.
+      this.holdToggles();
       if (!spoke) {
         this.timeline.push({
           t: this.time,

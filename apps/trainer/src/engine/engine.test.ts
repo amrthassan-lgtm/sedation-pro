@@ -179,14 +179,53 @@ describe('the engine', () => {
     expect(sim.run.count('jaw_thrust')).toBe(1);
   });
 
-  it('shows the bag rate only while air is moving', () => {
+  it('marks the patient as bagged only while air is moving', () => {
     const sim = new Simulation(scenario());
     sim.act('call_911');
     sim.tick(0.25);
     sim.act('bvm');
     sim.tick(1);
-    expect(sim.monitor).toMatchObject({ bagged: true, rr: BAG_RATE, capno: 'normal' });
+    expect(sim.monitor).toMatchObject({ bagged: true, capno: 'normal' });
     sim.act('cpap'); // this test scenario shuts the airway on cpap
+    sim.tick(1);
+    expect(sim.monitor.bagged).toBe(false);
+  });
+
+  it('the bag sets the rate for a patient breathing slower than it, never for one breathing faster', () => {
+    const breathing = (rr: number): Scenario => {
+      const base = scenario();
+      return {
+        ...base,
+        phases: { ...base.phases, a: { transitions: [], drive: () => ({ ...STEADY, rr }) } },
+      };
+    };
+    const slow = new Simulation(breathing(4));
+    slow.tick(1);
+    expect(slow.monitor.rr).toBe(4);
+    slow.act('bvm');
+    slow.tick(1);
+    expect(slow.monitor).toMatchObject({ bagged: true, rr: BAG_RATE });
+
+    const fast = new Simulation(breathing(24));
+    fast.act('bvm');
+    fast.tick(1);
+    expect(fast.monitor).toMatchObject({ bagged: true, rr: 24 });
+  });
+
+  it('a toggle the story switches straight back off is not on, and was never held', () => {
+    const base = scenario();
+    const sim = new Simulation({
+      ...base,
+      reactions: {
+        ...base.reactions,
+        bvm: (_ctx, e) =>
+          e.kind === 'action' && e.on ? { scene: 'Pushed away.', off: ['bvm'] } : undefined,
+      },
+    });
+    sim.act('bvm');
+    expect(sim.isOn('bvm')).toBe(false);
+    expect(sim.run.onDuring('bvm', 'a')).toBe(false);
+    expect(sim.run.count('bvm')).toBe(1);
     sim.tick(1);
     expect(sim.monitor.bagged).toBe(false);
   });

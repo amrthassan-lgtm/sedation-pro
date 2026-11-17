@@ -2,7 +2,20 @@ import { calloutAt, doseRangeOf, gaveProtocolDose, overProtocolDose } from '@/en
 import type { Ctx, Drive, Look, Reaction, Scenario } from '@/engine/types';
 
 import { reachedAt, toward, within } from './helpers';
-import { doseLine, doseOf, epinephrineOverdose } from './shared';
+import {
+  baggedThroughParalysis,
+  baggedUntilBreathing,
+  breathingWell,
+  doseLine,
+  doseOf,
+  epinephrineOverdose,
+  hypoxicHeartRate,
+  PARALYSIS_CUT,
+  pendingParalysis,
+  SUCCINYLCHOLINE,
+  succinylcholineAsWritten,
+  succinylcholineSoFar,
+} from './shared';
 
 /**
  * "Quiet": a sedated patient stops breathing well, is bagged and reversed,
@@ -17,27 +30,19 @@ import { doseLine, doseOf, epinephrineOverdose } from './shared';
 
 const NALOXONE = calloutAt('oversedation_opioid', 'Naloxone IV');
 const FLUMAZENIL = calloutAt('oversedation_benzo', 'Flumazenil IV');
-const SUCCINYLCHOLINE = calloutAt('laryngospasm', 'Succinylcholine IV');
 
 /** The patient responds once the protocol's smallest dose is in. */
 const NALOXONE_WAKES_AT_MCG = doseRangeOf(NALOXONE).minMcg;
 const FLUMAZENIL_HELPS_AT_MCG = doseRangeOf(FLUMAZENIL).minMcg;
-const SUX_BREAKS_AT_MCG = doseRangeOf(SUCCINYLCHOLINE).minMcg;
 /** Seconds from an IV dose to the patient rousing. */
 const IV_ONSET = 28;
 const IM_ONSET = 120;
-const SUX_IV_ONSET = 18;
-const SUX_IM_ONSET = 170;
-/** Bagging has to be going this long, with a safe saturation, before the story skips ahead. */
-const BAGGING_BEFORE_CUT = 15;
-/** The paralysis itself, skipped with a time-cut card. */
-const PARALYSIS_CUT_SECONDS = 4 * 60;
-/** The card says what the protocol says to do through it, and puts no length on the drug. */
-const PARALYSIS_CUT_TITLE = 'Bagging until he breathes on his own';
 /** A throat suctioned this recently is still clear when the spasm starts. */
 const SUCTION_STILL_CLEAR = 10;
 
-const OVERDOSE = epinephrineOverdose('normal');
+const OVERDOSE = epinephrineOverdose('normal', (ctx) =>
+  ctx.phase === 'spasm' ? 'shut' : ctx.phase === 'paralyzed' ? 'paralysed' : null,
+);
 
 const SEDATED: Look = { color: 'pale', eyes: 'closed', note: 'slack jaw, snoring softly' };
 const DUSKY: Look = { color: 'dusky', eyes: 'closed', note: 'lips turning blue' };
@@ -67,45 +72,6 @@ function suctionedForSpasm(ctx: Ctx): boolean {
   return spasm !== null && last !== null && last >= spasm - SUCTION_STILL_CLEAR;
 }
 
-/**
- * Succinylcholine paralyses whenever enough of it is in, spasm or not: a
- * drug acts on the patient, not on the reason it was given. Doses add up
- * until one paralysis has used them.
- */
-function pendingSux(ctx: Ctx): { readonly at: number; readonly flags: string[] } | null {
-  let sum = 0;
-  const flags: string[] = [];
-  const doses = ctx.given('succinylcholine');
-  for (let i = 0; i < doses.length; i += 1) {
-    const dose = doses[i];
-    if (!dose || ctx.has(`sux_${i}`)) continue;
-    sum += dose.mcg;
-    flags.push(`sux_${i}`);
-    if (sum >= SUX_BREAKS_AT_MCG * 0.99) {
-      return { at: dose.t + (dose.route === 'IV' ? SUX_IV_ONSET : SUX_IM_ONSET), flags };
-    }
-  }
-  return null;
-}
-
-/** Deep hypoxia slows the heart, late: the reason atropine is kept ready. */
-function heartRate(ctx: Ctx, otherwise: number) {
-  const spo2 = ctx.vitals.spo2;
-  return spo2 < 70 ? toward(40, 1.5) : spo2 < 80 ? toward(48, 1) : toward(otherwise, 2);
-}
-
-/** The team is breathing for him and it is working: nothing left to do but keep going. */
-function baggedThroughParalysis(ctx: Ctx): boolean {
-  const bagging = ctx.last('bvm');
-  return (
-    ctx.on('bvm') &&
-    bagging !== null &&
-    // From this paralysis, not the first one of the run.
-    ctx.t - Math.max(bagging, ctx.t - ctx.phaseT) >= BAGGING_BEFORE_CUT &&
-    ctx.vitals.spo2 >= 92
-  );
-}
-
 function hypoDrive(ctx: Ctx): Drive {
   const bagging = ctx.on('bvm');
   const stimulated = within(ctx, 'stimulate', 6);
@@ -119,7 +85,7 @@ function hypoDrive(ctx: Ctx): Drive {
   const low = ctx.vitals.spo2 < 86;
   return {
     spo2Rate,
-    hr: heartRate(ctx, low ? 52 : 58),
+    hr: hypoxicHeartRate(ctx, low ? 52 : 58),
     sbp: toward(102, 0.05),
     dbp: toward(60, 0.05),
     rr: stimulated
@@ -191,20 +157,23 @@ export const quiet: Scenario = {
     },
     {
       when: (ctx) => {
-        const sux = pendingSux(ctx);
+        const sux = pendingParalysis(ctx);
         return (
           ctx.phase !== 'paralyzed' && ctx.phase !== OVERDOSE.key && sux !== null && ctx.t >= sux.at
         );
       },
       to: 'paralyzed',
       beat: (ctx) => {
-        const flags = pendingSux(ctx)?.flags ?? [];
+        const flags = pendingParalysis(ctx)?.flags ?? [];
+        // Only someone holding a bag or a mask can feel it give.
+        const masked = ctx.on('bvm') || ctx.on('cpap');
         return ctx.phase === 'spasm'
           ? {
               flags,
-              scene:
-                'A fine flicker runs under the skin of his chest and shoulders. Then the bag gives: the cords have let go. He is not breathing at all now.',
-              voice: { who: 'DA', line: 'It’s going in!' },
+              scene: masked
+                ? 'A fine flicker runs under the skin of his chest and shoulders. Then the bag gives: the cords have let go. He is not breathing at all now.'
+                : 'A fine flicker runs under the skin of his chest and shoulders, and the heaving stops. The cords have let go. He is not breathing at all now.',
+              voice: { who: 'DA', line: masked ? 'It’s going in!' : 'He’s gone limp!' },
               log: 'Spasm broken by succinylcholine',
               tone: 'good',
             }
@@ -303,7 +272,7 @@ export const quiet: Scenario = {
           (ctx.on('cpap') ? 0.8 : 1);
         return {
           spo2Rate: -0.5 * help,
-          hr: heartRate(ctx, 112),
+          hr: hypoxicHeartRate(ctx, 112),
           sbp: toward(138, 1),
           dbp: toward(84, 0.6),
           rr: 0,
@@ -346,7 +315,7 @@ export const quiet: Scenario = {
         const bagging = ctx.on('bvm');
         return {
           spo2Rate: bagging ? 0.7 : -0.75,
-          hr: heartRate(ctx, 92),
+          hr: hypoxicHeartRate(ctx, 92),
           sbp: toward(122, 1),
           dbp: toward(74, 0.6),
           rr: 0,
@@ -367,36 +336,39 @@ export const quiet: Scenario = {
           // off onto the same opioid that started this.
           when: (ctx) => baggedThroughParalysis(ctx) && wakeAt(ctx) === null,
           to: 'hypo',
-          beat: {
+          beat: (ctx) => ({
+            flags: succinylcholineSoFar(ctx),
             scene:
               'The succinylcholine has worn off. He takes a slow, shallow breath, then another.',
             log: 'Paralysis worn off, still sedated',
-            cut: { seconds: PARALYSIS_CUT_SECONDS, title: PARALYSIS_CUT_TITLE },
-          },
+            cut: PARALYSIS_CUT,
+          }),
         },
         {
           // The twist cannot be skipped by paralysing him early: he still
           // wakes with a throat full of blood.
           when: (ctx) => baggedThroughParalysis(ctx) && ctx.entered('spasm') === null,
           to: 'waking',
-          beat: {
+          beat: (ctx) => ({
+            flags: succinylcholineSoFar(ctx),
             scene:
               'The succinylcholine has worn off and the naloxone is working. He stirs, coughs and swallows hard.',
             voice: { who: 'DA', line: 'He’s coming around.' },
             log: 'Paralysis worn off, rousing',
-            cut: { seconds: PARALYSIS_CUT_SECONDS, title: PARALYSIS_CUT_TITLE },
-          },
+            cut: PARALYSIS_CUT,
+          }),
         },
         {
           when: baggedThroughParalysis,
           to: 'breathing',
-          beat: {
+          beat: (ctx) => ({
+            flags: succinylcholineSoFar(ctx),
             scene: 'He takes a breath against the bag. Then another, on his own.',
             voice: { who: 'DA', line: 'He’s breathing with me.' },
             log: 'Breathing on his own',
             tone: 'good',
-            cut: { seconds: PARALYSIS_CUT_SECONDS, title: PARALYSIS_CUT_TITLE },
-          },
+            cut: PARALYSIS_CUT,
+          }),
         },
       ],
       nudges: [
@@ -428,11 +400,11 @@ export const quiet: Scenario = {
       }),
       transitions: [
         {
-          when: (ctx) => ctx.phaseT >= 8 && ctx.vitals.spo2 >= 95 && ctx.at('call_911') !== null,
+          when: (ctx) => breathingWell(ctx, 8) && ctx.at('call_911') !== null,
           to: 'end:recovered_ems',
         },
         {
-          when: (ctx) => ctx.phaseT >= 8 && ctx.vitals.spo2 >= 95,
+          when: (ctx) => breathingWell(ctx, 8),
           to: 'end:recovered',
         },
       ],
@@ -567,7 +539,7 @@ export const quiet: Scenario = {
         };
       }
       // The same running total that decides whether the spasm breaks.
-      const enough = pendingSux(ctx) !== null;
+      const enough = pendingParalysis(ctx) !== null;
       const asWritten =
         enough &&
         dose.route === SUCCINYLCHOLINE.route &&
@@ -799,18 +771,14 @@ export const quiet: Scenario = {
             if (run.has('sux_without_spasm')) return false;
             const spasm = run.entered('spasm');
             if (spasm === null) return null;
-            return gaveProtocolDose(
-              SUCCINYLCHOLINE,
+            return succinylcholineAsWritten(
               run.given('succinylcholine').filter((d) => d.t >= spasm),
             );
           },
         },
         {
           quote: 'ventilate with the BVM until breathing on their own',
-          check: (run) =>
-            run.entered('paralyzed') === null
-              ? null
-              : run.onDuring('bvm', 'paralyzed') && run.entered('breathing') !== null,
+          check: baggedUntilBreathing,
         },
       ],
       when: (run) => run.given('succinylcholine')[0]?.t ?? null,
