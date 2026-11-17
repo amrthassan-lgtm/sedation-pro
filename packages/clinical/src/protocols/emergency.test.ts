@@ -382,6 +382,56 @@ describe('emergency protocols', () => {
     ]);
   });
 
+  it('every page leads with its classic sign, which the header shows in bold (owner, Nov 2026)', () => {
+    // The first sign is the one thing a page is recognised by. Reordering a
+    // page's signs changes what the team reads in bold, so each is held here.
+    const classic = Object.fromEntries(EMERGENCY_PROTOCOLS.map((p) => [p.id, p.signs[0]]));
+    expect(classic).toEqual({
+      laryngospasm: 'crowing',
+      bronchospasm: 'wheezing',
+      hyperventilation: 'rapid breathing',
+      hypoventilation: 'slow breaths',
+      emesis_aspiration: 'vomiting',
+      choking: 'cannot speak',
+      npa: 'BVM difficult',
+      lma: 'BVM failing',
+      king_lt: 'LMA failed',
+      angina: 'crushing chest pain',
+      mi: 'severe chest pain',
+      hypertension: 'BP >180/120',
+      hypertensive_crisis: 'BP >180/120',
+      hypotension: 'SBP <90',
+      bradycardia: 'HR <50 BPM',
+      sinus_tach: 'HR >100',
+      junctional_tach: 'no P waves or inverted P waves',
+      svt: 'sudden HR >150',
+      afib: 'irregular HR',
+      stable_vtach: 'wide complex tachycardia',
+      wide_complex: 'wide QRS',
+      vfib_vtach: 'no pulse',
+      pea_asystole: 'no pulse',
+      anaphylaxis: 'hives',
+      oversedation_benzo: 'excessive sedation',
+      oversedation_opioid: 'pinpoint pupils',
+      malignant_hyperthermia: 'EtCO₂ rising for no reason',
+      last: 'tinnitus',
+      seizure: 'tonic-clonic movements',
+      syncope: 'sudden unconsciousness',
+      stroke: 'face droop',
+      hypoglycemia: 'sweaty',
+      phlebitis: 'tenderness along vein',
+      intraarterial: 'pulsatile cherry red blood',
+    });
+  });
+
+  it('a title does not repeat the signs the line under it already gives (owner, Nov 2026)', () => {
+    expect(findProtocol('laryngospasm')?.name).toBe('Laryngospasm');
+    expect(findProtocol('bronchospasm')?.name).toBe('Bronchospasm / Asthma');
+    expect(findProtocol('hypoventilation')?.name).toBe('Hypoventilation');
+    // "Diabetic" stays: it is not a sign, and it is the word staff search by.
+    expect(findProtocol('hypoglycemia')?.name).toBe('Hypoglycemia (Diabetic)');
+  });
+
   it('reversal agents state the stocked concentration', () => {
     const flumazenil = allCallouts().find((d) => d.name === 'Flumazenil');
     expect(flumazenil?.concentration).toContain('0.1 mg/ml');
