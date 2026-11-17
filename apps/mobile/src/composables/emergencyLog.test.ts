@@ -326,7 +326,7 @@ describe('what goes into the record', () => {
 
   it('the same dose reads the same whichever page it was tapped on', () => {
     const rescue = useEmergencyLog();
-    for (const page of ['afib', 'stable_vtach', 'wide_complex', 'junctional_tach']) {
+    for (const page of ['stable_vtach', 'wide_complex']) {
       const drug = callout(page, 'Amiodarone');
       rescue.give(drug, logPills(drug)[0]!);
     }

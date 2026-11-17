@@ -268,7 +268,7 @@ describe('syringe drawings for the other emergency drugs', () => {
   });
 
   it('amiodarone fills a 3 ml syringe, and the arrest dose is two of them (owner, Nov 2026)', () => {
-    expect(drawingOf('afib', 'Amiodarone')).toMatchObject({
+    expect(drawingOf('stable_vtach', 'Amiodarone')).toMatchObject({
       capacityMl: 3,
       drawnMl: 3,
       caption: 'Draw 3.0 ml',

@@ -842,7 +842,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     category: 'cardiac-arrhythmia',
     name: 'Junctional Tachycardia',
     summary:
-      'Regular narrow tachycardia with no P wave before the QRS (or an upside-down P), HR 100-180 · Amiodarone 150mg IV over 10min',
+      'Regular narrow tachycardia with no P wave before the QRS (or an upside-down P), HR 100-180 · Treat as SVT; 911',
     signs: ['regular narrow tachycardia', 'no P waves or inverted P waves', 'HR 100-180'],
     relatedProtocols: ['svt', 'afib', 'wide_complex', 'stable_vtach'],
     steps: [
@@ -852,24 +852,16 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
       {
-        text: 'Normal P wave before every QRS: this is sinus tachycardia, no amiodarone, go to Sinus Tachycardia',
+        text: 'Normal P wave before every QRS: this is sinus tachycardia, go to Sinus Tachycardia',
         goTo: ['sinus_tach'],
       },
       { text: 'Call 911', severity: 'critical' },
+      // ACLS treats every regular narrow-complex tachycardia the same way:
+      // vagal maneuvers, then adenosine. Amiodarone was an office step off
+      // that pathway; removed after the evidence review (owner, Nov 2026).
       {
-        text: 'Amiodarone IV over 10 minutes (office protocol; not an AHA pathway)',
-        drug: {
-          name: 'Amiodarone',
-          dose: '150 mg',
-          route: 'IV',
-          // A whole 150 mg/3 ml vial fills a 3 ml syringe, marked every
-          // 0.1 ml, so each 0.3 ml push lands on a mark (owner, Nov 2026).
-          syringeMl: 3,
-          volume: '3.0 ml',
-          concentration: '50 mg/ml',
-          notes:
-            'give over 10 minutes: 0.3 ml every minute into the running D5W; keep the D5W running freely; check BP each minute and stop if SBP falls; label the syringe',
-        },
+        text: 'Regular and narrow: treat as SVT (vagal maneuvers, then adenosine)',
+        goTo: ['svt'],
       },
     ],
   },
@@ -913,13 +905,14 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     id: 'afib',
     category: 'cardiac-arrhythmia',
     name: 'Atrial Fibrillation / Atrial Flutter',
-    summary: 'Irregular HR, palpitations, hypotension · Amiodarone 150mg IV over 10min',
+    summary:
+      'Irregular HR, palpitations, hypotension · Stable: monitor, 911. Unstable: 911 for a synchronized shock',
     signs: ['irregular HR', 'palpitations', 'hypotension'],
     relatedProtocols: ['svt', 'junctional_tach', 'wide_complex', 'stable_vtach'],
-    contraindications: [
-      'AF for more than 48 hr or unknown start, and not on a blood thinner: amiodarone can convert it and release a clot (stroke)',
-      'Irregular rhythm with a wide QRS (possible WPW): no amiodarone',
-    ],
+    // No drug in the office (owner, Nov 2026). ACLS and the 2023 ACC/AHA AF
+    // guideline start a stable patient on rate control (a beta-blocker or
+    // diltiazem, not stocked here); amiodarone is only their fallback for the
+    // critically ill, and it can convert AF of unknown age and release a clot.
     steps: [
       {
         text: 'Unstable (low BP, confusion, chest pain, short of breath)? Call 911: needs synchronized cardioversion, which the AED cannot do',
@@ -927,21 +920,6 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       },
       { text: 'Stop procedure. O₂ if SpO₂ under 94%. Monitor EKG, BP, SpO₂' },
       { text: 'Call 911', severity: 'critical' },
-      {
-        text: 'Amiodarone IV over 10 minutes (office protocol; AHA uses rate control first)',
-        drug: {
-          name: 'Amiodarone',
-          dose: '150 mg',
-          route: 'IV',
-          // A whole 150 mg/3 ml vial fills a 3 ml syringe, marked every
-          // 0.1 ml, so each 0.3 ml push lands on a mark (owner, Nov 2026).
-          syringeMl: 3,
-          volume: '3.0 ml',
-          concentration: '50 mg/ml',
-          notes:
-            'give over 10 minutes: 0.3 ml every minute into the running D5W; keep the D5W running freely; check BP each minute and stop if SBP falls; label the syringe',
-        },
-      },
     ],
   },
   {

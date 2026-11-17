@@ -1187,6 +1187,22 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
       'Due again by Mar 13, 2027. Keep the signed record: date, time, length, topics and names',
   },
   {
+    // Every emergency protocol re-checked against the highest current
+    // evidence, once a year (owner, Nov 2026). Listed here, like the training,
+    // so the due date reaches every tablet whatever computer the code is
+    // worked on. CLAUDE.md, "Yearly evidence review", says how.
+    id: 'evidence-review-annual',
+    drug: 'Protocol Evidence Review (yearly)',
+    description:
+      'Every emergency protocol checked against the current guidelines — last done Nov 17, 2026',
+    lot: '',
+    ndc: '',
+    quantity: 1,
+    expiresOn: '2027-11-17',
+    category: 'equipment',
+    notes: 'Due again by Nov 17, 2027: re-check every protocol against the newest guidelines',
+  },
+  {
     id: 'cpr-board',
     drug: 'CPR Board',
     description: 'Or a CPR-rated operating chair',

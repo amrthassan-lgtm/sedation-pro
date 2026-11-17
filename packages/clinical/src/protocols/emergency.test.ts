@@ -368,6 +368,20 @@ describe('emergency protocols', () => {
     );
   });
 
+  it('every step that leaves its guideline says so, and is approved here by name (owner, Nov 2026)', () => {
+    // A step that departs from its governing guideline says "office" in its
+    // text, and is added below only once the owner has approved it with the
+    // evidence in front of him. A new one fails here until then, and the
+    // yearly evidence review (CLAUDE.md) re-checks every one listed.
+    const departures = EMERGENCY_PROTOCOLS.flatMap((p) =>
+      p.steps.filter((s) => /\boffice\b/i.test(s.text)).map((s) => `${p.id}: ${s.text}`),
+    );
+    expect(departures).toEqual([
+      'hyperventilation: Not settling after 10 min: Midazolam IV slowly (office protocol)',
+      'bradycardia: Atropine not working: Push-dose Epinephrine (office bridge to EMS; AHA uses pacing or an infusion)',
+    ]);
+  });
+
   it('reversal agents state the stocked concentration', () => {
     const flumazenil = allCallouts().find((d) => d.name === 'Flumazenil');
     expect(flumazenil?.concentration).toContain('0.1 mg/ml');
@@ -605,19 +619,26 @@ describe('emergency protocols', () => {
       }
     });
 
-    it('junctional tachycardia says what makes it junctional and turns sinus tachycardia away', () => {
+    it('junctional tachycardia turns sinus tachycardia away and is treated as SVT, as ACLS does (owner, Nov 2026)', () => {
       const proto = findProtocol('junctional_tach');
       expect(proto?.summary).toBe(
-        'Regular narrow tachycardia with no P wave before the QRS (or an upside-down P), HR 100-180 · Amiodarone 150mg IV over 10min',
+        'Regular narrow tachycardia with no P wave before the QRS (or an upside-down P), HR 100-180 · Treat as SVT; 911',
       );
       expect(proto?.signs).toContain('no P waves or inverted P waves');
       const steps = proto?.steps ?? [];
       const sinus = steps.findIndex((s) => s.goTo?.includes('sinus_tach'));
       expect(steps[sinus]?.text).toBe(
-        'Normal P wave before every QRS: this is sinus tachycardia, no amiodarone, go to Sinus Tachycardia',
+        'Normal P wave before every QRS: this is sinus tachycardia, go to Sinus Tachycardia',
+      );
+      const svt = steps.findIndex((s) => s.goTo?.includes('svt'));
+      expect(steps[svt]?.text).toBe(
+        'Regular and narrow: treat as SVT (vagal maneuvers, then adenosine)',
       );
       expect(sinus).toBeGreaterThan(0);
-      expect(sinus).toBeLessThan(steps.findIndex((s) => s.drug?.name === 'Amiodarone'));
+      expect(sinus).toBeLessThan(svt);
+      // ACLS treats a regular narrow tachycardia with vagal maneuvers and
+      // adenosine; amiodarone is not its step.
+      expect(steps.some((s) => s.drug !== undefined)).toBe(false);
     });
 
     it('an unconscious hypoglycemic patient gets 911 with the dextrose, not after it', () => {
@@ -648,7 +669,9 @@ describe('emergency protocols', () => {
       stepsOf(id).findIndex((s) => s.text.includes(includes));
     const drugAt = (id: string, name: string) => stepsOf(id).find((s) => s.drug?.name === name);
     const ARREST_PAGES = ['vfib_vtach', 'pea_asystole'];
-    const STABLE_RHYTHM_PAGES = ['stable_vtach', 'wide_complex', 'afib', 'junctional_tach'];
+    // The pulse pages that give amiodarone, as ACLS does for a stable wide
+    // tachycardia. AF and junctional left it in Nov 2026 (owner).
+    const STABLE_RHYTHM_PAGES = ['stable_vtach', 'wide_complex'];
 
     it('naloxone: the 2 mg row says what it takes, and which syringe', () => {
       const naloxone = drugAt('oversedation_opioid', 'Naloxone')?.drug;
@@ -703,12 +726,17 @@ describe('emergency protocols', () => {
       }
     });
 
-    it('atrial fibrillation warns about a clot and about a wide irregular rhythm', () => {
-      const warnings = findProtocol('afib')?.contraindications ?? [];
-      expect(warnings).toEqual([
-        'AF for more than 48 hr or unknown start, and not on a blood thinner: amiodarone can convert it and release a clot (stroke)',
-        'Irregular rhythm with a wide QRS (possible WPW): no amiodarone',
-      ]);
+    it('atrial fibrillation gives no drug in the office: monitor and 911 (owner, Nov 2026)', () => {
+      // ACLS and the 2023 ACC/AHA AF guideline start with rate control, which
+      // is not stocked; amiodarone can convert AF of unknown age and release a
+      // clot. An unstable patient needs a synchronized shock, which is EMS's.
+      const proto = findProtocol('afib');
+      expect(proto?.summary).toBe(
+        'Irregular HR, palpitations, hypotension · Stable: monitor, 911. Unstable: 911 for a synchronized shock',
+      );
+      expect(proto?.steps.some((s) => s.drug !== undefined)).toBe(false);
+      expect(proto?.contraindications ?? []).toEqual([]);
+      expect(proto?.steps.map((s) => s.text)).toContain('Call 911');
     });
 
     it('amiodarone over ten minutes says how: a third of a millilitre a minute', () => {
