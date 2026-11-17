@@ -1183,6 +1183,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         drug: { name: 'Albuterol', dose: '4-8 puffs', route: 'inhaled', notes: 'repeat q20 min' },
       },
       { text: '500 ml saline bolus, wide open' },
+      // IM only, repeated, until EMS arrives (owner, Nov 2026). Shock that
+      // outlasts two IM doses and fluids is treated with an IV infusion run by
+      // experienced hands (Resuscitation Council UK 2021), which EMS brings;
+      // IV boluses carry more overdoses and heart complications than IM.
       {
         text: '5 min, not better: second IM dose from the ampule, outer THIGH. Repeat every 5-15 min. NEVER 1 mg/ml IV in a patient with a pulse',
         drug: {
@@ -1198,25 +1202,6 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
           ],
           notes:
             'same syringe and needle to draw and give, push firmly, through clothing is fine; label the syringe',
-        },
-        severity: 'critical',
-      },
-      {
-        text: 'Still low BP after 2 IM doses + fluids: Push-dose Epinephrine IV (office protocol)',
-        drug: {
-          name: 'Push-dose Epinephrine',
-          dose: '10-20 mcg',
-          route: 'IV',
-          syringeMl: 10,
-          volume: '1.0-2.0 ml',
-          concentration: '10 mcg/ml (after dilution)',
-          mixFirst:
-            'MIX FIRST: one 10 ml syringe, saline or D5W from the IV bag port; Draw 1 ml epinephrine 1 mg/ml + 9 ml saline or D5W = 100 mcg/ml; WASTE DOWN TO 1 ml; Draw saline or D5W back up to 10 ml = 10 mcg/ml; Label it EPI 10 mcg/ml; Never inject from the stock vial',
-          drawTable: [
-            { label: '10 mcg', ml: '1.0 ml' },
-            { label: '20 mcg', ml: '2.0 ml' },
-          ],
-          notes: 'q2-3 min, titrate to BP; 911 already called',
         },
         severity: 'critical',
       },
