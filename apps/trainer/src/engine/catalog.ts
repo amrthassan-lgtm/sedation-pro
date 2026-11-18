@@ -161,12 +161,17 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
     from: [{ protocol: 'laryngospasm', step: 'firm pressure at the laryngospasm notch' }],
   },
   {
-    id: 'oral_airway',
+    // The oral airway is not on this cart: the page gives it only to a patient
+    // with no cough or gag, and no drill has one for it yet.
+    id: 'npa',
     group: 'airway',
     kind: 'toggle',
-    label: 'Oral airway or NPA',
-    aliases: ['opa', 'npa', 'nasal airway', 'guedel'],
-    from: [{ protocol: 'hypoventilation', step: 'oral airway or NPA' }],
+    label: 'NPA',
+    aliases: ['nasal airway', 'nasopharyngeal airway', 'nasal trumpet', 'airway'],
+    from: [
+      { protocol: 'hypoventilation', step: 'suction, NPA' },
+      { protocol: 'hypoventilation', step: 'reposition, NPA' },
+    ],
   },
   {
     id: 'back_blows',
