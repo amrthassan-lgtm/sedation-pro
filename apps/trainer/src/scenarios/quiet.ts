@@ -78,7 +78,7 @@ function hypoDrive(ctx: Ctx): Drive {
   const stimulated = within(ctx, 'stimulate', 6);
   const partly = flumazenilHelping(ctx);
   const deeper = moreSedative(ctx);
-  const airwayHelp = (ctx.on('jaw_thrust') ? 0.7 : 1) * (ctx.on('oral_airway') ? 0.85 : 1);
+  const airwayHelp = (ctx.on('jaw_thrust') ? 0.7 : 1) * (ctx.on('npa') ? 0.85 : 1);
   const fall =
     0.22 * (ctx.on('o2') ? 0.6 : 1) * airwayHelp * (partly ? 0.4 : 1) * (deeper ? 1.6 : 1);
   // A stimulated breath slows the fall. It never turns it around: only the bag does.
@@ -599,8 +599,8 @@ export const quiet: Scenario = {
       id: 'airway',
       ref: { protocol: 'hypoventilation', step: 'Jaw thrust or chin lift' },
       tier: 'core',
-      check: (run) => run.onDuring('jaw_thrust', 'hypo') || run.onDuring('oral_airway', 'hypo'),
-      when: (run) => run.at('jaw_thrust') ?? run.at('oral_airway'),
+      check: (run) => run.onDuring('jaw_thrust', 'hypo') || run.onDuring('npa', 'hypo'),
+      when: (run) => run.at('jaw_thrust') ?? run.at('npa'),
     },
     {
       id: 'bvm',
@@ -685,7 +685,8 @@ export const quiet: Scenario = {
       parts: [
         {
           // His airway shuts at the cords: nothing in this run calls for an airway device.
-          quote: 'BVM not moving the chest: reposition, NPA, then LMA or King',
+          quote:
+            'BVM not moving the chest: reposition, NPA, oral airway if no gag, then LMA or King',
           check: () => null,
         },
         {

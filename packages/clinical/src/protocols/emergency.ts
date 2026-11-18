@@ -327,13 +327,18 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     steps: [
       { text: 'Turn off N₂O, 100% O₂. Stop giving sedatives', severity: 'critical' },
       { text: 'Stimulate: say their name loudly, shake the shoulder' },
-      { text: 'Jaw thrust or chin lift, suction, oral airway or NPA' },
+      {
+        // The nasal airway is the one a patient with reflexes tolerates. An oral
+        // airway in one who can still cough or gag brings vomiting and
+        // laryngospasm (owner, Nov 2026).
+        text: 'Jaw thrust or chin lift, suction, NPA. Oral airway (Berman) only if unresponsive with no cough or gag',
+      },
       {
         text: 'Still breathing poorly (SpO₂ falling, EtCO₂ waveform flat or rising): BVM, 1 breath every 6 seconds',
         severity: 'critical',
       },
       {
-        text: 'BVM not moving the chest: reposition, NPA, then LMA or King. Crowing or no air movement: Laryngospasm',
+        text: 'BVM not moving the chest: reposition, NPA, oral airway if no gag, then LMA or King. Crowing or no air movement: Laryngospasm',
         goTo: ['npa', 'lma', 'king_lt', 'laryngospasm'],
         severity: 'critical',
       },

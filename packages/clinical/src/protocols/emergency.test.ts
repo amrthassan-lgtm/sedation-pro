@@ -729,11 +729,23 @@ describe('emergency protocols', () => {
       expect(naloxone?.notes).toContain('10 ml syringe for the 2 mg dose');
     });
 
+    it('hypoventilation reaches for the nasal airway first, and the oral one only with no cough or gag', () => {
+      const steps = stepsOf('hypoventilation').map((s) => s.text);
+      expect(steps).toContain(
+        'Jaw thrust or chin lift, suction, NPA. Oral airway (Berman) only if unresponsive with no cough or gag',
+      );
+      // Never offered as an equal choice again: every mention carries its condition.
+      for (const text of steps.filter((t) => /oral airway/i.test(t))) {
+        expect(text).toMatch(/no (cough or )?gag/);
+      }
+      expect(steps.join(' ')).not.toMatch(/oral airway or NPA/i);
+    });
+
     it('hypoventilation has a branch for a bag that moves no air, and links to both reversal pages', () => {
       const steps = stepsOf('hypoventilation');
       const bag = indexOf('hypoventilation', 'BVM, 1 breath every 6 seconds');
       expect(steps[bag + 1]?.text).toBe(
-        'BVM not moving the chest: reposition, NPA, then LMA or King. Crowing or no air movement: Laryngospasm',
+        'BVM not moving the chest: reposition, NPA, oral airway if no gag, then LMA or King. Crowing or no air movement: Laryngospasm',
       );
       expect(steps[bag + 1]?.goTo).toEqual(['npa', 'lma', 'king_lt', 'laryngospasm']);
       // Opioid first, as the pages themselves give naloxone first.

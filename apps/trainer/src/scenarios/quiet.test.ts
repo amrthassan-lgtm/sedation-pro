@@ -605,7 +605,10 @@ describe('"Shallow", played by the protocols', () => {
     expect(row(sim, 'hypo_911')).toMatchObject({ result: 'done', tier: 'echo' });
     expect(row(sim, 'opioid_911')).toMatchObject({ result: 'done', tier: 'echo' });
     expect(row(sim, 'hypo_no_air').parts).toEqual([
-      { quote: 'BVM not moving the chest: reposition, NPA, then LMA or King', result: 'na' },
+      {
+        quote: 'BVM not moving the chest: reposition, NPA, oral airway if no gag, then LMA or King',
+        result: 'na',
+      },
       { quote: 'Crowing or no air movement: Laryngospasm', result: 'done' },
     ]);
     expect(gradeRun(quiet, sim).of).toBe(13);

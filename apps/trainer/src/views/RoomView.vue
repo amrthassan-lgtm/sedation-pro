@@ -71,7 +71,7 @@ const NOW_LABELS: Readonly<Record<string, string>> = {
   cpap: 'Mask seal',
   jaw_thrust: 'Jaw thrust',
   larson: 'Notch pressure',
-  oral_airway: 'Airway in',
+  npa: 'NPA in',
   pos_flat_legs_up: 'Flat, legs up',
   pos_sit_up: 'Sitting up',
   pos_side: 'On the side',
