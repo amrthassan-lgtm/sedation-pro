@@ -28,7 +28,7 @@ export interface IvReadinessBlocker {
 }
 
 export interface IvReadinessInputs {
-  /** Phase 1 safety checklist — "EKG leads placed". */
+  /** "EKG leads placed": ticked in Phase 1, or by the first Pre-Op Vitals stamp. */
   readonly ekgPlaced: boolean;
 }
 
@@ -44,7 +44,8 @@ export function ivSedationReadiness(inputs: IvReadinessInputs): IvSedationReadin
     blockers.push({
       code: 'ekg-not-confirmed',
       label: 'EKG not confirmed',
-      detail: 'Tick “EKG leads placed” in the Phase 1 safety checklist before giving IV sedation.',
+      detail:
+        'Stamp the Pre-Op Vitals, or tick “EKG leads placed” in Phase 1, before giving IV sedation.',
     });
   }
 

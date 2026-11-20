@@ -214,7 +214,8 @@ const DEFAULT_TIMINGS: FormularyTimings = {
 
 /**
  * The top entry of each list is what a new case pre-selects (owner, Nov
- * 2026): IV site `'Right dorsal hand'`, fluid `'D5W 100 mL'`, gauge `'22'`.
+ * 2026): IV site `'Right dorsal hand'`, fluid `'D5W 1000 mL'` (the bag the
+ * practice hangs; the cart list's `d5w-1000` row), gauge `'22'`.
  * Reordering a list in Settings moves the pre-selection with it, and
  * `default.test.ts` guards the shipped order.
  * Companion relation has no pre-selection (recovery store seeds `''` behind a
@@ -238,6 +239,7 @@ const DEFAULT_PICKLISTS: PracticePicklists = {
     'Left wrist',
   ],
   ivFluids: [
+    'D5W 1000 mL',
     'D5W 100 mL',
     'D5W 250 mL',
     '0.9% NaCl 250 mL',

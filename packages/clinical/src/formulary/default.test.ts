@@ -112,10 +112,10 @@ describe('DEFAULT_FORMULARY', () => {
 
   it('puts the pre-selection a new case opens on at the top of each IV list', () => {
     // A new case pre-selects the top entry, so the shipped order is the
-    // practice's default: right dorsal hand, D5W 100 mL, 22 gauge.
+    // practice's default: right dorsal hand, D5W 1000 mL, 22 gauge.
     const p = DEFAULT_FORMULARY.picklists;
     expect(p.ivSites[0]).toBe('Right dorsal hand');
-    expect(p.ivFluids[0]).toBe('D5W 100 mL');
+    expect(p.ivFluids[0]).toBe('D5W 1000 mL');
     expect(p.catheterGauges[0]).toBe('22');
     expect(p.companionRelations).toContain('Spouse');
     expect(p.companionRelations).toContain('Other');

@@ -43,10 +43,10 @@ describe('what a new case starts with', () => {
     setActivePinia(createPinia());
   });
 
-  it('the top of each IV list, as shipped: right dorsal hand, D5W 100 mL, 22 gauge', () => {
+  it('the top of each IV list, as shipped: right dorsal hand, D5W 1000 mL, 22 gauge', () => {
     const iv = useIVStore();
     expect(iv.ivSite).toBe('Right dorsal hand');
-    expect(iv.ivFluid).toBe('D5W 100 mL');
+    expect(iv.ivFluid).toBe('D5W 1000 mL');
     expect(iv.ivCatheterGauge).toBe('22');
   });
 
