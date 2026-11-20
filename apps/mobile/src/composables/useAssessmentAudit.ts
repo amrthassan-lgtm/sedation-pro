@@ -238,6 +238,18 @@ export function useAssessmentAudit(): void {
     scheduleAmendment();
   });
 
+  // Undo can take an amendment row back out (the Pre-Op Vitals stamp writes
+  // one for the EKG tick). The baseline has to follow the log then, or the
+  // field going back would be logged as a change from a row that is gone.
+  const auditRowCount = computed(
+    () =>
+      log.events.filter((e) => e.event === PHASE1_LOCK_EVENT || e.event === PHASE1_AMENDMENT_EVENT)
+        .length,
+  );
+  watch(auditRowCount, (now, before) => {
+    if (now < before) hydrateBaseline();
+  });
+
   onScopeDispose(() => {
     if (amendmentTimer) {
       clearTimeout(amendmentTimer);

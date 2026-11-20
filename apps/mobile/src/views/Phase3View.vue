@@ -9,6 +9,7 @@ import { useFormularyStore } from '@/stores/formulary';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
+import { confirmEkgWithVitals } from '@/composables/ekgWithVitals';
 import { fmtClock, fmtDuration, nowClock } from '@/composables/format';
 import { vitalsDetails } from '@/composables/vitalsDetails';
 import { haptic } from '@/composables/useHaptics';
@@ -48,7 +49,7 @@ const eventLog = useEventLogStore();
 const formulary = useFormularyStore();
 const now = useNow(1000);
 
-const { weightLb, diabetic, safetyAlerts, baselineBp, baselineSpo2, baselineGlucose } =
+const { weightLb, diabetic, safetyAlerts, ekgPlaced, baselineBp, baselineSpo2, baselineGlucose } =
   storeToRefs(patient);
 
 /** Phase 1 baseline reference shown atop Pre-Op Vitals; '' hides the line. */
@@ -204,6 +205,7 @@ const versedTestState = computed<ActionState>(() =>
 );
 
 function stampPreOpVitals() {
+  const unconfirmEkg = confirmEkgWithVitals();
   iv.setPreOpVitals({
     hr: preOpHr.value,
     bp: { sbp: preOpBpSys.value, dbp: preOpBpDia.value },
@@ -230,7 +232,10 @@ function stampPreOpVitals() {
       sub: nowClock(),
       tone: 'safe',
     },
-    revert: () => iv.clearPreOpStamp(),
+    revert: () => {
+      iv.clearPreOpStamp();
+      unconfirmEkg();
+    },
   });
 }
 
@@ -528,6 +533,7 @@ function onNaloxone() {
         >
           Stamp Pre-Op Vitals
         </UiButton>
+        <p v-if="!ekgPlaced" class="caption stamp-also">Also confirms EKG leads placed</p>
       </UiStack>
     </UiCard>
 
@@ -974,6 +980,10 @@ function onNaloxone() {
   margin: 2px 0 0;
   font-family: var(--font-mono);
   letter-spacing: 0.2px;
+}
+.stamp-also {
+  margin: 0;
+  text-align: center;
 }
 .stat-grid {
   display: grid;

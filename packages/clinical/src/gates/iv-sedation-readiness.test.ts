@@ -27,6 +27,7 @@ describe('ivSedationReadiness', () => {
     const blocker = ivSedationReadiness({ ekgPlaced: false }).blockers[0];
 
     expect(blocker?.label).toMatch(/EKG/i);
+    expect(blocker?.detail).toMatch(/pre-op vitals/i);
     expect(blocker?.detail).toMatch(/phase 1/i);
   });
 

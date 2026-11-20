@@ -140,7 +140,7 @@ describe('a new case on a set-up tablet (owner, Nov 2026)', () => {
       'Attending provider: Dr. Jordan Rivera. Dental assistant: Alex Morgan, EFDA.',
     );
     expect(text).toContain(
-      'An IV catheter (22g) was placed in the Right dorsal hand after 1 attempt; D5W 100 mL was initiated.',
+      'An IV catheter (22g) was placed in the Right dorsal hand after 1 attempt; D5W 1000 mL was initiated.',
     );
   });
 });
