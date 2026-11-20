@@ -499,6 +499,9 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading"><span class="heading-step">1</span> Pre-Op Vitals</p>
+      <p v-if="!ekgPlaced" class="footnote step-instruction">
+        Place EKG leads and record pre-op vitals
+      </p>
       <!-- Comparing against Phase 1's baseline is the whole point of
            re-taking vitals — surface it where the eyes already are. -->
       <p v-if="baselineLine" class="caption baseline-line">{{ baselineLine }}</p>
@@ -533,7 +536,6 @@ function onNaloxone() {
         >
           Stamp Pre-Op Vitals
         </UiButton>
-        <p v-if="!ekgPlaced" class="caption stamp-also">Also confirms EKG leads placed</p>
       </UiStack>
     </UiCard>
 
@@ -981,9 +983,9 @@ function onNaloxone() {
   font-family: var(--font-mono);
   letter-spacing: 0.2px;
 }
-.stamp-also {
-  margin: 0;
-  text-align: center;
+.step-instruction {
+  margin: var(--sp-1) 0 0;
+  color: var(--color-text-secondary);
 }
 .stat-grid {
   display: grid;

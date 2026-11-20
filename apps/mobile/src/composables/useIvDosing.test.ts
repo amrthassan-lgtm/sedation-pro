@@ -43,7 +43,7 @@ describe('the EKG block on IV sedatives', () => {
 
     const toast = useToastStore().current;
     expect(toast?.label).toMatch(/EKG/i);
-    expect(toast?.sub).toMatch(/phase 1/i);
+    expect(toast?.sub).toMatch(/pre-op vitals/i);
   });
 
   it('lets the dose through once the EKG is confirmed', () => {

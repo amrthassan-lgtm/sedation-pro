@@ -27,8 +27,18 @@ describe('ivSedationReadiness', () => {
     const blocker = ivSedationReadiness({ ekgPlaced: false }).blockers[0];
 
     expect(blocker?.label).toMatch(/EKG/i);
+    expect(blocker?.detail).toMatch(/EKG leads/i);
     expect(blocker?.detail).toMatch(/pre-op vitals/i);
-    expect(blocker?.detail).toMatch(/phase 1/i);
+  });
+
+  /**
+   * Owner, Nov 2026: a refused dose happens on the sedation screen, where the
+   * Pre-Op Vitals stamp confirms the leads. Nobody is sent back to Phase 1.
+   */
+  it('does not send anyone back to Phase 1', () => {
+    const blocker = ivSedationReadiness({ ekgPlaced: false }).blockers[0];
+
+    expect(blocker?.detail).not.toMatch(/phase 1/i);
   });
 
   /**
