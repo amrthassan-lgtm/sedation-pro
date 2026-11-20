@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 
 import { formatUsPhone, phoneIncomplete } from '@/composables/phone';
 import { nowClock, parseCalendarDay } from '@/composables/format';
+import { lastLogged } from '@/composables/lastLogged';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 
@@ -318,7 +319,10 @@ const cigaretteValue = computed<number>({
 // case-insensitive dedup so double-tapping is a no-op). Medication chips
 // cover the most-prescribed chronic drugs in US adults beyond a "None"
 // baseline (statin / hypothyroid / two antihypertensives / diabetes).
-const allergyTerms = ['NKDA', 'Penicillin', 'Sulfa', 'Latex'];
+// No "NKDA" chip: the checkbox under the field is the one way to say it
+// (owner, Nov 2026). The chip typed it as text, so it could sit beside an
+// allergy in the same line.
+const allergyTerms = ['Penicillin', 'Sulfa', 'Latex'];
 const medicationTerms = [
   'None',
   'Metformin',
@@ -529,12 +533,20 @@ function startDiazepam(doseMg: number) {
   logDiazepam(doseMg);
 }
 
+const BEDTIME_DOSE = 'Bedtime Premedication';
+const BEDTIME_DRUG = diazepamOptions?.name ?? 'Diazepam';
+
+/** The time on a dose button once it was recorded; it stays tappable. */
+function bedtimeAt(doseMg: number): string | undefined {
+  return lastLogged(eventLog.events, BEDTIME_DOSE, { Drug: BEDTIME_DRUG, Dose: `${doseMg} mg` });
+}
+
 function logDiazepam(doseMg: number) {
   haptic('medium');
   undo.stamp({
-    event: 'Bedtime Premedication',
+    event: BEDTIME_DOSE,
     details: {
-      Drug: diazepamOptions?.name ?? 'Diazepam',
+      Drug: BEDTIME_DRUG,
       Dose: `${doseMg} mg`,
       Route: 'PO swallowed',
       Timing: 'Night before',
@@ -1056,6 +1068,7 @@ const diazepamModalCopy = computed(() => {
           dose="2.5"
           sub="mg PO"
           :disabled="!osaStatus"
+          :last-at="bedtimeAt(2.5)"
           @click="startDiazepam(2.5)"
         />
         <UiDrugButton
@@ -1064,6 +1077,7 @@ const diazepamModalCopy = computed(() => {
           dose="5"
           sub="mg PO"
           :disabled="!osaStatus"
+          :last-at="bedtimeAt(5)"
           @click="startDiazepam(5)"
         />
         <UiDrugButton
@@ -1072,6 +1086,7 @@ const diazepamModalCopy = computed(() => {
           dose="10"
           sub="mg PO"
           :disabled="!osaStatus"
+          :last-at="bedtimeAt(10)"
           @click="startDiazepam(10)"
         />
       </div>

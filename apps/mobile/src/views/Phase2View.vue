@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 
+import { useEventLogStore } from '@/stores/event-log';
 import { usePatientStore } from '@/stores/patient';
 import { useUndoStore } from '@/stores/undo';
 import { haptic } from '@/composables/useHaptics';
 import { nowClock } from '@/composables/format';
+import { lastLogged } from '@/composables/lastLogged';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
@@ -14,8 +16,16 @@ import { lorazepamMax, triazolamMax } from '@sedation-pro/clinical';
 
 const patient = usePatientStore();
 const undo = useUndoStore();
+const log = useEventLogStore();
 
 const { weightLb } = storeToRefs(patient);
+
+const ORAL_DOSE = 'Preoperative Oral Dose';
+
+/** The time on a dose button once it was given; these stay tappable for a second dose. */
+function givenAt(drug: string, doseMg: number): string | undefined {
+  return lastLogged(log.events, ORAL_DOSE, { Drug: drug, Dose: `${doseMg} mg` });
+}
 
 /**
  * Weight-based ceiling for the drug, captured at the moment of
@@ -38,7 +48,7 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
   haptic('medium');
   const max = weightBasedMaxLabel(drug);
   undo.stamp({
-    event: 'Preoperative Oral Dose',
+    event: ORAL_DOSE,
     details: {
       Drug: drug,
       Dose: `${doseMg} ${unit}`,
@@ -67,12 +77,13 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
 
     <UiCard tint="ph2">
       <p class="heading">Triazolam · Halcion</p>
-      <UiRow :gap="2" wrap class="mt-2">
+      <UiRow :gap="2" align="stretch" wrap class="mt-2">
         <UiDrugButton
           tone="oral"
           name="Triazolam"
           dose="0.125"
           sub="mg PO"
+          :last-at="givenAt('Triazolam', 0.125)"
           @click="logOral('Triazolam', 0.125)"
         />
         <UiDrugButton
@@ -80,6 +91,7 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
           name="Triazolam"
           dose="0.25"
           sub="mg PO"
+          :last-at="givenAt('Triazolam', 0.25)"
           @click="logOral('Triazolam', 0.25)"
         />
         <UiDrugButton
@@ -87,6 +99,7 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
           name="Triazolam"
           dose="0.5"
           sub="mg PO"
+          :last-at="givenAt('Triazolam', 0.5)"
           @click="logOral('Triazolam', 0.5)"
         />
       </UiRow>
@@ -94,12 +107,13 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
 
     <UiCard tint="ph2">
       <p class="heading">Lorazepam · Ativan</p>
-      <UiRow :gap="2" wrap class="mt-2">
+      <UiRow :gap="2" align="stretch" wrap class="mt-2">
         <UiDrugButton
           tone="oral"
           name="Lorazepam"
           dose="0.5"
           sub="mg PO"
+          :last-at="givenAt('Lorazepam', 0.5)"
           @click="logOral('Lorazepam', 0.5)"
         />
         <UiDrugButton
@@ -107,6 +121,7 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
           name="Lorazepam"
           dose="1"
           sub="mg PO"
+          :last-at="givenAt('Lorazepam', 1)"
           @click="logOral('Lorazepam', 1)"
         />
         <UiDrugButton
@@ -114,6 +129,7 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
           name="Lorazepam"
           dose="2"
           sub="mg PO"
+          :last-at="givenAt('Lorazepam', 2)"
           @click="logOral('Lorazepam', 2)"
         />
       </UiRow>
@@ -121,12 +137,13 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
 
     <UiCard tint="ph2">
       <p class="heading">Hydroxyzine · Vistaril</p>
-      <UiRow :gap="2" wrap class="mt-2">
+      <UiRow :gap="2" align="stretch" wrap class="mt-2">
         <UiDrugButton
           tone="oral"
           name="Hydroxyzine"
           dose="25"
           sub="mg PO"
+          :last-at="givenAt('Hydroxyzine', 25)"
           @click="logOral('Hydroxyzine', 25)"
         />
         <UiDrugButton
@@ -134,6 +151,7 @@ function logOral(drug: string, doseMg: number, unit: string = 'mg') {
           name="Hydroxyzine"
           dose="50"
           sub="mg PO"
+          :last-at="givenAt('Hydroxyzine', 50)"
           @click="logOral('Hydroxyzine', 50)"
         />
       </UiRow>
