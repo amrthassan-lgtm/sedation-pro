@@ -44,8 +44,7 @@ export function ivSedationReadiness(inputs: IvReadinessInputs): IvSedationReadin
     blockers.push({
       code: 'ekg-not-confirmed',
       label: 'EKG not confirmed',
-      detail:
-        'Stamp the Pre-Op Vitals, or tick “EKG leads placed” in Phase 1, before giving IV sedation.',
+      detail: 'Place EKG leads and stamp the Pre-Op Vitals before giving IV sedation.',
     });
   }
 

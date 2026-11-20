@@ -6,7 +6,7 @@ import { usePatientStore } from '@/stores/patient';
  * the first pre-op vitals, long after the assistant has left Phase 1, so the
  * box was only ever ticked by walking back to it. Stamping those vitals now
  * ticks it. It is the one assessment field the app sets by itself, on his
- * decision; the Stamp button says so before it is tapped.
+ * decision; until then the card tells whoever stamps to place the leads.
  *
  * Once the assessment is locked the tick goes into the log as the same
  * amendment row a hand tick in Phase 1 writes. Phase 1's audit is not mounted
