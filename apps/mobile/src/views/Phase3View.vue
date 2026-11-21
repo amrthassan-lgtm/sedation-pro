@@ -508,11 +508,11 @@ function onNaloxone() {
            re-taking vitals — surface it where the eyes already are. -->
       <p v-if="baselineLine" class="caption baseline-line">{{ baselineLine }}</p>
       <UiStack :gap="3" class="mt-2">
-        <UiRow :gap="3" wrap>
+        <UiRow :gap="3" class="field-row">
           <UiField label="HR" hint="bpm">
             <UiNumberInput v-model="preOpHr" />
           </UiField>
-          <UiField label="BP" hint="mmHg">
+          <UiField label="BP" hint="mmHg" class="field-row-wide">
             <UiBpInput v-model="preOpBp" />
           </UiField>
           <UiField label="SpO₂" hint="%">
@@ -569,7 +569,7 @@ function onNaloxone() {
         <UiField label="Attempts">
           <UiChipGroup v-model="attemptsBucket" :options="attemptsChipOptions" size="tap-target" />
         </UiField>
-        <UiRow :gap="3" wrap>
+        <UiRow :gap="3" class="field-row">
           <UiField label="Site">
             <UiSelect v-model="siteValue" :options="siteOptions" block />
             <UiTextInput v-if="siteIsOther" v-model="ivSite" class="mt-2" />
@@ -758,11 +758,11 @@ function onNaloxone() {
     <UiCard tint="ph3">
       <p class="heading"><span class="heading-step">7</span> Sedation Level Achieved</p>
       <UiStack :gap="3" class="mt-2">
-        <UiRow :gap="3" wrap>
+        <UiRow :gap="3" class="field-row">
           <UiField label="HR" hint="bpm">
             <UiNumberInput v-model="sedHr" />
           </UiField>
-          <UiField label="BP" hint="mmHg">
+          <UiField label="BP" hint="mmHg" class="field-row-wide">
             <UiBpInput v-model="sedBp" />
           </UiField>
           <UiField label="SpO₂" hint="%">

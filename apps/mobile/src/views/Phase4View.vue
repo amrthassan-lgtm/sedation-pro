@@ -398,11 +398,17 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <UiCard v-if="!isAssessment" tint="ph4">
       <p class="heading"><span class="heading-step">11</span> Recovery Vitals</p>
       <UiStack :gap="3" class="mt-2">
-        <UiRow :gap="3" wrap>
+        <UiRow :gap="3" class="field-row">
           <UiField label="HR" hint="bpm">
             <UiNumberInput v-model="endHr" />
           </UiField>
-          <UiField id="gate-bp" label="BP" hint="mmHg" :invalid="gate.isInvalid('gate-bp')">
+          <UiField
+            id="gate-bp"
+            label="BP"
+            hint="mmHg"
+            class="field-row-wide"
+            :invalid="gate.isInvalid('gate-bp')"
+          >
             <UiBpInput v-model="endBp" />
           </UiField>
           <UiField id="gate-spo2" label="SpO₂" hint="%" :invalid="gate.isInvalid('gate-spo2')">

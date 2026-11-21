@@ -101,3 +101,37 @@
 .cat-other {
   --cat: var(--cat-other);
 }
+
+/* A row of fields that shares the card's width (the vitals rows, Site and
+   Fluid). Left to their native widths the inputs ran 255, 200 and 100 px,
+   so the fourth dropped to a line of its own and the row never met the
+   card's edge. The selectors carry three classes to outrank the primitives'
+   scoped rules. */
+.field-row > .ui-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.field-row > .ui-field.field-row-wide {
+  flex-grow: 1.5;
+}
+.field-row > .ui-field .ui-number {
+  width: 100%;
+  min-width: 0;
+}
+.field-row > .ui-field .ui-bp {
+  display: flex;
+  width: 100%;
+}
+.field-row > .ui-field .ui-bp-input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+}
+@media (max-width: 560px) {
+  .field-row {
+    flex-wrap: wrap;
+  }
+  .field-row > .ui-field {
+    flex-basis: 40%;
+  }
+}

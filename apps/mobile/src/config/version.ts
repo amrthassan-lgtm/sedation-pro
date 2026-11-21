@@ -4,4 +4,4 @@
  * to `apps/mobile/package.json`, so a release is a change in two places that
  * cannot drift apart.
  */
-export const APP_VERSION = '1.1.23';
+export const APP_VERSION = '1.1.24';
