@@ -18,7 +18,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the nine-phase plan.
 
 - **Phase 0 — Foundation scaffold:** done.
 - **Phase 1 — Clinical engine:** done (`@sedation-pro/clinical` v0.1.0).
-- **Version 1 (Nov 2026, now 1.1.28):** the app the practice runs: assessment, oral
+- **Version 1 (Nov 2026, now 1.1.29):** the app the practice runs: assessment, oral
   and IV sedation, recovery, clinical note, Open Dental filing, emergency
   protocols and the crash-cart inventory. `APP_VERSION` in
   `apps/mobile/src/config/version.ts` is the number shown on screen and on
@@ -83,7 +83,7 @@ invites action.
 
 - **One-time steps on the IV sedation screen fold to one line (owner, Nov
   2026).** `StepCard.vue` and `useStepFold.ts`. Only steps done once fold
-  (1, 3, 5, 7, 8). The gas switch (2, 4) and the doses (6) are tapped again
+  (1, 2, 3, 5, 7, 8). The gas switch (4) and the doses (6) are tapped again
   and again through a case and stay open. A step never folds under the
   finger: one finished while you are on it stays open until it is scrolled
   past, and the page is moved by what the fold took away. Steps already
@@ -93,11 +93,13 @@ invites action.
   buttons exactly (owner, Nov 2026): away only while all four are whole on
   screen between the top bar and the bottom edge, up the moment one is cut.
   The top edge is the bar as measured (`useDockVisibility.ts`), never a
-  pixel count tuned on one tablet, so it holds on any screen. The dock also carries the gas switch (owner, Nov
-  2026): steps 2 and 4 and the dock flip one switch (`useGasSwitch.ts`) and
-  write the same two log lines, a tap that changes nothing writes nothing,
-  and the time on the lit side is read from the log row so Undo moves it
-  back.
+  pixel count tuned on one tablet, so it holds on any screen. The gas (owner, Nov 2026): step 2 starts the
+  mix once and then folds; from then on it is flipped from step 4 or the
+  dock, which show the same two-sided control (`GasSwitch.vue`). All three
+  go through `useGasSwitch.ts` and write the same two log lines, a tap that
+  changes nothing writes nothing, and the time on the lit side is read from
+  the log row so Undo moves it back. A step finished from elsewhere while it
+  is already above the screen folds at once.
 - **Never invent a CSS custom property.** The token vocabulary lives in
   `packages/ui/src/styles/tokens.css` — read it, don't guess from memory. An
   undefined `var(--whatever)` resolves to nothing and fails **silently**:

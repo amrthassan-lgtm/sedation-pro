@@ -20,6 +20,7 @@ import { useOtherableSelect } from '@/composables/useOtherableSelect';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
+import GasSwitch from '@/components/GasSwitch.vue';
 import StepCard from '@/components/StepCard.vue';
 import {
   UiBanner,
@@ -80,8 +81,6 @@ const dockSentinelRef = ref<HTMLElement | null>(null);
 useDockSentinel(dockSentinelRef);
 
 const {
-  n2oOn,
-  o2OnlyOn,
   ivStarted,
   ivStartedAt,
   ivCatheterGauge,
@@ -208,7 +207,7 @@ const versedTestState = computed<ActionState>(() =>
 // -------- Folded-step lines -------------------------------------------------
 // A folded step shows what was stamped, read from the stamp itself and never
 // from a field that may have been retyped since. Only the steps done once
-// fold (1, 3, 5, 7, 8). The gas switch (2, 4) and the doses (6) are used
+// fold (1, 2, 3, 5, 7, 8). The gas switch (4) and the doses (6) are used
 // again and again through a case (owner, Nov 2026), so they stay open.
 
 function vitalsLine(v: VitalsStamp | null): string {
@@ -279,9 +278,13 @@ function stampPreOpVitals() {
 }
 
 // -------- Gas flow ----------------------------------------------------------
-// Steps 2 and 4 and the dock flip the same switch (`useGasSwitch`).
+// Step 2 starts the mix, once, and then folds like the other one-time steps
+// (owner, Nov 2026). From then on the gas is flipped from step 4 or the dock,
+// which show the same two-sided control (`GasSwitch.vue`). All three go
+// through `useGasSwitch`.
 
 const gas = useGasSwitch();
+const gasStartedAt = gas.startedAt;
 
 // -------- IV start ----------------------------------------------------------
 
@@ -464,7 +467,7 @@ function onFlumazenil() {
   // removed but the panel stays open — the same class of bug as the N₂O
   // toggle revert that the prior commit fixed.
   const prevPanelOpen = flumazenilProcessOpen.value;
-  iv.logDose({ drug: 'flumazenil', mg: 0.2 });
+  const dose = iv.logDose({ drug: 'flumazenil', mg: 0.2 });
   flumazenilProcessOpen.value = true;
   undo.stamp({
     event: 'Reversal Dose',
@@ -475,8 +478,7 @@ function onFlumazenil() {
       tone: 'caution',
     },
     revert: () => {
-      const last = iv.doses[iv.doses.length - 1];
-      if (last && last.drug === 'flumazenil') iv.removeDoseById(last.id);
+      iv.removeDoseById(dose.id);
       flumazenilProcessOpen.value = prevPanelOpen;
     },
   });
@@ -484,7 +486,7 @@ function onFlumazenil() {
 
 function onNaloxone() {
   const prevPanelOpen = naloxoneProcessOpen.value;
-  iv.logDose({ drug: 'naloxone', mg: 0.4 });
+  const dose = iv.logDose({ drug: 'naloxone', mg: 0.4 });
   naloxoneProcessOpen.value = true;
   undo.stamp({
     event: 'Reversal Dose',
@@ -495,8 +497,7 @@ function onNaloxone() {
       tone: 'limit',
     },
     revert: () => {
-      const last = iv.doses[iv.doses.length - 1];
-      if (last && last.drug === 'naloxone') iv.removeDoseById(last.id);
+      iv.removeDoseById(dose.id);
       naloxoneProcessOpen.value = prevPanelOpen;
     },
   });
@@ -570,12 +571,12 @@ function onNaloxone() {
 
     <!-- Card 2 — N₂O / O₂ ON ------------------------------------------- -->
 
-    <StepCard :step="2" title="N₂O / O₂ ON" fold-key="gas-on" :done-at="null">
+    <StepCard :step="2" title="N₂O / O₂ ON" fold-key="gas-on" :done-at="gasStartedAt">
       <UiButton
         tone="primary"
         block
-        :state="n2oOn ? 'logged' : 'idle'"
-        logged-at="On"
+        :state="gasStartedAt !== null ? 'logged' : 'idle'"
+        :logged-at="fmtClock(gasStartedAt)"
         :cooldown-ms="0"
         class="mt-2"
         @click="gas.turnOn"
@@ -630,21 +631,10 @@ function onNaloxone() {
       </UiStack>
     </StepCard>
 
-    <!-- Card 4 — N₂O OFF -> O₂ 100% ------------------------------------ -->
+    <!-- Card 4 — the gas switch: the same control as the dock's -------- -->
 
-    <StepCard :step="4" title="N₂O OFF → O₂ 100%" fold-key="gas-off" :done-at="null">
-      <UiButton
-        tone="primary"
-        block
-        :state="o2OnlyOn ? 'logged' : 'idle'"
-        logged-at="O₂ 100%"
-        :cooldown-ms="0"
-        :disabled="!n2oOn && !o2OnlyOn"
-        class="mt-2"
-        @click="gas.turnOff"
-      >
-        N₂O OFF · O₂ 100% ON
-      </UiButton>
+    <StepCard :step="4" title="Gas Switch" fold-key="gas-off" :done-at="null">
+      <GasSwitch tall class="mt-2" />
     </StepCard>
 
     <!-- Card 5 — Initial test dose. -->
@@ -859,47 +849,49 @@ function onNaloxone() {
         Patient weight is required for the per-drug max-dose math. Fill weight in Phase 1.
       </UiBanner>
 
-      <div class="drug-grid mt-2">
-        <UiDrugButton
-          tone="lidocaine"
-          name="Lidocaine"
-          dose="2%"
-          sub="1:100k epi · 1 carp"
-          :disabled="!weightLb"
-          @click="logLocal('lidocaine-2-epi100k', '2% Lidocaine 1:100k')"
-        />
-        <UiDrugButton
-          tone="septocaine-gold"
-          name="Septocaine"
-          dose="4%"
-          sub="1:100k epi · 1 carp"
-          :disabled="!weightLb"
-          @click="logLocal('septocaine-4-epi100k', '4% Septocaine 1:100k')"
-        />
-        <UiDrugButton
-          tone="septocaine-silver"
-          name="Septocaine"
-          dose="4%"
-          sub="1:200k epi · 1 carp"
-          :disabled="!weightLb"
-          @click="logLocal('septocaine-4-epi200k', '4% Septocaine 1:200k')"
-        />
-        <UiDrugButton
-          tone="marcaine"
-          name="Marcaine"
-          dose="0.25%"
-          sub="1:200k epi · 1 carp"
-          :disabled="!weightLb"
-          @click="logLocal('marcaine-0_25-epi200k', '0.25% Marcaine 1:200k')"
-        />
-        <UiDrugButton
-          tone="mepivacaine"
-          name="Mepivacaine"
-          dose="3%"
-          sub="plain · 1 carp"
-          :disabled="!weightLb"
-          @click="logLocal('mepivacaine-3-plain', '3% Mepivacaine plain')"
-        />
+      <div class="la-wrap mt-2">
+        <div class="la-grid">
+          <UiDrugButton
+            tone="lidocaine"
+            name="Lidocaine"
+            dose="2%"
+            sub="1:100k epi · 1 carp"
+            :disabled="!weightLb"
+            @click="logLocal('lidocaine-2-epi100k', '2% Lidocaine 1:100k')"
+          />
+          <UiDrugButton
+            tone="septocaine-gold"
+            name="Septocaine"
+            dose="4%"
+            sub="1:100k epi · 1 carp"
+            :disabled="!weightLb"
+            @click="logLocal('septocaine-4-epi100k', '4% Septocaine 1:100k')"
+          />
+          <UiDrugButton
+            tone="septocaine-silver"
+            name="Septocaine"
+            dose="4%"
+            sub="1:200k epi · 1 carp"
+            :disabled="!weightLb"
+            @click="logLocal('septocaine-4-epi200k', '4% Septocaine 1:200k')"
+          />
+          <UiDrugButton
+            tone="marcaine"
+            name="Marcaine"
+            dose="0.25%"
+            sub="1:200k epi · 1 carp"
+            :disabled="!weightLb"
+            @click="logLocal('marcaine-0_25-epi200k', '0.25% Marcaine 1:200k')"
+          />
+          <UiDrugButton
+            tone="mepivacaine"
+            name="Mepivacaine"
+            dose="3%"
+            sub="plain · 1 carp"
+            :disabled="!weightLb"
+            @click="logLocal('mepivacaine-3-plain', '3% Mepivacaine plain')"
+          />
+        </div>
       </div>
 
       <UiStack v-if="localResult && localResult.perDrug.length > 0" :gap="2" class="mt-2">
@@ -1037,6 +1029,45 @@ function onNaloxone() {
 }
 .ekg-row {
   margin: var(--sp-3) 0;
+}
+/* The five local anaesthetics are the practice's whole list (owner, Nov
+   2026). A button left alone at the end of a row takes the full width, as
+   Zofran does, instead of sitting in one column with a hole beside it: two,
+   two and one on a phone, four and one on a tablet, five across when there
+   is room. Measured on the card's own width, so the rail on a wide screen
+   is accounted for. */
+.la-wrap {
+  container-type: inline-size;
+}
+.la-grid {
+  display: grid;
+  gap: var(--sp-2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.la-grid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+@container (min-width: 520px) {
+  .la-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .la-grid > :last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+  .la-grid > :last-child:nth-child(4n + 1) {
+    grid-column: 1 / -1;
+  }
+}
+@container (min-width: 740px) {
+  .la-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .la-grid > :last-child:nth-child(4n + 1) {
+    grid-column: auto;
+  }
+  .la-grid > :last-child:nth-child(5n + 1) {
+    grid-column: 1 / -1;
+  }
 }
 .dose-live,
 .dose-buttons {

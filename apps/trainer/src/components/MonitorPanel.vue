@@ -358,7 +358,10 @@ watch(
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(92px, 22%, 168px);
-  grid-template-rows: repeat(3, minmax(52px, 1fr));
+  /* 40 px at least: the room is one screen tall, and on a laptop or a tablet
+     on its side the monitor gets about 130 px for its three rows. At 52 the
+     rows were taller than the box and ran over the NIBP line. */
+  grid-template-rows: repeat(3, minmax(40px, 1fr));
   column-gap: var(--sp-3);
 }
 .wave {
@@ -389,6 +392,11 @@ watch(
   border-bottom: 1px solid var(--mon-line);
   line-height: 1;
   min-height: 0;
+  /* The numbers are sized to the height of their own row as well as the
+     width of the screen. Sized to the width alone, they spilled out of a
+     short row onto the NIBP line on a tablet on its side, a laptop and a
+     Galaxy S: the RR sat under the Start key. */
+  container-type: size;
 }
 .lab {
   font-size: var(--type-caption);
@@ -396,13 +404,17 @@ watch(
   letter-spacing: 0.08em;
 }
 .val {
-  font-size: clamp(2rem, 7.4vw, 3.6rem);
+  font-size: clamp(1.25rem, min(7.4vw, 62cqh), 3.6rem);
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-tight);
 }
+/* EtCO₂ shares its row with the RR, so both take a smaller share of it. */
+.num.co2 .val {
+  font-size: clamp(1rem, min(7.4vw, 40cqh), 3.6rem);
+}
 .rr {
   margin-top: 2px;
-  font-size: clamp(1.05rem, 3.6vw, 1.7rem);
+  font-size: clamp(0.8rem, min(3.6vw, 22cqh), 1.7rem);
   font-weight: var(--weight-bold);
 }
 .rr-note {

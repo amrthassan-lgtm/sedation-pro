@@ -120,6 +120,27 @@ const time = computed(() => fmtClock(props.doneAt) ?? '');
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* Narrower than a tablet, the stamped facts take a line of their own under
+   the title and wrap, instead of being cut short with an ellipsis (or, on a
+   small phone, pushing the time off the edge). */
+@media (max-width: 700px) {
+  .step-fold {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    column-gap: var(--sp-3);
+    row-gap: 2px;
+    padding: 6px 0;
+  }
+  .step-fold-title {
+    white-space: normal;
+  }
+  .step-fold-summary {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    overflow: visible;
+    white-space: normal;
+  }
+}
 .step-head {
   display: flex;
   align-items: center;

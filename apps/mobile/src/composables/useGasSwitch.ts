@@ -11,9 +11,10 @@ export const GAS_OFF_EVENT = 'N₂O/O₂ OFF · O₂ 100% ON';
 
 /**
  * The N₂O / O₂ switch. It is flipped on and off as needed through a case
- * (owner, Nov 2026), from steps 2 and 4 of the IV screen and from the dock.
- * Both come through here, so a flip writes the same log line, the same
- * pop-up and the same Undo wherever it was tapped.
+ * (owner, Nov 2026): started once from step 2 of the IV screen, then flipped
+ * from step 4 and from the dock (`GasSwitch.vue`). All of them come through
+ * here, so a flip writes the same log line, the same pop-up and the same
+ * Undo wherever it was tapped.
  *
  * A tap that changes nothing writes nothing. The mix cannot be turned on
  * twice, and oxygen alone follows the mix: there is nothing to turn off
@@ -39,6 +40,15 @@ export function useGasSwitch() {
     if (running === null) return null;
     return log.events.filter((e) => e.event === running).at(-1)?.timestamp ?? null;
   });
+
+  /**
+   * When the mix was first turned on in this case: the stamp of step 2, which
+   * is done once and then folds. Later flips do not move it, and it goes if
+   * that first row is undone.
+   */
+  const startedAt = computed<number | null>(
+    () => log.events.find((e) => e.event === GAS_ON_EVENT)?.timestamp ?? null,
+  );
 
   function turnOn(): void {
     if (iv.n2oOn) return;
@@ -70,5 +80,5 @@ export function useGasSwitch() {
     });
   }
 
-  return { n2oOn, o2OnlyOn, canTurnOff, runningSince, turnOn, turnOff };
+  return { n2oOn, o2OnlyOn, canTurnOff, runningSince, startedAt, turnOn, turnOff };
 }

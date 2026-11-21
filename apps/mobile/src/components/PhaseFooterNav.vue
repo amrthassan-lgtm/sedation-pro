@@ -113,6 +113,14 @@ function goForward() {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Narrow phones: less padding round the arrow, so "Oral Sedation" fits
+   whole on a Galaxy S instead of ending in an ellipsis. */
+@media (max-width: 400px) {
+  .phase-nav-btn {
+    gap: 6px;
+    padding: 14px 10px;
+  }
+}
 
 /* Neutral hierarchy — phase colour now lives only in the app chrome.
    Forward (the primary direction) reads stronger than back by weight +

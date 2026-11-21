@@ -32,7 +32,16 @@ export function useStepFold(key: string, isDone: () => boolean, el: Ref<HTMLElem
   let heldOpen = memory.get(key) === false;
 
   watch(isDone, (done) => {
-    if (done) return;
+    if (done) {
+      // Finished from somewhere else, with this card already above the screen
+      // (the gas started from the dock): nobody is on it, so it folds now. No
+      // scroll will come to fold it later, because it has already gone past.
+      const node = el.value;
+      if (node && !heldOpen && isScrolledPast(node.getBoundingClientRect().bottom)) {
+        void foldKeepingView();
+      }
+      return;
+    }
     // Undone: the step is live again and has to be seen.
     folded.value = false;
     heldOpen = false;
