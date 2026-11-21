@@ -250,10 +250,33 @@ export function useAssessmentAudit(): void {
     if (now < before) hydrateBaseline();
   });
 
+  // An edit still waiting out its 3 s is written now, not dropped, when Phase 1
+  // is left or the app goes to the background (owner, Nov 2026). Dropping it
+  // left the change unlogged until some later Phase 1 edit happened to diff
+  // it in, under that later time. Never on reopening the app: a diff found
+  // then could only be dated to the reopening, and an app update that words a
+  // field differently would read as an amendment nobody made.
+  function flushAmendment(): void {
+    if (!amendmentTimer) return;
+    clearTimeout(amendmentTimer);
+    amendmentTimer = null;
+    runAmendment();
+  }
+
+  function onHidden(): void {
+    if (document.visibilityState === 'hidden') flushAmendment();
+  }
+
+  if (typeof window !== 'undefined') {
+    document.addEventListener('visibilitychange', onHidden);
+    window.addEventListener('pagehide', flushAmendment);
+  }
+
   onScopeDispose(() => {
-    if (amendmentTimer) {
-      clearTimeout(amendmentTimer);
-      amendmentTimer = null;
+    flushAmendment();
+    if (typeof window !== 'undefined') {
+      document.removeEventListener('visibilitychange', onHidden);
+      window.removeEventListener('pagehide', flushAmendment);
     }
   });
 }

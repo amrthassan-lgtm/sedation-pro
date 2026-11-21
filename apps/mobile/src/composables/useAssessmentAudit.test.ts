@@ -201,6 +201,94 @@ describe('useAssessmentAudit', () => {
     expect(amend.details.BP).toBe('140/90 → 130/84');
   });
 
+  describe('an edit still inside its 3 s', () => {
+    async function lockedAndSettled(): Promise<Patient> {
+      const patient = usePatientStore();
+      mountAudit();
+      fillAllRequiredFields(patient);
+      await nextTick();
+      vi.advanceTimersByTime(3000);
+      return patient;
+    }
+
+    function leavePhase1(): void {
+      scope?.stop();
+      scope = null;
+    }
+
+    it('is logged when Phase 1 is left, not dropped', async () => {
+      const log = useEventLogStore();
+      const patient = await lockedAndSettled();
+
+      patient.asaClass = 'III';
+      await nextTick();
+      vi.advanceTimersByTime(1000);
+      leavePhase1();
+
+      expect(amendmentEvents(log.events).map((e) => e.details)).toEqual([{ ASA: 'II → III' }]);
+    });
+
+    it('is logged once: leaving writes it and the 3 s timer does not write it again', async () => {
+      const log = useEventLogStore();
+      const patient = await lockedAndSettled();
+
+      patient.asaClass = 'III';
+      await nextTick();
+      leavePhase1();
+      vi.advanceTimersByTime(5000);
+
+      expect(amendmentEvents(log.events)).toHaveLength(1);
+    });
+
+    it('is logged when the app goes to the background', async () => {
+      const log = useEventLogStore();
+      const patient = await lockedAndSettled();
+      const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+
+      patient.mallampati = 'III';
+      await nextTick();
+      document.dispatchEvent(new Event('visibilitychange'));
+      visibility.mockRestore();
+
+      expect(amendmentEvents(log.events).map((e) => e.details)).toEqual([
+        { Mallampati: 'II → III' },
+      ]);
+    });
+
+    it('is logged when the page is closed', async () => {
+      const log = useEventLogStore();
+      const patient = await lockedAndSettled();
+
+      patient.weightLb = 200;
+      await nextTick();
+      window.dispatchEvent(new Event('pagehide'));
+
+      expect(Object.keys(amendmentEvents(log.events)[0]?.details ?? {})).toContain('Weight');
+    });
+
+    it('writes nothing on leaving when nothing changed', async () => {
+      const log = useEventLogStore();
+      await lockedAndSettled();
+
+      leavePhase1();
+
+      expect(amendmentEvents(log.events)).toEqual([]);
+    });
+
+    it('stops listening once Phase 1 is left', async () => {
+      const log = useEventLogStore();
+      const patient = await lockedAndSettled();
+      leavePhase1();
+
+      patient.asaClass = 'III';
+      await nextTick();
+      window.dispatchEvent(new Event('pagehide'));
+      vi.advanceTimersByTime(5000);
+
+      expect(amendmentEvents(log.events)).toEqual([]);
+    });
+  });
+
   it('records amendments against the most recent amendment, not the original lock snapshot', async () => {
     const patient = usePatientStore();
     const log = useEventLogStore();
