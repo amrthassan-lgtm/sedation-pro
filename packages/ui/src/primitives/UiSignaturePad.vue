@@ -62,6 +62,33 @@ function fitCanvas() {
   }
 }
 
+/**
+ * The saved signature is ink flattened onto solid black (see `commit`).
+ * Drawn back as it is, the pad became a black slab the moment the clinician
+ * returned to the screen. Each pixel's brightness is how much ink it holds,
+ * so that becomes its alpha and the black falls away.
+ */
+function liftInkOffBlack(c: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+  const image = c.getImageData(0, 0, canvas.width, canvas.height);
+  const px = image.data;
+  for (let i = 0; i < px.length; i += 4) {
+    const r = px[i] ?? 0;
+    const g = px[i + 1] ?? 0;
+    const b = px[i + 2] ?? 0;
+    const ink = Math.max(r, g, b);
+    if (ink === 0) {
+      px[i + 3] = 0;
+      continue;
+    }
+    const gain = 255 / ink;
+    px[i] = Math.round(r * gain);
+    px[i + 1] = Math.round(g * gain);
+    px[i + 2] = Math.round(b * gain);
+    px[i + 3] = Math.round((ink * (px[i + 3] ?? 255)) / 255);
+  }
+  c.putImageData(image, 0, 0);
+}
+
 function drawFromDataUrl(url: string) {
   const c = ensureContext();
   const canvas = canvasRef.value;
@@ -72,6 +99,7 @@ function drawFromDataUrl(url: string) {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.clearRect(0, 0, canvas.width, canvas.height);
     c.drawImage(img, 0, 0, canvas.width, canvas.height);
+    liftInkOffBlack(c, canvas);
     c.restore();
     hasInk.value = true;
   };

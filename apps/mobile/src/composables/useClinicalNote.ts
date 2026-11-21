@@ -133,6 +133,33 @@ const SMOKING_LABELS: Record<string, string> = {
 };
 
 /**
+ * The assessment and recovery tables print the word on the button that was
+ * tapped (owner, Nov 2026). The stored codes ("osa-diagnosed", "never",
+ * "good") are the app's own and do not belong on a clinical record. The log
+ * keeps them, so an open case never logs a change that was not made.
+ */
+const OSA_BUTTON: Record<string, string> = {
+  none: 'None',
+  'osa-diagnosed': 'OSA',
+  'cpap-prescribed': 'CPAP',
+};
+const SMOKING_BUTTON: Record<string, string> = {
+  never: 'Never',
+  current: 'Current',
+  former: 'Former',
+};
+const RATING_BUTTON: Record<string, string> = {
+  excellent: 'Excellent',
+  good: 'Good',
+  fair: 'Fair',
+  poor: 'Poor',
+};
+
+function asTapped(labels: Record<string, string>, code: string): string {
+  return code ? (labels[code] ?? code) : '—';
+}
+
+/**
  * Compose the clinical note from every store. Returns a structured shape the
  * view renders; the same shape is the seam for future PDF generation.
  *
@@ -179,8 +206,8 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       ['BMI', patient.bmi ? `${patient.bmi.value.toFixed(1)} (${patient.bmi.category})` : '—'],
       ['ASA classification', patient.asaClass || '—'],
       ['Mallampati score', patient.mallampati || '—'],
-      ['OSA / CPAP history', patient.osaStatus || '—'],
-      ['Smoking status', patient.smokingStatus || '—'],
+      ['OSA / CPAP history', asTapped(OSA_BUTTON, patient.osaStatus)],
+      ['Smoking status', asTapped(SMOKING_BUTTON, patient.smokingStatus)],
       [
         'Baseline BP',
         patient.baselineBp.sbp !== null && patient.baselineBp.dbp !== null
@@ -352,7 +379,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
         'Prescriptions given',
         recovery.prescriptions.trim() === '' ? 'None' : recovery.prescriptions.trim(),
       ],
-      ['Sedation quality rating', recovery.sedationRating || '—'],
+      ['Sedation quality rating', asTapped(RATING_BUTTON, recovery.sedationRating)],
       [
         'Sedation complications',
         recovery.sedationComplications.trim() === ''
@@ -545,9 +572,6 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
         sentences.push(`IV catheter was removed at ${fmtClock(recovery.ivOutAt)}.`);
       }
       if (recovery.companionDocumented) {
-        sentences.push(
-          `Patient was discharged accompanied by ${recovery.companionName} (${recovery.companionRelation}).`,
-        );
         const verbal = recovery.discharge.verbalInstructionsGiven === true;
         const written = recovery.discharge.writtenInstructionsGiven === true;
         const given =
@@ -556,8 +580,16 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
           sentences.push(`${given} post-op instructions were given to the companion.`);
         }
       }
+      // The one sentence about leaving is written from the Release Patient
+      // stamp and nothing else (owner, Nov 2026). The companion's name is
+      // filled in from the caregiver before anyone has left, so a name on
+      // file used to print "was discharged accompanied by" on a note whose
+      // own header read "patient not yet released".
       if (recovery.releasedAt !== null) {
-        sentences.push(`Patient was released at ${fmtClock(recovery.releasedAt)}.`);
+        const companion = recovery.companionDocumented
+          ? `, accompanied by ${recovery.companionName} (${recovery.companionRelation})`
+          : '';
+        sentences.push(`Patient was released at ${fmtClock(recovery.releasedAt)}${companion}.`);
       }
       const rx = recovery.prescriptions.trim();
       if (rx !== '') {

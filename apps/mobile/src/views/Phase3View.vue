@@ -315,6 +315,8 @@ const premedChip = computed(() => {
 // here as local UI state.
 
 const { logIvVersed, logIvFentanyl, logIvZofran, readiness } = useIvDosing();
+/** A locked sedative is a disabled button, which cannot answer a tap: the card says why instead. */
+const sedativeLockReason = computed(() => readiness.value.blockers[0]?.detail ?? null);
 // Reversal syringes read the practice tray from the formulary (one source
 // with the Quick Reference card and the protocol drawings).
 const FALLBACK_SYRINGE = { capacityMl: 3, color: 'var(--color-danger)', concentration: '' };
@@ -619,6 +621,7 @@ function onNaloxone() {
 
     <UiCard tint="ph3">
       <p class="heading"><span class="heading-step">5</span> Initial Test Dose</p>
+      <p v-if="sedativeLockReason" class="footnote step-instruction">{{ sedativeLockReason }}</p>
       <div class="drug-grid mt-2">
         <UiDrugButton
           tone="versed"
@@ -641,6 +644,9 @@ function onNaloxone() {
     <div ref="dockSentinelRef">
       <UiCard tint="ph3">
         <p class="heading"><span class="heading-step">6</span> Additional Doses</p>
+        <p v-if="sedativeLockReason" class="footnote step-instruction">
+          {{ sedativeLockReason }}
+        </p>
         <UiStack :gap="3" class="mt-2">
           <UiRow :gap="3" wrap>
             <UiTimerPill

@@ -148,6 +148,39 @@ function onUndo() {
   color: var(--color-crisis);
 }
 
+/* Tablet and wider: the pop-up takes the top bar's own space, between the
+   menu button and the Undo / Emergency pair. Under the bar it sat on the
+   page's title, and on the emergency page on "Back to case", for eight
+   seconds after every stamp. The bar's Undo is beside it here, so its own
+   Undo button is not drawn twice. */
+@media (min-width: 700px) {
+  .undo-toast-container {
+    top: calc(env(safe-area-inset-top, 0px) + 7px);
+    left: 56px;
+    transform: none;
+    width: min(520px, calc(100% - 292px));
+    max-width: none;
+  }
+  /* One row, the height of the title it replaces, so the alert chips under
+     it stay in view. A long message wraps and grows downward. */
+  .undo-toast {
+    min-height: 40px;
+    padding: 6px 12px;
+  }
+  .undo-toast-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 10px;
+  }
+  .undo-toast-action {
+    margin-bottom: 0;
+  }
+  .undo-toast-btn {
+    display: none;
+  }
+}
+
 .toast-enter-active {
   transition:
     opacity var(--dur-250) var(--ease-spring),

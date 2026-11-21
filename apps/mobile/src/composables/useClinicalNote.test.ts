@@ -198,3 +198,79 @@ describe('the note dates itself from the case, not from the day it is opened (v1
     expect(useClinicalNote().value.signatures.signedAt).toBeNull();
   });
 });
+
+describe("the note prints words, not the app's stored codes (owner, Nov 2026)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  function row(label: string): string | undefined {
+    for (const section of useClinicalNote().value.sections) {
+      for (const [l, v] of section.rows) if (l === label) return v;
+    }
+    return undefined;
+  }
+
+  it('prints the word on the button that was tapped', () => {
+    const patient = usePatientStore();
+    const recovery = useRecoveryStore();
+    patient.osaStatus = 'osa-diagnosed';
+    patient.smokingStatus = 'never';
+    recovery.sedationRating = 'good';
+
+    expect(row('OSA / CPAP history')).toBe('OSA');
+    expect(row('Smoking status')).toBe('Never');
+    expect(row('Sedation quality rating')).toBe('Good');
+
+    patient.osaStatus = 'cpap-prescribed';
+    patient.smokingStatus = 'former';
+    recovery.sedationRating = 'excellent';
+
+    expect(row('OSA / CPAP history')).toBe('CPAP');
+    expect(row('Smoking status')).toBe('Former');
+    expect(row('Sedation quality rating')).toBe('Excellent');
+  });
+
+  it('prints a dash for a choice that was never made', () => {
+    expect(row('OSA / CPAP history')).toBe('—');
+    expect(row('Sedation quality rating')).toBe('—');
+  });
+});
+
+describe('the sentence about leaving is written from the Release stamp alone (owner, Nov 2026)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  const narrative = () => useClinicalNote().value.narrative.join(' ');
+
+  it('says nothing about leaving while only a companion is on file', () => {
+    const recovery = useRecoveryStore();
+    recovery.companionName = 'Pat';
+    recovery.companionRelation = 'Spouse';
+
+    expect(narrative()).not.toMatch(/discharged|released|accompanied/);
+  });
+
+  it('names the time and the companion once Release Patient is stamped', () => {
+    const recovery = useRecoveryStore();
+    recovery.companionName = 'Pat';
+    recovery.companionRelation = 'Spouse';
+    recovery.stampReleased();
+
+    expect(narrative()).toMatch(
+      /Patient was released at \d{2}:\d{2} [AP]M, accompanied by Pat \(Spouse\)\./,
+    );
+    expect(narrative()).not.toContain('discharged accompanied');
+  });
+
+  it('names the time alone when no companion is on file', () => {
+    const recovery = useRecoveryStore();
+    recovery.stampReleased();
+
+    expect(narrative()).toMatch(/Patient was released at \d{2}:\d{2} [AP]M\./);
+    expect(narrative()).not.toContain('accompanied');
+  });
+});

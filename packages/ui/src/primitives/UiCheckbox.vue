@@ -98,11 +98,14 @@ function toggle() {
   padding: 10px 12px;
   border-radius: var(--r-md);
   cursor: pointer;
-  opacity: 0.4;
-  transition:
-    opacity var(--dur-250) var(--ease-standard),
-    background var(--dur-250) var(--ease-standard);
+  transition: background var(--dur-250) var(--ease-standard);
   -webkit-tap-highlight-color: transparent;
+}
+/* An unticked row is a question waiting for an answer and has to be read.
+   Drawn at 40% it looked switched off. The tick and the lifted surface say
+   it is done; the label only steps down one tone until then. */
+.ui-check:not(.is-checked):not(.ui-check--tap-target) .ui-check-label {
+  color: var(--color-text-secondary);
 }
 
 /* Tap-target row — for chairside confirmation gates (Phase 4 Card 13
@@ -115,7 +118,6 @@ function toggle() {
   min-height: 56px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  opacity: 1;
 }
 /* Checked tap-target row lifts off the card — same brighter surface +
    shadow as a segmented chip's active thumb — so the confirmation gate
@@ -134,7 +136,6 @@ function toggle() {
   font-weight: var(--weight-semibold);
 }
 .ui-check.is-checked {
-  opacity: 1;
   background: var(--color-surface-subtle);
 }
 .ui-check.is-disabled {
@@ -209,7 +210,6 @@ function toggle() {
 }
 
 .ui-check.is-invalid {
-  opacity: 1;
   box-shadow: 0 0 0 2px var(--color-danger);
   background: var(--color-danger-soft);
 }

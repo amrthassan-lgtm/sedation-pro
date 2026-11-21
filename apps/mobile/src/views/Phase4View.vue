@@ -726,13 +726,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
       <!-- An unsigned note is not a record. The router refuses
            /clinical-note without a signature; disabling here means the
            clinician never taps into a bounce. Both read providerSigned. -->
-      <UiButton
-        tone="neutral"
-        block
-        class="mt-2"
-        :disabled="!providerSigned"
-        @click="goToClinicalNote"
-      >
+      <UiButton tone="key" block class="mt-2" :disabled="!providerSigned" @click="goToClinicalNote">
         Generate Clinical Note
       </UiButton>
       <p v-if="!providerSigned" class="gate-hint">Sign above (card 16) to generate the note.</p>
