@@ -12,7 +12,6 @@ import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
 import VitalsStatGrid from '@/components/VitalsStatGrid.vue';
 import { UiBanner, UiCard, UiDrugButton, UiRow } from '@sedation-pro/ui';
-import { lorazepamMax, triazolamMax } from '@sedation-pro/clinical';
 
 const patient = usePatientStore();
 const undo = useUndoStore();
@@ -27,33 +26,16 @@ function givenAt(drug: string, doseMg: number): string | undefined {
   return lastLogged(log.events, ORAL_DOSE, { Drug: drug, Dose: `${doseMg} mg` });
 }
 
-/**
- * Weight-based ceiling for the drug, captured at the moment of
- * administration. Stamped silently into each dose event's details — the
- * chairside UI no longer renders a max-dose stat-grid (Apex protocols
- * never approach these limits), but the medicolegal record continues to
- * document the ceiling the clinician was working against at the
- * weight-on-file then. Hydroxyzine is a fixed-dose antihistamine with no
- * weight ceiling, so it returns null and the row is simply omitted.
- */
-function weightBasedMaxLabel(drug: string): string | null {
-  const w = weightLb.value;
-  if (!w) return null;
-  const m = drug === 'Triazolam' ? triazolamMax(w) : drug === 'Lorazepam' ? lorazepamMax(w) : null;
-  if (!m) return null;
-  return `${m.mg.toFixed(2)} mg (≤${m.tablets} × ${m.tabletMg} mg tab @ ${w} lb)`;
-}
-
 function logOral(drug: string, doseMg: number, unit: string = 'mg') {
   haptic('medium');
-  const max = weightBasedMaxLabel(drug);
+  // The dose and the route, as given. No ceiling goes into the record: a
+  // limit the app worked out reads there as the doctor's (owner, Nov 2026).
   undo.stamp({
     event: ORAL_DOSE,
     details: {
       Drug: drug,
       Dose: `${doseMg} ${unit}`,
       Route: 'PO swallowed',
-      ...(max ? { 'Weight-based max': max } : {}),
     },
     toast: {
       label: `✓ ${drug} ${doseMg} ${unit} PO`,

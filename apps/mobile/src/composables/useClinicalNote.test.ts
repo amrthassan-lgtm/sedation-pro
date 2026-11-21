@@ -4,6 +4,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { patientIntro, useClinicalNote } from './useClinicalNote';
 import { useFormularyStore } from '@/stores/formulary';
 import { useIVStore } from '@/stores/iv';
+import { useLocalAnestheticStore } from '@/stores/local';
+import { useEventLogStore } from '@/stores/event-log';
 import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 
@@ -272,5 +274,47 @@ describe('the sentence about leaving is written from the Release stamp alone (ow
 
     expect(narrative()).toMatch(/Patient was released at \d{2}:\d{2} [AP]M\./);
     expect(narrative()).not.toContain('accompanied');
+  });
+});
+
+describe('the note names no limit the app worked out (owner, Nov 2026)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  const note = () => useClinicalNote().value;
+  const everything = () =>
+    [
+      ...note().narrative,
+      ...note().sections.flatMap((s) => s.rows.map(([l, v]) => `${l}: ${v}`)),
+      ...note().chronology.map((r) => `${r.event}: ${r.detail}`),
+    ].join('\n');
+
+  it('prints an oral dose as given, with no ceiling beside it', () => {
+    usePatientStore().weightLb = 170;
+    // A row logged before the rule still carries the ceiling the app worked out.
+    useEventLogStore().append('Preoperative Oral Dose', {
+      Drug: 'Triazolam',
+      Dose: '0.25 mg',
+      Route: 'PO swallowed',
+      'Weight-based max': '1.70 mg (≤6 × 0.25 mg tab @ 170 lb)',
+    });
+
+    expect(note().narrative.join(' ')).toContain(
+      'Pre-operative oral sedation: Triazolam 0.25 mg PO.',
+    );
+    expect(everything()).toContain('Triazolam: 0.25 mg PO swallowed');
+    expect(everything()).not.toMatch(/max|1\.70|within/i);
+  });
+
+  it('prints the local anesthetic as given, with no percentage and no verdict', () => {
+    usePatientStore().weightLb = 170;
+    useLocalAnestheticStore().logCarpule('lidocaine-2-epi100k', 2);
+
+    const text = everything();
+    expect(text).toMatch(/Local anesthesia: .+ ×2 carpules\./);
+    expect(text).toMatch(/2 carpules · \d+ mg total/);
+    expect(text).not.toMatch(/Malamed|peaked|\((safe|caution|limit|crisis)\)/i);
   });
 });

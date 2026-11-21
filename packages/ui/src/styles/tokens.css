@@ -5,7 +5,7 @@
   --type-heading: 1.0625rem; /* 17 */
   --type-body: 0.9375rem; /* 15 */
   --type-footnote: 0.8125rem; /* 13 */
-  --type-caption: 0.6875rem; /* 11 */
+  --type-caption: 0.75rem; /* 11.25 at the 15 px root; 0.6875rem drew at 10.3, under the 11 pt floor */
 
   --weight-regular: 400;
   --weight-medium: 500;
