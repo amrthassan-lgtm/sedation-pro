@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, type CSSProperties } from 'vue';
+import NavIcon from '@/components/NavIcon.vue';
 import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
@@ -222,7 +223,11 @@ const lastUnlock = computed(() => {
   const log = readChimeLog();
   for (let i = log.length - 1; i >= 0; i--) {
     const entry = log[i];
-    if (entry && !CHIME_KINDS.includes(entry.kind)) return `${entry.kind} · ${stamp(entry.at)}`;
+    if (entry && !CHIME_KINDS.includes(entry.kind)) {
+      // The log's own words ("Unlock primed") are for diagnosis, not for staff.
+      const plain = entry.kind === 'Unlock failed' ? 'Sound not ready' : 'Sound ready';
+      return `${plain} · ${stamp(entry.at)}`;
+    }
   }
   return null;
 });
@@ -477,7 +482,7 @@ function onTouchEnd() {
           :class="{ 'is-current': quickRefActive }"
           @click="goQuickRef"
         >
-          <span class="nav-phase-icon nav-phase-icon--qr" aria-hidden="true">📖</span>
+          <span class="nav-phase-icon nav-phase-icon--qr"><NavIcon name="book" /></span>
           <span class="nav-phase-main">
             <span class="nav-phase-title">Quick Reference</span>
             <span class="nav-phase-sub">Drugs · ACLS · emergencies</span>
@@ -490,7 +495,7 @@ function onTouchEnd() {
           :class="{ 'is-current': inventoryActive }"
           @click="goInventory"
         >
-          <span class="nav-phase-icon nav-phase-icon--inv" aria-hidden="true">💊</span>
+          <span class="nav-phase-icon nav-phase-icon--inv"><NavIcon name="capsule" /></span>
           <span class="nav-phase-main">
             <span class="nav-phase-title">Drug Inventory</span>
             <span class="nav-phase-sub">{{ inventorySub }}</span>
@@ -515,7 +520,7 @@ function onTouchEnd() {
           :class="{ 'is-current': notesActive }"
           @click="goNotes"
         >
-          <span class="nav-phase-icon nav-phase-icon--set" aria-hidden="true">🗎</span>
+          <span class="nav-phase-icon nav-phase-icon--set"><NavIcon name="document" /></span>
           <span class="nav-phase-main">
             <span class="nav-phase-title">Saved Notes</span>
             <span class="nav-phase-sub">{{ notesSub }}</span>
@@ -528,7 +533,7 @@ function onTouchEnd() {
           :class="{ 'is-current': settingsActive }"
           @click="goSettings"
         >
-          <span class="nav-phase-icon nav-phase-icon--set" aria-hidden="true">⚙</span>
+          <span class="nav-phase-icon nav-phase-icon--set"><NavIcon name="gear" /></span>
           <span class="nav-phase-main">
             <span class="nav-phase-title">Settings</span>
             <span class="nav-phase-sub">
@@ -581,7 +586,7 @@ function onTouchEnd() {
            IV-out/release observation wait clearing. Mute silences audio
            only — haptics still fire. -->
       <button type="button" class="nav-utility" :aria-pressed="!audioMuted" @click="toggleMute">
-        <span class="nav-utility-icon" aria-hidden="true">{{ audioMuted ? '🔇' : '🔔' }}</span>
+        <span class="nav-utility-icon"><NavIcon :name="audioMuted ? 'bell-off' : 'bell'" /></span>
         <span class="nav-utility-main">
           <span class="nav-utility-label">
             {{ audioMuted ? 'Timer chimes muted' : 'Timer chimes on' }}
@@ -976,6 +981,7 @@ function onTouchEnd() {
 .nav-new-case {
   margin: 12px 12px 16px;
   width: calc(100% - 24px);
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;

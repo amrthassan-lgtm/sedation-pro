@@ -15,6 +15,10 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
 }>();
 
+function isUsed(term: string): boolean {
+  return props.modelValue.toLowerCase().includes(term.toLowerCase());
+}
+
 /**
  * Append `term` to the bound textarea. Skips if the term is already there
  * (case-insensitive substring) so double-tapping a chip doesn't produce
@@ -25,7 +29,7 @@ const emit = defineEmits<{
 function add(term: string): void {
   if (props.disabled) return;
   const cur = props.modelValue.trim();
-  if (cur.toLowerCase().includes(term.toLowerCase())) return;
+  if (isUsed(term)) return;
   const next = cur === '' ? term : `${cur}; ${term}`;
   emit('update:modelValue', next);
 }
@@ -38,9 +42,12 @@ function add(term: string): void {
       :key="term"
       type="button"
       class="ui-qa-chip"
+      :class="{ 'is-used': isUsed(term) }"
+      :aria-pressed="isUsed(term)"
       :disabled="props.disabled"
       @click="add(term)"
     >
+      <span v-if="isUsed(term)" class="ui-qa-chip-tick" aria-hidden="true">✓</span>
       {{ term }}
     </button>
   </div>
@@ -73,6 +80,18 @@ function add(term: string): void {
     background var(--dur-150) var(--ease-standard),
     color var(--dur-150) var(--ease-standard),
     transform var(--dur-150) var(--ease-standard);
+}
+/* A chip whose term is already in the box says so. It looked exactly like
+   the Medical problems chips, which light up when chosen, yet gave no sign
+   it had been used. It is marked, not filled white: a second tap does not
+   take the word back out of text the clinician may have edited. */
+.ui-qa-chip.is-used {
+  background: var(--color-segment-active);
+  gap: 6px;
+}
+.ui-qa-chip-tick {
+  color: var(--color-good);
+  font-weight: var(--weight-bold);
 }
 .ui-qa-chip:active:not(:disabled) {
   transform: scale(0.96);
