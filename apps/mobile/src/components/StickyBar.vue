@@ -626,16 +626,38 @@ function emergency() {
        let it crowd the phase title) so the title always has room. */
     display: none;
   }
-}
-@media (max-width: 380px) {
+  /* Phones: Undo is its arrow alone, at a full 44 px, as an iOS toolbar
+     icon. The word took the room the title and the alert chips need: on an
+     iPhone the title ended "Oral Seda…" and "EKG not confirmed" was cut. */
   .sticky-bar-undo-text,
-  .sticky-bar-undo-count,
-  .sticky-bar-emerg-text {
+  .sticky-bar-undo-count {
     display: none;
   }
-  .sticky-bar-undo,
+  .sticky-bar-undo {
+    min-width: 44px;
+    padding: 8px;
+    justify-content: center;
+  }
+  /* A red alert is never cut off: the chips wrap to a second line rather
+     than scrolling sideways out of sight. */
+  .sticky-bar-alerts {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+/* Narrow phones (360 and 375 px are the common ones). Emergency keeps its
+   word: hiding it left an empty 20 px sliver, and it is the one button that
+   must never be hunted for. The title gives way instead, with an ellipsis. */
+@media (max-width: 380px) {
   .sticky-bar-emerg {
     padding: 8px 10px;
+  }
+  .sticky-bar-info {
+    padding-right: 6px;
+  }
+  .sticky-bar-clearance-bar,
+  .sticky-bar-clearance-label {
+    display: none;
   }
 }
 

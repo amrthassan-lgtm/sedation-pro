@@ -359,6 +359,21 @@ async function shareNote() {
   display: flex;
   gap: var(--sp-2);
 }
+/* Phones: the three actions take a row of their own under the title, so
+   none of them is pushed off the right edge. Screen only: the printed page
+   keeps its two-column head whatever it is printed from. */
+@media screen and (max-width: 560px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+  .toolbar-actions {
+    width: 100%;
+  }
+  .toolbar-actions > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
 
 /* The "paper" — light surface with dark ink so the printed page reads as
    a real chart entry, not a dark-mode screenshot. */
@@ -589,6 +604,18 @@ async function shareNote() {
 .print-footer {
   display: none;
 }
+/* Phones: the practice name sits above the patient details instead of
+   beside them, where each column was a few letters wide. After the rules it
+   overrides, and screen only, so print is untouched. */
+@media screen and (max-width: 560px) {
+  .note-paper {
+    padding: var(--sp-5) var(--sp-4);
+  }
+  .note-header {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   /* Scoped styles never match html/body without :global; the dark app
      background would otherwise print around the paper. */

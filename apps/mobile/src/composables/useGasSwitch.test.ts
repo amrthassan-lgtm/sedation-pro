@@ -177,6 +177,43 @@ describe('useGasSwitch', () => {
     });
   });
 
+  describe('step 2: the mix is started once', () => {
+    it('has no start time before any gas', () => {
+      expect(useGasSwitch().startedAt.value).toBeNull();
+    });
+
+    it('keeps the time of the first turn-on through every later flip', () => {
+      const gas = useGasSwitch();
+
+      gas.turnOn();
+      vi.setSystemTime(T0 + 12 * MIN);
+      gas.turnOff();
+      vi.setSystemTime(T0 + 30 * MIN);
+      gas.turnOn();
+
+      expect(gas.startedAt.value).toBe(T0);
+      expect(gas.runningSince.value).toBe(T0 + 30 * MIN);
+    });
+
+    it('is started just the same from the switch on step 4 or the dock', () => {
+      const step2 = useGasSwitch();
+      const dock = useGasSwitch();
+
+      dock.turnOn();
+
+      expect(step2.startedAt.value).toBe(T0);
+    });
+
+    it('is not started any more once that first turn-on is undone', () => {
+      const gas = useGasSwitch();
+
+      gas.turnOn();
+      useUndoStore().undo();
+
+      expect(gas.startedAt.value).toBeNull();
+    });
+  });
+
   describe('the time on the lit side', () => {
     it('is blank before any gas', () => {
       expect(useGasSwitch().runningSince.value).toBeNull();

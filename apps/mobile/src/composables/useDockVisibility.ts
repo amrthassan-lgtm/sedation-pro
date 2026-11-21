@@ -48,10 +48,11 @@ export function setDockDosed(dosed: boolean): void {
 
 /**
  * The share of the buttons that must be on screen to count as whole. Not 1:
- * browsers report 0.99-something for an untouched element that sits on a
- * half pixel, and the dock would then never go away.
+ * browsers report 0.998 or so for an untouched block that sits on a half
+ * pixel, and the dock would then never go away. At 0.99 a button could sit
+ * 2 px under the bar with the dock still away; 0.997 is under a pixel.
  */
-export const WHOLE = 0.99;
+export const WHOLE = 0.997;
 
 const BAR_FALLBACK_PX = 90;
 

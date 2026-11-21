@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { effectScope, nextTick, ref } from 'vue';
 
 import { forgetStepFolds, isScrolledPast, SCROLLED_PAST_PX, useStepFold } from './useStepFold';
@@ -68,6 +68,46 @@ describe('useStepFold', () => {
     mount('a', done).open();
 
     expect(mount('b', done).folded.value).toBe(true);
+  });
+
+  describe('a step finished from somewhere else (the gas started from the dock)', () => {
+    /** A card at a place on screen; `bottom` under the top bar means it has been scrolled past. */
+    function cardAt(bottom: number): HTMLElement {
+      const card = document.createElement('div');
+      card.getBoundingClientRect = () => ({ bottom, height: 120 }) as DOMRect;
+      return card;
+    }
+
+    function mountAt(bottom: number, done: { value: boolean }) {
+      const scope = effectScope();
+      return scope.run(() => useStepFold('gas', () => done.value, ref(cardAt(bottom))))!;
+    }
+
+    beforeEach(() => {
+      vi.stubGlobal('scrollBy', vi.fn());
+    });
+
+    it('folds at once when its card is already above the screen: no scroll will come to fold it', async () => {
+      const done = ref(false);
+      const step = mountAt(-400, done);
+
+      done.value = true;
+      await nextTick();
+      await nextTick();
+
+      expect(step.folded.value).toBe(true);
+    });
+
+    it('stays open when its card is on screen: it still never folds under the finger', async () => {
+      const done = ref(false);
+      const step = mountAt(500, done);
+
+      done.value = true;
+      await nextTick();
+      await nextTick();
+
+      expect(step.folded.value).toBe(false);
+    });
   });
 
   it('counts a card as scrolled past only once its bottom is under the top bar', () => {

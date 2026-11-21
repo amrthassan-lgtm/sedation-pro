@@ -99,6 +99,10 @@ describe('the dock follows the step 6 buttons', () => {
     live().report(0.9);
     expect(dockVisible.value).toBe(true);
 
+    // 2 px of a 231 px block under the bar: cut, so the dock comes up.
+    live().report(0.991);
+    expect(dockVisible.value).toBe(true);
+
     live().report(0);
     expect(dockVisible.value).toBe(true);
 
@@ -110,7 +114,7 @@ describe('the dock follows the step 6 buttons', () => {
     openPhase3();
     setDockDosed(true);
 
-    live().report(0.996);
+    live().report(0.998);
 
     expect(dockVisible.value).toBe(false);
     expect(live().thresholds).toEqual([WHOLE]);

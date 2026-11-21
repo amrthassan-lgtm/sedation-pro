@@ -4,11 +4,11 @@ import { storeToRefs } from 'pinia';
 
 import { useIVStore } from '@/stores/iv';
 import { useDockVisibility } from '@/composables/useDockVisibility';
-import { fmtClock, fmtDuration } from '@/composables/format';
-import { useGasSwitch } from '@/composables/useGasSwitch';
+import { fmtDuration } from '@/composables/format';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
 import { useBackToClose } from '@/composables/useBackToClose';
+import GasSwitch from './GasSwitch.vue';
 import { UiDrugButton, UiPercentBar, UiTimerPill } from '@sedation-pro/ui';
 import type { Severity, TimerPillStatus } from '@sedation-pro/ui';
 
@@ -24,9 +24,9 @@ import type { Severity, TimerPillStatus } from '@sedation-pro/ui';
  *    Reversal is visually demoted (red section heading, separated grid) so
  *    muscle memory doesn't mis-tap it.
  *
- * Both states carry the gas switch at the top (`useGasSwitch`): N₂O / O₂ is
- * turned on and off through a case, and steps 2 and 4 are far up the page by
- * the time the dock is in use.
+ * Both states carry the gas switch at the top (`GasSwitch.vue`, the same
+ * control as step 4): N₂O / O₂ is turned on and off through a case, and
+ * step 4 is far up the page by the time the dock is in use.
  *
  * Safety model: a tap commits immediately via `useIvDosing` — no
  * confirmation step. Accidental double-taps are absorbed by UiDrugButton's
@@ -107,20 +107,6 @@ function severityClass(sev: Severity): string {
 
 const versedStatus = computed(() => sedationStatus.value.versed);
 const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
-
-// -------- Gas switch -------------------------------------------------------
-// The gas is flipped on and off through a case (owner, Nov 2026), long after
-// steps 2 and 4 have scrolled away. Same switch, same log lines.
-
-const {
-  n2oOn,
-  o2OnlyOn,
-  canTurnOff,
-  runningSince,
-  turnOn: turnGasOn,
-  turnOff: turnGasOff,
-} = useGasSwitch();
-const gasSince = computed(() => fmtClock(runningSince.value));
 </script>
 
 <template>
@@ -146,31 +132,9 @@ const gasSince = computed(() => fmtClock(runningSince.value));
       <!-- Gas switch (always visible). The lit side is what is running, with
            the time it was set. It sits at the top, the dose buttons at the
            bottom, with the two status rows between them. -->
-      <div class="dock-gas" role="group" aria-label="Gas">
+      <div class="dock-gas">
         <span class="dock-gas-cap" aria-hidden="true">Gas</span>
-        <div class="dock-gas-track">
-          <button
-            type="button"
-            class="dock-gas-seg"
-            :class="{ 'is-on': n2oOn }"
-            :aria-pressed="n2oOn"
-            @click="turnGasOn"
-          >
-            <span>N₂O / O₂</span>
-            <span v-if="n2oOn && gasSince" class="dock-gas-time">{{ gasSince }}</span>
-          </button>
-          <button
-            type="button"
-            class="dock-gas-seg"
-            :class="{ 'is-on': o2OnlyOn }"
-            :aria-pressed="o2OnlyOn"
-            :disabled="!canTurnOff && !o2OnlyOn"
-            @click="turnGasOff"
-          >
-            <span>O₂ 100%</span>
-            <span v-if="o2OnlyOn && gasSince" class="dock-gas-time">{{ gasSince }}</span>
-          </button>
-        </div>
+        <GasSwitch class="dock-gas-switch" />
       </div>
 
       <!-- Compact-mode status row (always visible). -->
@@ -405,6 +369,12 @@ const gasSince = computed(() => fmtClock(runningSince.value));
 }
 .is-expanded .dock {
   padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  /* The open sheet is about 730 px tall. On a short screen (a tablet on its
+     side, a phone) it ran up under the top bar or off the top, taking the
+     gas switch with it. It now stops below the bar and scrolls inside. */
+  max-height: calc(100dvh - 96px - env(safe-area-inset-top));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .dock-handle {
@@ -440,8 +410,7 @@ const gasSince = computed(() => fmtClock(runningSince.value));
   background: var(--color-border-strong);
 }
 
-/* Gas switch: the kit's segmented control (UiChipGroup, tap-target), with
-   the time riding inside the lit segment. */
+/* Gas switch row: the shared control (`GasSwitch.vue`) beside its caption. */
 .dock-gas {
   display: flex;
   align-items: center;
@@ -457,56 +426,9 @@ const gasSince = computed(() => fmtClock(runningSince.value));
   text-transform: uppercase;
   color: var(--color-text-tertiary);
 }
-.dock-gas-track {
+.dock-gas-switch {
   flex: 1;
   min-width: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 2px;
-  border-radius: var(--r-md);
-  background: var(--color-surface);
-}
-.dock-gas-seg {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  column-gap: 10px;
-  min-width: 0;
-  min-height: 44px;
-  padding: 4px 10px;
-  border: 1px solid transparent;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--type-body);
-  font-weight: var(--weight-semibold);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    background var(--dur-150) var(--ease-standard),
-    color var(--dur-150) var(--ease-standard),
-    transform var(--dur-150) var(--ease-standard);
-}
-.dock-gas-seg:active:not(:disabled):not(.is-on) {
-  transform: scale(0.97);
-}
-.dock-gas-seg.is-on {
-  background: var(--color-segment-active);
-  border-color: var(--color-border);
-  color: var(--color-text-primary);
-  box-shadow: var(--shadow-sm);
-  cursor: default;
-}
-.dock-gas-seg:disabled {
-  color: var(--color-text-disabled);
-  cursor: default;
-}
-.dock-gas-time {
-  font-family: var(--font-mono);
-  font-size: var(--type-footnote);
-  font-weight: var(--weight-bold);
-  color: var(--color-good);
 }
 
 /* Status rows — drug name, mg load, timer pill, then the progress bar. */
