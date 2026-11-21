@@ -113,8 +113,19 @@ function fmtDate(s: string | null | undefined): string {
  * export rejoins them).
  */
 const DETAIL_LINES_FROM = 5;
+
+/**
+ * The note states what was given and names no limit (owner, Nov 2026): a
+ * ceiling, a percentage of one or a word like "safe" is the app's own
+ * inference, and on a record it reads as the doctor's. Oral dose rows logged
+ * before this rule carry the ceiling as a detail; it is not printed.
+ */
+const INFERRED_LIMIT_DETAILS: ReadonlySet<string> = new Set(['Weight-based max']);
+
 function fmtDetail(details: Readonly<Record<string, string>>): string {
-  const entries = Object.entries(details).filter(([, v]) => v && v !== '—');
+  const entries = Object.entries(details).filter(
+    ([k, v]) => v && v !== '—' && !INFERRED_LIMIT_DETAILS.has(k),
+  );
   if (entries.length === 0) return '';
   const pairs = entries.map(([k, v]) => `${k}: ${v}`);
   return pairs.join(entries.length >= DETAIL_LINES_FROM ? '\n' : ' · ');
@@ -254,10 +265,8 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
     ];
 
     // -------- Pre-operative oral sedation ----------------------------------
-    // Derived from the dose events Phase 2 stamps. The weight-based ceiling
-    // was captured at administration (see Phase2View.logOral), so this
-    // documents dose-given against the limit in force at that moment — not a
-    // value recomputed later from a weight that may have changed.
+    // Derived from the dose events Phase 2 stamps: the dose and the route,
+    // as given. No ceiling is printed beside it (see INFERRED_LIMIT_DETAILS).
 
     const oralRows: Array<readonly [string, string]> = [];
     for (const e of events.value) {
@@ -265,11 +274,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       const drug = e.details.Drug ?? 'Oral anxiolytic';
       const dose = e.details.Dose ?? '—';
       const route = e.details.Route ?? 'PO';
-      const max = e.details['Weight-based max'];
-      oralRows.push([
-        drug,
-        max ? `${dose} ${route} · within weight-based max ${max}` : `${dose} ${route}`,
-      ]);
+      oralRows.push([drug, `${dose} ${route}`]);
     }
     if (oralRows.length === 0) {
       oralRows.push(['Pre-operative oral sedation', 'None administered']);
@@ -318,10 +323,6 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
           `${row.carpulesGiven} carpule${row.carpulesGiven === 1 ? '' : 's'} · ${row.totalMgGiven.toFixed(0)} mg total`,
         ]);
       }
-      localRows.push([
-        'Malamed combined',
-        `${localResult.combinedPercent.toFixed(0)}% (${localResult.severity})`,
-      ]);
     } else {
       localRows.push(['Local anesthesia', 'None administered']);
     }
@@ -483,8 +484,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
         const parts = oral.map((e) => {
           const drug = e.details.Drug ?? 'oral anxiolytic';
           const dose = e.details.Dose ?? '';
-          const max = e.details['Weight-based max'];
-          return max ? `${drug} ${dose} PO (within weight-based max ${max})` : `${drug} ${dose} PO`;
+          return `${drug} ${dose} PO`;
         });
         narrative.push(`Pre-operative oral sedation: ${parts.join('; ')}.`);
       }
@@ -523,9 +523,7 @@ export function useClinicalNote(): ComputedRef<ClinicalNote> {
       const parts = localResult.perDrug.map(
         (row) => `${row.name} ×${row.carpulesGiven} carpule${row.carpulesGiven === 1 ? '' : 's'}`,
       );
-      narrative.push(
-        `Local anesthesia: ${parts.join(', ')}. Malamed combined active load peaked at ${localResult.combinedPercent.toFixed(0)}% (${localResult.severity}).`,
-      );
+      narrative.push(`Local anesthesia: ${parts.join(', ')}.`);
     }
 
     // Para 5 — Reversal (if any)
