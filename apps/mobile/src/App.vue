@@ -104,7 +104,7 @@ onMounted(() => {
 
 /** Whether the dock is currently rendered ON-SCREEN (mounted + not in its
  * auto-hidden state). Drives `has-dock` so the bottom padding collapses
- * smoothly when the dock slides out, instead of leaving a 250 px gap. */
+ * smoothly when the dock slides out, instead of leaving a gap. */
 const { dockOnScreen } = useDockVisibility();
 const dockReservesSpace = computed(() => showSedationDock.value && dockOnScreen.value);
 
@@ -233,14 +233,15 @@ if (typeof window !== 'undefined') {
 
 /* Reserve room at the bottom for the fixed Sedation Dock so the footer and
    the last Phase 3 card both scroll past it instead of being obscured.
-   ~250 px covers the compact dock at its largest comfortable height; the
-   expanded sheet floats over content so no extra padding needed for that.
+   308 px on top of the page's own foot clears the compact dock with its gas
+   switch (58 px of it is that row); the expanded sheet floats over content
+   so no extra padding needed for that.
    Transitions match the dock's slide-in/out timing so toggling `has-dock`
    when the dock reveals or hides doesn't make the form content snap. */
 .app-shell {
   transition: padding-bottom var(--dur-250) var(--ease-standard);
 }
 .app-shell.has-dock {
-  padding-bottom: calc(250px + env(safe-area-inset-bottom));
+  padding-bottom: calc(308px + env(safe-area-inset-bottom));
 }
 </style>

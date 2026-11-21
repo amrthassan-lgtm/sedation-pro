@@ -12,7 +12,7 @@ import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
 import { confirmEkgWithVitals, setEkgByHand } from '@/composables/ekgWithVitals';
 import { fmtClock, fmtDuration, nowClock } from '@/composables/format';
 import { vitalsDetails } from '@/composables/vitalsDetails';
-import { haptic } from '@/composables/useHaptics';
+import { useGasSwitch } from '@/composables/useGasSwitch';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { syringeConfig } from '@/composables/useSyringeConfig';
 import { useNow } from '@/composables/useNow';
@@ -212,9 +212,6 @@ const versedTestState = computed<ActionState>(() =>
 // fold (1, 3, 5, 7, 8). The gas switch (2, 4) and the doses (6) are used
 // again and again through a case (owner, Nov 2026), so they stay open.
 
-const GAS_ON = 'N₂O/O₂ ON';
-const GAS_OFF = 'N₂O/O₂ OFF · O₂ 100% ON';
-
 function vitalsLine(v: VitalsStamp | null): string {
   if (!v) return '';
   const parts: string[] = [];
@@ -283,35 +280,9 @@ function stampPreOpVitals() {
 }
 
 // -------- Gas flow ----------------------------------------------------------
+// Steps 2 and 4 and the dock flip the same switch (`useGasSwitch`).
 
-function onN2oOn() {
-  haptic('medium');
-  // Capture before mutation — undo must restore both booleans, not just the
-  // one this setter touches. Without an explicit revert the stamp would only
-  // remove the event-log entry and the toggle would stay flipped.
-  const prevN2oOn = iv.n2oOn;
-  const prevO2OnlyOn = iv.o2OnlyOn;
-  iv.setN2oOn();
-  undo.stamp({
-    event: GAS_ON,
-    details: { Route: 'Inhalation' },
-    toast: { label: '✓ N₂O/O₂ ON', tone: 'safe' },
-    revert: () => iv.restoreGasState(prevN2oOn, prevO2OnlyOn),
-  });
-}
-
-function onN2oOff() {
-  haptic('medium');
-  const prevN2oOn = iv.n2oOn;
-  const prevO2OnlyOn = iv.o2OnlyOn;
-  iv.setN2oOff();
-  undo.stamp({
-    event: GAS_OFF,
-    details: { 'N₂O': 'Discontinued', 'O₂': '100% via nasal cannula' },
-    toast: { label: '✓ N₂O off · O₂ 100% on', tone: 'safe' },
-    revert: () => iv.restoreGasState(prevN2oOn, prevO2OnlyOn),
-  });
-}
+const gas = useGasSwitch();
 
 // -------- IV start ----------------------------------------------------------
 
@@ -608,7 +579,7 @@ function onNaloxone() {
         logged-at="On"
         :cooldown-ms="0"
         class="mt-2"
-        @click="onN2oOn"
+        @click="gas.turnOn"
       >
         N₂O / O₂ ON
       </UiButton>
@@ -671,7 +642,7 @@ function onNaloxone() {
         :cooldown-ms="0"
         :disabled="!n2oOn && !o2OnlyOn"
         class="mt-2"
-        @click="onN2oOff"
+        @click="gas.turnOff"
       >
         N₂O OFF · O₂ 100% ON
       </UiButton>

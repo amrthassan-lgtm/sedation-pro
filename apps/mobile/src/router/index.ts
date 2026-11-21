@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vu
 
 import { CASE_PHASE_ROUTE, useSessionStore, type Phase } from '@/stores/session';
 import { layerDepth } from '@/composables/useBackToClose';
+import { followGrowingPage } from './followGrowingPage';
 import { usePatientStore } from '@/stores/patient';
 import { useRecoveryStore } from '@/stores/recovery';
 import { useToastStore } from '@/stores/toast';
@@ -29,7 +30,7 @@ export const router = createRouter({
   // phase by any other route (the Back to case button, the drawer) lands at
   // the scroll position captured when the clinician left it. Everything
   // else starts at the top. The restore waits a frame for the phase view to
-  // render at full height.
+  // render at full height, then follows the page if it is still growing.
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) return savedPosition;
     // Opening or closing an overlay only adds/removes a #layer step on the
@@ -40,7 +41,10 @@ export const router = createRouter({
     const top = phase ? session.caseScroll[phase as keyof typeof session.caseScroll] : undefined;
     if (top === undefined) return { top: 0 };
     return new Promise((resolve) => {
-      setTimeout(() => resolve({ top }), 60);
+      setTimeout(() => {
+        resolve({ top });
+        followGrowingPage(top);
+      }, 60);
     });
   },
   routes: [
