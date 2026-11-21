@@ -74,9 +74,8 @@ const baselineLine = computed(() => {
 // Phase 3 mid-case with doses already on file re-arms it immediately.
 watch(() => iv.doses.length > 0, setDockDosed, { immediate: true });
 
-// Card-6 ("Additional Doses") IntersectionObserver — once armed, the dock
-// auto-hides while card 6's in-card titration buttons are in view and
-// reappears when the user scrolls away. See `useDockVisibility`.
+// Once armed, the dock is away only while every step 6 sedative button is
+// whole on screen, and up the moment one is cut. See `useDockVisibility`.
 const dockSentinelRef = ref<HTMLElement | null>(null);
 useDockSentinel(dockSentinelRef);
 
@@ -673,10 +672,10 @@ function onNaloxone() {
     </StepCard>
 
     <!-- Card 6 — Additional IV doses with live timers + cumulative.
-         The dock watches the timers and the sedative buttons (`dose-live`),
-         not the whole card: with finished steps folded, the card's bottom
-         edge stays on screen long after its buttons have gone, and the dock
-         stayed hidden with them out of reach. -->
+         The dock watches the sedative buttons themselves (`dose-buttons`,
+         first button to last), not the card and not the timers above them:
+         it goes away when all four are whole on screen and comes up the
+         moment one is cut. -->
 
     <UiCard tint="ph3">
       <p class="heading"><span class="heading-step">6</span> Additional Doses</p>
@@ -684,7 +683,7 @@ function onNaloxone() {
         {{ sedativeLockReason }}
       </p>
       <UiStack :gap="3" class="mt-2">
-        <div ref="dockSentinelRef" class="dose-live">
+        <div class="dose-live">
           <UiRow :gap="3" wrap>
             <UiTimerPill
               label="Versed timer"
@@ -703,43 +702,45 @@ function onNaloxone() {
           </UiRow>
 
           <p class="caption">Versed (Midazolam)</p>
-          <div class="drug-grid">
-            <UiDrugButton
-              tone="versed"
-              name="Versed"
-              dose="1 mg"
-              sub="0.2 ml"
-              :disabled="!readiness.ready"
-              @click="logIvVersed(1, 'additional')"
-            />
-            <UiDrugButton
-              tone="versed"
-              name="Versed"
-              dose="2 mg"
-              sub="0.4 ml"
-              :disabled="!readiness.ready"
-              @click="logIvVersed(2, 'additional')"
-            />
-          </div>
+          <div ref="dockSentinelRef" class="dose-buttons">
+            <div class="drug-grid">
+              <UiDrugButton
+                tone="versed"
+                name="Versed"
+                dose="1 mg"
+                sub="0.2 ml"
+                :disabled="!readiness.ready"
+                @click="logIvVersed(1, 'additional')"
+              />
+              <UiDrugButton
+                tone="versed"
+                name="Versed"
+                dose="2 mg"
+                sub="0.4 ml"
+                :disabled="!readiness.ready"
+                @click="logIvVersed(2, 'additional')"
+              />
+            </div>
 
-          <p class="caption">Fentanyl</p>
-          <div class="drug-grid">
-            <UiDrugButton
-              tone="fentanyl"
-              name="Fentanyl"
-              dose="25 mcg"
-              sub="0.5 ml"
-              :disabled="!readiness.ready"
-              @click="logIvFentanyl(25, 'additional')"
-            />
-            <UiDrugButton
-              tone="fentanyl"
-              name="Fentanyl"
-              dose="50 mcg"
-              sub="1.0 ml"
-              :disabled="!readiness.ready"
-              @click="logIvFentanyl(50, 'additional')"
-            />
+            <p class="caption">Fentanyl</p>
+            <div class="drug-grid">
+              <UiDrugButton
+                tone="fentanyl"
+                name="Fentanyl"
+                dose="25 mcg"
+                sub="0.5 ml"
+                :disabled="!readiness.ready"
+                @click="logIvFentanyl(25, 'additional')"
+              />
+              <UiDrugButton
+                tone="fentanyl"
+                name="Fentanyl"
+                dose="50 mcg"
+                sub="1.0 ml"
+                :disabled="!readiness.ready"
+                @click="logIvFentanyl(50, 'additional')"
+              />
+            </div>
           </div>
         </div>
 
@@ -1037,7 +1038,8 @@ function onNaloxone() {
 .ekg-row {
   margin: var(--sp-3) 0;
 }
-.dose-live {
+.dose-live,
+.dose-buttons {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
