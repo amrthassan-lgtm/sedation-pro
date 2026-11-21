@@ -484,9 +484,9 @@ describe('the note states what was recorded, never a conclusion (owner, Nov 2026
     recovery.companionRelation = 'Spouse';
     const line = () =>
       narrative()
-        .split(/(?<=\.) /)
+        .split(/(?<=\.)\s/)
         .find((s) => s.includes('instructions'));
-    expect(narrative()).toContain('Patient was discharged accompanied by Pat (Spouse).');
+    expect(narrative()).not.toContain('discharged');
     expect(line()).toBeUndefined();
     recovery.setDischarge('verbalInstructionsGiven', true);
     expect(line()).toBe('Verbal post-op instructions were given to the companion.');

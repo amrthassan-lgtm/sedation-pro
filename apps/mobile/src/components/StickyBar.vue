@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 
 import { useSessionStore, type Phase } from '@/stores/session';
 import { usePatientStore } from '@/stores/patient';
+import { useToastStore } from '@/stores/toast';
 import { useUndoStore } from '@/stores/undo';
 import { lastSavedAt, unsavedKeys } from '@/stores/persistence';
 import { fmtClock } from '@/composables/format';
@@ -18,6 +19,8 @@ const undo = useUndoStore();
 
 const { currentPhase } = storeToRefs(session);
 const { canUndo, count: undoCount, nextLabel: undoNext } = storeToRefs(undo);
+/** A confirmation pop-up takes the bar's title row while it is up (UndoToast). */
+const { current: toast } = storeToRefs(useToastStore());
 const { completeness, isPhase1Complete, safetyAlerts, ekgPlaced } = storeToRefs(patient);
 
 /** The phases where a sedative can actually be given. */
@@ -146,7 +149,7 @@ function emergency() {
 </script>
 
 <template>
-  <header class="sticky-bar">
+  <header class="sticky-bar" :class="{ 'is-toasting': toast !== null }">
     <button
       type="button"
       class="sticky-bar-nav"
@@ -633,6 +636,18 @@ function emergency() {
   .sticky-bar-undo,
   .sticky-bar-emerg {
     padding: 8px 10px;
+  }
+}
+
+/* A confirmation pop-up takes the title row while it is up (UndoToast, tablet
+   layout). The title and the Saved pill step aside so nothing shows
+   half-covered around it. The alert chips stay, and a "Not saved" warning is
+   never hidden. */
+@media (min-width: 700px) {
+  .sticky-bar.is-toasting .sticky-bar-phase,
+  .sticky-bar.is-toasting .sticky-bar-sub,
+  .sticky-bar.is-toasting .sticky-bar-saved:not(.is-failed) {
+    visibility: hidden;
   }
 }
 </style>
