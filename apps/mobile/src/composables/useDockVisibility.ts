@@ -10,10 +10,11 @@ import { computed, onScopeDispose, ref, watch, type Ref } from 'vue';
  * dock appearing confusing. It only arms once the first dose is logged
  * (one-way `hasDosed` flag, set from Phase3View by watching `iv.doses`).
  *
- * After arming, dock visibility mirrors card 6's viewport state inversely:
- * hidden while card 6 is in view (its in-card titration buttons cover the
- * workflow), shown whenever card 6 is off-screen (above OR below the
- * viewport).
+ * After arming, the dock mirrors the dose card's live block (the timers and
+ * the sedative buttons) inversely: hidden while that block is in view, shown
+ * whenever it is off-screen, above or below. It watches the block and not
+ * the whole card: once finished steps fold, the card's bottom edge stays on
+ * screen long after its buttons have gone.
  *
  * The dock's expanded sheet suppresses auto-hide — once the user has
  * opened the per-class dose grid, the dock stays mounted until they close
@@ -66,12 +67,13 @@ export function useDockSentinel(elRef: Ref<HTMLElement | null>): void {
           if (!entry) return;
           sentinelInView.value = entry.isIntersecting;
         },
-        // Require ~80 px of card 5 to be inside the viewport (top + bottom
-        // insets) before it counts as "in view". Without this, a 1-px peek
-        // at the edges of viewport flips the dock — twitchy on small
-        // scrolls. 80 px keeps the toggle calm without making the dock
-        // feel sluggish.
-        { rootMargin: '-80px 0px -80px 0px' },
+        // The block counts as on screen only while a row of its buttons is
+        // clear of the top bar: the bar is about 87 px and a row about 100,
+        // hence 190 from the top. With less, the last buttons were under the
+        // bar and the dock had not come up yet, so for a short stretch of
+        // scrolling no dose could be reached at all. The 80 px at the bottom
+        // keeps a one-pixel peek from flipping the dock.
+        { rootMargin: '-190px 0px -80px 0px' },
       );
       observer.observe(el);
     },

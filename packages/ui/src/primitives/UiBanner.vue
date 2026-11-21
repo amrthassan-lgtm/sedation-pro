@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { isGlyphName } from '../glyphs';
 import type { BannerTone } from '../primitive-types';
+import UiGlyph from './UiGlyph.vue';
 
 interface Props {
   tone?: BannerTone;
   title?: string | undefined;
+  /** A glyph name (see `glyphs.ts`) draws the app's own icon; any other text is shown as typed. */
   icon?: string | undefined;
   /** Tighter padding, for a notice inside a box that already has its own. */
   compact?: boolean;
@@ -19,7 +22,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 <template>
   <div class="ui-banner" :class="[`ui-banner--${props.tone}`, { 'is-compact': props.compact }]">
-    <span v-if="props.icon" class="ui-banner-icon" aria-hidden="true">{{ props.icon }}</span>
+    <span v-if="isGlyphName(props.icon)" class="ui-banner-icon ui-banner-icon--glyph">
+      <UiGlyph :name="props.icon" :size="18" />
+    </span>
+    <span v-else-if="props.icon" class="ui-banner-icon" aria-hidden="true">{{ props.icon }}</span>
     <div class="ui-banner-body">
       <p v-if="props.title" class="ui-banner-title">{{ props.title }}</p>
       <div class="ui-banner-content"><slot /></div>
@@ -45,6 +51,12 @@ const props = withDefaults(defineProps<Props>(), {
   font-size: 16px;
   line-height: 1.5;
   flex-shrink: 0;
+}
+.ui-banner-icon--glyph {
+  display: inline-flex;
+  align-items: center;
+  height: 1.5em;
+  line-height: 1;
 }
 .ui-banner-body {
   flex: 1;

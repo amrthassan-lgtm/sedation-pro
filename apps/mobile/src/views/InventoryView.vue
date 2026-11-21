@@ -173,7 +173,7 @@ function openProtocol(id: string): void {
       <UiBanner
         v-if="inv.needsAttention.length > 0"
         tone="limit"
-        icon="⚠"
+        icon="warning"
         :title="`${inv.needsAttention.length} expired item${inv.needsAttention.length === 1 ? '' : 's'}`"
       >
         Not usable. Nothing is on order to replace it.
@@ -181,7 +181,7 @@ function openProtocol(id: string): void {
       <UiBanner
         v-else-if="inv.shipped.length > 0"
         tone="caution"
-        icon="📦"
+        icon="box"
         :title="`${inv.shipped.length} replacement${inv.shipped.length === 1 ? '' : 's'} on order`"
       >
         The stock they replace is not usable until they arrive.
@@ -189,7 +189,7 @@ function openProtocol(id: string): void {
       <UiBanner
         v-else-if="inv.expiringSoon.length > 0"
         tone="caution"
-        icon="⏳"
+        icon="hourglass"
         :title="`${inv.expiringSoon.length} medication${inv.expiringSoon.length === 1 ? '' : 's'} expiring soon`"
       >
         Within {{ EXPIRY_WARN_DAYS }} days. Usable until the date shown.
@@ -248,13 +248,13 @@ function openProtocol(id: string): void {
           v-model="query"
           type="search"
           inputmode="search"
-          leading-icon="🔍"
+          leading-icon="search"
           placeholder="Search drug, lot, note…"
           block
         />
       </section>
 
-      <UiBanner v-if="isSearching && visibleSections.length === 0" tone="info" icon="🔍">
+      <UiBanner v-if="isSearching && visibleSections.length === 0" tone="info" icon="search">
         Nothing in the inventory matches <strong>“{{ query }}”</strong>.
       </UiBanner>
 

@@ -1,5 +1,7 @@
 import { PHASE1_AMENDMENT_EVENT, useEventLogStore } from '@/stores/event-log';
 import { usePatientStore } from '@/stores/patient';
+import { useUndoStore } from '@/stores/undo';
+import { nowClock } from './format';
 
 /**
  * Owner, Nov 2026: the leads go on with the rest of the monitor just before
@@ -31,4 +33,37 @@ export function confirmEkgWithVitals(): () => void {
     patient.ekgPlaced = false;
     if (row) log.removeById(row.id);
   };
+}
+
+/**
+ * The box itself, ticked or unticked by hand on the Pre-Op Vitals card. It
+ * left the Phase 1 safety checklist (owner, Nov 2026) because a run of taps
+ * down that list could tick it with the leads still in the drawer, and the
+ * tick is what unlocks the IV sedatives.
+ *
+ * On a locked assessment it writes the same amendment row a hand tick in
+ * Phase 1 wrote, as an action Undo can take back. Before the lock it writes
+ * nothing: the lock row carries the box as it stands.
+ */
+export function setEkgByHand(placed: boolean): void {
+  const patient = usePatientStore();
+  const log = useEventLogStore();
+  const before = patient.ekgPlaced;
+  if (before === placed) return;
+
+  patient.ekgPlaced = placed;
+  if (log.phase1LockedAt === null) return;
+
+  useUndoStore().stamp({
+    event: PHASE1_AMENDMENT_EVENT,
+    details: { 'EKG placed': placed ? '— → Yes' : 'Yes → —' },
+    toast: {
+      label: placed ? '✓ EKG leads placed' : 'EKG leads unticked',
+      sub: nowClock(),
+      tone: placed ? 'safe' : 'caution',
+    },
+    revert: () => {
+      patient.ekgPlaced = before;
+    },
+  });
 }

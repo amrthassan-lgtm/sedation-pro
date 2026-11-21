@@ -2,14 +2,14 @@
 import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 
-import { useIVStore } from '@/stores/iv';
+import { useIVStore, type VitalsStamp } from '@/stores/iv';
 import { useLocalAnestheticStore } from '@/stores/local';
 import { usePatientStore } from '@/stores/patient';
 import { useFormularyStore } from '@/stores/formulary';
 import { useUndoStore } from '@/stores/undo';
 import { useEventLogStore } from '@/stores/event-log';
 import { setDockDosed, useDockSentinel } from '@/composables/useDockVisibility';
-import { confirmEkgWithVitals } from '@/composables/ekgWithVitals';
+import { confirmEkgWithVitals, setEkgByHand } from '@/composables/ekgWithVitals';
 import { fmtClock, fmtDuration, nowClock } from '@/composables/format';
 import { vitalsDetails } from '@/composables/vitalsDetails';
 import { haptic } from '@/composables/useHaptics';
@@ -20,11 +20,13 @@ import { useOtherableSelect } from '@/composables/useOtherableSelect';
 import PatientSummaryCard from '@/components/PatientSummaryCard.vue';
 import PhaseFooterNav from '@/components/PhaseFooterNav.vue';
 import PhaseLayout from '@/components/PhaseLayout.vue';
+import StepCard from '@/components/StepCard.vue';
 import {
   UiBanner,
   UiBpInput,
   UiButton,
   UiCard,
+  UiCheckbox,
   UiChipGroup,
   UiDrugButton,
   UiField,
@@ -204,6 +206,47 @@ const versedTestState = computed<ActionState>(() =>
   lastVersedAt.value !== null ? 'logged' : 'idle',
 );
 
+// -------- Folded-step lines -------------------------------------------------
+// A folded step shows what was stamped, read from the stamp itself and never
+// from a field that may have been retyped since. Only the steps done once
+// fold (1, 3, 5, 7, 8). The gas switch (2, 4) and the doses (6) are used
+// again and again through a case (owner, Nov 2026), so they stay open.
+
+const GAS_ON = 'N₂O/O₂ ON';
+const GAS_OFF = 'N₂O/O₂ OFF · O₂ 100% ON';
+
+function vitalsLine(v: VitalsStamp | null): string {
+  if (!v) return '';
+  const parts: string[] = [];
+  if (v.hr !== null) parts.push(`HR ${v.hr}`);
+  if (v.bp.sbp !== null && v.bp.dbp !== null) parts.push(`BP ${v.bp.sbp}/${v.bp.dbp}`);
+  if (v.spo2 !== null) parts.push(`SpO₂ ${v.spo2}%`);
+  if (v.etco2 !== null) parts.push(`EtCO₂ ${v.etco2}`);
+  if (v.glucose !== null) parts.push(`Glucose ${v.glucose}`);
+  if (v.response) parts.push(v.response);
+  return parts.join(' · ');
+}
+
+const preOpSummary = computed(() => vitalsLine(iv.preOpVitals));
+const sedSummary = computed(() => vitalsLine(iv.sedationVitals));
+const ivSummary = computed(() => {
+  const attempts = String(ivCatheterAttempts.value);
+  return [
+    `${ivCatheterGauge.value} g`,
+    ivSite.value,
+    `${attempts} attempt${attempts === '1' ? '' : 's'}`,
+    ivFluid.value,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+});
+/** The test dose is the first Versed of the case; later doses must not move its time. */
+const testDose = computed(() => iv.doses.find((d) => d.drug === 'versed') ?? null);
+const testDoseAt = computed(() => testDose.value?.at ?? null);
+const testDoseSummary = computed(() =>
+  testDose.value?.mg !== undefined ? `Versed ${testDose.value.mg} mg` : '',
+);
+
 function stampPreOpVitals() {
   const unconfirmEkg = confirmEkgWithVitals();
   iv.setPreOpVitals({
@@ -250,7 +293,7 @@ function onN2oOn() {
   const prevO2OnlyOn = iv.o2OnlyOn;
   iv.setN2oOn();
   undo.stamp({
-    event: 'N₂O/O₂ ON',
+    event: GAS_ON,
     details: { Route: 'Inhalation' },
     toast: { label: '✓ N₂O/O₂ ON', tone: 'safe' },
     revert: () => iv.restoreGasState(prevN2oOn, prevO2OnlyOn),
@@ -263,7 +306,7 @@ function onN2oOff() {
   const prevO2OnlyOn = iv.o2OnlyOn;
   iv.setN2oOff();
   undo.stamp({
-    event: 'N₂O/O₂ OFF · O₂ 100% ON',
+    event: GAS_OFF,
     details: { 'N₂O': 'Discontinued', 'O₂': '100% via nasal cannula' },
     toast: { label: '✓ N₂O off · O₂ 100% on', tone: 'safe' },
     revert: () => iv.restoreGasState(prevN2oOn, prevO2OnlyOn),
@@ -499,11 +542,25 @@ function onNaloxone() {
 
     <!-- Card 1 — Pre-Op Vitals ------------------------------------------ -->
 
-    <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">1</span> Pre-Op Vitals</p>
+    <StepCard
+      :step="1"
+      title="Pre-Op Vitals"
+      fold-key="preop"
+      :done-at="preOpStampedAt"
+      :summary="preOpSummary"
+    >
       <p v-if="!ekgPlaced" class="footnote step-instruction">
         Place EKG leads and record pre-op vitals
       </p>
+      <UiCheckbox
+        id="field-ekg_placed"
+        :model-value="ekgPlaced"
+        size="tap-target"
+        label="EKG leads placed"
+        hint="3-lead · verify rhythm and waveform"
+        class="ekg-row"
+        @update:model-value="setEkgByHand"
+      />
       <!-- Comparing against Phase 1's baseline is the whole point of
            re-taking vitals — surface it where the eyes already are. -->
       <p v-if="baselineLine" class="caption baseline-line">{{ baselineLine }}</p>
@@ -539,12 +596,11 @@ function onNaloxone() {
           Stamp Pre-Op Vitals
         </UiButton>
       </UiStack>
-    </UiCard>
+    </StepCard>
 
     <!-- Card 2 — N₂O / O₂ ON ------------------------------------------- -->
 
-    <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">2</span> N₂O / O₂ ON</p>
+    <StepCard :step="2" title="N₂O / O₂ ON" fold-key="gas-on" :done-at="null">
       <UiButton
         tone="primary"
         block
@@ -556,12 +612,17 @@ function onNaloxone() {
       >
         N₂O / O₂ ON
       </UiButton>
-    </UiCard>
+    </StepCard>
 
     <!-- Card 3 — IV Start --------------------------------------------- -->
 
-    <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">3</span> IV Start</p>
+    <StepCard
+      :step="3"
+      title="IV Start"
+      fold-key="iv-start"
+      :done-at="ivStartedAt"
+      :summary="ivSummary"
+    >
       <UiStack :gap="3" class="mt-2">
         <UiField label="Catheter" hint="gauge">
           <UiChipGroup v-model="ivCatheterGauge" :options="gaugeChipOptions" size="tap-target" />
@@ -579,11 +640,11 @@ function onNaloxone() {
             <UiTextInput v-if="fluidIsOther" v-model="ivFluid" class="mt-2" />
           </UiField>
         </UiRow>
-        <UiBanner v-if="premedChip" :tone="premedChip.eligible ? 'safe' : 'caution'" icon="⏱">
+        <UiBanner v-if="premedChip" :tone="premedChip.eligible ? 'safe' : 'caution'" icon="timer">
           Pre-med wait ·
           <template v-if="premedChip.eligible"> ready to start IV. </template>
           <template v-else>
-            {{ premedChip.remainingMin }} min remaining (clinical cushion, not a hard block).
+            {{ premedChip.remainingMin }} min remaining. Advisory: the IV can be started sooner.
           </template>
         </UiBanner>
         <UiButton
@@ -597,12 +658,11 @@ function onNaloxone() {
           {{ ivStarted ? 'IV Started' : 'Start IV' }}
         </UiButton>
       </UiStack>
-    </UiCard>
+    </StepCard>
 
     <!-- Card 4 — N₂O OFF -> O₂ 100% ------------------------------------ -->
 
-    <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">4</span> N₂O OFF → O₂ 100%</p>
+    <StepCard :step="4" title="N₂O OFF → O₂ 100%" fold-key="gas-off" :done-at="null">
       <UiButton
         tone="primary"
         block
@@ -615,12 +675,17 @@ function onNaloxone() {
       >
         N₂O OFF · O₂ 100% ON
       </UiButton>
-    </UiCard>
+    </StepCard>
 
     <!-- Card 5 — Initial test dose. -->
 
-    <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">5</span> Initial Test Dose</p>
+    <StepCard
+      :step="5"
+      title="Initial Test Dose"
+      fold-key="test-dose"
+      :done-at="testDoseAt"
+      :summary="testDoseSummary"
+    >
       <p v-if="sedativeLockReason" class="footnote step-instruction">{{ sedativeLockReason }}</p>
       <div class="drug-grid mt-2">
         <UiDrugButton
@@ -629,25 +694,26 @@ function onNaloxone() {
           dose="1 mg"
           sub="0.2 ml"
           :state="versedTestState"
-          :logged-at="fmtClock(lastVersedAt)"
+          :logged-at="fmtClock(testDoseAt)"
           :disabled="!readiness.ready"
           @click="logIvVersed(1, 'test dose')"
         />
       </div>
-    </UiCard>
+    </StepCard>
 
     <!-- Card 6 — Additional IV doses with live timers + cumulative.
-         Wrapper ref drives the SedationDock auto-hide: while this card is
-         in viewport the dock stays tucked away (the in-card titration
-         buttons cover the workflow); scrolling past reveals the dock. -->
+         The dock watches the timers and the sedative buttons (`dose-live`),
+         not the whole card: with finished steps folded, the card's bottom
+         edge stays on screen long after its buttons have gone, and the dock
+         stayed hidden with them out of reach. -->
 
-    <div ref="dockSentinelRef">
-      <UiCard tint="ph3">
-        <p class="heading"><span class="heading-step">6</span> Additional Doses</p>
-        <p v-if="sedativeLockReason" class="footnote step-instruction">
-          {{ sedativeLockReason }}
-        </p>
-        <UiStack :gap="3" class="mt-2">
+    <UiCard tint="ph3">
+      <p class="heading"><span class="heading-step">6</span> Additional Doses</p>
+      <p v-if="sedativeLockReason" class="footnote step-instruction">
+        {{ sedativeLockReason }}
+      </p>
+      <UiStack :gap="3" class="mt-2">
+        <div ref="dockSentinelRef" class="dose-live">
           <UiRow :gap="3" wrap>
             <UiTimerPill
               label="Versed timer"
@@ -704,59 +770,64 @@ function onNaloxone() {
               @click="logIvFentanyl(50, 'additional')"
             />
           </div>
+        </div>
 
-          <p class="caption">Antiemetic</p>
-          <div class="drug-grid">
-            <UiDrugButton
-              tone="zofran"
-              name="Zofran"
-              dose="4 mg"
-              sub="2.0 ml · over 2-5 min"
-              @click="logIvZofran(4)"
-            />
-          </div>
+        <p class="caption">Antiemetic</p>
+        <div class="drug-grid">
+          <UiDrugButton
+            tone="zofran"
+            name="Zofran"
+            dose="4 mg"
+            sub="2.0 ml · over 2-5 min"
+            @click="logIvZofran(4)"
+          />
+        </div>
 
-          <!-- IV max-dose stat cards. -->
-          <div class="stat-grid">
-            <UiStatCard
-              label="Versed total"
-              :value="versedCard.value"
-              :unit="versedCard.value !== '—' ? `/ ${versedCard.ceiling.toFixed(1)} mg` : undefined"
-              :category="versedCard.severity"
-              :severity="versedCard.severity"
-            />
-            <UiStatCard
-              label="Fentanyl total"
-              :value="fentanylCard.value"
-              :unit="fentanylCard.value !== '—' ? `/ ${fentanylCard.ceiling} mcg` : undefined"
-              :category="fentanylCard.severity"
-              :severity="fentanylCard.severity"
-            />
-          </div>
+        <!-- IV max-dose stat cards. -->
+        <div class="stat-grid">
+          <UiStatCard
+            label="Versed total"
+            :value="versedCard.value"
+            :unit="versedCard.value !== '—' ? `/ ${versedCard.ceiling.toFixed(1)} mg` : undefined"
+            :category="versedCard.severity"
+            :severity="versedCard.severity"
+          />
+          <UiStatCard
+            label="Fentanyl total"
+            :value="fentanylCard.value"
+            :unit="fentanylCard.value !== '—' ? `/ ${fentanylCard.ceiling} mcg` : undefined"
+            :category="fentanylCard.severity"
+            :severity="fentanylCard.severity"
+          />
+        </div>
 
-          <!-- Combined sedation load — Apple Health-style with bar. -->
-          <UiCard>
-            <UiRow :gap="3" align="center" justify="between">
-              <div>
-                <p class="caption">Combined sedation load</p>
-              </div>
-              <p class="big-pct" :class="`big-pct--${combinedCard.severity}`">
-                {{ combinedCard.percent.toFixed(0) }}%
-              </p>
-            </UiRow>
-            <UiPercentBar :percent="combinedCard.percent" thickness="lg" class="mt-2" />
-            <p v-if="versedCard.ceilingReducedByOpioid" class="synergy-note">
-              Synergy: Versed ceiling reduced 30% · Fentanyl on board
+        <!-- Combined sedation load — Apple Health-style with bar. -->
+        <UiCard>
+          <UiRow :gap="3" align="center" justify="between">
+            <div>
+              <p class="caption">Combined sedation load</p>
+            </div>
+            <p class="big-pct" :class="`big-pct--${combinedCard.severity}`">
+              {{ combinedCard.percent.toFixed(0) }}%
             </p>
-          </UiCard>
-        </UiStack>
-      </UiCard>
-    </div>
+          </UiRow>
+          <UiPercentBar :percent="combinedCard.percent" thickness="lg" class="mt-2" />
+          <p v-if="versedCard.ceilingReducedByOpioid" class="synergy-note">
+            Synergy: Versed ceiling reduced 30% · Fentanyl on board
+          </p>
+        </UiCard>
+      </UiStack>
+    </UiCard>
 
     <!-- Card 7 — Sedation Level Vitals ---------------------------------- -->
 
-    <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">7</span> Sedation Level Achieved</p>
+    <StepCard
+      :step="7"
+      title="Sedation Level Achieved"
+      fold-key="sed-level"
+      :done-at="sedStampedAt"
+      :summary="sedSummary"
+    >
       <UiStack :gap="3" class="mt-2">
         <UiRow :gap="3" class="field-row">
           <UiField label="HR" hint="bpm">
@@ -789,12 +860,11 @@ function onNaloxone() {
           Stamp Sedation Level
         </UiButton>
       </UiStack>
-    </UiCard>
+    </StepCard>
 
     <!-- Card 8 — Procedure Start ----------------------------------------- -->
 
-    <UiCard tint="ph3">
-      <p class="heading"><span class="heading-step">8</span> Procedure Start</p>
+    <StepCard :step="8" title="Procedure Start" fold-key="proc-start" :done-at="procedureStartedAt">
       <UiButton
         tone="primary"
         block
@@ -806,14 +876,14 @@ function onNaloxone() {
       >
         Start Procedure
       </UiButton>
-    </UiCard>
+    </StepCard>
 
     <!-- Card 9 — Local Anesthesia + live Malamed combined-% -------------- -->
 
     <UiCard tint="ph3">
       <p class="heading"><span class="heading-step">9</span> Local Anesthesia</p>
 
-      <UiBanner v-if="!weightLb" tone="caution" icon="⚖️" class="mt-2">
+      <UiBanner v-if="!weightLb" tone="caution" icon="scale" class="mt-2">
         Patient weight is required for the per-drug max-dose math. Fill weight in Phase 1.
       </UiBanner>
 
@@ -977,7 +1047,7 @@ function onNaloxone() {
         :key="alert.code"
         :tone="alert.tone === 'danger' ? 'limit' : 'caution'"
         :title="alert.label"
-        icon="⚠"
+        icon="warning"
       />
     </template>
   </PhaseLayout>
@@ -992,6 +1062,14 @@ function onNaloxone() {
 .step-instruction {
   margin: var(--sp-1) 0 0;
   color: var(--color-text-secondary);
+}
+.ekg-row {
+  margin: var(--sp-3) 0;
+}
+.dose-live {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
 }
 .stat-grid {
   display: grid;

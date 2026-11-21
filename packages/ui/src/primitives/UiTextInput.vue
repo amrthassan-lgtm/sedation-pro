@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { isGlyphName } from '../glyphs';
+import UiGlyph from './UiGlyph.vue';
 import { useTemplateRef } from 'vue';
 
 interface Props {
@@ -58,7 +60,10 @@ defineExpose({
     @input="onInput"
   />
   <span v-else class="ui-input-shell" :class="{ 'is-block': props.block }">
-    <span class="ui-input-leading" aria-hidden="true">{{ props.leadingIcon }}</span>
+    <span class="ui-input-leading" aria-hidden="true">
+      <UiGlyph v-if="isGlyphName(props.leadingIcon)" :name="props.leadingIcon" :size="18" />
+      <template v-else>{{ props.leadingIcon }}</template>
+    </span>
     <input
       ref="inputRef"
       class="ui-input has-leading"

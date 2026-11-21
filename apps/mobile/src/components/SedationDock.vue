@@ -359,13 +359,24 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
 }
 
 .dock-handle {
+  position: relative;
   display: block;
   width: 100%;
-  padding: 4px 0 6px;
+  padding: 10px 0 12px;
   background: transparent;
   border: 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+/* The grip is a 4 px bar; the tap target around it is 44 px, reaching a
+   little above the dock's edge, so opening the sheet does not take aim. */
+.dock-handle::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -18px;
+  bottom: 0;
 }
 .dock-grip {
   display: block;

@@ -466,7 +466,7 @@ function stepClass(step: ProtocolStep): string {
       <UiBanner
         v-if="protocol.contraindications && protocol.contraindications.length > 0"
         tone="caution"
-        icon="⚠"
+        icon="warning"
         title="Contraindications"
       >
         <ul class="contra-list">
@@ -618,7 +618,7 @@ function stepClass(step: ProtocolStep): string {
                 <UiBanner
                   v-if="view.box.mix"
                   tone="caution"
-                  icon="⚠"
+                  icon="warning"
                   compact
                   :title="view.box.mix.head"
                   class="drug-mix"
@@ -749,7 +749,7 @@ function stepClass(step: ProtocolStep): string {
       </UiCard>
     </template>
 
-    <UiBanner v-else tone="info" icon="🔍" title="Protocol not found">
+    <UiBanner v-else tone="info" icon="search" title="Protocol not found">
       No protocol matches <strong>“{{ props.id }}”</strong>. Tap back to browse the library.
     </UiBanner>
   </main>
