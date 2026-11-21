@@ -18,7 +18,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the nine-phase plan.
 
 - **Phase 0 — Foundation scaffold:** done.
 - **Phase 1 — Clinical engine:** done (`@sedation-pro/clinical` v0.1.0).
-- **Version 1 (Nov 2026, now 1.1.27):** the app the practice runs: assessment, oral
+- **Version 1 (Nov 2026, now 1.1.28):** the app the practice runs: assessment, oral
   and IV sedation, recovery, clinical note, Open Dental filing, emergency
   protocols and the crash-cart inventory. `APP_VERSION` in
   `apps/mobile/src/config/version.ts` is the number shown on screen and on
@@ -89,9 +89,11 @@ invites action.
   past, and the page is moved by what the fold took away. Steps already
   finished come up folded on arrival, a tap opens one, and Undo reopens the
   step it undid. The folded line is read from the stamp, never from a field
-  that may have been retyped. The dock watches the timers and sedative
-  buttons, not the whole dose card, so it comes up whenever a dose cannot be
-  reached from the card. The dock also carries the gas switch (owner, Nov
+  that may have been retyped. The dock follows the step 6 sedative
+  buttons exactly (owner, Nov 2026): away only while all four are whole on
+  screen between the top bar and the bottom edge, up the moment one is cut.
+  The top edge is the bar as measured (`useDockVisibility.ts`), never a
+  pixel count tuned on one tablet, so it holds on any screen. The dock also carries the gas switch (owner, Nov
   2026): steps 2 and 4 and the dock flip one switch (`useGasSwitch.ts`) and
   write the same two log lines, a tap that changes nothing writes nothing,
   and the time on the lit side is read from the log row so Undo moves it

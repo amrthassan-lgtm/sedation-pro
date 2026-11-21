@@ -10,26 +10,27 @@ import { computed, onScopeDispose, ref, watch, type Ref } from 'vue';
  * dock appearing confusing. It only arms once the first dose is logged
  * (one-way `hasDosed` flag, set from Phase3View by watching `iv.doses`).
  *
- * After arming, the dock mirrors the dose card's live block (the timers and
- * the sedative buttons) inversely: hidden while that block is in view, shown
- * whenever it is off-screen, above or below. It watches the block and not
- * the whole card: once finished steps fold, the card's bottom edge stays on
- * screen long after its buttons have gone.
+ * After arming, the dock follows the step 6 sedative buttons exactly (owner,
+ * Nov 2026): it is away only while every one of them is whole on screen,
+ * between the top bar and the bottom edge, and it is up the moment one is
+ * cut, above or below. A dose is then always within reach, from the card or
+ * from the dock, on any screen: the top edge is the bar as measured, not a
+ * number of pixels that suited one tablet.
  *
  * The dock's expanded sheet suppresses auto-hide — once the user has
  * opened the per-class dose grid, the dock stays mounted until they close
  * it, regardless of scroll position.
  *
  * Module-level refs back the singleton state — SedationDock and App.vue
- * read it, Phase3View writes `hasDosed` via setDockDosed and feeds card 6's
- * viewport state through the IntersectionObserver hook. Resets on Phase 3
+ * read it, Phase3View writes `hasDosed` via setDockDosed and feeds the
+ * buttons' place on screen through the IntersectionObserver hook. Resets on Phase 3
  * unmount so a fresh case starts hidden again.
  */
 const hasDosed = ref(false);
-const sentinelInView = ref(false);
+const buttonsWhole = ref(false);
 const expanded = ref(false);
 
-const dockVisible = computed(() => hasDosed.value && !sentinelInView.value);
+const dockVisible = computed(() => hasDosed.value && !buttonsWhole.value);
 const dockOnScreen = computed(() => dockVisible.value || expanded.value);
 
 export function useDockVisibility() {
@@ -46,15 +47,50 @@ export function setDockDosed(dosed: boolean): void {
 }
 
 /**
- * Attach an IntersectionObserver to the given Phase 3 card-6 wrapper.
- * Called once from Phase3View; auto-disconnects on scope dispose.
+ * The share of the buttons that must be on screen to count as whole. Not 1:
+ * browsers report 0.99-something for an untouched element that sits on a
+ * half pixel, and the dock would then never go away.
+ */
+export const WHOLE = 0.99;
+
+const BAR_FALLBACK_PX = 90;
+
+/** Where the top bar ends: the buttons are out of reach above this line. */
+function barBottom(): number {
+  const bar = document.querySelector('.sticky-bar');
+  return bar ? Math.ceil(bar.getBoundingClientRect().bottom) : BAR_FALLBACK_PX;
+}
+
+/**
+ * Watch the step 6 sedative buttons (the wrapper from the first to the last
+ * of them). Called once from Phase3View; disconnects on scope dispose.
  */
 export function useDockSentinel(elRef: Ref<HTMLElement | null>): void {
   let observer: IntersectionObserver | null = null;
+  let barWatch: ResizeObserver | null = null;
+  let top = -1;
 
   function disconnect(): void {
     observer?.disconnect();
     observer = null;
+    barWatch?.disconnect();
+    barWatch = null;
+    top = -1;
+  }
+
+  function observe(el: HTMLElement): void {
+    const edge = barBottom();
+    if (observer && edge === top) return;
+    observer?.disconnect();
+    top = edge;
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry) return;
+        buttonsWhole.value = entry.intersectionRatio >= WHOLE;
+      },
+      { rootMargin: `-${edge}px 0px 0px 0px`, threshold: [WHOLE] },
+    );
+    observer.observe(el);
   }
 
   watch(
@@ -62,20 +98,14 @@ export function useDockSentinel(elRef: Ref<HTMLElement | null>): void {
     (el) => {
       disconnect();
       if (!el) return;
-      observer = new IntersectionObserver(
-        ([entry]) => {
-          if (!entry) return;
-          sentinelInView.value = entry.isIntersecting;
-        },
-        // The block counts as on screen only while a row of its buttons is
-        // clear of the top bar: the bar is about 87 px and a row about 100,
-        // hence 190 from the top. With less, the last buttons were under the
-        // bar and the dock had not come up yet, so for a short stretch of
-        // scrolling no dose could be reached at all. The 80 px at the bottom
-        // keeps a one-pixel peek from flipping the dock.
-        { rootMargin: '-190px 0px -80px 0px' },
-      );
-      observer.observe(el);
+      observe(el);
+      // The bar grows and shrinks (an alert chip wraps to a second line, a
+      // phone turns): keep the top edge where the bar really ends.
+      const bar = document.querySelector('.sticky-bar');
+      if (bar && typeof ResizeObserver !== 'undefined') {
+        barWatch = new ResizeObserver(() => observe(el));
+        barWatch.observe(bar);
+      }
     },
     { immediate: true },
   );
@@ -83,7 +113,7 @@ export function useDockSentinel(elRef: Ref<HTMLElement | null>): void {
   onScopeDispose(() => {
     disconnect();
     hasDosed.value = false;
-    sentinelInView.value = false;
+    buttonsWhole.value = false;
     expanded.value = false;
   });
 }
