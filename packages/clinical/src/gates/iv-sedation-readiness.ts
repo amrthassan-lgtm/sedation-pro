@@ -28,7 +28,7 @@ export interface IvReadinessBlocker {
 }
 
 export interface IvReadinessInputs {
-  /** "EKG leads placed": ticked in Phase 1, or by the first Pre-Op Vitals stamp. */
+  /** "EKG leads placed": on the Pre-Op Vitals card, ticked by hand or by its stamp. */
   readonly ekgPlaced: boolean;
 }
 

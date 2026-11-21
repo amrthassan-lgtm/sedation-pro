@@ -36,6 +36,9 @@ export { default as UiTextInput } from './primitives/UiTextInput.vue';
 
 // Display
 export { default as UiBanner } from './primitives/UiBanner.vue';
+export { default as UiGlyph } from './primitives/UiGlyph.vue';
+export { GLYPH_NAMES, isGlyphName } from './glyphs';
+export type { GlyphName } from './glyphs';
 export { default as UiDrugSwatch } from './primitives/UiDrugSwatch.vue';
 export { default as UiPercentBar } from './primitives/UiPercentBar.vue';
 export { default as UiStatCard } from './primitives/UiStatCard.vue';

@@ -17,6 +17,7 @@ import {
   UiPillButton,
   UiSyringe,
   UiTextInput,
+  UiGlyph,
 } from '@sedation-pro/ui';
 
 import {
@@ -202,7 +203,7 @@ function clearSearch() {
         v-model="query"
         type="search"
         inputmode="search"
-        leading-icon="🔍"
+        leading-icon="search"
         placeholder="Search signs, drugs, protocols…"
         block
       />
@@ -211,7 +212,7 @@ function clearSearch() {
       >
     </section>
 
-    <UiBanner v-if="isSearching && filtered.length === 0" tone="info" icon="🔍">
+    <UiBanner v-if="isSearching && filtered.length === 0" tone="info" icon="search">
       No protocols match <strong>“{{ query }}”</strong>. Try a shorter keyword or browse the
       categories below.
     </UiBanner>
@@ -320,7 +321,9 @@ function clearSearch() {
               </div>
             </div>
             <p class="drug-dose-note">{{ ref.seed.note }}</p>
-            <p v-if="ref.seed.warning" class="drug-dose-warn">⚠ {{ ref.seed.warning }}</p>
+            <p v-if="ref.seed.warning" class="drug-dose-warn">
+              <UiGlyph name="warning" :size="14" /> {{ ref.seed.warning }}
+            </p>
           </div>
         </template>
       </div>

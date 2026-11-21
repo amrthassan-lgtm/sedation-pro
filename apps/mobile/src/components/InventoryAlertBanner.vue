@@ -103,7 +103,7 @@ function review(): void {
     v-if="visible"
     class="inv-alert no-print"
     :tone="summary.expired + shortCourses.length > 0 ? 'limit' : 'caution'"
-    icon="⚠"
+    icon="warning"
     :title="title"
   >
     <p class="inv-alert-detail">{{ detail }}</p>

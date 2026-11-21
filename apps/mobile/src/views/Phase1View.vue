@@ -44,6 +44,7 @@ import {
   UiStack,
   UiTextarea,
   UiTextInput,
+  UiGlyph,
 } from '@sedation-pro/ui';
 import {
   DEFAULT_FORMULARY,
@@ -117,7 +118,6 @@ const {
   alcoholPerWeek,
   recreationalDrugs,
   cigarettesPerDay,
-  ekgPlaced,
   emergencyDrugsAvailable,
   monitoringEquipmentChecked,
   safetyAlerts,
@@ -760,7 +760,7 @@ const diazepamModalCopy = computed(() => {
           v-if="lastExam && !lastExam.valid"
           tone="caution"
           title="Out-of-date medical exam"
-          icon="⚠"
+          icon="warning"
         >
           Patient is {{ age }} y/o. Requires an exam within the last
           <strong>{{ lastExam.cutoffMonths }}</strong> months. Last exam recorded:
@@ -1004,14 +1004,6 @@ const diazepamModalCopy = computed(() => {
           hint="Risks / benefits / alternatives discussed and consent signed"
         />
         <UiCheckbox
-          id="field-ekg_placed"
-          v-model="ekgPlaced"
-          required
-          :invalid="isMissing('ekg_placed')"
-          label="EKG leads placed"
-          hint="3-lead · verify rhythm and waveform"
-        />
-        <UiCheckbox
           id="field-emergency_drugs_available"
           v-model="emergencyDrugsAvailable"
           required
@@ -1025,7 +1017,7 @@ const diazepamModalCopy = computed(() => {
         <UiBanner
           v-if="kitAlert"
           :tone="kitAlert.tone"
-          icon="⚠"
+          icon="warning"
           title="Emergency kit has expired or unverified stock"
         >
           {{ kitAlert.detail }}
@@ -1115,7 +1107,7 @@ const diazepamModalCopy = computed(() => {
           <span class="phase-advance-text">Continue to Phase 2 · Oral Sedation</span>
         </template>
         <template v-else>
-          <span class="phase-advance-icon" aria-hidden="true">🔒</span>
+          <UiGlyph name="lock" :size="18" />
           <span class="phase-advance-text">
             {{ missingCount }} required field{{ missingCount === 1 ? '' : 's' }} missing · show me
           </span>
@@ -1131,7 +1123,7 @@ const diazepamModalCopy = computed(() => {
         :key="alert.code"
         :tone="alert.tone === 'danger' ? 'limit' : 'caution'"
         :title="alert.label"
-        icon="⚠"
+        icon="warning"
       />
     </template>
   </PhaseLayout>

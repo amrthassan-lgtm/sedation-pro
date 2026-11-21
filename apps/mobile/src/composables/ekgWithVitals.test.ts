@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { effectScope, nextTick, type EffectScope } from 'vue';
 
-import { confirmEkgWithVitals } from './ekgWithVitals';
+import { confirmEkgWithVitals, setEkgByHand } from './ekgWithVitals';
 import { useAssessmentAudit } from './useAssessmentAudit';
 import {
   PHASE1_AMENDMENT_EVENT,
@@ -11,6 +11,7 @@ import {
   type LogEvent,
 } from '@/stores/event-log';
 import { usePatientStore } from '@/stores/patient';
+import { useUndoStore } from '@/stores/undo';
 
 function amendments(events: ReadonlyArray<LogEvent>): ReadonlyArray<LogEvent> {
   return events.filter((e) => e.event === PHASE1_AMENDMENT_EVENT);
@@ -171,5 +172,67 @@ describe('confirmEkgWithVitals', () => {
       { 'EKG placed': '— → Yes' },
       { 'EKG placed': 'Yes → —' },
     ]);
+  });
+
+  describe('the box ticked by hand on the Pre-Op Vitals card', () => {
+    it('writes the row a hand tick always wrote, on a locked assessment', async () => {
+      const patient = usePatientStore();
+      const log = useEventLogStore();
+      await lockWithoutEkg();
+
+      setEkgByHand(true);
+
+      expect(patient.ekgPlaced).toBe(true);
+      expect(amendments(log.events).map((e) => e.details)).toEqual([{ 'EKG placed': '— → Yes' }]);
+    });
+
+    it('is taken back by Undo: the box and the row', async () => {
+      const patient = usePatientStore();
+      const log = useEventLogStore();
+      await lockWithoutEkg();
+
+      setEkgByHand(true);
+      useUndoStore().undo();
+
+      expect(patient.ekgPlaced).toBe(false);
+      expect(amendments(log.events)).toEqual([]);
+    });
+
+    it('logs an untick as its own change', async () => {
+      const log = useEventLogStore();
+      await lockWithoutEkg();
+
+      setEkgByHand(true);
+      setEkgByHand(false);
+
+      expect(amendments(log.events).map((e) => e.details)).toEqual([
+        { 'EKG placed': '— → Yes' },
+        { 'EKG placed': 'Yes → —' },
+      ]);
+    });
+
+    it('writes nothing before the lock, and nothing for a tap that changes nothing', async () => {
+      const patient = usePatientStore();
+      const log = useEventLogStore();
+
+      setEkgByHand(true);
+      expect(patient.ekgPlaced).toBe(true);
+      expect(log.events).toEqual([]);
+
+      patient.ekgPlaced = false;
+      await lockWithoutEkg();
+      setEkgByHand(false);
+      expect(amendments(log.events)).toEqual([]);
+    });
+
+    it('leaves the stamp nothing to add once the box is ticked by hand', async () => {
+      const log = useEventLogStore();
+      await lockWithoutEkg();
+
+      setEkgByHand(true);
+      confirmEkgWithVitals();
+
+      expect(amendments(log.events)).toHaveLength(1);
+    });
   });
 });

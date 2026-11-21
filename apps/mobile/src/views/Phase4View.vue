@@ -442,7 +442,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
     <UiCard v-if="!isAssessment" tint="ph4" id="gate-ivout">
       <p class="heading"><span class="heading-step">12</span> IV Out</p>
 
-      <UiBanner :tone="ivOutChipTone" icon="⏱" class="mt-2">
+      <UiBanner :tone="ivOutChipTone" icon="timer" class="mt-2">
         <strong>{{ ivOutChipHeadline }}</strong>
         <template v-if="!releaseStatus.eligible && releaseStatus.reason !== 'no-iv-sedative'">
           <UiPercentBar
@@ -702,7 +702,7 @@ const blockerCount = computed(() => dismissal.value.blockers.length);
              repeating the remaining minutes here means a clinician who just
              cleared the last checklist blocker isn't left with a button that
              refuses for an unstated reason. -->
-        <UiBanner v-else-if="!releaseStatus.eligible" tone="caution" icon="⏱" class="mt-2">
+        <UiBanner v-else-if="!releaseStatus.eligible" tone="caution" icon="timer" class="mt-2">
           Discharge checks complete · {{ releaseStatus.remainingMin }} min remaining of the
           {{ releaseStatus.waitMin }}-min observation wait.
         </UiBanner>

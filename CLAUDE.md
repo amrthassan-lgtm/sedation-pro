@@ -18,7 +18,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the nine-phase plan.
 
 - **Phase 0 — Foundation scaffold:** done.
 - **Phase 1 — Clinical engine:** done (`@sedation-pro/clinical` v0.1.0).
-- **Version 1 (Nov 2026, now 1.1.25):** the app the practice runs: assessment, oral
+- **Version 1 (Nov 2026, now 1.1.26):** the app the practice runs: assessment, oral
   and IV sedation, recovery, clinical note, Open Dental filing, emergency
   protocols and the crash-cart inventory. `APP_VERSION` in
   `apps/mobile/src/config/version.ts` is the number shown on screen and on
@@ -81,6 +81,17 @@ invites action.
   pills: grey, or white for the main one. Red stays reserved for Emergency
   and CALL 911; green for Print and success. `PicklistEditor.vue` and `InventoryView.vue` are the reference rows.
 
+- **One-time steps on the IV sedation screen fold to one line (owner, Nov
+  2026).** `StepCard.vue` and `useStepFold.ts`. Only steps done once fold
+  (1, 3, 5, 7, 8). The gas switch (2, 4) and the doses (6) are tapped again
+  and again through a case and stay open. A step never folds under the
+  finger: one finished while you are on it stays open until it is scrolled
+  past, and the page is moved by what the fold took away. Steps already
+  finished come up folded on arrival, a tap opens one, and Undo reopens the
+  step it undid. The folded line is read from the stamp, never from a field
+  that may have been retyped. The dock watches the timers and sedative
+  buttons, not the whole dose card, so it comes up whenever a dose cannot be
+  reached from the card.
 - **Never invent a CSS custom property.** The token vocabulary lives in
   `packages/ui/src/styles/tokens.css` — read it, don't guess from memory. An
   undefined `var(--whatever)` resolves to nothing and fails **silently**:
@@ -150,15 +161,17 @@ pnpm --filter @sedation-pro/mobile dev
   "safe". Those stay on the sedation screens, where they guide the hand. Any new sentence
   the note writes by itself, and any new log line, is shown to the owner for
   approval first. Audit for this whenever the note or the log is touched.
-- **The first Pre-Op Vitals stamp ticks "EKG leads placed" (owner, Nov 2026).**
-  His decision, made knowing it is the one assessment field the app sets by
-  itself: the leads go on with the monitor just before those vitals, and the
-  assistant had to walk back to Phase 1 for the box. Until it is ticked the
-  card reads "Place EKG leads and record pre-op vitals" (his wording), a
-  locked assessment gets the same amendment row a hand tick writes, and Undo
-  takes both back (`composables/ekgWithVitals.ts`). Nothing on the sedation
-  screens sends anyone back to Phase 1 for it. Do not extend this to another
-  field without asking him.
+- **"EKG leads placed" lives on the Pre-Op Vitals card, and the first stamp
+  there ticks it (owner, Nov 2026).** It left the Phase 1 safety checklist
+  because a run of taps down that list could tick it with the leads still in
+  the drawer, and the tick is what unlocks the IV sedatives. The stamp ticks
+  it by his decision, made knowing it is the one assessment field the app
+  sets by itself: the leads go on with the monitor just before those vitals.
+  Until it is ticked the card reads "Place EKG leads and record pre-op
+  vitals" (his wording). By hand or by the stamp, a locked assessment gets
+  the same amendment row a hand tick always wrote, and Undo takes it back
+  (`composables/ekgWithVitals.ts`). Do not extend the automatic tick to
+  another field without asking him.
 - **No staff names in the code (owner, Nov 2026).** The repo and the site
   are public. `DEFAULT_PICKLISTS.providers` and `.dentalAssistants` ship
   empty and `default.test.ts` keeps them so; test fixtures use invented

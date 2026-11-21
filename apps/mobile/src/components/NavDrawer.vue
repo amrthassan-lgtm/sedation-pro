@@ -12,7 +12,7 @@ import { useFormularyStore } from '@/stores/formulary';
 import { useNoteArchiveStore } from '@/stores/note-archive';
 import { useCaseReset } from '@/composables/useCaseReset';
 import { useBackToClose } from '@/composables/useBackToClose';
-import { UiModal, UiStatusPill } from '@sedation-pro/ui';
+import { UiModal, UiStatusPill, UiGlyph } from '@sedation-pro/ui';
 
 import {
   classifyInventory,
@@ -567,7 +567,7 @@ function onTouchEnd() {
             :class="`nav-phase-icon--${entry.iconTint}`"
             aria-hidden="true"
           >
-            <span v-if="entry.locked">🔒</span>
+            <UiGlyph v-if="entry.locked" name="lock" :size="16" />
             <span v-else>{{ entry.number }}</span>
           </span>
           <span class="nav-phase-main">
@@ -605,7 +605,7 @@ function onTouchEnd() {
            phase tap can't drift onto it accidentally. The UiModal handles
            the "are you sure" gate. -->
       <button type="button" class="nav-new-case" @click="openNewCaseModal">
-        <span class="nav-new-case-icon" aria-hidden="true">↻</span>
+        <UiGlyph name="refresh" :size="16" />
         <span class="nav-new-case-label">Start new case</span>
       </button>
     </aside>

@@ -50,7 +50,7 @@ function openSavedNotes(): void {
     v-if="visible"
     class="storage-alert no-print"
     :tone="full ? 'limit' : 'caution'"
-    icon="⚠"
+    icon="warning"
     :title="title"
   >
     <p class="storage-alert-detail">{{ detail }}</p>
