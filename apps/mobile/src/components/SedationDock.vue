@@ -4,7 +4,8 @@ import { storeToRefs } from 'pinia';
 
 import { useIVStore } from '@/stores/iv';
 import { useDockVisibility } from '@/composables/useDockVisibility';
-import { fmtDuration } from '@/composables/format';
+import { fmtClock, fmtDuration } from '@/composables/format';
+import { useGasSwitch } from '@/composables/useGasSwitch';
 import { useIvDosing } from '@/composables/useIvDosing';
 import { useNow } from '@/composables/useNow';
 import { useBackToClose } from '@/composables/useBackToClose';
@@ -22,6 +23,10 @@ import type { Severity, TimerPillStatus } from '@sedation-pro/ui';
  *  - **expanded** — full per-class dose grid (sedation, anti-emetic, reversal).
  *    Reversal is visually demoted (red section heading, separated grid) so
  *    muscle memory doesn't mis-tap it.
+ *
+ * Both states carry the gas switch at the top (`useGasSwitch`): N₂O / O₂ is
+ * turned on and off through a case, and steps 2 and 4 are far up the page by
+ * the time the dock is in use.
  *
  * Safety model: a tap commits immediately via `useIvDosing` — no
  * confirmation step. Accidental double-taps are absorbed by UiDrugButton's
@@ -102,6 +107,20 @@ function severityClass(sev: Severity): string {
 
 const versedStatus = computed(() => sedationStatus.value.versed);
 const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
+
+// -------- Gas switch -------------------------------------------------------
+// The gas is flipped on and off through a case (owner, Nov 2026), long after
+// steps 2 and 4 have scrolled away. Same switch, same log lines.
+
+const {
+  n2oOn,
+  o2OnlyOn,
+  canTurnOff,
+  runningSince,
+  turnOn: turnGasOn,
+  turnOff: turnGasOff,
+} = useGasSwitch();
+const gasSince = computed(() => fmtClock(runningSince.value));
 </script>
 
 <template>
@@ -123,6 +142,36 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
       >
         <span class="dock-grip" aria-hidden="true" />
       </button>
+
+      <!-- Gas switch (always visible). The lit side is what is running, with
+           the time it was set. It sits at the top, the dose buttons at the
+           bottom, with the two status rows between them. -->
+      <div class="dock-gas" role="group" aria-label="Gas">
+        <span class="dock-gas-cap" aria-hidden="true">Gas</span>
+        <div class="dock-gas-track">
+          <button
+            type="button"
+            class="dock-gas-seg"
+            :class="{ 'is-on': n2oOn }"
+            :aria-pressed="n2oOn"
+            @click="turnGasOn"
+          >
+            <span>N₂O / O₂</span>
+            <span v-if="n2oOn && gasSince" class="dock-gas-time">{{ gasSince }}</span>
+          </button>
+          <button
+            type="button"
+            class="dock-gas-seg"
+            :class="{ 'is-on': o2OnlyOn }"
+            :aria-pressed="o2OnlyOn"
+            :disabled="!canTurnOff && !o2OnlyOn"
+            @click="turnGasOff"
+          >
+            <span>O₂ 100%</span>
+            <span v-if="o2OnlyOn && gasSince" class="dock-gas-time">{{ gasSince }}</span>
+          </button>
+        </div>
+      </div>
 
       <!-- Compact-mode status row (always visible). -->
       <div class="dock-status">
@@ -389,6 +438,75 @@ const fentanylStatus = computed(() => sedationStatus.value.fentanyl);
 }
 .dock-handle:active .dock-grip {
   background: var(--color-border-strong);
+}
+
+/* Gas switch: the kit's segmented control (UiChipGroup, tap-target), with
+   the time riding inside the lit segment. */
+.dock-gas {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: 10px;
+}
+.dock-gas-cap {
+  flex-shrink: 0;
+  min-width: 42px;
+  font-size: var(--type-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+.dock-gas-track {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px;
+  border-radius: var(--r-md);
+  background: var(--color-surface);
+}
+.dock-gas-seg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  column-gap: 10px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--type-body);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--dur-150) var(--ease-standard),
+    color var(--dur-150) var(--ease-standard),
+    transform var(--dur-150) var(--ease-standard);
+}
+.dock-gas-seg:active:not(:disabled):not(.is-on) {
+  transform: scale(0.97);
+}
+.dock-gas-seg.is-on {
+  background: var(--color-segment-active);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
+  cursor: default;
+}
+.dock-gas-seg:disabled {
+  color: var(--color-text-disabled);
+  cursor: default;
+}
+.dock-gas-time {
+  font-family: var(--font-mono);
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-bold);
+  color: var(--color-good);
 }
 
 /* Status rows — drug name, mg load, timer pill, then the progress bar. */
