@@ -741,6 +741,12 @@ describe('emergency protocols', () => {
       expect(steps.join(' ')).not.toMatch(/oral airway or NPA/i);
     });
 
+    it('hypoventilation gives the size of each breath, not only the rate', () => {
+      expect(stepsOf('hypoventilation')[indexOf('hypoventilation', 'BVM, 1 breath')]?.text).toBe(
+        'Still breathing poorly (SpO₂ falling, EtCO₂ waveform flat or rising): BVM, 1 breath every 6 seconds, each over 1 second, just enough to see the chest rise',
+      );
+    });
+
     it('hypoventilation has a branch for a bag that moves no air, and links to both reversal pages', () => {
       const steps = stepsOf('hypoventilation');
       const bag = indexOf('hypoventilation', 'BVM, 1 breath every 6 seconds');

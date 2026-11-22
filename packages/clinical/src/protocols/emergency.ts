@@ -334,7 +334,10 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         text: 'Jaw thrust or chin lift, suction, NPA. Oral airway (Berman) only if unresponsive with no cough or gag',
       },
       {
-        text: 'Still breathing poorly (SpO₂ falling, EtCO₂ waveform flat or rising): BVM, 1 breath every 6 seconds',
+        // Breath size as well as rate (owner, Nov 2026): with a mask and an NPA
+        // nothing seals the esophagus, so a hard or fast squeeze fills the
+        // stomach. AHA rescue breathing: each over 1 second, to visible chest rise.
+        text: 'Still breathing poorly (SpO₂ falling, EtCO₂ waveform flat or rising): BVM, 1 breath every 6 seconds, each over 1 second, just enough to see the chest rise',
         severity: 'critical',
       },
       {
