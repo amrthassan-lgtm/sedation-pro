@@ -542,8 +542,6 @@ function stepClass(step: ProtocolStep): string {
             <div class="step-body">
               <p class="step-text">{{ view.step.text }}</p>
 
-              <ProtocolFigure v-if="view.step.figure" :kind="view.step.figure" />
-
               <div v-if="logging && view.stamps.length > 0" class="drug-grid log-pills log-stamps">
                 <UiDrugButton
                   v-for="stamp in view.stamps"
@@ -583,6 +581,10 @@ function stepClass(step: ProtocolStep): string {
                   >Go to {{ protocolShortName(id) }} ›</UiPillButton
                 >
               </div>
+
+              <!-- After the links: a jump the step names stays beside its
+                   words, never a tall drawing below them. -->
+              <ProtocolFigure v-if="view.step.figure" :kind="view.step.figure" />
 
               <section v-if="view.box" class="drug-callout">
                 <header class="drug-head">

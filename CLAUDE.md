@@ -18,7 +18,7 @@ See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the nine-phase plan.
 
 - **Phase 0 — Foundation scaffold:** done.
 - **Phase 1 — Clinical engine:** done (`@sedation-pro/clinical` v0.1.0).
-- **Version 1 (Nov 2026, now 1.1.32):** the app the practice runs: assessment, oral
+- **Version 1 (Nov 2026, now 1.1.33):** the app the practice runs: assessment, oral
   and IV sedation, recovery, clinical note, Open Dental filing, emergency
   protocols and the crash-cart inventory. `APP_VERSION` in
   `apps/mobile/src/config/version.ts` is the number shown on screen and on
@@ -207,6 +207,14 @@ pnpm --filter @sedation-pro/mobile dev
   junctional and anaphylaxis steps stayed off-guideline for ten days behind
   labels). Then move the row's date forward a year. This environment blocks
   heart.org; say which sources were read and which were summaries.
+- **Protocol drawings are reviewed art (owner, Nov 2026).** They live in
+  `apps/mobile/src/assets/protocol-figures/`, are listed in
+  `apps/mobile/src/data/protocolFigures.ts` and are attached by `figure` on a
+  step. Their captions are owner-approved wording, the credit line is
+  required by the CC BY licence of the traced head, and a drawing is
+  medically reviewed before it ships: the tube-in-airway check and the
+  generators are kept in the owner's private "Airway device references"
+  artifact, not in this repo.
 - **Do not touch the legacy `sedation-app` GitHub repo.** It's the only
   copy of the original single-file app now (the local `tools/legacy-source/`
   copy was removed, Nov 2026) and is read-only reference. Changes go in

@@ -1,18 +1,51 @@
 <script setup lang="ts">
 /**
- * Line drawings for the two things a protocol step cannot place in words
- * under stress: where Larson's point is, and how the auto-injector meets the
- * thigh. Every label is a phrase from the step or callout the drawing sits
- * under, so the picture adds a place and never an instruction.
+ * Drawings for what a protocol step cannot place in words under stress.
+ *
+ * Two are drawn here by hand: where Larson's point is, and how the
+ * auto-injector meets the thigh. Every label on them is a phrase from the
+ * step or callout the drawing sits under, so the picture adds a place and
+ * never an instruction.
+ *
+ * The rest (bagging, and each airway device in place) are reviewed files,
+ * listed in `data/protocolFigures.ts`. A numbered one prints its captions
+ * under it as page text, so they read on a phone, and one traced from the
+ * Open Critical Care / WHO head carries the credit its licence requires.
  */
-export type ProtocolFigureKind = 'larsons-point' | 'auto-injector';
+import { computed } from 'vue';
 
-defineProps<{ kind: ProtocolFigureKind }>();
+import type { StepFigure } from '@sedation-pro/clinical';
+
+import { ANATOMY_CREDIT, PROTOCOL_DRAWINGS, type ProtocolDrawing } from '@/data/protocolFigures';
+
+export type ProtocolFigureKind = StepFigure | 'auto-injector';
+
+const props = defineProps<{ kind: ProtocolFigureKind }>();
+
+const drawing = computed<ProtocolDrawing | null>(() =>
+  props.kind === 'larsons-point' || props.kind === 'auto-injector'
+    ? null
+    : PROTOCOL_DRAWINGS[props.kind],
+);
 </script>
 
 <template>
+  <figure v-if="drawing" class="drawing" :data-figure="kind">
+    <!-- Markup from a file bundled with the app, never text someone typed. -->
+    <div class="drawing-art" role="img" :aria-label="drawing.label" v-html="drawing.svg" />
+    <ol v-if="drawing.captions.length > 0" class="drawing-captions" role="list">
+      <li v-for="(caption, index) in drawing.captions" :key="index" class="drawing-caption">
+        <span class="drawing-number" aria-hidden="true">{{ index + 1 }}</span>
+        <span class="drawing-caption-text">{{ caption }}</span>
+      </li>
+    </ol>
+    <figcaption v-if="drawing.tracedAnatomy" class="drawing-credit">
+      {{ ANATOMY_CREDIT }}
+    </figcaption>
+  </figure>
+
   <svg
-    v-if="kind === 'larsons-point'"
+    v-else-if="kind === 'larsons-point'"
     class="figure"
     viewBox="0 0 340 200"
     role="img"
@@ -79,6 +112,59 @@ defineProps<{ kind: ProtocolFigureKind }>();
 </template>
 
 <style scoped>
+/* A reviewed drawing: the picture, its numbered captions and its credit on
+   one quiet platter, so the three read as one thing under the step. */
+.drawing {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--color-surface-subtle);
+}
+/* The files carry a pixel size for their own previews; on the page the
+   picture takes the step's width and keeps its shape. */
+.drawing-art :deep(svg) {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--r-sm);
+}
+.drawing-captions {
+  display: grid;
+  gap: var(--sp-2);
+  margin: var(--sp-3) var(--sp-1) 0;
+  padding: 0;
+  list-style: none;
+}
+.drawing-caption {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  font-size: var(--type-body);
+  line-height: var(--leading-normal);
+  color: var(--color-text-primary);
+}
+/* The marker on the picture, again: white disc, dark numeral. */
+.drawing-number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  /* Lifts the disc so the numeral sits on the caption's first line. */
+  margin-top: -2px;
+  border-radius: 50%;
+  background: var(--color-text-primary);
+  color: var(--color-bg);
+  font-size: var(--type-footnote);
+  font-weight: var(--weight-bold);
+}
+.drawing-credit {
+  margin: var(--sp-3) var(--sp-1) 0;
+  font-size: var(--type-caption);
+  line-height: var(--leading-normal);
+  color: var(--color-text-tertiary);
+}
+
 .figure {
   display: block;
   width: 100%;

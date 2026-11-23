@@ -63,6 +63,20 @@ export interface EmergencyDrugCallout {
   readonly device?: 'auto-injector' | 'prefilled-syringe';
 }
 
+/**
+ * The drawings a step can carry. A new kind is a new drawing: the app's own
+ * tests fail until it has one, with captions for every numbered marker.
+ */
+export type StepFigure =
+  | 'larsons-point'
+  | 'bvm-side'
+  | 'bvm-one-person'
+  | 'bvm-two-person'
+  | 'bvm-breath'
+  | 'npa'
+  | 'lma'
+  | 'king-lt';
+
 /** A single ordered step in a protocol. */
 export interface ProtocolStep {
   readonly text: string;
@@ -80,8 +94,11 @@ export interface ProtocolStep {
    * so the jump happens mid-protocol, not after scrolling to the bottom.
    */
   readonly goTo?: ReadonlyArray<string>;
-  /** A drawing shown under the step, for a landmark words cannot place. */
-  readonly figure?: 'larsons-point';
+  /**
+   * A drawing shown under the step, for what words cannot place: a landmark,
+   * a pair of hands on a mask, a device seated in the airway.
+   */
+  readonly figure?: StepFigure;
 }
 
 export interface EmergencyProtocol {
@@ -339,6 +356,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
         // stomach. AHA rescue breathing: each over 1 second, to visible chest rise.
         text: 'Still breathing poorly (SpO₂ falling, EtCO₂ waveform flat or rising): BVM, 1 breath every 6 seconds, each over 1 second, just enough to see the chest rise',
         severity: 'critical',
+        goTo: ['bvm'],
       },
       {
         text: 'BVM not moving the chest: reposition, NPA, oral airway if no gag, then LMA or King. Crowing or no air movement: Laryngospasm',
@@ -423,12 +441,98 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
     ],
   },
   {
+    // The technique the other airway pages assume when they say "BVM" (owner,
+    // Nov 2026). The pulse is checked first and again last: a patient without
+    // one needs the arrest pages, not this one.
+    id: 'bvm',
+    category: 'airway',
+    name: 'BVM (Bag-Valve-Mask)',
+    summary: 'SpO₂ falling, breaths slow or absent · 1 breath every 6 seconds',
+    signs: ['SpO₂ falling', 'slow or absent breaths'],
+    relatedProtocols: [
+      'npa',
+      'lma',
+      'king_lt',
+      'hypoventilation',
+      'laryngospasm',
+      'emesis_aspiration',
+      'vfib_vtach',
+      'pea_asystole',
+    ],
+    steps: [
+      {
+        text: 'No pulse: start CPR (Cardiac Arrest protocol)',
+        severity: 'critical',
+        goTo: ['vfib_vtach', 'pea_asystole'],
+      },
+      { text: 'Everything out of the mouth: rubber dam, gauze, prop' },
+      {
+        text: 'Bag now, do not wait for oxygen. Helper: O₂ 15 L/min into the bag, reservoir attached',
+      },
+      {
+        text: 'Open the airway: head tilt and chin lift, or jaw thrust. Snoring, or still blocked: NPA',
+        goTo: ['npa'],
+        figure: 'bvm-side',
+      },
+      { text: 'Mask from the bridge of the nose to below the lower lip, clear of the eyes' },
+      {
+        text: 'One person: thumb and index finger press the mask (C), three fingers lift the jaw bone (E)',
+        figure: 'bvm-one-person',
+      },
+      {
+        text: 'Second person free: you hold the mask with both hands, thumbs on the mask, fingers behind the angle of the jaw; they squeeze',
+        figure: 'bvm-two-person',
+      },
+      {
+        text: '1 breath every 6 seconds, each over 1 second, just enough to see the chest rise',
+        severity: 'critical',
+        figure: 'bvm-breath',
+      },
+      {
+        text: 'Chest will not rise, or still needs the bag after 2 minutes: Call 911. Someone else calls; keep bagging',
+        severity: 'critical',
+      },
+      {
+        text: 'Sedation drugs on board: reversal on the Hypoventilation page',
+        goTo: ['hypoventilation'],
+      },
+      {
+        text: 'Chest not rising or bag hard to squeeze: tilt the head again, jaw thrust, reseal with both hands',
+        severity: 'critical',
+      },
+      {
+        text: 'Still not rising: look in the mouth, suction, take out anything loose. Then NPA, or oral airway if no gag',
+        severity: 'critical',
+        goTo: ['npa'],
+      },
+      { text: 'Still not rising: LMA or King', severity: 'critical', goTo: ['lma', 'king_lt'] },
+      { text: 'Cannot ventilate with those: cricothyrotomy', severity: 'final' },
+      {
+        text: 'Crowing, or no air moves with a good seal and jaw thrust: Laryngospasm',
+        severity: 'critical',
+        goTo: ['laryngospasm'],
+      },
+      {
+        text: 'Belly rising: reopen the airway; smaller breaths, squeezed gently over a full second',
+      },
+      {
+        text: 'Vomits: head and body to the side, suction, then carry on',
+        goTo: ['emesis_aspiration'],
+      },
+      {
+        text: 'Check the pulse every 2 minutes. No pulse: start CPR (Cardiac Arrest protocol)',
+        severity: 'final',
+        goTo: ['vfib_vtach', 'pea_asystole'],
+      },
+    ],
+  },
+  {
     id: 'npa',
     category: 'airway',
     name: 'NPA (Nasopharyngeal Airway) - Use WITH BVM',
     summary: 'BVM difficult, tongue obstruction · 7.5 mm most adults',
     signs: ['BVM difficult', 'tongue obstruction'],
-    relatedProtocols: ['lma', 'king_lt', 'hypoventilation'],
+    relatedProtocols: ['bvm', 'lma', 'king_lt', 'hypoventilation'],
     steps: [
       {
         text: 'Size: nose tip to earlobe. Stock: 6 mm (small adult), 7.5 mm (average), 8 mm (large)',
@@ -436,6 +540,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Lubricate generously; use the larger nostril' },
       {
         text: 'Bevel toward the septum; slide straight back along the floor of the nose (toward the ear, not up)',
+        figure: 'npa',
       },
       { text: 'Resistance: stop, try the other nostril or a smaller size. Never force' },
       { text: 'Flange at the nostril; resume BVM', severity: 'critical' },
@@ -460,6 +565,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Deflate the cuff fully, lubricate the back, remove dentures' },
       {
         text: 'Sniffing position. Hold it like a pen, press along the hard palate, advance until resistance',
+        figure: 'lma',
       },
       {
         text: 'Inflate without holding it, using the colour-coded LarySeal syringe: 3 = 20 ml, 4 = 30 ml, 5 = 40 ml',
@@ -482,6 +588,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       { text: 'Lubricate; head neutral' },
       {
         text: 'Insert at the corner of the mouth, rotate to midline, advance until the connector base reaches the teeth',
+        figure: 'king-lt',
       },
       { text: 'Inflate with the 60 ml syringe: 50-70 ml (check the IFU in the kit)' },
       {

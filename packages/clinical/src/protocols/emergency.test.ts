@@ -393,6 +393,7 @@ describe('emergency protocols', () => {
       hypoventilation: 'slow breaths',
       emesis_aspiration: 'vomiting',
       choking: 'cannot speak',
+      bvm: 'SpO₂ falling',
       npa: 'BVM difficult',
       lma: 'BVM failing',
       king_lt: 'LMA failed',
@@ -1029,7 +1030,7 @@ describe('emergency protocols', () => {
 describe('step drawings', () => {
   it("Larson's point is drawn on the one step that names the landmark", () => {
     const drawn = EMERGENCY_PROTOCOLS.flatMap((p) =>
-      p.steps.filter((s) => s.figure !== undefined).map((s) => ({ protocol: p.id, step: s })),
+      p.steps.filter((s) => s.figure === 'larsons-point').map((s) => ({ protocol: p.id, step: s })),
     );
     expect(drawn.map((d) => d.protocol)).toEqual(['laryngospasm']);
     // The drawing's labels are these words, so the step has to keep them.
@@ -1044,6 +1045,204 @@ describe('step drawings', () => {
         if (/Larson/.test(s.text)) expect(s.figure, p.id).toBe('larsons-point');
       }
     }
+  });
+
+  it('every drawing sits on the one step it was drawn for, and on no other (owner, Nov 2026)', () => {
+    // A drawing is reviewed against the words of its step. One that moves to
+    // another step, or a step that gains one, shows up here.
+    const drawn = EMERGENCY_PROTOCOLS.flatMap((p) =>
+      p.steps.flatMap((s) => (s.figure === undefined ? [] : [[p.id, s.figure, s.text]])),
+    );
+    expect(drawn).toEqual([
+      [
+        'laryngospasm',
+        'larsons-point',
+        "Jaw thrust plus firm pressure at the laryngospasm notch (Larson's: behind the earlobe, between jaw and mastoid)",
+      ],
+      [
+        'bvm',
+        'bvm-side',
+        'Open the airway: head tilt and chin lift, or jaw thrust. Snoring, or still blocked: NPA',
+      ],
+      [
+        'bvm',
+        'bvm-one-person',
+        'One person: thumb and index finger press the mask (C), three fingers lift the jaw bone (E)',
+      ],
+      [
+        'bvm',
+        'bvm-two-person',
+        'Second person free: you hold the mask with both hands, thumbs on the mask, fingers behind the angle of the jaw; they squeeze',
+      ],
+      [
+        'bvm',
+        'bvm-breath',
+        '1 breath every 6 seconds, each over 1 second, just enough to see the chest rise',
+      ],
+      [
+        'npa',
+        'npa',
+        'Bevel toward the septum; slide straight back along the floor of the nose (toward the ear, not up)',
+      ],
+      [
+        'lma',
+        'lma',
+        'Sniffing position. Hold it like a pen, press along the hard palate, advance until resistance',
+      ],
+      [
+        'king_lt',
+        'king-lt',
+        'Insert at the corner of the mouth, rotate to midline, advance until the connector base reaches the teeth',
+      ],
+    ]);
+  });
+
+  it('each airway device is drawn in place on the step that seats it, and that step keeps its words', () => {
+    const seats = (id: string, start: string) =>
+      findProtocol(id)?.steps.filter((s) => s.text.startsWith(start));
+    expect(seats('npa', 'Bevel toward the septum')).toEqual([
+      {
+        text: 'Bevel toward the septum; slide straight back along the floor of the nose (toward the ear, not up)',
+        figure: 'npa',
+      },
+    ]);
+    expect(seats('lma', 'Sniffing position')).toEqual([
+      {
+        text: 'Sniffing position. Hold it like a pen, press along the hard palate, advance until resistance',
+        figure: 'lma',
+      },
+    ]);
+    expect(seats('king_lt', 'Insert at the corner of the mouth')).toEqual([
+      {
+        text: 'Insert at the corner of the mouth, rotate to midline, advance until the connector base reaches the teeth',
+        figure: 'king-lt',
+      },
+    ]);
+  });
+});
+
+// Owner-approved wording, Nov 2026. The page is held whole: a step reworded,
+// moved, re-weighted, re-linked or parted from its drawing fails here.
+describe('BVM page (owner, Nov 2026)', () => {
+  const ARREST_PAGES = ['vfib_vtach', 'pea_asystole'];
+
+  it('is an airway page of its own, listed just before the NPA', () => {
+    const proto = findProtocol('bvm');
+    expect(proto?.category).toBe('airway');
+    expect(proto?.name).toBe('BVM (Bag-Valve-Mask)');
+    expect(proto?.summary).toBe('SpO₂ falling, breaths slow or absent · 1 breath every 6 seconds');
+    expect(proto?.signs).toEqual(['SpO₂ falling', 'slow or absent breaths']);
+    expect(proto?.relatedProtocols).toEqual([
+      'npa',
+      'lma',
+      'king_lt',
+      'hypoventilation',
+      'laryngospasm',
+      'emesis_aspiration',
+      'vfib_vtach',
+      'pea_asystole',
+    ]);
+    expect(proto?.contraindications).toBeUndefined();
+    const ids = EMERGENCY_PROTOCOLS.map((p) => p.id);
+    expect(ids.indexOf('bvm')).toBe(ids.indexOf('npa') - 1);
+    expect(ids.filter((id) => id === 'bvm')).toHaveLength(1);
+  });
+
+  it('holds every step: its words, its place, its weight, its links and its drawing', () => {
+    expect(findProtocol('bvm')?.steps).toEqual([
+      {
+        text: 'No pulse: start CPR (Cardiac Arrest protocol)',
+        severity: 'critical',
+        goTo: ARREST_PAGES,
+      },
+      { text: 'Everything out of the mouth: rubber dam, gauze, prop' },
+      {
+        text: 'Bag now, do not wait for oxygen. Helper: O₂ 15 L/min into the bag, reservoir attached',
+      },
+      {
+        text: 'Open the airway: head tilt and chin lift, or jaw thrust. Snoring, or still blocked: NPA',
+        goTo: ['npa'],
+        figure: 'bvm-side',
+      },
+      { text: 'Mask from the bridge of the nose to below the lower lip, clear of the eyes' },
+      {
+        text: 'One person: thumb and index finger press the mask (C), three fingers lift the jaw bone (E)',
+        figure: 'bvm-one-person',
+      },
+      {
+        text: 'Second person free: you hold the mask with both hands, thumbs on the mask, fingers behind the angle of the jaw; they squeeze',
+        figure: 'bvm-two-person',
+      },
+      {
+        text: '1 breath every 6 seconds, each over 1 second, just enough to see the chest rise',
+        severity: 'critical',
+        figure: 'bvm-breath',
+      },
+      {
+        text: 'Chest will not rise, or still needs the bag after 2 minutes: Call 911. Someone else calls; keep bagging',
+        severity: 'critical',
+      },
+      {
+        text: 'Sedation drugs on board: reversal on the Hypoventilation page',
+        goTo: ['hypoventilation'],
+      },
+      {
+        text: 'Chest not rising or bag hard to squeeze: tilt the head again, jaw thrust, reseal with both hands',
+        severity: 'critical',
+      },
+      {
+        text: 'Still not rising: look in the mouth, suction, take out anything loose. Then NPA, or oral airway if no gag',
+        severity: 'critical',
+        goTo: ['npa'],
+      },
+      { text: 'Still not rising: LMA or King', severity: 'critical', goTo: ['lma', 'king_lt'] },
+      { text: 'Cannot ventilate with those: cricothyrotomy', severity: 'final' },
+      {
+        text: 'Crowing, or no air moves with a good seal and jaw thrust: Laryngospasm',
+        severity: 'critical',
+        goTo: ['laryngospasm'],
+      },
+      {
+        text: 'Belly rising: reopen the airway; smaller breaths, squeezed gently over a full second',
+      },
+      {
+        text: 'Vomits: head and body to the side, suction, then carry on',
+        goTo: ['emesis_aspiration'],
+      },
+      {
+        text: 'Check the pulse every 2 minutes. No pulse: start CPR (Cardiac Arrest protocol)',
+        severity: 'final',
+        goTo: ARREST_PAGES,
+      },
+    ]);
+  });
+
+  it('gives no drug: the reversals stay on the pages that draw them', () => {
+    expect(findProtocol('bvm')?.steps.some((s) => s.drug !== undefined)).toBe(false);
+  });
+
+  it('gives the same breath as the Hypoventilation step that sends the team here', () => {
+    const BREATH =
+      '1 breath every 6 seconds, each over 1 second, just enough to see the chest rise';
+    const from = findProtocol('hypoventilation')?.steps.find((s) =>
+      s.text.startsWith('Still breathing poorly'),
+    );
+    // The trainer finds this step by its words, so they are held whole.
+    expect(from?.text).toBe(
+      `Still breathing poorly (SpO₂ falling, EtCO₂ waveform flat or rising): BVM, ${BREATH}`,
+    );
+    expect(from?.severity).toBe('critical');
+    expect(from?.goTo).toEqual(['bvm']);
+    expect(findProtocol('bvm')?.steps.map((s) => s.text)).toContain(BREATH);
+  });
+
+  it('the NPA page leads back to it', () => {
+    expect(findProtocol('npa')?.relatedProtocols).toEqual([
+      'bvm',
+      'lma',
+      'king_lt',
+      'hypoventilation',
+    ]);
   });
 });
 
