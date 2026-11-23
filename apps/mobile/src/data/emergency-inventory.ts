@@ -725,6 +725,8 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2028-10-12',
     category: 'equipment',
   },
+  // Owner (Nov 2026): the King and the LMAs are replaced by i-gels (sizes 3, 4, 5) as
+  // they expire; the i-gel needs no cuff syringe. Protocols change only when they arrive.
   {
     id: 'king-lts-d-4',
     drug: 'King LTS-D Airway',
@@ -735,6 +737,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2029-07-01',
     category: 'equipment',
     protocolIds: ['king_lt'],
+    notes: 'Replace with an i-gel when it expires',
   },
   {
     id: 'lma-3',
@@ -746,6 +749,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2028-11-01',
     category: 'equipment',
     protocolIds: ['lma'],
+    notes: 'Replace with an i-gel size 3 (30–60 kg) when it expires',
   },
   {
     id: 'lma-4',
@@ -757,6 +761,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2029-07-01',
     category: 'equipment',
     protocolIds: ['lma'],
+    notes: 'Replace with an i-gel size 4 (50–90 kg) when it expires',
   },
   {
     id: 'lma-5',
@@ -768,6 +773,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2029-09-01',
     category: 'equipment',
     protocolIds: ['lma'],
+    notes: 'Replace with an i-gel size 5 (90+ kg) when it expires',
   },
   {
     id: 'laryseal-inflator',
@@ -779,6 +785,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2028-10-01',
     category: 'equipment',
     protocolIds: ['lma'],
+    notes: 'Do not reorder: the i-gels that replace the LMAs have no cuff',
   },
   {
     id: 'berman-airways',
@@ -936,6 +943,7 @@ export const EMERGENCY_INVENTORY: ReadonlyArray<InventoryItem> = [
     expiresOn: '2028-04-30',
     category: 'equipment',
     protocolIds: ['king_lt'],
+    notes: 'Do not reorder for the King: the i-gel that replaces it has no cuff',
   },
   {
     id: 'cannula-adult',
