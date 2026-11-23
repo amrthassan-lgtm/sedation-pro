@@ -11,5 +11,6 @@ export {
   type EmergencyDrugCallout,
   type EmergencyProtocol,
   type ProtocolStep,
+  type StepFigure,
 } from './emergency';
 export { EMERGENCY_TINT_NAMES, emergencySyringeTint } from './syringe-tint';

@@ -327,6 +327,108 @@ describe('step drawings', () => {
   it('a page with neither has no drawing', () => {
     const w = mountDetail('seizure');
     expect(w.find('svg.figure').exists()).toBe(false);
+    expect(w.find('figure.drawing').exists()).toBe(false);
+    w.unmount();
+  });
+
+  const stepOf = (drawing: Element) =>
+    drawing.closest('.step')?.querySelector('.step-text')?.textContent ?? '';
+
+  it('the BVM page draws its four drawings in order, each under the step it shows', () => {
+    const w = mountDetail('bvm');
+    const drawings = w.findAll('figure.drawing');
+    expect(drawings.map((d) => d.attributes('data-figure'))).toEqual([
+      'bvm-side',
+      'bvm-one-person',
+      'bvm-two-person',
+      'bvm-breath',
+    ]);
+    expect(drawings.map((d) => stepOf(d.element).split(/[:,]/)[0])).toEqual([
+      'Open the airway',
+      'One person',
+      'Second person free',
+      '1 breath every 6 seconds',
+    ]);
+    // Each numbered one lists what its markers point at, as page text.
+    expect(drawings.map((d) => d.findAll('.drawing-caption').length)).toEqual([4, 5, 3, 0]);
+    expect(drawings[2]!.findAll('.drawing-caption-text').at(-1)?.text()).toBe(
+      'The second person, at the side of the chair, squeezes the bag',
+    );
+    // The hand-drawn landmark figures belong to other pages.
+    expect(w.find('svg.figure').exists()).toBe(false);
+    w.unmount();
+  });
+
+  it('a drawing comes after the links of its step: the jump stays beside the words', () => {
+    const w = mountDetail('bvm');
+    const body = w.find('figure[data-figure="bvm-side"]').element.parentElement!;
+    const order = [...body.children].map((el) => el.className);
+    expect(order[0]).toContain('step-text');
+    expect(body.querySelector('.step-link')?.textContent).toBe('Go to NPA ›');
+    expect(order.findIndex((c) => c.includes('step-links'))).toBeLessThan(
+      order.findIndex((c) => c.includes('drawing')),
+    );
+    w.unmount();
+  });
+
+  it('each airway device is drawn in place under the step that seats it, with its credit', () => {
+    for (const [id, kind, starts] of [
+      ['npa', 'npa', 'Bevel toward the septum'],
+      ['lma', 'lma', 'Sniffing position'],
+      ['king_lt', 'king-lt', 'Insert at the corner of the mouth'],
+    ] as const) {
+      const w = mountDetail(id);
+      const drawings = w.findAll('figure.drawing');
+      expect(
+        drawings.map((d) => d.attributes('data-figure')),
+        id,
+      ).toEqual([kind]);
+      expect(stepOf(drawings[0]!.element).startsWith(starts), id).toBe(true);
+      expect(drawings[0]!.find('.drawing-art svg').exists(), id).toBe(true);
+      expect(drawings[0]!.find('.drawing-credit').text(), id).toBe(
+        'Anatomy adapted from Open Critical Care / WHO, CC BY 4.0',
+      );
+      w.unmount();
+    }
+  });
+});
+
+describe('the BVM page (owner, Nov 2026)', () => {
+  it('Hypoventilation sends the hands to it from the step that starts bagging', async () => {
+    const w = mountDetail('hypoventilation');
+    const step = w
+      .findAll('ol.steps > .step')
+      .find((st) => st.find('.step-text').text().startsWith('Still breathing poorly'))!;
+    const links = step.findAll('.step-link');
+    expect(links.map((l) => l.text())).toEqual(['Go to BVM ›']);
+    await links[0]!.trigger('click');
+    await flushPromises();
+    expect(w.router.currentRoute.value.path).toBe('/quick-reference/bvm');
+    w.unmount();
+  });
+
+  it('carries the Call 911 card, its signs, and every step in order', () => {
+    const w = mountDetail('bvm');
+    expect(w.get('a.call-911').attributes('href')).toBe('tel:911');
+    expect(w.get('h1').text()).toBe('BVM (Bag-Valve-Mask)');
+    expect(w.get('.signs').text()).toBe('SpO₂ falling · slow or absent breaths');
+    expect(w.findAll('ol.steps > .step .step-text').map((t) => t.text())).toEqual(
+      findProtocol('bvm')!.steps.map((s) => s.text),
+    );
+    w.unmount();
+  });
+
+  it('gives nothing to draw up, and logs only the times the other pages log', async () => {
+    const w = mountDetail('bvm');
+    expect(w.find('.drug-callout').exists()).toBe(false);
+    await w.find('.log-unlock').trigger('click');
+    // No pill of its own: the reversals are logged from the pages that draw them.
+    expect(w.findAll('.ui-drug-btn-dose').map((d) => d.text())).toEqual([
+      '911 called',
+      'EMS arrived',
+      'CPR started',
+      'EMS arrived',
+    ]);
     w.unmount();
   });
 });

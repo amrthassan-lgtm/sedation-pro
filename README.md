@@ -27,7 +27,7 @@ screen, works offline, and updates itself whenever a change is published.
   wait, longer after reversal), provider signature.
 - **Clinical note.** Narrative plus a chronological record of every event;
   print, share as PDF, or file it straight into the Open Dental chart.
-- **Emergency protocols.** 34 protocols reviewed against AHA 2025 and current
+- **Emergency protocols.** 35 protocols reviewed against AHA 2025 and current
   specialty guidance, with drug draw-up volumes, syringe sizes, mix steps,
   live stock status, and links between related protocols.
 - **Drug inventory.** The crash-cart and sedation-cart stock with expiry
