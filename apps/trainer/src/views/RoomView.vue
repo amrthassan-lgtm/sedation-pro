@@ -318,11 +318,23 @@ const vFocus = { mounted: (el: HTMLElement) => el.focus() };
   gap: var(--sp-2);
 }
 /*
+ * With the bag's pad up the scene takes the height that is left, and the
+ * figure is drawn to fit it: smaller, never cut off.
+ */
+.room.is-bagging .scene {
+  grid-template-rows: minmax(0, 1fr);
+}
+.room.is-bagging .scene-figure {
+  align-self: stretch;
+  min-height: 0;
+}
+/*
  * On a short screen the bag's pad has to fit without pushing the cart off
  * it. The room gives up height everywhere but the monitor, which is already
- * as short as it can be read.
+ * as short as it can be read. A narrow screen counts as short sooner: there
+ * the line under the pad is two lines deep.
  */
-@media (max-height: 900px) {
+@media (max-height: 900px), (max-width: 700px) and (max-height: 1000px) {
   .room.is-bagging .scene {
     min-height: 0;
     padding-block: var(--sp-2);

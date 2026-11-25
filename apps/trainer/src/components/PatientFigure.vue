@@ -78,13 +78,17 @@ const breathSeconds = computed(() => (props.rr > 0 ? `${(60 / props.rr).toFixed(
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--sp-1);
   min-width: 0;
 }
+/* Given less height than it would take, the drawing is made smaller and the line under it kept. */
 svg {
+  flex: 0 1 auto;
   width: 100%;
   max-width: 132px;
   height: auto;
+  min-height: 0;
 }
 .gown {
   fill: var(--color-surface-overlay);

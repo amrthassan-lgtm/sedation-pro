@@ -39,18 +39,31 @@ import type {
 } from './types';
 import { numberInStep, phraseInStep } from './protocol';
 
+const BREATH_STEP = 'just enough to see the chest rise';
+
 /**
  * The breath as the BVM page writes it: one every so many seconds, each over
  * so long. Read from the page, so the bag and its pacer keep no number of
  * their own and follow a reworded page.
  */
 export const BREATH = {
-  everySec: numberInStep(
-    'bvm',
-    'just enough to see the chest rise',
-    /1 breath every (\d+) seconds/,
-  ),
-  overSec: numberInStep('bvm', 'just enough to see the chest rise', /each over (\d+) second/),
+  everySec: numberInStep('bvm', BREATH_STEP, /1 breath every (\d+) seconds/),
+  overSec: numberInStep('bvm', BREATH_STEP, /each over (\d+) second/),
+} as const;
+
+const nSeconds = (n: number): string => `${n} second${n === 1 ? '' : 's'}`;
+const EVERY_WORDS = `1 breath every ${nSeconds(BREATH.everySec)}`;
+const OVER_WORDS = `each over ${nSeconds(BREATH.overSec)}`;
+
+/**
+ * The same line's words for each of its two numbers, to print beside a
+ * breath that missed one. Borrowed, so a reworded page fails a test instead
+ * of leaving the pad quoting a line the page no longer has.
+ */
+export const BREATH_WORDS = {
+  every: phraseInStep('bvm', BREATH_STEP, EVERY_WORDS),
+  over: phraseInStep('bvm', BREATH_STEP, OVER_WORDS),
+  both: phraseInStep('bvm', BREATH_STEP, `${EVERY_WORDS}, ${OVER_WORDS}`),
 } as const;
 
 /** Breaths a minute when someone is bagging as the page writes it. */
@@ -73,6 +86,29 @@ const BELLY_AFTER = 4;
 /** The monitor's breath rate is counted over this many of the latest squeezes. */
 const RATE_OVER_BREATHS = 4;
 
+/*
+ * How near the page's numbers a squeeze has to land to be the page's breath.
+ * Pacing for a thumb on a screen, not physiology: the gap within a quarter of
+ * the page's, the hold between half and one and a half times its length.
+ */
+const PACE_GAP = { from: BREATH.everySec * 0.75, to: BREATH.everySec * 1.25 } as const;
+const PACE_HOLD = { from: BREATH.overSec * 0.5, to: BREATH.overSec * 1.5 } as const;
+/** This many breaths in a row on pace, and the assistant will take the bag. */
+export const HAND_OVER_AFTER = 3;
+
+/**
+ * The gap from the breath before was the page's, near enough. The first
+ * breath since the bag came to hand has none before it to be measured from.
+ */
+export function gapOnPace(gap: number | null): boolean {
+  return gap === null || (gap >= PACE_GAP.from && gap <= PACE_GAP.to);
+}
+
+/** The squeeze was held for the page's length, near enough. */
+export function holdOnPace(held: number): boolean {
+  return held >= PACE_HOLD.from && held <= PACE_HOLD.to;
+}
+
 /** The cuff takes this long to inflate and read. */
 const CUFF_SECONDS = 20;
 /** The monitor cycles the cuff on its own this often. */
@@ -93,6 +129,11 @@ const SAMPLE_EVERY = 2;
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, n));
+}
+
+/** To the millisecond: finer than any thumb, and it keeps float dust out of a count of whole seconds. */
+function toMillis(seconds: number): number {
+  return Math.round(seconds * 1000) / 1000;
 }
 
 function approach(value: number, target: Target, dt: number): number {
@@ -144,6 +185,10 @@ export class Simulation {
   private hardBreaths = 0;
   private bellyUp = false;
   private nextAssistantBreathAt = 0;
+  /** Where in the log the player's present stretch of squeezes begins. */
+  private inHandFrom = 0;
+  private onPaceInARow = 0;
+  private handOverWon = false;
 
   private readonly toggles = new Set<string>();
   private readonly actions = new Map<string, ActionRecord>();
@@ -307,11 +352,31 @@ export class Simulation {
     return this.assistantSpans.map((s) => ({ from: s.from, to: s.to ?? this.time }));
   }
 
-  /** Seconds since the player's last squeeze, or null before the first of this stretch. */
+  /** The latest squeeze of the player's present stretch on the bag, or null before its first. */
+  get lastBreath(): Breath | null {
+    return this.breathLog.length > this.inHandFrom ? (this.breathLog.at(-1) ?? null) : null;
+  }
+
+  /**
+   * Seconds since that squeeze began, or null before the first. From where it
+   * began, not where it was let go: the page's gap is breath to breath.
+   */
   get sinceBreath(): number | null {
-    const last = this.breathLog.at(-1);
-    const since = this.actions.get('bvm')?.last;
-    return last && since !== undefined && last.t >= since ? this.time - last.t : null;
+    const last = this.lastBreath;
+    return last ? toMillis(this.time - (last.t - last.held)) : null;
+  }
+
+  /** Breaths on pace in a row in the present stretch, up to now. */
+  get paceRun(): number {
+    return this.onPaceInARow;
+  }
+
+  /**
+   * The assistant will take the bag: the player has given enough breaths in a
+   * row on pace, at some point in this run. A story test asks for no proof.
+   */
+  get handOverEarned(): boolean {
+    return !this.pacedBag || this.handOverWon;
   }
 
   /**
@@ -368,12 +433,29 @@ export class Simulation {
     this.react('bvm', { kind: 'action', id: 'bvm', on: true });
   }
 
-  /** One squeeze of the bag by the player, held for `heldSec`. */
+  /**
+   * Nothing of the player's to measure the next breath from: the bag has just
+   * come into their hand, or the clock has just jumped. The count of breaths
+   * on pace in a row starts again with it.
+   */
+  private newStretch(): void {
+    this.inHandFrom = this.breathLog.length;
+    this.onPaceInARow = 0;
+  }
+
+  /** One squeeze of the bag by the player, held for `heldSec` and let go now. */
   squeeze(heldSec: number): boolean {
     if (this.finished || !this.toggles.has('bvm') || this.bagHolder !== 'player') return false;
     const before = this.breathLog.at(-1);
     const held = clamp(heldSec, 0.1, 10);
-    this.breathLog.push({ t: this.time, held });
+    const since = this.sinceBreath;
+    // This squeeze began `held` ago: the gap is start to start.
+    const gap = since === null ? null : toMillis(Math.max(0, since - held));
+    const onPace = gapOnPace(gap) && holdOnPace(held);
+    this.onPaceInARow = onPace ? this.onPaceInARow + 1 : 0;
+    const towardHandOver = onPace && !this.handOverWon ? this.onPaceInARow : null;
+    if (this.onPaceInARow >= HAND_OVER_AFTER) this.handOverWon = true;
+    this.breathLog.push({ t: this.time, held, gap, onPace, towardHandOver });
     this.strain(
       held > TOO_LONG_SEC || (before !== undefined && this.time - before.t < TOO_SOON_SEC),
     );
@@ -383,9 +465,13 @@ export class Simulation {
     return true;
   }
 
-  /** Hand the bag to the assistant, or take it back. */
-  handBag(to: BagHolder): void {
-    if (this.finished || !this.toggles.has('bvm') || this.bagHolder === to) return;
+  /**
+   * Hand the bag to the assistant, or take it back. She takes it only once
+   * the hand-over is earned; false when the bag stayed where it was.
+   */
+  handBag(to: BagHolder): boolean {
+    if (this.finished || !this.toggles.has('bvm') || this.bagHolder === to) return false;
+    if (to === 'da' && !this.handOverEarned) return false;
     this.bagHolder = to;
     this.timeline.push({
       t: this.time,
@@ -401,9 +487,11 @@ export class Simulation {
       if (this.voiceTotal === saidBefore) this.say({ who: 'DA', line: 'I have the bag.' });
     } else {
       this.closeAssistantSpan();
+      this.newStretch();
     }
     this.holdToggles();
     this.beats += 1;
+    return true;
   }
 
   private closeAssistantSpan(): void {
@@ -672,6 +760,8 @@ export class Simulation {
     this.nibp = { sbp: Math.round(this.body.sbp), dbp: Math.round(this.body.dbp), at: this.time };
     this.cuffDoneAt = null;
     this.nextAutoCuff = this.time + CUFF_INTERVAL;
+    // The minutes skipped were not a gap between two of the player's breaths.
+    this.newStretch();
     // No waveform before the cut and none after: the apnea alarm is still on when the story resumes.
     this.noWaveformSince = this.body.etco2 === null ? (this.noWaveformSince ?? this.time) : null;
     this.lowest = Math.min(this.lowest, this.body.spo2);
@@ -718,6 +808,7 @@ export class Simulation {
       const silent = id === 'bvm' && turningOn && this.bagHolder === 'player';
       if (id === 'bvm') {
         this.bagLinePending = silent;
+        if (turningOn && this.bagHolder === 'player') this.newStretch();
         if (this.bagHolder === 'da') {
           if (turningOn) {
             this.assistantSpans.push({ from: this.time, to: null });

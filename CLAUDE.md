@@ -290,16 +290,30 @@ the clinical app and must stay that way:
 - **The room is never left behind the debrief.** Opening the room starts a
   run, so the debrief replaces it in the history; Back must not start one. A
   call-out never undoes: an act that is on opens its drawer instead.
-- **The bag is the player's to squeeze (owner approved the pacer, Nov 2026).**
+- **The bag is the player's to squeeze, and the pad keeps the page's time
+  (owner asked for the timer, the hint and the earned hand-over, Nov 2026).**
   In the room the engine runs with `pacedBag`: a tap on BVM puts the bag in
   the player's hand, each press of `BagPad.vue` is one breath, and "bagging"
   to a story (`ctx.on('bvm')`) means air went in within the last breath and a
-  half, or the assistant has the bag ("DA takes the bag"). A scored run shows
-  no ring and no line; a practice run shows both. The gap and the length are
-  read from the BVM page's own sentence (`BREATH` in `engine/engine.ts`), and
-  the debrief draws the squeezes as facts (`BreathStrip.vue`), never as
-  advice. A story test leaves `pacedBag` off, which is the assistant on the
-  bag from the start. No sound: the pacer keeps the alarms-only rule.
+  half, or the assistant has the bag. While the bag is in the player's hand
+  the timer is always there, in a scored run as in a practice one: a ring
+  that fills over the page's gap from where the last squeeze began and reads
+  as due once it has passed, and a fill that crosses the button to a mark at
+  the page's breath length. After each breath one line states the fact
+  ("3 s since the last breath", "Held 0.4 s") beside the page's own words for
+  what it missed (`BREATH_WORDS`, borrowed with `phraseInStep`), or "On
+  pace": never "too fast", never advice. What is on pace is the engine's to
+  say, not the pad's (`gapOnPace`, `holdOnPace`: tolerances hung on the
+  page's numbers, the gap measured from where one squeeze began to where the
+  next did). The assistant takes the bag only once the player has given three
+  breaths in a row on pace (`HAND_OVER_AFTER`, `handOverEarned`); earned, it
+  stays earned for the run. A practice run prints the page's whole line as
+  well. The gap and the length are read from the BVM page's own sentence
+  (`BREATH` in `engine/engine.ts`), and the debrief draws the squeezes as
+  facts (`BreathStrip.vue`: solid on pace, outlined off it), never as advice.
+  A story test leaves `pacedBag` off, which is the assistant on the bag from
+  the start with nothing to earn. No sound: the pacer keeps the alarms-only
+  rule.
 - **A bag moves air only through a way in.** In "Shallow" a jaw thrust held
   or an NPA in; in "Stridor" the pack out as well (`bagMovesAir`,
   `bagNeedsWayIn` in `scenarios/shared.ts`). Without one the assistant says

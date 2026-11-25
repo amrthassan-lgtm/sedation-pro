@@ -332,10 +332,22 @@ export type BagHolder = 'player' | 'da';
 
 /** One squeeze of the bag by the player. */
 export interface Breath {
-  /** Scenario seconds when it was given. */
+  /** Scenario seconds when it was given: the moment the bag was let go. */
   readonly t: number;
   /** How long the bag was held squeezed, in seconds. */
   readonly held: number;
+  /**
+   * Seconds from where the squeeze before it began to where this one did.
+   * Null for the first since the bag came into the player's hand.
+   */
+  readonly gap: number | null;
+  /** Its gap and its hold both landed on the BVM page's numbers, near enough. */
+  readonly onPace: boolean;
+  /**
+   * Its place in the run of breaths on pace that earns the hand-over: 1, 2,
+   * 3. Null when it counted toward nothing: off pace, or already earned.
+   */
+  readonly towardHandOver: number | null;
 }
 
 /** What the monitor shows. Derived by the engine; screens only draw it. */
