@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import ActionDock from '@/components/ActionDock.vue';
+import BagPad from '@/components/BagPad.vue';
 import BenchSheet from '@/components/BenchSheet.vue';
 import BottomSheet from '@/components/BottomSheet.vue';
 import DeviceSheet from '@/components/DeviceSheet.vue';
@@ -99,6 +100,16 @@ const now = computed(() =>
 
 const masked = computed(() => run.isOn('bvm') || run.isOn('cpap'));
 
+/** The player's own hand on the bag: the chest then moves with each squeeze and not by itself. */
+const squeezing = ref(false);
+const bagInHand = computed(
+  () => run.isOn('bvm') && run.bagHeldBy.value === 'player' && !run.ending.value,
+);
+/** A squeeze raises the chest only when the breath goes in. When it does not, he breathes as he was. */
+const chestLift = computed(() =>
+  bagInHand.value && run.breathGoesIn.value ? squeezing.value : null,
+);
+
 function pick(entry: CartEntry): void {
   if (entry.kind === 'action') run.act(entry.id);
   else if (entry.kind === 'device') openDevice(entry.id);
@@ -134,7 +145,7 @@ const vFocus = { mounted: (el: HTMLElement) => el.focus() };
 </script>
 
 <template>
-  <main class="room">
+  <main class="room" :class="{ 'is-bagging': run.isOn('bvm') && !run.ending.value }">
     <header class="room-head">
       <span class="room-title">“{{ scenario.title }}”</span>
       <span v-if="run.practice" class="tag">Practice</span>
@@ -169,6 +180,8 @@ const vFocus = { mounted: (el: HTMLElement) => el.focus() };
         :look="run.look.value"
         :rr="run.monitor.value.rr"
         :mask="masked"
+        :lift="chestLift"
+        :belly="run.belly.value"
       />
       <div class="scene-story">
         <p class="eyebrow">{{ scenario.patient.name }}</p>
@@ -193,6 +206,13 @@ const vFocus = { mounted: (el: HTMLElement) => el.focus() };
         </div>
       </div>
     </section>
+
+    <BagPad
+      v-if="run.isOn('bvm') && !run.ending.value"
+      :run="run"
+      :coached="settings.coached"
+      @squeezing="(down) => (squeezing = down)"
+    />
 
     <button type="button" class="now" @click="sheet = { kind: 'timeline' }">
       <span v-for="label in now" :key="label" class="chip">{{ label }}</span>
@@ -292,8 +312,27 @@ const vFocus = { mounted: (el: HTMLElement) => el.focus() };
   /* Without this the one column takes the call-out input's own width and the
      room is wider than a phone as soon as the 911 button grows. */
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(236px, 1fr) auto auto auto auto;
+  /* The bag's pad is a row only while the bag is on, so the rows after the monitor are not counted out. */
+  grid-template-rows: auto minmax(236px, 1fr);
+  grid-auto-rows: auto;
   gap: var(--sp-2);
+}
+/*
+ * On a short screen the bag's pad has to fit without pushing the cart off
+ * it. The room gives up height everywhere but the monitor, which is already
+ * as short as it can be read.
+ */
+@media (max-height: 900px) {
+  .room.is-bagging .scene {
+    min-height: 0;
+    padding-block: var(--sp-2);
+  }
+  .room.is-bagging .scene-text {
+    font-size: var(--type-body);
+  }
+  .room.is-bagging :deep(.tile) {
+    min-height: 48px;
+  }
 }
 .room-head {
   display: flex;

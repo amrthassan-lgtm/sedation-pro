@@ -6,7 +6,7 @@ import { Simulation } from '@/engine/engine';
 import { gradeRun, resolveRef } from '@/engine/grade';
 
 import { SCENARIOS, findScenario } from './index';
-import { untilEnd } from './testing';
+import { drawAndGive, untilEnd } from './testing';
 
 const ACTION_IDS = new Set(CART_ACTIONS.map((a) => a.id));
 const DEVICE_IDS = new Set(CART_DEVICES.map((d) => d.id));
@@ -161,11 +161,11 @@ describe('every scenario', () => {
         }
       };
       const sim = new Simulation(scenario);
-      for (const phase of Object.values(scenario.phases)) {
-        for (const t of phase.transitions) {
-          collect(typeof t.beat === 'function' ? t.beat(sim.run) : t.beat);
-        }
-      }
+      const all = [
+        ...(scenario.always ?? []),
+        ...Object.values(scenario.phases).flatMap((p) => p.transitions),
+      ];
+      for (const t of all) collect(typeof t.beat === 'function' ? t.beat(sim.run) : t.beat);
       for (const key of Object.keys(scenario.reactions ?? {})) {
         const [kind, rest] = key.includes(':') ? key.split(':') : ['plain', key];
         if (kind === 'give' || kind === 'draw') expect(VIAL_KEYS, key).toContain(rest);
@@ -272,6 +272,81 @@ describe('every scenario', () => {
           if (sim.forgiving) expect(sim.ending.outcome, `seed ${seed}`).not.toBe('arrest');
         }
       }
+    },
+  );
+
+  it.each(SCENARIOS.map((s) => [s.id, s] as const))(
+    '%s: an ambulance that was called ends the run eight minutes after the call, even when nothing else can',
+    (_id, scenario) => {
+      // Take-your-time mode: he cannot be lost, so only the ambulance can end a run left alone.
+      const sim = new Simulation(scenario, { forgiving: true });
+      sim.tick(1);
+      sim.act('call_911');
+      expect(untilEnd(sim, 600)).toBe(true);
+      expect(sim.t).toBeCloseTo(481, 0);
+      expect(sim.ending).toMatchObject({ outcome: 'handover', title: 'Handed over to EMS' });
+      expect(sim.ending?.text).toMatch(/^He leaves with EMS\. /);
+      expect(sim.scene).toMatch(/^EMS is at the door with a stretcher\. /);
+      expect(sim.log.at(-1)?.text).toBe('EMS on scene');
+      // Handed over untreated is never a clean run.
+      expect(gradeRun(scenario, sim).clean).toBe(false);
+    },
+  );
+
+  it.each(SCENARIOS.map((s) => [s.id, s] as const))(
+    '%s: whatever the team does, nobody is still waiting for the ambulance once its eight minutes are up',
+    (_id, scenario) => {
+      // EMS is already in the room, or a run-ending consequence is seconds from closing.
+      const afterTheDoor = new Set(['handover', 'overdose', 'paralysed']);
+      const actions = CART_ACTIONS.map((a) => a.id);
+      const devices = CART_DEVICES.map((d) => d.id);
+      const vials = CART_VIALS.map((v) => v.key);
+      for (let seed = 1; seed <= 80; seed += 1) {
+        let state = seed * 2_654_435_761;
+        const next = (n: number): number => {
+          state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+          return state % n;
+        };
+        const pick = <T>(list: ReadonlyArray<T>): T => list[next(list.length)]!;
+        const sim = new Simulation(scenario, { forgiving: seed % 2 === 0 });
+        sim.tick(1 + next(60));
+        if (!sim.ending) sim.act('call_911');
+        for (let step = 0; step < 220 && !sim.ending; step += 1) {
+          const roll = next(10);
+          if (sim.prompt && roll < 4) sim.answer(pick(sim.prompt.options).id);
+          else if (roll < 5) sim.act(pick(actions));
+          else if (roll === 5) sim.useDevice(pick(devices), 1 + next(8));
+          else if (roll === 6) {
+            const id = sim.pickUpSyringe(pick([1, 3, 10] as const));
+            sim.drawFromVial(id, pick(vials), (1 + next(30)) / 10);
+            sim.give(id, (1 + next(30)) / 10, next(2) === 0 ? 'IV' : 'IM');
+          }
+          sim.tick(1 + next(6));
+          const called = sim.run.at('call_911');
+          if (!sim.ending && called !== null && sim.t > called + 8 * 60 + 1) {
+            expect(afterTheDoor, `seed ${seed}: in "${sim.phase}" at ${sim.t}`).toContain(
+              sim.phase,
+            );
+          }
+        }
+      }
+    },
+  );
+
+  it.each(SCENARIOS.map((s) => [s.id, s] as const))(
+    '%s: more sedative after the scene opens slows his breathing and costs him saturation',
+    (_id, scenario) => {
+      const plain = new Simulation(scenario);
+      const sim = new Simulation(scenario);
+      drawAndGive(sim, 'fentanyl', 2);
+      drawAndGive(sim, 'midazolam', 1);
+      for (let i = 0; i < 80; i += 1) {
+        plain.tick(0.25);
+        sim.tick(0.25);
+      }
+      expect(sim.phase).toBe(plain.phase);
+      expect(sim.monitor.rr).toBeLessThan(plain.monitor.rr);
+      expect(sim.run.vitals.spo2).toBeLessThan(plain.run.vitals.spo2);
     },
   );
 

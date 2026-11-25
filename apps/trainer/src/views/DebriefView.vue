@@ -4,10 +4,12 @@ import { findProtocol } from '@sedation-pro/clinical';
 import { useRouter } from 'vue-router';
 
 import { unlockAlarms } from '@/audio/alarm';
+import BreathStrip from '@/components/BreathStrip.vue';
 import FlightRecorder from '@/components/FlightRecorder.vue';
 import { formatMass } from '@/engine/dose';
 import type { DebriefRow, RowResult } from '@/engine/grade';
 import { pageShortName } from '@/engine/protocol';
+import { pressureFell, pressureRange } from '@/engine/recorder';
 import type { DoseEvent } from '@/engine/types';
 import { findScenario } from '@/scenarios';
 import { lastRun, settings } from '@/session';
@@ -32,6 +34,7 @@ const STATUS: Readonly<Record<RowResult, string>> = {
   done: 'Done',
   partial: 'Partly done',
   missed: 'Not done',
+  wrong: 'Given, not as written',
   na: 'Not reached',
 };
 
@@ -90,6 +93,11 @@ const lastSpo2 = computed(() => {
   return prev ? `Last run ${prev.lowestSpo2}%` : '';
 });
 
+/** Shown beside the saturation only in a run where the pressure fell. */
+const lowestPressure = computed(() =>
+  run && pressureFell(run.history) ? (pressureRange(run.history)?.low ?? null) : null,
+);
+
 const TAKEAWAY_HEADING = ['', 'One thing', 'Two things', 'Three things'] as const;
 const takeawayHeading = computed(
   () => `${TAKEAWAY_HEADING[debrief?.takeaways.length ?? 0] ?? 'Things'} for the team`,
@@ -125,6 +133,11 @@ function again(): void {
           <span class="stat-val mono">{{ debrief.lowestSpo2 }}%</span>
           <span class="stat-sub">{{ lastSpo2 }}</span>
         </div>
+        <div v-if="lowestPressure !== null" class="stat">
+          <span class="eyebrow">Lowest systolic</span>
+          <span class="stat-val mono">{{ lowestPressure }}</span>
+          <span class="stat-sub"></span>
+        </div>
         <div class="stat">
           <span class="eyebrow">Protocol steps</span>
           <span class="stat-val mono">{{ debrief.done }} of {{ debrief.of }}</span>
@@ -137,6 +150,7 @@ function again(): void {
         </div>
       </div>
       <FlightRecorder :history="run.history" :cuts="run.cuts" :log="run.log" />
+      <BreathStrip :breaths="run.breaths ?? []" :assistant-bagging="run.assistantBagging ?? []" />
     </section>
 
     <section v-if="debrief.takeaways.length > 0">
@@ -323,6 +337,9 @@ function again(): void {
   color: var(--color-warn);
 }
 .step.is-missed .step-state {
+  color: var(--color-danger);
+}
+.step.is-wrong .step-state {
   color: var(--color-danger);
 }
 /* An add-on the run did not need is information, not a miss. */

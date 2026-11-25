@@ -54,7 +54,10 @@ export interface Drive {
   /** `null` = no waveform (apnea with nobody bagging, or a shut airway). */
   readonly etco2: Target | null;
   readonly capno: Capno;
-  /** `closed` means bagging moves no air (complete laryngospasm). */
+  /**
+   * `closed` means bagging moves no air: complete laryngospasm, or, where a
+   * drill asks for it, an airway nobody has opened.
+   */
   readonly airway: 'open' | 'closed';
   readonly rhythm?: Rhythm;
   readonly look?: Look;
@@ -90,7 +93,11 @@ export interface Beat {
   readonly log?: string;
   readonly tone?: Tone;
   readonly flags?: ReadonlyArray<string>;
-  /** Cart actions this beat counts as done (the front desk calls 911 once told to). */
+  /**
+   * Cart actions this beat counts as done (the front desk calls 911 once told
+   * to). Also a marker of the story's own, for a later beat to read back
+   * with `ctx.last`: what was last said, and when.
+   */
   readonly counts?: ReadonlyArray<string>;
   /** Toggles this beat switches back off (an awake patient pushes the mask away). */
   readonly off?: ReadonlyArray<string>;
@@ -312,6 +319,17 @@ export interface NibpReading {
   readonly dbp: number;
   /** Scenario seconds when the cuff finished. */
   readonly at: number;
+}
+
+/** Who is squeezing the bag: the player, or the assistant once it is handed over. */
+export type BagHolder = 'player' | 'da';
+
+/** One squeeze of the bag by the player. */
+export interface Breath {
+  /** Scenario seconds when it was given. */
+  readonly t: number;
+  /** How long the bag was held squeezed, in seconds. */
+  readonly held: number;
 }
 
 /** What the monitor shows. Derived by the engine; screens only draw it. */

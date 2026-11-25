@@ -16,9 +16,14 @@ const rows = computed(() => CART_ACTIONS.filter((a) => a.group === props.group))
 
 <template>
   <BottomSheet :title="GROUP_LABELS[group]" @close="emit('close')">
-    <template #vitals
-      ><VitalsStrip :monitor="run.monitor.value" :said="run.caption.value"
-    /></template>
+    <template #vitals>
+      <VitalsStrip
+        :monitor="run.monitor.value"
+        :said="run.caption.value"
+        :prompt="run.prompt.value"
+        @answer="run.answer"
+      />
+    </template>
     <div class="group">
       <button
         v-for="a in rows"

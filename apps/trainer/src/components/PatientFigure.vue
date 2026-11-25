@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import { phraseInStep } from '@/engine/protocol';
 import type { Look } from '@/engine/types';
 
 /**
@@ -14,7 +15,21 @@ const props = defineProps<{
   rr: number;
   /** A mask held on the face (bagging or CPAP) instead of the nasal hood. */
   mask: boolean;
+  /**
+   * The player's hand is on the bag: the chest is up while it is squeezed
+   * and still between squeezes. `null` leaves the chest to breathe at `rr`.
+   */
+  lift?: boolean | null;
+  /** The belly is seen to rise. Said in words under the figure as well as drawn. */
+  belly?: boolean;
 }>();
+
+/** The sign as the BVM page names it. */
+const BELLY = phraseInStep('bvm', 'Belly rising', 'Belly rising');
+const byHand = computed(() => props.lift !== null && props.lift !== undefined);
+const note = computed(() =>
+  [props.look.note, props.belly ? BELLY.toLowerCase() : ''].filter(Boolean).join(' · '),
+);
 
 const skin = computed(() => `var(--skin-${props.look.color})`);
 const breathSeconds = computed(() => (props.rr > 0 ? `${(60 / props.rr).toFixed(2)}s` : '0s'));
@@ -22,13 +37,14 @@ const breathSeconds = computed(() => (props.rr > 0 ? `${(60 / props.rr).toFixed(
 
 <template>
   <figure class="patient">
-    <svg viewBox="0 0 120 120" role="img" :aria-label="`Patient: ${look.note ?? look.color}`">
+    <svg viewBox="0 0 120 120" role="img" :aria-label="`Patient: ${note || look.color}`">
       <g
         class="chest"
-        :class="{ 'is-still': rr <= 0 }"
+        :class="{ 'is-still': rr <= 0 || byHand, 'is-up': lift === true }"
         :style="{ animationDuration: breathSeconds }"
       >
         <path d="M14 120 C14 86 36 78 60 78 C84 78 106 86 106 120 Z" class="gown" />
+        <ellipse v-if="belly" class="belly" cx="60" cy="112" rx="22" ry="9" />
       </g>
       <rect x="50" y="62" width="20" height="20" rx="6" :fill="skin" />
       <circle cx="60" cy="42" r="25" :fill="skin" />
@@ -52,7 +68,7 @@ const breathSeconds = computed(() => (props.rr > 0 ? `${(60 / props.rr).toFixed(
       />
       <path v-if="!mask" d="M48 51 C30 52 22 60 16 70 M72 51 C90 52 98 60 104 70" class="tube" />
     </svg>
-    <figcaption class="patient-note">{{ look.note ?? '' }}</figcaption>
+    <figcaption class="patient-note">{{ note }}</figcaption>
   </figure>
 </template>
 
@@ -79,6 +95,15 @@ svg {
 }
 .chest.is-still {
   animation: none;
+  transition: transform 300ms var(--ease-standard);
+}
+.chest.is-up {
+  transform: scaleY(1.09);
+}
+.belly {
+  fill: var(--color-warn-soft);
+  stroke: var(--color-warn);
+  stroke-width: 1.5;
 }
 @keyframes breathe {
   50% {

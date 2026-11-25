@@ -447,7 +447,8 @@ describe('"Wheeze", played by the protocol', () => {
     advance(early, 2);
     early.useDevice('auviq_adult');
     untilEnd(early);
-    expect(row(early, 'steroid').result).toBe('missed');
+    // Given before the epinephrine, it is not this step: an add-on given, but not as written.
+    expect(row(early, 'steroid').result).toBe('wrong');
 
     const alt = start();
     firstRound(alt);
@@ -527,8 +528,9 @@ describe('"Wheeze": a step counts while it applied', () => {
     const sim = start();
     advance(sim, 14);
     sim.useDevice('auviq_adult');
-    sim.act('call_911');
     expect(until(sim, 'relapse')).toBe(true);
+    // Called only now, so the ambulance is not at the door before the line can be said.
+    sim.act('call_911');
     // Left to fall before the second dose: he settles from the sixties.
     advance(sim, 150);
     drawAndGive(sim, 'epinephrine', 0.3, { route: 'IM' });
@@ -543,5 +545,94 @@ describe('"Wheeze": a step counts while it applied', () => {
     expect(saidAt).not.toBeNull();
     expect(Math.round(saidAt!)).toBeGreaterThanOrEqual(80);
     expect(Math.round(saidAt!)).toBeLessThan(90);
+  });
+});
+
+describe('"Wheeze": an ambulance that was called arrives', () => {
+  it('the second dose never given: EMS arrives eight minutes after the call and takes him as he is', () => {
+    const sim = start();
+    firstRound(sim);
+    expect(until(sim, 'relapse')).toBe(true);
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.ending?.outcome).toBe('handover');
+    expect(sim.t - sim.run.at('call_911')!).toBeCloseTo(480, 0);
+    expect(sim.endingKey).toBe('ems_reacting');
+    expect(sim.ending).toEqual({
+      outcome: 'handover',
+      title: 'Handed over to EMS',
+      text: 'He leaves with EMS. He is still wheezing, and the hives have not faded.',
+    });
+    expect(sim.scene).toBe(
+      'EMS is at the door with a stretcher. He is still wheezing, and the hives have not faded.',
+    );
+    expect(sim.log.at(-1)).toMatchObject({ text: 'EMS on scene', tone: 'neutral' });
+    // He is taken as he is: nobody is asked where he goes.
+    expect(sim.prompt).toBeNull();
+    expect(sim.run.answer('disposition')).toBeNull();
+    expect(row(sim, 'second_im').result).toBe('missed');
+    expect(row(sim, 'er').result).toBe('na');
+    expect(gradeRun(wheeze, sim)).toMatchObject({ done: 5, of: 6, clean: false });
+  });
+
+  it('due inside the five-minute wait, EMS arrives under its own card to a man the first dose is holding', () => {
+    const sim = start();
+    advance(sim, 14);
+    sim.act('call_911');
+    advance(sim, 186);
+    sim.useDevice('auviq_adult');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.t - sim.run.at('call_911')!).toBeCloseTo(480, 0);
+    expect(sim.run.entered('relapse')).toBeNull();
+    expect(sim.cuts.map((c) => c.title)).toEqual(['EMS arrives']);
+    expect(sim.endingKey).toBe('ems_reacting');
+    expect(row(sim, 'second_im').result).toBe('na');
+  });
+
+  it('the word for his breathing is the Anaphylaxis page’s own', () => {
+    const step = findProtocol('anaphylaxis')!.steps.find((s) => s.text.includes('Albuterol'))!;
+    expect(step.text).toContain('wheezing');
+  });
+
+  it('settled and steady, he is still handed over with the question, exactly eight minutes after the call', () => {
+    const sim = start();
+    ideal(sim);
+    expect(sim.cuts.at(-1)?.title).toBe('EMS arrives');
+    expect(sim.run.entered('handover')! - sim.run.at('call_911')!).toBeCloseTo(480, 0);
+  });
+});
+
+describe('"Wheeze": a sedative acts on him here too', () => {
+  it('more sedative slows his breathing and costs him saturation', () => {
+    const plain = start();
+    const sim = start();
+    advance(plain, 14);
+    advance(sim, 14);
+    drawAndGive(sim, 'fentanyl', 2);
+    drawAndGive(sim, 'midazolam', 1);
+    advance(plain, 30);
+    advance(sim, 30);
+    expect(sim.monitor.rr).toBeLessThan(plain.monitor.rr);
+    expect(sim.run.vitals.spo2).toBeLessThan(plain.run.vitals.spo2);
+  });
+
+  it('the assistant says so, in the words she uses in every room', () => {
+    expect(wheeze.setup.join(' ')).toMatch(/Given: midazolam .* and fentanyl/);
+    const sim = start();
+    advance(sim, 14);
+    drawAndGive(sim, 'fentanyl', 1);
+    expect(sim.voices.at(-1)).toEqual({ who: 'DA', line: 'That’s more fentanyl going in, Doc.' });
+    expect(sim.log.at(-1)).toMatchObject({ text: 'Fentanyl 1.0 ml IV' });
+    drawAndGive(sim, 'midazolam', 0.2, { size: 1 });
+    expect(sim.voices.at(-1)).toEqual({ who: 'DA', line: 'That’s more midazolam going in, Doc.' });
+  });
+
+  it('once it has slowed him, a reversal drug is not met with "breathing fast, not slow"', () => {
+    const sim = start();
+    advance(sim, 14);
+    drawAndGive(sim, 'fentanyl', 2);
+    drawAndGive(sim, 'naloxone', 1);
+    expect(sim.voices.at(-1)).toEqual({ who: 'DA', line: 'Naloxone’s in.' });
+    drawAndGive(sim, 'flumazenil', 2);
+    expect(sim.voices.at(-1)).toEqual({ who: 'DA', line: 'Flumazenil’s in.' });
   });
 });

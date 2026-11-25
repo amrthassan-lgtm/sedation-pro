@@ -179,6 +179,15 @@ describe('the engine', () => {
     expect(sim.run.count('jaw_thrust')).toBe(1);
   });
 
+  it('a question is said out loud as well as shown, so a team with a drawer open hears it', () => {
+    const sim = new Simulation(scenario());
+    sim.act('call_911');
+    sim.tick(0.25);
+    expect(sim.prompt?.id).toBe('ask');
+    expect(sim.voices.at(-1)).toEqual({ who: 'EMS', line: 'Well?' });
+    expect(sim.lastVoiceAt).toBe(sim.t);
+  });
+
   it('marks the patient as bagged only while air is moving', () => {
     const sim = new Simulation(scenario());
     sim.act('call_911');

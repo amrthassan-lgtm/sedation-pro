@@ -1,21 +1,42 @@
-import { calloutAt, doseRangeOf, gaveProtocolDose, overProtocolDose } from '@/engine/protocol';
-import type { Ctx, Drive, Look, Reaction, Scenario } from '@/engine/types';
+import {
+  calloutAt,
+  doseRangeOf,
+  gaveProtocolDose,
+  overProtocolDose,
+  phraseInStep,
+} from '@/engine/protocol';
+import type { Ctx, Drive, Look, Phase, Scenario } from '@/engine/types';
 
 import { reachedAt, toward, within } from './helpers';
 import {
+  AIR_SEEN_GOING_IN,
+  airwayOpened,
+  type AsFound,
   baggedThroughParalysis,
   baggedUntilBreathing,
+  bagMovesAir,
+  bagNeedsWayIn,
   breathingWell,
+  chestLine,
   doseLine,
   doseOf,
+  emsArrives,
+  endingsAsFound,
   epinephrineOverdose,
+  FOUND,
   hypoxicHeartRate,
   MASK_HELD,
+  moreSedative,
   PARALYSIS_CUT,
+  paralysisSkip,
   pendingParalysis,
+  sedatable,
+  sedativeGiven,
   SUCCINYLCHOLINE,
   succinylcholineAsWritten,
   succinylcholineSoFar,
+  takenAsFound,
+  ventilatedDuring,
 } from './shared';
 
 /**
@@ -24,6 +45,8 @@ import {
  * still its id: run records are kept under the id.
  *
  * Graded against Hypoventilation, Oversedation (Opioid) and Laryngospasm.
+ * The bag is held to the BVM page: it moves air only through an opened
+ * airway (`bagNeedsWayIn`), in the snoring patient and the paralysed one.
  * The numbers below are pacing, not pharmacology: how fast the saturation
  * falls and how long a drug takes are tuned so the run is tense but fair in
  * real time. What counts as *correct* is never decided here. It comes from
@@ -42,8 +65,10 @@ const IM_ONSET = 120;
 /** A throat suctioned this recently is still clear when the spasm starts. */
 const SUCTION_STILL_CLEAR = 10;
 
-const OVERDOSE = epinephrineOverdose('normal', (ctx) =>
-  ctx.phase === 'spasm' ? 'shut' : ctx.phase === 'paralyzed' ? 'paralysed' : null,
+const OVERDOSE = epinephrineOverdose(
+  'normal',
+  (ctx) => (ctx.phase === 'spasm' ? 'shut' : ctx.phase === 'paralyzed' ? 'paralysed' : null),
+  bagMovesAir,
 );
 
 const SEDATED: Look = { color: 'pale', eyes: 'closed', note: 'slack jaw, snoring softly' };
@@ -62,11 +87,6 @@ function flumazenilHelping(ctx: Ctx): boolean {
   return at !== null && ctx.t - at >= 18;
 }
 
-/** More of what put him here, given after the scene opens. */
-function moreSedative(ctx: Ctx): boolean {
-  return ctx.given('fentanyl').length + ctx.given('midazolam').length > 0;
-}
-
 /**
  * Set when the throat is suctioned in the spasm, or was suctioned so close
  * before it that it was still clear. A flag and not a time: suction again
@@ -81,6 +101,14 @@ function suctionedForSpasm(ctx: Ctx): boolean {
 /** Only someone holding a bag or a mask can feel air go in, or be coughed against. */
 function maskHeld(ctx: Ctx): boolean {
   return ctx.on('bvm') || ctx.on('cpap');
+}
+
+/** The bag is what moves his chest in these two phases, so the assistant speaks of it there. */
+const BAG_BREATHES_FOR_HIM = ['hypo', 'paralyzed'] as const;
+
+/** Every phase with the BVM page's rule for the bag, and the sedative's effect, laid over its drive. */
+function bagAndSedative(phases: Readonly<Record<string, Phase>>): Record<string, Phase> {
+  return sedatable(bagNeedsWayIn(phases, BAG_BREATHES_FOR_HIM));
 }
 
 /**
@@ -104,13 +132,11 @@ function doneForSpasm(run: Ctx, action: string): boolean | null {
 }
 
 function hypoDrive(ctx: Ctx): Drive {
-  const bagging = ctx.on('bvm');
+  const bagging = bagMovesAir(ctx);
   const stimulated = within(ctx, 'stimulate', 6);
   const partly = flumazenilHelping(ctx);
-  const deeper = moreSedative(ctx);
   const airwayHelp = (ctx.on('jaw_thrust') ? 0.7 : 1) * (ctx.on('npa') ? 0.85 : 1);
-  const fall =
-    0.22 * (ctx.on('o2') ? 0.6 : 1) * airwayHelp * (partly ? 0.4 : 1) * (deeper ? 1.6 : 1);
+  const fall = 0.22 * (ctx.on('o2') ? 0.6 : 1) * airwayHelp * (partly ? 0.4 : 1);
   // A stimulated breath slows the fall. It never turns it around: only the bag does.
   const spo2Rate = bagging ? (ctx.on('o2') ? 0.55 : 0.4) : stimulated ? -fall * 0.3 : -fall;
   const low = ctx.vitals.spo2 < 86;
@@ -119,15 +145,7 @@ function hypoDrive(ctx: Ctx): Drive {
     hr: hypoxicHeartRate(ctx, low ? 52 : 58),
     sbp: toward(102, 0.05),
     dbp: toward(60, 0.05),
-    rr: stimulated
-      ? 8
-      : deeper
-        ? 2
-        : partly
-          ? 7
-          : ctx.phaseT < 10 && ctx.entered('paralyzed') === null
-            ? 6
-            : 4,
+    rr: stimulated ? 8 : partly ? 7 : ctx.phaseT < 10 && ctx.entered('paralyzed') === null ? 6 : 4,
     etco2: bagging ? toward(44, 1.2) : toward(68, 0.15),
     capno: 'normal',
     airway: 'open',
@@ -154,15 +172,38 @@ function called911InSpasm(run: Ctx): boolean | null {
   return called !== null && (breathing === null || called < breathing);
 }
 
-const sedativeGiven: Reaction = (_ctx, e) => {
-  const dose = doseOf(e);
-  if (!dose) return undefined;
-  return {
-    voice: { who: 'DA', line: `That’s more ${dose.drugName.toLowerCase()} going in, Doc.` },
-    log: doseLine(dose),
-    tone: 'bad',
-  };
-};
+const GIVEN = 'Given: midazolam 4 mg and fentanyl 50 mcg. Last dose six minutes ago.';
+/** Red in the log here: both pages this drill opens on say to stop sedatives. */
+const SEDATIVE_GIVEN = sedativeGiven(GIVEN, 'bad');
+
+/** How EMS finds him if they are at the door before the story is over. */
+const TAKEN: ReadonlyArray<AsFound> = [
+  {
+    key: 'ems_bagged',
+    seen: FOUND.bagged,
+    when: (ctx) => (ctx.phase === 'hypo' || ctx.phase === 'paralyzed') && ctx.on('bvm'),
+  },
+  {
+    key: 'ems_poorly',
+    seen: `He has not woken and is still ${phraseInStep(
+      'hypoventilation',
+      'Still breathing poorly',
+      'breathing poorly',
+    )}.`,
+    when: (ctx) => ctx.phase === 'hypo' && !ctx.on('bvm'),
+  },
+  {
+    key: 'ems_paralysed',
+    seen: FOUND.paralysed,
+    when: (ctx) => ctx.phase === 'paralyzed' && !ctx.on('bvm'),
+  },
+  { key: 'ems_no_air', seen: FOUND.noAir, when: (ctx) => ctx.phase === 'spasm' },
+  {
+    key: 'ems_awake',
+    seen: FOUND.awake,
+    when: (ctx) => ctx.phase === 'waking' || ctx.phase === 'breathing',
+  },
+];
 
 export const quiet: Scenario = {
   id: 'quiet',
@@ -174,7 +215,7 @@ export const quiet: Scenario = {
   setup: [
     'Extraction of #30. The tooth is out and you are placing sutures.',
     'IV: 22 G, right dorsal hand, D5W running.',
-    'Given: midazolam 4 mg and fentanyl 50 mcg. Last dose six minutes ago.',
+    GIVEN,
     'N₂O/O₂ by nasal hood. Edan monitor with capnography.',
   ],
   startsAtMin: 10 * 60 + 42,
@@ -204,10 +245,12 @@ export const quiet: Scenario = {
       to: 'paralyzed',
       beat: (ctx) => {
         const flags = pendingParalysis(ctx)?.flags ?? [];
-        const masked = maskHeld(ctx);
+        // Air is felt going in only through an airway someone has opened.
+        const masked = maskHeld(ctx) && airwayOpened(ctx);
         return ctx.phase === 'spasm'
           ? {
               flags,
+              ...(masked ? { counts: AIR_SEEN_GOING_IN } : {}),
               scene: masked
                 ? 'A fine flicker runs under the skin of his chest and shoulders. Then the bag gives: the cords have let go. He is not breathing at all now.'
                 : 'A fine flicker runs under the skin of his chest and shoulders, and the heaving stops. The cords have let go. He is not breathing at all now.',
@@ -225,9 +268,10 @@ export const quiet: Scenario = {
             };
       },
     },
+    ...emsArrives(TAKEN.map(takenAsFound), paralysisSkip),
   ],
 
-  phases: {
+  phases: bagAndSedative({
     hypo: {
       drive: hypoDrive,
       transitions: [
@@ -262,7 +306,8 @@ export const quiet: Scenario = {
         },
         {
           after: 26,
-          when: (ctx) => !ctx.on('bvm') && ctx.vitals.spo2 < 90,
+          // A bag that moves no air is not holding his saturation up either.
+          when: (ctx) => !bagMovesAir(ctx) && ctx.vitals.spo2 < 90,
           voice: { who: 'DA', line: 'Sats are dropping. What do you need?' },
         },
         {
@@ -273,7 +318,7 @@ export const quiet: Scenario = {
         },
         {
           after: 45,
-          when: (ctx) => ctx.on('bvm') && ctx.given('naloxone').length === 0,
+          when: (ctx) => bagMovesAir(ctx) && ctx.given('naloxone').length === 0,
           voice: { who: 'DA', line: 'I can keep bagging. Are we reversing him?' },
           coachedOnly: true,
         },
@@ -371,7 +416,7 @@ export const quiet: Scenario = {
 
     paralyzed: {
       drive: (ctx) => {
-        const bagging = ctx.on('bvm');
+        const bagging = bagMovesAir(ctx);
         return {
           spo2Rate: bagging ? 0.7 : -0.75,
           hr: hypoxicHeartRate(ctx, 92),
@@ -447,7 +492,7 @@ export const quiet: Scenario = {
 
     breathing: {
       drive: (ctx) => ({
-        spo2Rate: ctx.on('o2') || ctx.on('bvm') ? 0.6 : 0.25,
+        spo2Rate: ctx.on('o2') || bagMovesAir(ctx) ? 0.6 : 0.25,
         hr: toward(86, 1),
         sbp: toward(124, 0.5),
         dbp: toward(76, 0.4),
@@ -470,7 +515,7 @@ export const quiet: Scenario = {
     },
 
     [OVERDOSE.key]: OVERDOSE.phase,
-  },
+  }),
 
   reactions: {
     o2: (_ctx, e) =>
@@ -506,18 +551,10 @@ export const quiet: Scenario = {
           log: 'BVM: no air moving',
         };
       }
-      if (ctx.phase === 'paralyzed') {
-        return {
-          voice: { who: 'DA', line: 'Bagging. His chest is rising.' },
-          log: 'BVM: chest rising',
-          tone: 'good',
-        };
-      }
-      return {
-        voice: { who: 'DA', line: 'Bagging. His chest is rising.' },
-        log: 'BVM: chest rising',
-        tone: 'good',
-      };
+      // Where the bag has to raise his chest, it does so only through an opened
+      // airway. Anywhere else he is breathing, and the line is as it was.
+      const bagRaisesIt = BAG_BREATHES_FOR_HIM.some((phase) => phase === ctx.phase);
+      return chestLine(!bagRaisesIt || airwayOpened(ctx));
     },
 
     cpap: (ctx, e) =>
@@ -583,8 +620,8 @@ export const quiet: Scenario = {
       };
     },
 
-    'give:fentanyl': sedativeGiven,
-    'give:midazolam': sedativeGiven,
+    'give:fentanyl': SEDATIVE_GIVEN,
+    'give:midazolam': SEDATIVE_GIVEN,
 
     'give:succinylcholine': (ctx, e) => {
       const dose = doseOf(e);
@@ -633,6 +670,7 @@ export const quiet: Scenario = {
       text: 'His saturation fell too far for too long, and his pulse is gone. The run stops here.',
     },
     [OVERDOSE.key]: OVERDOSE.ending,
+    ...endingsAsFound(TAKEN),
   },
 
   rubric: [
@@ -664,7 +702,8 @@ export const quiet: Scenario = {
       id: 'bvm',
       ref: { protocol: 'hypoventilation', step: 'BVM, 1 breath every 6 seconds' },
       tier: 'core',
-      check: (run) => run.onDuring('bvm', 'hypo'),
+      // Squeezed on an unopened airway the whole time, it was not this step: no breath went in.
+      check: (run) => ventilatedDuring(run, 'hypo'),
       when: (run) => run.at('bvm'),
     },
     {
@@ -723,7 +762,7 @@ export const quiet: Scenario = {
         { quote: 'Jaw thrust', check: (run) => run.onDuring('jaw_thrust', 'hypo') },
         {
           quote: 'BVM if breathing slow or SpO₂ falling',
-          check: (run) => run.onDuring('bvm', 'hypo'),
+          check: (run) => ventilatedDuring(run, 'hypo'),
         },
       ],
     },

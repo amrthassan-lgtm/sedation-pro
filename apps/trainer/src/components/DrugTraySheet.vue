@@ -40,9 +40,14 @@ function left(id: string): string {
 
 <template>
   <BottomSheet title="Drug tray" @close="emit('close')">
-    <template #vitals
-      ><VitalsStrip :monitor="run.monitor.value" :said="run.caption.value"
-    /></template>
+    <template #vitals>
+      <VitalsStrip
+        :monitor="run.monitor.value"
+        :said="run.caption.value"
+        :prompt="run.prompt.value"
+        @answer="run.answer"
+      />
+    </template>
     <template v-if="run.tray.value.length > 0">
       <p class="eyebrow">Drawn up</p>
       <div class="group">

@@ -1,7 +1,7 @@
 import { reactive, shallowRef } from 'vue';
 
 import type { Debrief } from './engine/grade';
-import type { CutRecord, LogEntry, Sample } from './engine/types';
+import type { Breath, CutRecord, LogEntry, Sample } from './engine/types';
 
 /**
  * What the trainer keeps. Everything is under one prefix that the clinical
@@ -89,6 +89,10 @@ export interface FinishedRun {
   readonly history: ReadonlyArray<Sample>;
   readonly cuts: ReadonlyArray<CutRecord>;
   readonly log: ReadonlyArray<LogEntry>;
+  /** The squeezes the player gave the bag. Absent in a run saved before the pacer. */
+  readonly breaths?: ReadonlyArray<Breath>;
+  /** The stretches the assistant had the bag. */
+  readonly assistantBagging?: ReadonlyArray<{ readonly from: number; readonly to: number }>;
   /** The run before this one, for the comparison. */
   readonly previous: RunRecord | null;
   /** Take-your-time or coached runs are practice: shown, not recorded. */
