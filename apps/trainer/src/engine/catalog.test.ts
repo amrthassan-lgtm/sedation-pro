@@ -10,6 +10,7 @@ import {
   CART_DEVICES,
   CART_VIALS,
   findVial,
+  penControls,
   searchCart,
   spokenInstruction,
   vialForCallout,
@@ -197,5 +198,26 @@ describe('the pen that talks (owner, Nov 2026)', () => {
     expect(spokenInstruction('pen_peds')).toBeNull();
     expect(spokenInstruction('albuterol')).toBeNull();
     expect(spokenInstruction('no-such-device')).toBeNull();
+  });
+
+  it("the Auvi-Q's buttons and its hold are the note's own steps", () => {
+    const notes = EMERGENCY_PROTOCOLS.find((p) => p.id === 'anaphylaxis')!.steps.find((s) =>
+      s.text.includes('Auvi-Q 0.3 first'),
+    )!.drug!.notes!;
+    const pen = penControls('auviq_adult');
+    expect(pen).toEqual({
+      pull: 'Pull off the red guard',
+      off: 'Red guard off',
+      press: 'Press firmly into the outer thigh, hold 2 seconds',
+      holdSeconds: 2,
+    });
+    expect(notes).toContain(pen.pull.toLowerCase());
+    expect(notes).toContain(pen.press.toLowerCase());
+  });
+
+  it('the pediatric pen is in no protocol, so its sheet names no site, grip or count', () => {
+    const pen = penControls('pen_peds');
+    expect(pen.press).toBe('Press and hold to give');
+    expect(`${pen.pull} ${pen.off} ${pen.press}`).not.toMatch(/thigh|firmly|second|red guard|\d/i);
   });
 });

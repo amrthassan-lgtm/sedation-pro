@@ -640,6 +640,32 @@ describe('"Stridor": what the screen says is true when it says it', () => {
     expect(until(sim, 'settling', 5)).toBe(true);
   });
 
+  it('a 911 call made once he is breathing on his own again is too late to count', () => {
+    const sim = start();
+    toSilent(sim);
+    firstThree(sim);
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(until(sim, 'paralyzed')).toBe(true);
+    sim.act('bvm');
+    expect(until(sim, 'breathing')).toBe(true);
+    sim.act('call_911');
+    expect(untilEnd(sim)).toBe(true);
+    expect(row(sim, 'call_911').result).toBe('missed');
+    expect(gradeRun(stridor, sim).clean).toBe(false);
+  });
+
+  it('the same call made while he is paralysed counts', () => {
+    const sim = start();
+    toSilent(sim);
+    firstThree(sim);
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(until(sim, 'paralyzed')).toBe(true);
+    sim.act('bvm');
+    sim.act('call_911');
+    expect(untilEnd(sim)).toBe(true);
+    expect(row(sim, 'call_911').result).toBe('done');
+  });
+
   it('the pack coming out with the mask already on is read before the standing scene returns', () => {
     const sim = start();
     toCrowing(sim);
@@ -650,7 +676,7 @@ describe('"Stridor": what the screen says is true when it says it', () => {
     expect(sim.scene).toContain('The pack comes out soaked');
     advance(sim, 4);
     expect(sim.scene).toBe(
-      'Both hands on the mask, steady pressure on the bag. Each crow is softer than the last.',
+      'Tight mask seal, steady gentle pressure on the bag. Each crow is softer than the last.',
     );
   });
 

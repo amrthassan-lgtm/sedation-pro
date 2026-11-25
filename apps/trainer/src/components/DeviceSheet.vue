@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
-import { findDevice, spokenInstruction } from '@/engine/catalog';
-import { calloutAt } from '@/engine/protocol';
+import { findDevice, penControls, spokenInstruction } from '@/engine/catalog';
 import type { Run } from '@/composables/useRun';
 
 import BottomSheet from './BottomSheet.vue';
@@ -18,19 +17,8 @@ const emit = defineEmits<{ (e: 'close'): void }>();
 const device = computed(() => findDevice(props.deviceId));
 const isPen = computed(() => device.value?.route === 'IM');
 
-/** How long to hold comes from the protocol's own instruction for the pen. */
-const HOLD_SECONDS = (() => {
-  const notes = calloutAt('anaphylaxis', 'Auvi-Q 0.3 first').notes ?? '';
-  const m = /hold (\d+) seconds/.exec(notes);
-  return m ? Number(m[1]) : 2;
-})();
-
 /** Only the Auvi-Q's own steps are in the protocol. Another pen gets no technique from the trainer. */
-const guard = computed(() =>
-  props.deviceId === 'auviq_adult'
-    ? { pull: 'Pull off the red guard', off: 'Red guard off' }
-    : { pull: 'Take the safety off', off: 'Safety off' },
-);
+const pen = computed(() => penControls(props.deviceId));
 
 /**
  * The adult Auvi-Q talks the moment it leaves its case, as the real one does
@@ -51,7 +39,7 @@ function press(): void {
   if (!guardOff.value) return;
   since = performance.now();
   const step = (now: number): void => {
-    held.value = Math.min(1, (now - since) / (HOLD_SECONDS * 1000));
+    held.value = Math.min(1, (now - since) / (pen.value.holdSeconds * 1000));
     if (held.value >= 1) {
       try {
         navigator.vibrate?.(120);
@@ -102,7 +90,7 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
         :disabled="guardOff"
         @click="guardOff = true"
       >
-        {{ guardOff ? guard.off : guard.pull }}
+        {{ guardOff ? pen.off : pen.pull }}
       </button>
       <button
         type="button"
@@ -121,7 +109,7 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
         @contextmenu.prevent
       >
         <span class="hold-fill" aria-hidden="true"></span>
-        <span class="hold-text">Press into the outer thigh and hold</span>
+        <span class="hold-text">{{ pen.press }}</span>
       </button>
     </template>
 

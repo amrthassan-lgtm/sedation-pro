@@ -1,5 +1,5 @@
 import { parseConcentrationMcgPerMl } from '@/engine/dose';
-import { calloutAt, doseRangeOf, gaveProtocolDose } from '@/engine/protocol';
+import { calloutAt, doseRangeOf, gaveProtocolDose, phraseInStep } from '@/engine/protocol';
 import type {
   Capno,
   Ctx,
@@ -34,6 +34,17 @@ const STOCK_EPI_MCG_PER_ML = (() => {
 })();
 /** The thigh dose. In a vein it is an overdose at any dilution. */
 const EPI_IM_DOSE_MCG = doseRangeOf(EPI_PEN).minMcg;
+
+/**
+ * The mask held against a spasm, in the Laryngospasm step's own words. The
+ * BVM page draws how one or two people hold a mask; a scene that described a
+ * grip of its own would teach a third.
+ */
+export const MASK_HELD = `${phraseInStep('laryngospasm', 'Tight mask seal', 'Tight mask seal')}, ${phraseInStep(
+  'laryngospasm',
+  'Tight mask seal',
+  'steady gentle pressure',
+)} on the bag.`;
 
 /** The protocol's own warning, quoted so a debrief can mark it on the step it sits in. */
 export const NEVER_STOCK_EPI_IV = 'NEVER 1 mg/ml IV in a patient with a pulse';

@@ -10,6 +10,7 @@ import {
   doseOf,
   epinephrineOverdose,
   hypoxicHeartRate,
+  MASK_HELD,
   PARALYSIS_CUT,
   pendingParalysis,
   SUCCINYLCHOLINE,
@@ -49,8 +50,7 @@ const OVERDOSE = epinephrineOverdose('normal', (ctx) =>
   ctx.phase === 'silent' ? 'shut' : ctx.phase === 'paralyzed' ? 'paralysed' : null,
 );
 
-const EASING =
-  'Both hands on the mask, steady pressure on the bag. Each crow is softer than the last.';
+const EASING = `${MASK_HELD} Each crow is softer than the last.`;
 
 const STIRRING: Look = { color: 'pink', eyes: 'closed', note: 'stirring, swallowing' };
 const QUIET_AGAIN: Look = { color: 'pink', eyes: 'closed', note: 'breathing quietly' };
@@ -506,14 +506,13 @@ export const stridor: Scenario = {
           scene:
             ctx.at('suction') !== null
               ? EASING
-              : 'Both hands on the mask, steady pressure on the bag. The pack is still in his throat, and he crows against the mask.',
+              : `${MASK_HELD} The pack is still in his throat, and he crows against the mask.`,
           log: 'Tight seal, steady pressure',
         };
       }
       if (ctx.phase === 'silent') {
         return {
-          scene:
-            'Both hands on the mask, steady pressure on the bag. A thin, high squeak, then silence again.',
+          scene: `${MASK_HELD} A thin, high squeak, then silence again.`,
           log: 'Tight seal, steady pressure',
         };
       }
@@ -725,7 +724,10 @@ export const stridor: Scenario = {
       // The page lists the call after the succinylcholine. A spasm that broke
       // before that step leaves this line unmarked unless the call was made.
       check: (run) => {
-        if (run.at('call_911') !== null) return true;
+        const called = run.at('call_911');
+        const breathing = run.entered('breathing');
+        // Through the paralysis it counts, however early. Once he breathes on his own it is too late.
+        if (called !== null && (breathing === null || called < breathing)) return true;
         const reached = run.entered('silent') !== null || run.given('succinylcholine').length > 0;
         return reached ? false : null;
       },

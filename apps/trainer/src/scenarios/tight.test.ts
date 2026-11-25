@@ -405,3 +405,110 @@ describe('"Cough": after the pen', () => {
     expect(debrief.clean).toBe(false);
   });
 });
+
+describe('"Cough": a step counts while it applied', () => {
+  /** The inhaler, the pen and the call on time, and nothing else until he is better. */
+  function bareToBetter(sim: Simulation): void {
+    advance(sim, 12);
+    sim.useDevice('albuterol', 4);
+    expect(until(sim, 'severe')).toBe(true);
+    advance(sim, 1);
+    sim.useDevice('auviq_adult');
+    sim.act('call_911');
+    expect(until(sim, 'better')).toBe(true);
+  }
+
+  it('stopping, sitting him up, clearing his mouth and oxygen once he is better are too late', () => {
+    const sim = start();
+    bareToBetter(sim);
+    advance(sim, 15);
+    sim.act('stop');
+    sim.act('pos_sit_up');
+    sim.act('suction');
+    sim.act('o2');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.endingKey).toBe('handover');
+    expect(row(sim, 'stop').parts).toEqual([
+      { quote: 'Stop the procedure', result: 'missed' },
+      { quote: 'Sit upright', result: 'missed' },
+      { quote: 'remove packs', result: 'missed' },
+    ]);
+    expect(row(sim, 'o2').result).toBe('missed');
+    const debrief = gradeRun(tight, sim);
+    expect(debrief.done).toBe(3);
+    expect(debrief.of).toBe(5);
+    expect(debrief.clean).toBe(false);
+  });
+
+  it('the same acts in the minute the pen takes still count: he is wheezing until the look', () => {
+    const sim = start();
+    advance(sim, 12);
+    sim.useDevice('albuterol', 4);
+    expect(until(sim, 'severe')).toBe(true);
+    advance(sim, 1);
+    sim.useDevice('auviq_adult');
+    sim.act('call_911');
+    advance(sim, 3);
+    expect(sim.phase).toBe('opening');
+    sim.act('stop');
+    sim.act('pos_sit_up');
+    sim.act('suction');
+    sim.act('o2');
+    expect(untilEnd(sim)).toBe(true);
+    expect(row(sim, 'stop').result).toBe('done');
+    expect(row(sim, 'o2').result).toBe('done');
+  });
+
+  it('oxygen is a target: on while he was severe and off once he is better is the step done', () => {
+    const sim = start();
+    firstRound(sim);
+    expect(until(sim, 'severe')).toBe(true);
+    advance(sim, 1);
+    sim.useDevice('auviq_adult');
+    sim.act('call_911');
+    expect(until(sim, 'better')).toBe(true);
+    advance(sim, 10);
+    sim.act('o2');
+    expect(sim.isOn('o2')).toBe(false);
+    expect(untilEnd(sim)).toBe(true);
+    expect(row(sim, 'o2').result).toBe('done');
+    const debrief = gradeRun(tight, sim);
+    expect(debrief.done).toBe(5);
+    expect(debrief.clean).toBe(true);
+  });
+
+  it('oxygen taken off before he was severe is not the step, and with no severe signs it was never reached', () => {
+    const off = start();
+    firstRound(off);
+    advance(off, 2);
+    off.act('o2');
+    expect(until(off, 'severe')).toBe(true);
+    advance(off, 1);
+    off.useDevice('auviq_adult');
+    off.act('call_911');
+    expect(until(off, 'better')).toBe(true);
+    off.act('o2');
+    expect(untilEnd(off)).toBe(true);
+    expect(row(off, 'o2').result).toBe('missed');
+
+    const early = start();
+    advance(early, 12);
+    early.act('o2');
+    early.useDevice('auviq_adult');
+    endWithoutEms(early);
+    expect(early.run.entered('severe')).toBeNull();
+    expect(row(early, 'o2').result).toBe('na');
+  });
+
+  it('the throat screen comes out once: a second suction is only a suction', () => {
+    const sim = start();
+    advance(sim, 12);
+    sim.act('suction');
+    expect(sim.scene).toContain('The throat screen comes out');
+    expect(sim.log.at(-1)?.text).toBe('Packs out, suctioned');
+    advance(sim, 11);
+    sim.act('suction');
+    expect(sim.scene).not.toContain('The throat screen comes out');
+    expect(sim.log.at(-1)?.text).toBe('Suctioned');
+  });
+});

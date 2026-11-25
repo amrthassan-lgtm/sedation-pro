@@ -41,8 +41,28 @@ function activeIn(group: ActionGroup): number {
   ).length;
 }
 
+/**
+ * Something already under way, or a device already spent. The pill says so,
+ * and calling it out again cannot undo it: "oxygen" typed twice must not turn
+ * the oxygen off. An act that is on opens its drawer instead, where it can be
+ * seen and stopped on purpose.
+ */
+function stateOf(entry: CartEntry): 'on' | 'used' | null {
+  if (entry.kind === 'device') return props.run.remaining(entry.id) === 0 ? 'used' : null;
+  if (entry.kind !== 'action') return null;
+  const action = CART_ACTIONS.find((a) => a.id === entry.id);
+  return action?.kind === 'toggle' && props.run.isOn(entry.id) ? 'on' : null;
+}
+
 function pick(entry: CartEntry): void {
+  const state = stateOf(entry);
+  if (state === 'used') return;
   query.value = '';
+  if (state === 'on') {
+    const action = CART_ACTIONS.find((a) => a.id === entry.id);
+    if (action) emit('drawer', action.group);
+    return;
+  }
   emit('pick', entry);
 }
 
@@ -60,9 +80,10 @@ function submit(): void {
         :key="`${hit.kind}:${hit.id}`"
         type="button"
         class="pill"
+        :disabled="stateOf(hit) === 'used'"
         @click="pick(hit)"
       >
-        {{ hit.label }}
+        {{ hit.label }}<template v-if="stateOf(hit)"> · {{ stateOf(hit) }}</template>
       </button>
       <span v-if="missed" class="miss">Not on the cart</span>
     </div>
@@ -123,6 +144,9 @@ function submit(): void {
 .hits .pill {
   white-space: nowrap;
   flex: none;
+}
+.hits .pill:disabled {
+  color: var(--color-text-disabled);
 }
 .miss {
   font-size: var(--type-footnote);

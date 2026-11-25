@@ -566,11 +566,64 @@ export function searchCart(query: string, limit = 6): ReadonlyArray<CartEntry> {
  * own and a reworded note is what the pen then says.
  */
 export function spokenInstruction(deviceId: string): string | null {
+  const steps = penSteps(deviceId);
+  return steps ? `${sentence(steps.join(', '))}.` : null;
+}
+
+function sentence(text: string): string {
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}
+
+/** The steps the protocol's note gives for a pen, in order, or null for a pen it gives none for. */
+function penSteps(deviceId: string): ReadonlyArray<string> | null {
   const ref = findDevice(deviceId)?.from[0];
   if (!ref || !('step' in ref)) return null;
   const notes = calloutAt(ref.protocol, ref.step).notes ?? '';
   const m = /talks you through it: ([^;]+)/.exec(notes);
-  if (!m?.[1]) return null;
-  const steps = m[1].trim();
-  return `${steps.charAt(0).toUpperCase()}${steps.slice(1)}.`;
+  return m?.[1] ? m[1].split(',').map((s) => s.trim()) : null;
+}
+
+/**
+ * How long the button is held on screen for a pen the protocols give no
+ * steps for. An interaction, not an instruction: nothing on screen states it.
+ */
+const PLAIN_HOLD_SEC = 2;
+
+/** What a pen's sheet asks for: the guard, then the press, and how long the press is held. */
+export interface PenControls {
+  readonly pull: string;
+  /** The guard button once it is done. */
+  readonly off: string;
+  readonly press: string;
+  readonly holdSeconds: number;
+}
+
+/**
+ * The Auvi-Q's two buttons say the steps of the protocol's own note, and its
+ * hold lasts as long as the note says, so a reworded note changes the sheet
+ * and a note that drops a step fails here instead of leaving a stale button.
+ * Any other pen is in no protocol and gets no site, grip or count from the
+ * trainer.
+ */
+export function penControls(deviceId: string): PenControls {
+  const steps = penSteps(deviceId);
+  if (!steps) {
+    return {
+      pull: 'Take the safety off',
+      off: 'Safety off',
+      press: 'Press and hold to give',
+      holdSeconds: PLAIN_HOLD_SEC,
+    };
+  }
+  const [pull, ...rest] = steps;
+  const holdSeconds = Number(/hold (\d+) seconds/.exec(rest.join(', '))?.[1]);
+  if (!pull?.includes('red guard') || rest.length === 0 || !Number.isFinite(holdSeconds)) {
+    throw new Error(`The note for "${deviceId}" no longer gives the guard, the press and the hold`);
+  }
+  return {
+    pull: sentence(pull),
+    off: 'Red guard off',
+    press: sentence(rest.join(', ')),
+    holdSeconds,
+  };
 }

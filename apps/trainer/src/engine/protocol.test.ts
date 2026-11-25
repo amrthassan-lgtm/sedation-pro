@@ -8,6 +8,7 @@ import {
   minutesInStep,
   numberInStep,
   overProtocolDose,
+  phraseInStep,
 } from './protocol';
 import type { DoseEvent } from './types';
 
@@ -83,5 +84,21 @@ describe('grading doses against a callout', () => {
   it('says when one administration is over the callout', () => {
     expect(overProtocolDose(AMPULE, 500)).toBe(false);
     expect(overProtocolDose(AMPULE, 3_000)).toBe(true);
+  });
+});
+
+describe('words a story line borrows from a step', () => {
+  it('hands back a phrase the step still says', () => {
+    expect(phraseInStep('laryngospasm', 'Tight mask seal', 'steady gentle pressure')).toBe(
+      'steady gentle pressure',
+    );
+  });
+
+  it('throws once the step no longer says it, or the step is gone', () => {
+    expect(() => phraseInStep('laryngospasm', 'Tight mask seal', 'both hands')).toThrow(
+      /no longer says/,
+    );
+    expect(() => phraseInStep('laryngospasm', 'No such step', 'Tight mask seal')).toThrow();
+    expect(() => phraseInStep('no_such_protocol', 'Tight mask seal', 'Tight mask seal')).toThrow();
   });
 });

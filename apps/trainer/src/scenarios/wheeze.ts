@@ -104,6 +104,21 @@ function steady(ctx: Ctx): boolean {
   return ctx.vitals.sbp >= STEADY_SBP;
 }
 
+/** He is the team's to treat in every phase up to EMS at the door. */
+const BEFORE_EMS = ['onset', 'responding', 'relapse', 'settling'] as const;
+
+/** On at some point while he was theirs to treat. Switched on with EMS at the door is too late to count. */
+function heldBeforeEms(run: Ctx, toggle: string): boolean {
+  return BEFORE_EMS.some((phase) => run.onDuring(toggle, phase));
+}
+
+/** Done before EMS was at the door, however early. */
+function doneBeforeEms(run: Ctx, action: string): boolean {
+  const done = run.at(action);
+  const arrived = run.entered('handover');
+  return done !== null && (arrived === null || done < arrived);
+}
+
 function reacting(ctx: Ctx, worse: boolean): Drive {
   const o2 = ctx.on('o2') ? 0.035 : 0;
   const flat = ctx.on('pos_flat_legs_up');
@@ -372,7 +387,11 @@ export const wheeze: Scenario = {
       nudges: [
         {
           after: 18,
-          when: (ctx) => !fluidsRunning(ctx),
+          // Said only while it is true: a late second dose leaves him lower than that.
+          when: (ctx) => {
+            const sbp = Math.round(ctx.vitals.sbp);
+            return !fluidsRunning(ctx) && sbp >= 80 && sbp < 90;
+          },
           voice: { who: 'DA', line: 'Pressure’s stuck in the eighties.' },
         },
       ],
@@ -604,15 +623,17 @@ export const wheeze: Scenario = {
       id: 'position',
       ref: { protocol: 'anaphylaxis', step: 'Lie flat, legs up' },
       tier: 'core',
-      check: positioned,
+      check: (run) =>
+        positioned(run) &&
+        (heldBeforeEms(run, 'pos_flat_legs_up') || heldBeforeEms(run, 'pos_sit_up')),
       when: (run) => run.last('pos_flat_legs_up') ?? run.last('pos_sit_up'),
     },
     {
       id: 'o2',
       ref: { protocol: 'anaphylaxis', step: 'O₂ to >94%' },
       tier: 'core',
-      // A target, so it counts while the oxygen is still on.
-      check: (run) => run.on('o2'),
+      // A target, so it counts while the oxygen is still on, if it went on before EMS arrived.
+      check: (run) => run.on('o2') && heldBeforeEms(run, 'o2'),
       when: (run) => run.last('o2'),
     },
     {
@@ -631,7 +652,7 @@ export const wheeze: Scenario = {
       id: 'fluids',
       ref: { protocol: 'anaphylaxis', step: '500 ml saline bolus, wide open' },
       tier: 'core',
-      check: fluidsRunning,
+      check: (run) => doneBeforeEms(run, 'saline'),
       when: (run) => run.at('saline'),
     },
     {

@@ -412,3 +412,59 @@ describe('"Crown": after it is out', () => {
     expect(debrief.clean).toBe(false);
   });
 });
+
+describe('"Crown": only what the pages ask for', () => {
+  it('played word for word with no tap on Stop, the run is clean: nothing is in progress when he vomits', () => {
+    const sim = start();
+    toSilent(sim);
+    sim.act('call_911');
+    twoRounds(sim);
+    expect(until(sim, 'visible')).toBe(true);
+    sim.act('magill');
+    expect(until(sim, 'vomiting')).toBe(true);
+    clearTheVomit(sim);
+    finish(sim);
+    expect(sim.run.at('stop')).toBeNull();
+    expect(part(sim, 'side_suction', 'Stop')).toBe('na');
+    expect(row(sim, 'side_suction').result).toBe('done');
+    const debrief = gradeRun(crown, sim);
+    expect(debrief.done).toBe(6);
+    expect(debrief.of).toBe(6);
+    expect(debrief.clean).toBe(true);
+  });
+
+  it('oxygen switched on only once EMS is at the door is too late to count', () => {
+    const sim = start();
+    toVomiting(sim);
+    sim.act('pos_side');
+    sim.act('suction');
+    expect(until(sim, 'handover')).toBe(true);
+    sim.act('o2');
+    sim.answer('er');
+    expect(untilEnd(sim)).toBe(true);
+    expect(part(sim, 'o2_no_sedatives', 'Turn off N₂O, 100% O₂')).toBe('missed');
+    expect(gradeRun(crown, sim).clean).toBe(false);
+  });
+
+  it('a Stop tapped before his airway is clear is still shown as done', () => {
+    const sim = start();
+    ideal(sim);
+    expect(part(sim, 'side_suction', 'Stop')).toBe('done');
+  });
+
+  it('"On the last thrust" is only said when the last set was thrusts', () => {
+    const thrusts = start();
+    toVisible(thrusts);
+    expect(thrusts.scene).toContain('On the last thrust something shifts.');
+
+    const blows = start();
+    toSilent(blows);
+    for (const id of ['abdominal_thrusts', 'back_blows', 'abdominal_thrusts', 'back_blows']) {
+      blows.act(id);
+      advance(blows, 5);
+    }
+    expect(until(blows, 'visible')).toBe(true);
+    expect(blows.scene).not.toContain('thrust');
+    expect(blows.scene).toContain('He drags in a thin, crowing breath.');
+  });
+});
