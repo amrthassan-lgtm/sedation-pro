@@ -14,9 +14,14 @@ import type { ProtocolRef } from './types';
  *
  * Labels say what the thing is and nothing about how to use it: no dose,
  * rate or technique. Those are the player's to supply.
+ *
+ * The order is fixed too (owner, Nov 2026): stop and call, then position,
+ * airway, breathing, circulation. The drawers stand in that order and each
+ * one reads in the order of this list, so a hand finds a button where it was
+ * in the last drill.
  */
 
-export type ActionGroup = 'team' | 'breathing' | 'airway' | 'position' | 'circulation';
+export type ActionGroup = 'team' | 'position' | 'airway' | 'breathing' | 'circulation';
 
 export interface CartAction {
   readonly id: string;
@@ -25,6 +30,15 @@ export interface CartAction {
   readonly kind: 'toggle' | 'instant';
   readonly label: string;
   readonly detail?: string;
+  /**
+   * The practice's own piece of equipment for this, shown as a second line
+   * so the button reads like the thing in the room. The brand and nothing
+   * more: never a size, dose, rate or technique. A test holds each brand to
+   * the practice's inventory.
+   */
+  readonly kit?: string;
+  /** The heading it sits under inside its drawer. One heading's actions are listed together. */
+  readonly section?: string;
   /** Extra words the call-out box matches ("bag", "ambu"). */
   readonly aliases: ReadonlyArray<string>;
   /** Other toggles that switch off when this one switches on (positions). */
@@ -40,13 +54,18 @@ export interface CartAction {
 
 export const GROUP_LABELS: Readonly<Record<ActionGroup, string>> = {
   team: 'Team',
-  breathing: 'Breathing',
-  airway: 'Airway',
   position: 'Position',
+  airway: 'Airway',
+  breathing: 'Breathing',
   circulation: 'Circulation',
 };
 
 const POSITIONS = ['pos_flat_legs_up', 'pos_sit_up', 'pos_side'] as const;
+
+/** The Airway drawer's headings (owner, Nov 2026). */
+const OPEN_THE_AIRWAY = 'Open the airway';
+const AIRWAY_DEVICES = 'Airway devices';
+const IN_THE_THROAT = 'Something in the throat';
 
 export const CART_ACTIONS: ReadonlyArray<CartAction> = [
   {
@@ -73,138 +92,6 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
       { protocol: 'bronchospasm', step: 'DA calls 911' },
       { protocol: 'choking', step: 'Call 911' },
     ],
-  },
-  {
-    id: 'o2',
-    group: 'breathing',
-    kind: 'toggle',
-    label: 'N₂O off, 100% O₂',
-    aliases: ['oxygen', 'nitrous off', 'n2o off', 'o2', '100%'],
-    from: [
-      { protocol: 'hypoventilation', step: 'Turn off N₂O, 100% O₂' },
-      { protocol: 'oversedation_opioid', step: 'N₂O off, 100% O₂' },
-      { protocol: 'anaphylaxis', step: 'O₂ to >94%' },
-      { protocol: 'bronchospasm', step: 'O₂ to SpO₂ 93-95%' },
-      { protocol: 'emesis_aspiration', step: 'Turn off N₂O, 100% O₂' },
-    ],
-  },
-  {
-    id: 'stimulate',
-    group: 'breathing',
-    kind: 'instant',
-    label: 'Stimulate',
-    aliases: ['wake', 'shake', 'sternal rub', 'call his name', 'call her name'],
-    from: [
-      { protocol: 'hypoventilation', step: 'Stimulate: say their name loudly' },
-      { protocol: 'oversedation_opioid', step: 'Stimulate: call their name, rub the sternum' },
-    ],
-  },
-  {
-    id: 'encourage_cough',
-    group: 'breathing',
-    kind: 'instant',
-    label: 'Encourage coughing',
-    aliases: ['cough', 'keep coughing', 'cough it up'],
-    from: [{ protocol: 'choking', step: 'encourage coughing' }],
-  },
-  {
-    id: 'bvm',
-    group: 'breathing',
-    kind: 'toggle',
-    label: 'BVM',
-    aliases: ['bag', 'bag valve mask', 'ambu', 'ventilate', 'bag him', 'bag her', 'breathe for'],
-    from: [
-      { protocol: 'hypoventilation', step: 'BVM, 1 breath every 6 seconds' },
-      { protocol: 'oversedation_opioid', step: 'BVM if breathing slow or SpO₂ falling' },
-      { protocol: 'laryngospasm', step: 'ventilate with the BVM until breathing on their own' },
-    ],
-  },
-  {
-    id: 'cpap',
-    group: 'breathing',
-    kind: 'toggle',
-    label: 'Tight mask seal',
-    aliases: ['cpap', 'mask seal', 'positive pressure', 'hold pressure'],
-    from: [{ protocol: 'laryngospasm', step: 'steady gentle pressure (CPAP)' }],
-  },
-  {
-    id: 'jaw_thrust',
-    group: 'airway',
-    kind: 'toggle',
-    label: 'Jaw thrust',
-    aliases: ['chin lift', 'open the airway', 'jaw'],
-    from: [
-      { protocol: 'hypoventilation', step: 'Jaw thrust or chin lift' },
-      { protocol: 'oversedation_opioid', step: 'Jaw thrust' },
-      { protocol: 'laryngospasm', step: 'Jaw thrust plus firm pressure' },
-    ],
-  },
-  {
-    id: 'suction',
-    group: 'airway',
-    kind: 'instant',
-    label: 'Suction',
-    aliases: ['yankauer', 'remove packs', 'gauze out', 'clear the throat'],
-    from: [
-      { protocol: 'laryngospasm', step: 'Remove packs and gauze, suction the throat' },
-      { protocol: 'hypoventilation', step: 'suction' },
-      { protocol: 'bronchospasm', step: 'remove packs' },
-      { protocol: 'emesis_aspiration', step: 'suction mouth and throat' },
-    ],
-  },
-  {
-    id: 'larson',
-    group: 'airway',
-    kind: 'toggle',
-    label: 'Pressure at the laryngospasm notch',
-    aliases: ['larson', 'larsons', "larson's point", 'notch', 'behind the earlobe'],
-    from: [{ protocol: 'laryngospasm', step: 'firm pressure at the laryngospasm notch' }],
-  },
-  {
-    // The oral airway is not on this cart: the page gives it only to a patient
-    // with no cough or gag, and no drill has one for it yet.
-    id: 'npa',
-    group: 'airway',
-    kind: 'toggle',
-    label: 'NPA',
-    aliases: ['nasal airway', 'nasopharyngeal airway', 'nasal trumpet', 'airway'],
-    from: [
-      { protocol: 'hypoventilation', step: 'suction, NPA' },
-      { protocol: 'hypoventilation', step: 'reposition, NPA' },
-    ],
-  },
-  {
-    id: 'back_blows',
-    group: 'airway',
-    kind: 'instant',
-    label: 'Back blows',
-    aliases: ['back slaps', 'blows', 'slap his back', 'slap her back'],
-    from: [{ protocol: 'choking', step: 'back blows' }],
-  },
-  {
-    id: 'abdominal_thrusts',
-    group: 'airway',
-    kind: 'instant',
-    label: 'Abdominal thrusts',
-    aliases: ['heimlich', 'thrusts', 'chest thrusts'],
-    from: [{ protocol: 'choking', step: 'abdominal thrusts' }],
-  },
-  {
-    id: 'magill',
-    group: 'airway',
-    kind: 'instant',
-    label: 'Magill forceps',
-    aliases: ['forceps', 'magills', 'laryngoscope', 'direct view'],
-    from: [{ protocol: 'choking', step: 'Magill forceps' }],
-  },
-  {
-    // On the cart because the protocol names it, as the thing not to do blind.
-    id: 'finger_sweep',
-    group: 'airway',
-    kind: 'instant',
-    label: 'Finger sweep',
-    aliases: ['sweep', 'finger', 'reach in'],
-    from: [{ protocol: 'choking', step: 'finger sweeps' }],
   },
   {
     id: 'pos_flat_legs_up',
@@ -237,10 +124,157 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
     from: [{ protocol: 'emesis_aspiration', step: 'Turn to the side, head down' }],
   },
   {
+    id: 'jaw_thrust',
+    group: 'airway',
+    section: OPEN_THE_AIRWAY,
+    kind: 'toggle',
+    label: 'Jaw thrust',
+    aliases: ['chin lift', 'open the airway', 'jaw'],
+    from: [
+      { protocol: 'hypoventilation', step: 'Jaw thrust or chin lift' },
+      { protocol: 'oversedation_opioid', step: 'Jaw thrust' },
+      { protocol: 'laryngospasm', step: 'Jaw thrust plus firm pressure' },
+    ],
+  },
+  {
+    id: 'suction',
+    group: 'airway',
+    section: OPEN_THE_AIRWAY,
+    kind: 'instant',
+    label: 'Suction',
+    kit: 'Yankauer',
+    aliases: ['yankauer', 'remove packs', 'gauze out', 'clear the throat'],
+    from: [
+      { protocol: 'laryngospasm', step: 'Remove packs and gauze, suction the throat' },
+      { protocol: 'hypoventilation', step: 'suction' },
+      { protocol: 'bronchospasm', step: 'remove packs' },
+      { protocol: 'emesis_aspiration', step: 'suction mouth and throat' },
+    ],
+  },
+  {
+    id: 'larson',
+    group: 'airway',
+    section: OPEN_THE_AIRWAY,
+    kind: 'toggle',
+    label: 'Pressure at the laryngospasm notch',
+    aliases: ['larson', 'larsons', "larson's point", 'notch', 'behind the earlobe'],
+    from: [{ protocol: 'laryngospasm', step: 'firm pressure at the laryngospasm notch' }],
+  },
+  {
+    // The oral airway is not on this cart: the page gives it only to a patient
+    // with no cough or gag, and no drill has one for it yet.
+    id: 'npa',
+    group: 'airway',
+    section: AIRWAY_DEVICES,
+    kind: 'toggle',
+    label: 'NPA',
+    kit: 'NasoSafe',
+    aliases: ['nasal airway', 'nasopharyngeal airway', 'nasal trumpet', 'airway'],
+    from: [
+      { protocol: 'hypoventilation', step: 'suction, NPA' },
+      { protocol: 'hypoventilation', step: 'reposition, NPA' },
+    ],
+  },
+  {
+    id: 'encourage_cough',
+    group: 'airway',
+    section: IN_THE_THROAT,
+    kind: 'instant',
+    label: 'Encourage coughing',
+    aliases: ['cough', 'keep coughing', 'cough it up'],
+    from: [{ protocol: 'choking', step: 'encourage coughing' }],
+  },
+  {
+    id: 'back_blows',
+    group: 'airway',
+    section: IN_THE_THROAT,
+    kind: 'instant',
+    label: 'Back blows',
+    aliases: ['back slaps', 'blows', 'slap his back', 'slap her back'],
+    from: [{ protocol: 'choking', step: 'back blows' }],
+  },
+  {
+    id: 'abdominal_thrusts',
+    group: 'airway',
+    section: IN_THE_THROAT,
+    kind: 'instant',
+    label: 'Abdominal thrusts',
+    aliases: ['heimlich', 'thrusts', 'chest thrusts'],
+    from: [{ protocol: 'choking', step: 'abdominal thrusts' }],
+  },
+  {
+    id: 'magill',
+    group: 'airway',
+    section: IN_THE_THROAT,
+    kind: 'instant',
+    label: 'Magill forceps',
+    aliases: ['forceps', 'magills', 'laryngoscope', 'direct view'],
+    from: [{ protocol: 'choking', step: 'Magill forceps' }],
+  },
+  {
+    // On the cart because the protocol names it, as the thing not to do blind.
+    id: 'finger_sweep',
+    group: 'airway',
+    section: IN_THE_THROAT,
+    kind: 'instant',
+    label: 'Finger sweep',
+    aliases: ['sweep', 'finger', 'reach in'],
+    from: [{ protocol: 'choking', step: 'finger sweeps' }],
+  },
+  {
+    id: 'o2',
+    group: 'breathing',
+    kind: 'toggle',
+    label: 'N₂O off, 100% O₂',
+    kit: 'Porter flowmeter',
+    aliases: ['oxygen', 'nitrous off', 'n2o off', 'o2', '100%'],
+    from: [
+      { protocol: 'hypoventilation', step: 'Turn off N₂O, 100% O₂' },
+      { protocol: 'oversedation_opioid', step: 'N₂O off, 100% O₂' },
+      { protocol: 'anaphylaxis', step: 'O₂ to >94%' },
+      { protocol: 'bronchospasm', step: 'O₂ to SpO₂ 93-95%' },
+      { protocol: 'emesis_aspiration', step: 'Turn off N₂O, 100% O₂' },
+    ],
+  },
+  {
+    id: 'bvm',
+    group: 'breathing',
+    kind: 'toggle',
+    label: 'BVM',
+    kit: 'Ambu bag',
+    aliases: ['bag', 'bag valve mask', 'ambu', 'ventilate', 'bag him', 'bag her', 'breathe for'],
+    from: [
+      { protocol: 'hypoventilation', step: 'BVM, 1 breath every 6 seconds' },
+      { protocol: 'oversedation_opioid', step: 'BVM if breathing slow or SpO₂ falling' },
+      { protocol: 'laryngospasm', step: 'ventilate with the BVM until breathing on their own' },
+    ],
+  },
+  {
+    id: 'cpap',
+    group: 'breathing',
+    kind: 'toggle',
+    label: 'Tight mask seal',
+    kit: 'Ambu bag and mask',
+    aliases: ['cpap', 'mask seal', 'positive pressure', 'hold pressure'],
+    from: [{ protocol: 'laryngospasm', step: 'steady gentle pressure (CPAP)' }],
+  },
+  {
+    id: 'stimulate',
+    group: 'breathing',
+    kind: 'instant',
+    label: 'Stimulate',
+    aliases: ['wake', 'shake', 'sternal rub', 'call his name', 'call her name'],
+    from: [
+      { protocol: 'hypoventilation', step: 'Stimulate: say their name loudly' },
+      { protocol: 'oversedation_opioid', step: 'Stimulate: call their name, rub the sternum' },
+    ],
+  },
+  {
     id: 'saline',
     group: 'circulation',
     kind: 'instant',
     label: 'Saline bolus',
+    kit: 'NS bag',
     aliases: ['fluids', 'bolus', 'normal saline', 'ns', 'fluid'],
     from: [{ protocol: 'anaphylaxis', step: '500 ml saline bolus, wide open' }],
   },
@@ -462,6 +496,25 @@ export function findDevice(id: string): CartDevice | undefined {
 
 export function findAction(id: string): CartAction | undefined {
   return CART_ACTIONS.find((a) => a.id === id);
+}
+
+/** One part of a drawer: a heading, or `null` for a drawer with none, and the actions under it. */
+export interface DrawerSection {
+  readonly heading: string | null;
+  readonly actions: ReadonlyArray<CartAction>;
+}
+
+/** A drawer as it is laid out: its actions in the cart's order, under their headings. */
+export function drawerSections(group: ActionGroup): ReadonlyArray<DrawerSection> {
+  const sections: Array<{ heading: string | null; actions: CartAction[] }> = [];
+  for (const action of CART_ACTIONS) {
+    if (action.group !== group) continue;
+    const heading = action.section ?? null;
+    const open = sections.at(-1);
+    if (open && open.heading === heading) open.actions.push(action);
+    else sections.push({ heading, actions: [action] });
+  }
+  return sections;
 }
 
 /** The vial a protocol callout is drawn from, by the callout's own name. */

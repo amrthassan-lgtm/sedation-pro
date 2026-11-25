@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_FORMULARY,
@@ -9,11 +11,14 @@ import {
   CART_ACTIONS,
   CART_DEVICES,
   CART_VIALS,
+  drawerSections,
   findVial,
+  GROUP_LABELS,
   penControls,
   searchCart,
   spokenInstruction,
   vialForCallout,
+  type ActionGroup,
 } from './catalog';
 import { formatMass, parseConcentrationMcgPerMl } from './dose';
 import { resolveRef } from './grade';
@@ -112,6 +117,84 @@ describe('the cart only offers what the protocols say', () => {
       ...CART_VIALS.map((v) => v.key),
     ];
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('the cart is laid out one way, in every room (owner, Nov 2026)', () => {
+  const GROUPS = Object.keys(GROUP_LABELS) as ActionGroup[];
+  const drawer = (group: ActionGroup) =>
+    drawerSections(group).map((s) => [s.heading, s.actions.map((a) => a.label)]);
+
+  it('each drawer reads in its own fixed order, under its headings', () => {
+    expect(drawer('team')).toEqual([[null, ['Stop the procedure', 'Call 911']]]);
+    expect(drawer('position')).toEqual([
+      [null, ['Lie flat, legs up', 'Sit up', 'Turn to the side, head down']],
+    ]);
+    expect(drawer('airway')).toEqual([
+      ['Open the airway', ['Jaw thrust', 'Suction', 'Pressure at the laryngospasm notch']],
+      ['Airway devices', ['NPA']],
+      [
+        'Something in the throat',
+        ['Encourage coughing', 'Back blows', 'Abdominal thrusts', 'Magill forceps', 'Finger sweep'],
+      ],
+    ]);
+    expect(drawer('breathing')).toEqual([
+      [null, ['N₂O off, 100% O₂', 'BVM', 'Tight mask seal', 'Stimulate']],
+    ]);
+    expect(drawer('circulation')).toEqual([[null, ['Saline bolus']]]);
+  });
+
+  it('Encourage coughing is in the Airway drawer, with the rest of what is done for a throat', () => {
+    const cough = CART_ACTIONS.find((a) => a.id === 'encourage_cough')!;
+    expect(cough.group).toBe('airway');
+    expect(cough.section).toBe('Something in the throat');
+    expect(drawer('breathing').flat(2)).not.toContain('Encourage coughing');
+    expect(searchCart('cough')[0]).toMatchObject({ kind: 'action', id: 'encourage_cough' });
+  });
+
+  it('every action is in one drawer, once, and no heading is split in two', () => {
+    const laid = GROUPS.flatMap((g) => drawerSections(g).flatMap((s) => s.actions));
+    expect(laid.map((a) => a.id).sort()).toEqual(CART_ACTIONS.map((a) => a.id).sort());
+    for (const group of GROUPS) {
+      const headings = drawerSections(group).map((s) => s.heading);
+      expect(new Set(headings).size, group).toBe(headings.length);
+    }
+  });
+
+  it('the list itself runs in the order of the drawers', () => {
+    const order = CART_ACTIONS.map((a) => a.group).filter((g, i, all) => all[i - 1] !== g);
+    expect(order).toEqual(['team', 'position', 'airway', 'breathing', 'circulation']);
+  });
+
+  it('the second line on a button is the practice’s own equipment, and nothing else has one', () => {
+    const kits = Object.fromEntries(
+      CART_ACTIONS.filter((a) => a.kit !== undefined).map((a) => [a.id, a.kit]),
+    );
+    expect(kits).toEqual({
+      suction: 'Yankauer',
+      npa: 'NasoSafe',
+      o2: 'Porter flowmeter',
+      bvm: 'Ambu bag',
+      cpap: 'Ambu bag and mask',
+      saline: 'NS bag',
+    });
+  });
+
+  it('every brand is on the practice’s inventory, and no kit line carries a number of anything', () => {
+    // Read as text: the trainer may not import from the clinical app.
+    const inventory = readFileSync(
+      resolve(process.cwd(), '../mobile/src/data/emergency-inventory.ts'),
+      'utf8',
+    );
+    const brands = new Set<string>();
+    for (const action of CART_ACTIONS) {
+      if (action.kit === undefined) continue;
+      expect(action.kit, action.id).not.toMatch(/\d/);
+      const brand = action.kit.split(' ')[0]!;
+      brands.add(brand);
+      expect(inventory, `${action.id}: ${brand}`).toMatch(new RegExp(`\\b${brand}\\b`));
+    }
+    expect([...brands].sort()).toEqual(['Ambu', 'NS', 'NasoSafe', 'Porter', 'Yankauer']);
   });
 });
 

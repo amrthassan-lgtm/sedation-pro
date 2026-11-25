@@ -102,6 +102,12 @@ export interface Beat {
   /** Toggles this beat switches back off (an awake patient pushes the mask away). */
   readonly off?: ReadonlyArray<string>;
   readonly prompt?: Prompt;
+  /**
+   * The id of a question this beat is the answer to in another form (911
+   * called from the cart while the front desk is asking whether to). If it is
+   * still open it comes down, with no answer recorded.
+   */
+  readonly settles?: string;
   /** Immediate nudge to the vitals (a stimulated breath, a cough). */
   readonly bump?: Partial<Record<'spo2' | 'hr' | 'sbp' | 'dbp', number>>;
   /**

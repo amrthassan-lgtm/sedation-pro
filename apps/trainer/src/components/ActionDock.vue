@@ -27,11 +27,16 @@ const query = ref('');
 const hits = computed(() => searchCart(query.value, 4));
 const missed = computed(() => query.value.trim().length >= 3 && hits.value.length === 0);
 
+/**
+ * The order is the point, and it never changes (owner, Nov 2026): stop and
+ * call in front, then position, airway, breathing, circulation, and the
+ * drugs last.
+ */
 const GROUPS: ReadonlyArray<ActionGroup> = [
   'team',
-  'breathing',
-  'airway',
   'position',
+  'airway',
+  'breathing',
   'circulation',
 ];
 

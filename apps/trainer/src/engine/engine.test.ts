@@ -188,6 +188,27 @@ describe('the engine', () => {
     expect(sim.lastVoiceAt).toBe(sim.t);
   });
 
+  it('a beat can settle a question that is still open, and only the one it names', () => {
+    const base = scenario();
+    const sim = new Simulation({
+      ...base,
+      reactions: {
+        ...base.reactions,
+        suction: () => ({ settles: 'another' }),
+        stop: () => ({ settles: 'ask' }),
+      },
+    });
+    sim.act('call_911');
+    sim.tick(0.25);
+    expect(sim.prompt?.id).toBe('ask');
+    sim.act('suction');
+    expect(sim.prompt?.id).toBe('ask');
+    sim.act('stop');
+    expect(sim.prompt).toBeNull();
+    // Taken down, not answered for anyone.
+    expect(sim.run.answer('ask')).toBeNull();
+  });
+
   it('marks the patient as bagged only while air is moving', () => {
     const sim = new Simulation(scenario());
     sim.act('call_911');
