@@ -303,11 +303,28 @@ describe('syringe drawings for the other emergency drugs', () => {
 describe('step drawings', () => {
   it("draws Larson's point under its step on the laryngospasm page, once", () => {
     const w = mountDetail('laryngospasm');
-    const figures = w.findAll('svg.figure');
-    expect(figures.length).toBe(1);
-    expect(figures[0]!.text()).toContain('Laryngospasm');
+    const figures = w.findAll('figure.drawing');
+    expect(figures.map((f) => f.attributes('data-figure'))).toEqual(['larsons-point']);
+    const art = figures[0]!.get('.drawing-art');
+    expect(art.attributes('role')).toBe('img');
+    expect(art.attributes('aria-label')).toBe(
+      'Side view: firm pressure at the laryngospasm notch, behind the earlobe, between jaw and mastoid; jaw thrust',
+    );
+    // The reviewed file: its own frame, and the two bones named on the picture.
+    expect(art.get('svg').attributes('viewBox')).toBe('0 0 860 540');
+    expect(art.findAll('svg text').map((t) => t.text())).toEqual(['2', 'Jaw', 'Mastoid', '1']);
+    // The landmark is named under the picture, as page text, one line a marker.
+    expect(figures[0]!.findAll('.drawing-number').map((n) => n.text())).toEqual(['1', '2']);
+    expect(figures[0]!.findAll('.drawing-caption-text').map((c) => c.text())).toEqual([
+      'Firm pressure at the laryngospasm notch: behind the earlobe, between jaw and mastoid',
+      'Jaw thrust',
+    ]);
+    // Traced from public-domain plates: no credit line under it.
+    expect(figures[0]!.find('.drawing-credit').exists()).toBe(false);
     const step = figures[0]!.element.closest('.step');
     expect(step?.querySelector('.step-text')?.textContent).toContain("Larson's");
+    // The drawing once made by hand in the component is gone from the page.
+    expect(w.find('svg.figure').exists()).toBe(false);
     w.unmount();
   });
 
@@ -354,7 +371,7 @@ describe('step drawings', () => {
     expect(drawings[2]!.findAll('.drawing-caption-text').at(-1)?.text()).toBe(
       'The second person, at the side of the chair, squeezes the bag',
     );
-    // The hand-drawn landmark figures belong to other pages.
+    // The hand-drawn auto-injector belongs to other pages.
     expect(w.find('svg.figure').exists()).toBe(false);
     w.unmount();
   });
@@ -401,6 +418,28 @@ describe('the BVM page (owner, Nov 2026)', () => {
       .find((st) => st.find('.step-text').text().startsWith('Still breathing poorly'))!;
     const links = step.findAll('.step-link');
     expect(links.map((l) => l.text())).toEqual(['Go to BVM ›']);
+    await links[0]!.trigger('click');
+    await flushPromises();
+    expect(w.router.currentRoute.value.path).toBe('/quick-reference/bvm');
+    w.unmount();
+  });
+
+  it('Laryngospasm sends the hands to it from the step that seals the mask, and to nowhere else', async () => {
+    const w = mountDetail('laryngospasm');
+    const step = w
+      .findAll('ol.steps > .step')
+      .find((st) => st.find('.step-text').text().startsWith('Tight mask seal'))!;
+    expect(step.find('.step-text').text()).toBe(
+      'Tight mask seal, 100% O₂ at 15 L/min with the BVM, steady gentle pressure (CPAP)',
+    );
+    const links = step.findAll('.step-link');
+    expect(links.map((l) => l.text())).toEqual(['Go to BVM ›']);
+    // The page's other jumps are as they were: only the last step had any.
+    expect(w.findAll('ol.steps .step-link').map((l) => l.text())).toEqual([
+      'Go to BVM ›',
+      'Go to LMA ›',
+      'Go to King LT Airway ›',
+    ]);
     await links[0]!.trigger('click');
     await flushPromises();
     expect(w.router.currentRoute.value.path).toBe('/quick-reference/bvm');

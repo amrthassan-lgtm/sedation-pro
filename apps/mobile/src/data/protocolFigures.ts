@@ -5,20 +5,18 @@ import bvmOnePerson from '@/assets/protocol-figures/bvm-one-person.svg?raw';
 import bvmSide from '@/assets/protocol-figures/bvm-side.svg?raw';
 import bvmTwoPerson from '@/assets/protocol-figures/bvm-two-person.svg?raw';
 import kingLt from '@/assets/protocol-figures/king-lt.svg?raw';
+import larsonsPoint from '@/assets/protocol-figures/larsons-point.svg?raw';
 import lma from '@/assets/protocol-figures/lma.svg?raw';
 import npa from '@/assets/protocol-figures/npa.svg?raw';
 
 /**
- * The drawings a protocol step can carry, other than Larson's point, which
- * is drawn by hand in `ProtocolFigure.vue`.
+ * The drawings a protocol step can carry.
  *
  * Each is a file in `assets/protocol-figures`, imported as text so it is part
  * of the app's own script: nothing is fetched, and it is there offline. A
  * drawing is medically reviewed before it ships, and its captions are the
  * owner's approved wording, so neither is edited here by hand.
  */
-export type DrawnFigure = Exclude<StepFigure, 'larsons-point'>;
-
 export interface ProtocolDrawing {
   readonly svg: string;
   /** What the picture shows, for a screen reader, in the picture's own words. */
@@ -32,7 +30,20 @@ export interface ProtocolDrawing {
 /** Required by the CC BY 4.0 licence of the figure the heads are traced from. */
 export const ANATOMY_CREDIT = 'Anatomy adapted from Open Critical Care / WHO, CC BY 4.0';
 
-export const PROTOCOL_DRAWINGS: Readonly<Record<DrawnFigure, ProtocolDrawing>> = {
+export const PROTOCOL_DRAWINGS: Readonly<Record<StepFigure, ProtocolDrawing>> = {
+  'larsons-point': {
+    svg: larsonsPoint,
+    label:
+      'Side view: firm pressure at the laryngospasm notch, behind the earlobe, between jaw and mastoid; jaw thrust',
+    captions: [
+      'Firm pressure at the laryngospasm notch: behind the earlobe, between jaw and mastoid',
+      'Jaw thrust',
+    ],
+    // No credit is owed: this head is traced from public-domain sources
+    // (Gray's Anatomy, 1918, and a public-domain skull drawing), not from the
+    // Open Critical Care / WHO figure.
+    tracedAnatomy: false,
+  },
   'bvm-side': {
     svg: bvmSide,
     label:

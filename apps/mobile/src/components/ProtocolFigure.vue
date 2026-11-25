@@ -2,15 +2,15 @@
 /**
  * Drawings for what a protocol step cannot place in words under stress.
  *
- * Two are drawn here by hand: where Larson's point is, and how the
- * auto-injector meets the thigh. Every label on them is a phrase from the
- * step or callout the drawing sits under, so the picture adds a place and
- * never an instruction.
+ * One is drawn here by hand: how the auto-injector meets the thigh. Every
+ * label on it is a phrase from the callout the drawing sits in, so the
+ * picture adds a place and never an instruction.
  *
- * The rest (bagging, and each airway device in place) are reviewed files,
- * listed in `data/protocolFigures.ts`. A numbered one prints its captions
- * under it as page text, so they read on a phone, and one traced from the
- * Open Critical Care / WHO head carries the credit its licence requires.
+ * The rest (Larson's point, bagging, and each airway device in place) are
+ * reviewed files, listed in `data/protocolFigures.ts`. A numbered one prints
+ * its captions under it as page text, so they read on a phone, and one traced
+ * from the Open Critical Care / WHO head carries the credit its licence
+ * requires.
  */
 import { computed } from 'vue';
 
@@ -23,9 +23,7 @@ export type ProtocolFigureKind = StepFigure | 'auto-injector';
 const props = defineProps<{ kind: ProtocolFigureKind }>();
 
 const drawing = computed<ProtocolDrawing | null>(() =>
-  props.kind === 'larsons-point' || props.kind === 'auto-injector'
-    ? null
-    : PROTOCOL_DRAWINGS[props.kind],
+  props.kind === 'auto-injector' ? null : PROTOCOL_DRAWINGS[props.kind],
 );
 </script>
 
@@ -43,39 +41,6 @@ const drawing = computed<ProtocolDrawing | null>(() =>
       {{ ANATOMY_CREDIT }}
     </figcaption>
   </figure>
-
-  <svg
-    v-else-if="kind === 'larsons-point'"
-    class="figure"
-    viewBox="0 0 340 200"
-    role="img"
-    aria-label="Side of the head: the laryngospasm notch is behind the earlobe, between the jaw and the mastoid"
-  >
-    <path
-      class="body"
-      d="M102 215 L100 164 C90 162 76 162 68 158 C60 156 55 152 56 146 C57 141 60 139 58 135 C53 133 53 128 57 124 C52 121 52 116 56 111 C50 110 44 107 44 103 C46 97 58 86 62 80 C59 76 60 70 63 64 C62 40 80 17 110 17 C152 15 188 44 188 84 C188 108 180 124 172 138 L176 215 Z"
-    />
-    <path class="hint" d="M70 78 C75 75 81 75 85 78" />
-    <path class="hint" d="M57 124 C61 124 64 123 67 121" />
-    <path class="bone" d="M66 152 C86 158 104 154 119 146 C125 136 127 122 129 109" />
-    <path class="bone" d="M154 96 C166 99 168 115 158 125" />
-    <path
-      class="ear"
-      d="M131 82 C142 75 151 86 148 98 C146 106 142 110 139 116 C136 120 131 117 132 111 C127 104 125 88 131 82 Z"
-    />
-    <path class="hint" d="M135 87 C141 85 144 91 142 97 C141 101 138 103 137 107" />
-    <circle class="halo" cx="149" cy="118" r="11" />
-    <circle class="point" cx="149" cy="118" r="5" />
-    <path class="press" d="M186 152 L166 133" />
-    <path class="press-head" d="M158 125 L171 129 L163 138 Z" />
-    <path class="leader" d="M214 80 L166 102" />
-    <text class="label" x="220" y="84">Mastoid</text>
-    <path class="leader" d="M214 114 L162 117" />
-    <text class="label label--key" x="220" y="111">Laryngospasm</text>
-    <text class="label label--key" x="220" y="127">notch</text>
-    <path class="leader" d="M214 172 L112 150" />
-    <text class="label" x="220" y="176">Jaw</text>
-  </svg>
 
   <svg
     v-else
@@ -177,36 +142,11 @@ const drawing = computed<ProtocolDrawing | null>(() =>
   stroke-width: 1.6;
   stroke-linejoin: round;
 }
-.ear {
-  fill: var(--color-surface-elevated);
-  stroke: var(--color-text-secondary);
-  stroke-width: 1.6;
-  stroke-linejoin: round;
-}
-.hint,
-.bone,
 .leader,
 .pulled,
 .press {
   fill: none;
   stroke-linecap: round;
-}
-.hint {
-  stroke: var(--color-border-strong);
-  stroke-width: 1.2;
-}
-/* What lies under the skin is dashed: the jaw's edge and the mastoid. */
-.bone {
-  stroke: var(--color-text-tertiary);
-  stroke-width: 1.4;
-  stroke-dasharray: 4 4;
-}
-.halo {
-  fill: var(--cat-airway);
-  opacity: 0.28;
-}
-.point {
-  fill: var(--cat-airway);
 }
 .press {
   stroke: var(--color-text-primary);
