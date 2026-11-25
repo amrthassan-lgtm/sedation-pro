@@ -1236,6 +1236,20 @@ describe('BVM page (owner, Nov 2026)', () => {
     expect(findProtocol('bvm')?.steps.map((s) => s.text)).toContain(BREATH);
   });
 
+  it('the Laryngospasm step that seals the mask leads here too, and keeps its words', () => {
+    const mask = findProtocol('laryngospasm')?.steps.filter((s) =>
+      s.text.startsWith('Tight mask seal'),
+    );
+    // The trainer finds this step by its words, so they are held whole.
+    expect(mask).toEqual([
+      {
+        text: 'Tight mask seal, 100% O₂ at 15 L/min with the BVM, steady gentle pressure (CPAP)',
+        severity: 'critical',
+        goTo: ['bvm'],
+      },
+    ]);
+  });
+
   it('the NPA page leads back to it', () => {
     expect(findProtocol('npa')?.relatedProtocols).toEqual([
       'bvm',

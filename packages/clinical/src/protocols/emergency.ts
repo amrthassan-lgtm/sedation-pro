@@ -174,6 +174,7 @@ export const EMERGENCY_PROTOCOLS: ReadonlyArray<EmergencyProtocol> = [
       {
         text: 'Tight mask seal, 100% O₂ at 15 L/min with the BVM, steady gentle pressure (CPAP)',
         severity: 'critical',
+        goTo: ['bvm'],
       },
       {
         text: 'No relief and SpO₂ falling: Succinylcholine IV, then ventilate with the BVM until breathing on their own',
