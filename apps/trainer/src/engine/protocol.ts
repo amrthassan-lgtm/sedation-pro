@@ -1,7 +1,32 @@
-import { findProtocol, type EmergencyDrugCallout } from '@sedation-pro/clinical';
+import {
+  EMERGENCY_PROTOCOLS,
+  findProtocol,
+  type EmergencyDrugCallout,
+} from '@sedation-pro/clinical';
 
 import { parseDoseRange, type DoseRange } from './dose';
 import type { DoseEvent } from './types';
+
+function shortOf(name: string): string {
+  return name.split(/ \(| - /)[0] ?? name;
+}
+
+/** Short names more than one page would share ("Oversedation"). */
+const SHARED_SHORT_NAMES = new Set(
+  EMERGENCY_PROTOCOLS.map((p) => shortOf(p.name)).filter((s, i, all) => all.indexOf(s) !== i),
+);
+
+/**
+ * A page's name as a link says it: the part before any "(…)" or " - …",
+ * unless that would not tell it from another page. The same rule the
+ * clinical app uses for its own "Go to" links, so a link reads the same in
+ * both.
+ */
+export function pageShortName(protocolId: string): string {
+  const name = findProtocol(protocolId)?.name ?? protocolId;
+  const short = shortOf(name);
+  return SHARED_SHORT_NAMES.has(short) ? name : short;
+}
 
 /**
  * Looks a drug callout up by the protocol step it sits on. Throws when the
@@ -40,6 +65,19 @@ export function numberInStep(protocolId: string, stepIncludes: string, pattern: 
 /** A wait a protocol step states, in minutes (`/(\d+) min, not better/`). */
 export function minutesInStep(protocolId: string, stepIncludes: string, pattern: RegExp): number {
   return numberInStep(protocolId, stepIncludes, pattern);
+}
+
+/**
+ * Words a story line borrows from a protocol step, checked against the step.
+ * Throws when the step no longer says them, so a scene never keeps a phrase
+ * the protocol has dropped.
+ */
+export function phraseInStep(protocolId: string, stepIncludes: string, phrase: string): string {
+  const step = findProtocol(protocolId)?.steps.find((s) => s.text.includes(stepIncludes));
+  if (!step?.text.includes(phrase)) {
+    throw new Error(`Step "${stepIncludes}" in "${protocolId}" no longer says "${phrase}"`);
+  }
+  return phrase;
 }
 
 /** Float noise from repeated draws must not turn a correct 0.3 ml into a low dose. */

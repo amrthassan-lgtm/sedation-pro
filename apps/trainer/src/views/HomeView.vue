@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PROTOCOLS_REVIEWED } from '@sedation-pro/clinical';
+import { DEFAULT_FORMULARY, PROTOCOLS_REVIEWED } from '@sedation-pro/clinical';
 import { useRouter } from 'vue-router';
 
 import { SCENARIOS } from '@/scenarios';
@@ -8,6 +8,7 @@ import { voiceAvailable } from '@/audio/voice';
 
 const router = useRouter();
 const version = __TRAINER_VERSION__;
+const practice = DEFAULT_FORMULARY.practiceName;
 
 function last(id: string): string {
   const record = recordsFor(id).at(-1);
@@ -45,7 +46,7 @@ const TOGGLES: ReadonlyArray<Toggle> = [
 <template>
   <main class="page">
     <header class="hero">
-      <p class="eyebrow">Apex Dental · Emergency drills</p>
+      <p class="eyebrow">{{ practice }} · Emergency drills</p>
       <h1 class="hero-title">Sedation Trainer</h1>
       <p class="hero-sub">
         A patient, a monitor and your own cart. The clock runs in real time, and the debrief quotes

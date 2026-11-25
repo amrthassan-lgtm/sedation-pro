@@ -7,6 +7,7 @@ import { unlockAlarms } from '@/audio/alarm';
 import FlightRecorder from '@/components/FlightRecorder.vue';
 import { formatMass } from '@/engine/dose';
 import type { DebriefRow, RowResult } from '@/engine/grade';
+import { pageShortName } from '@/engine/protocol';
 import type { DoseEvent } from '@/engine/types';
 import { findScenario } from '@/scenarios';
 import { lastRun, settings } from '@/session';
@@ -40,6 +41,8 @@ interface StepView {
   /** `null` when this run did not exercise the step. */
   readonly row: DebriefRow | null;
   readonly notes: ReadonlyArray<DebriefRow>;
+  /** The pages the step itself sends the reader to, as the clinical app links them. */
+  readonly goTo: ReadonlyArray<{ readonly id: string; readonly name: string }>;
 }
 
 interface ProtocolView {
@@ -63,25 +66,34 @@ const protocols = computed<ProtocolView[]>(() => {
           text: step.text,
           row: rows.find((r) => r.kind === 'step' && r.stepIndex === index) ?? null,
           notes: rows.filter((r) => r.kind === 'note' && r.stepIndex === index),
+          goTo: (step.goTo ?? [])
+            .filter((to) => findProtocol(to))
+            .map((to) => ({ id: to, name: pageShortName(to) })),
         })),
       },
     ];
   });
 });
 
-const deltaSteps = computed(() => {
+/**
+ * The run before, stated as it was. Not a difference: the number of steps a
+ * run reaches changes with the path it took, so "+2" could mean 5 of 7 after
+ * 3 of 4.
+ */
+const lastSteps = computed(() => {
   const prev = run?.previous;
-  if (!debrief || !prev) return '';
-  const d = debrief.done - prev.done;
-  return d === 0 ? 'same as last run' : `${d > 0 ? '+' : ''}${d} on last run`;
+  return prev ? `Last run ${prev.done} of ${prev.of}` : '';
 });
 
-const deltaSpo2 = computed(() => {
+const lastSpo2 = computed(() => {
   const prev = run?.previous;
-  if (!debrief || !prev) return '';
-  const d = debrief.lowestSpo2 - prev.lowestSpo2;
-  return d === 0 ? 'same as last run' : `${d > 0 ? '+' : ''}${d} on last run`;
+  return prev ? `Last run ${prev.lowestSpo2}%` : '';
 });
+
+const TAKEAWAY_HEADING = ['', 'One thing', 'Two things', 'Three things'] as const;
+const takeawayHeading = computed(
+  () => `${TAKEAWAY_HEADING[debrief?.takeaways.length ?? 0] ?? 'Things'} for the team`,
+);
 
 function doseText(dose: DoseEvent): string {
   const how = dose.device === null ? `${dose.ml.toFixed(1)} ml ${dose.route}` : dose.route;
@@ -111,12 +123,12 @@ function again(): void {
         <div class="stat">
           <span class="eyebrow">Lowest SpO₂</span>
           <span class="stat-val mono">{{ debrief.lowestSpo2 }}%</span>
-          <span class="stat-sub">{{ deltaSpo2 }}</span>
+          <span class="stat-sub">{{ lastSpo2 }}</span>
         </div>
         <div class="stat">
           <span class="eyebrow">Protocol steps</span>
           <span class="stat-val mono">{{ debrief.done }} of {{ debrief.of }}</span>
-          <span class="stat-sub">{{ deltaSteps }}</span>
+          <span class="stat-sub">{{ lastSteps }}</span>
         </div>
         <div class="stat">
           <span class="eyebrow">Story time</span>
@@ -128,7 +140,7 @@ function again(): void {
     </section>
 
     <section v-if="debrief.takeaways.length > 0">
-      <p class="eyebrow section-label">Three things for the team</p>
+      <p class="eyebrow section-label">{{ takeawayHeading }}</p>
       <div class="group">
         <div v-for="row in debrief.takeaways" :key="row.id" class="row take">
           <span class="row-main">
@@ -175,6 +187,15 @@ function again(): void {
             >
               {{ note.result === 'done' ? '✓' : note.result === 'missed' ? '✕' : '·' }}
               {{ note.text }}
+            </span>
+            <span v-if="step.goTo.length > 0" class="gos">
+              <a
+                v-for="to in step.goTo"
+                :key="to.id"
+                class="go"
+                :href="`../quick-reference/${to.id}`"
+                >Go to {{ to.name }} ›</a
+              >
             </span>
           </span>
           <span class="step-state">
@@ -336,6 +357,18 @@ function again(): void {
   align-items: center;
   min-height: 44px;
   margin-left: var(--sp-4);
+  color: var(--color-accent);
+  font-size: var(--type-footnote);
+}
+.gos {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--sp-5);
+}
+.go {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--color-accent);
   font-size: var(--type-footnote);
 }

@@ -269,6 +269,15 @@ the clinical app and must stay that way:
   tagline gives no sign away; `scenarios.test.ts` holds both. Run records
   are kept per scenario `id`, so a drill is renamed by its `title` alone:
   "Shallow" is still `quiet` and "Cough" is still `tight`.
+- **A step counts only while it applied (Nov 2026 review).** Oxygen put on
+  with EMS at the door, or 911 called once he breathes again, reads "Not
+  done". A rubric check that reads "on at the end" also asks "on while it
+  mattered" (`heldBeforeEms`, `called911InSpasm`, `oxygenWhileSick`). A scene
+  borrows a protocol's words through `phraseInStep`, and a pen's buttons come
+  from its note (`penControls`), so both fail a test when the page is reworded.
+- **The room is never left behind the debrief.** Opening the room starts a
+  run, so the debrief replaces it in the history; Back must not start one. A
+  call-out never undoes: an act that is on opens its drawer instead.
 - `pnpm dev:trainer` runs it locally on port 5174.
 
 ## Branching and commits

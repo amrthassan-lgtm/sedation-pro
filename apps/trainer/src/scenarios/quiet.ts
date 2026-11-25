@@ -10,6 +10,7 @@ import {
   doseOf,
   epinephrineOverdose,
   hypoxicHeartRate,
+  MASK_HELD,
   PARALYSIS_CUT,
   pendingParalysis,
   SUCCINYLCHOLINE,
@@ -66,11 +67,40 @@ function moreSedative(ctx: Ctx): boolean {
   return ctx.given('fentanyl').length + ctx.given('midazolam').length > 0;
 }
 
-/** Suction counts for the spasm if it was done in it, or so close before it that the throat was still clear. */
+/**
+ * Set when the throat is suctioned in the spasm, or was suctioned so close
+ * before it that it was still clear. A flag and not a time: suction again
+ * once the spasm is over must neither earn the step nor take it away.
+ */
+const SUCTIONED_FOR_SPASM = 'suctioned_for_spasm';
+
 function suctionedForSpasm(ctx: Ctx): boolean {
-  const spasm = ctx.entered('spasm');
-  const last = ctx.last('suction');
-  return spasm !== null && last !== null && last >= spasm - SUCTION_STILL_CLEAR;
+  return ctx.has(SUCTIONED_FOR_SPASM);
+}
+
+/** Only someone holding a bag or a mask can feel air go in, or be coughed against. */
+function maskHeld(ctx: Ctx): boolean {
+  return ctx.on('bvm') || ctx.on('cpap');
+}
+
+/**
+ * When the spasm ended: the paralysis that broke it. A run that was already
+ * paralysed once before the spasm keeps no time for the second paralysis, so
+ * there the bound is his first breath after it. `null` while it has not ended.
+ */
+function spasmEnded(run: Ctx): number | null {
+  const spasm = run.entered('spasm');
+  if (spasm === null) return null;
+  const paralysed = run.entered('paralyzed');
+  return paralysed !== null && paralysed > spasm ? paralysed : run.entered('breathing');
+}
+
+/** Done for the spasm: before it was over, however early. Afterwards is too late to count. */
+function doneForSpasm(run: Ctx, action: string): boolean | null {
+  if (run.entered('spasm') === null) return null;
+  const done = run.at(action);
+  const ended = spasmEnded(run);
+  return done !== null && (ended === null || done < ended);
 }
 
 function hypoDrive(ctx: Ctx): Drive {
@@ -111,9 +141,17 @@ function stoppedSedatives(run: Ctx): boolean | null {
   return run.onDuring('o2', 'hypo') ? true : null;
 }
 
-/** 911 belongs to the spasm: `null` in a run that never reached it. */
+/**
+ * 911 belongs to the spasm: `null` in a run that never reached it. The page
+ * lists the call after the succinylcholine, so it counts through the
+ * paralysis, however early it was made. Once he is breathing on his own
+ * again it is too late to count.
+ */
 function called911InSpasm(run: Ctx): boolean | null {
-  return run.entered('spasm') === null ? null : run.at('call_911') !== null;
+  if (run.entered('spasm') === null) return null;
+  const called = run.at('call_911');
+  const breathing = run.entered('breathing');
+  return called !== null && (breathing === null || called < breathing);
 }
 
 const sedativeGiven: Reaction = (_ctx, e) => {
@@ -166,8 +204,7 @@ export const quiet: Scenario = {
       to: 'paralyzed',
       beat: (ctx) => {
         const flags = pendingParalysis(ctx)?.flags ?? [];
-        // Only someone holding a bag or a mask can feel it give.
-        const masked = ctx.on('bvm') || ctx.on('cpap');
+        const masked = maskHeld(ctx);
         return ctx.phase === 'spasm'
           ? {
               flags,
@@ -200,19 +237,27 @@ export const quiet: Scenario = {
             return at !== null && ctx.t >= at;
           },
           to: 'waking',
-          beat: {
-            scene:
-              'His eyebrows twitch. He coughs against the mask, swallows hard and turns his head away from your hand.',
+          // The mask and the hand on it are in the scene only while one is held on him.
+          beat: (ctx) => ({
+            scene: `His eyebrows twitch.${
+              maskHeld(ctx)
+                ? ' He coughs against the mask, swallows hard and turns his head away from your hand.'
+                : ''
+            }`,
             voice: { who: 'DA', line: 'He’s coming around.' },
             log: 'Rousing after naloxone',
             tone: 'good',
-          },
+          }),
         },
       ],
       nudges: [
         {
           after: 10,
-          when: (ctx) => ctx.entered('paralyzed') === null && ctx.given('naloxone').length === 0,
+          // Said to a team that has not noticed. One already bagging him has.
+          when: (ctx) =>
+            ctx.entered('paralyzed') === null &&
+            ctx.given('naloxone').length === 0 &&
+            !ctx.on('bvm'),
           voice: { who: 'DA', line: 'Doc… he’s not really breathing much.' },
         },
         {
@@ -251,15 +296,28 @@ export const quiet: Scenario = {
         {
           when: (ctx) => ctx.phaseT >= 9,
           to: 'spasm',
-          // The spasm comes either way. The scene does not blame blood that was just suctioned.
-          beat: (ctx) => ({
-            scene: within(ctx, 'suction', SUCTION_STILL_CLEAR)
-              ? 'He coughs hard against the mask. A high, harsh crowing on the way in, then nothing. His chest heaves but no air is moving.'
-              : 'He gags on the blood and saliva pooled at the back of his throat. A high, harsh crowing on the way in, then nothing. His chest heaves but no air is moving.',
-            voice: { who: 'DA', line: 'I can’t get air in! It won’t go!' },
-            log: 'Crowing, then no air movement',
-            tone: 'bad',
-          }),
+          // The spasm comes either way. The scene does not blame blood that was just
+          // suctioned, and names no mask or bag that nobody is holding.
+          beat: (ctx) => {
+            const clear = within(ctx, 'suction', SUCTION_STILL_CLEAR);
+            const masked = maskHeld(ctx);
+            const crowing =
+              'A high, harsh crowing on the way in, then nothing. His chest heaves but no air is moving.';
+            return {
+              scene: clear
+                ? `${masked ? 'He coughs hard against the mask. ' : ''}${crowing}`
+                : `He gags on the blood and saliva pooled at the back of his throat. ${crowing}`,
+              voice: {
+                who: 'DA',
+                line: masked
+                  ? 'I can’t get air in! It won’t go!'
+                  : 'He’s gone quiet. Nothing’s moving!',
+              },
+              log: 'Crowing, then no air movement',
+              tone: 'bad',
+              flags: clear ? [SUCTIONED_FOR_SPASM] : [],
+            };
+          },
         },
       ],
     },
@@ -450,14 +508,14 @@ export const quiet: Scenario = {
       }
       if (ctx.phase === 'paralyzed') {
         return {
-          voice: { who: 'DA', line: 'Bagging. One breath every six.' },
-          log: 'BVM, 1 breath every 6 s',
+          voice: { who: 'DA', line: 'Bagging. His chest is rising.' },
+          log: 'BVM: chest rising',
           tone: 'good',
         };
       }
       return {
-        voice: { who: 'DA', line: 'One… two… three… chest is rising.' },
-        log: 'BVM, 1 breath every 6 s',
+        voice: { who: 'DA', line: 'Bagging. His chest is rising.' },
+        log: 'BVM: chest rising',
         tone: 'good',
       };
     },
@@ -465,8 +523,7 @@ export const quiet: Scenario = {
     cpap: (ctx, e) =>
       e.kind === 'action' && e.on && ctx.phase === 'spasm'
         ? {
-            scene:
-              'Both hands on the mask, steady pressure on the bag. A thin, high squeak, then silence again.',
+            scene: `${MASK_HELD} A thin, high squeak, then silence again.`,
             log: 'Tight seal, steady pressure',
           }
         : undefined,
@@ -475,8 +532,9 @@ export const quiet: Scenario = {
       ctx.phase === 'spasm'
         ? {
             scene: 'A pool of blood-streaked saliva comes up the suction.',
-            log: 'Suction, packs out',
+            log: 'Suctioned',
             tone: 'good',
+            flags: [SUCTIONED_FOR_SPASM],
           }
         : undefined,
 
@@ -719,10 +777,7 @@ export const quiet: Scenario = {
       ref: { protocol: 'laryngospasm', step: 'Remove packs and gauze, suction the throat' },
       tier: 'core',
       parts: [
-        {
-          quote: 'Stop the procedure',
-          check: (run) => (run.entered('spasm') === null ? null : run.at('stop') !== null),
-        },
+        { quote: 'Stop the procedure', check: (run) => doneForSpasm(run, 'stop') },
         {
           quote: 'Remove packs and gauze, suction the throat',
           check: (run) => (run.entered('spasm') === null ? null : suctionedForSpasm(run)),

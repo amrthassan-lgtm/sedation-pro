@@ -120,8 +120,13 @@ function leave(): void {
   void router.push('/');
 }
 
+/**
+ * Replaces the room in the history. Opening the room starts a run, so a room
+ * left behind the debrief would start a new one on Back, untouched, and file
+ * its arrest over the run the team had just finished.
+ */
 function toDebrief(): void {
-  void router.push('/debrief');
+  void router.replace('/debrief');
 }
 
 /** The run is over, so the one way forward takes the keyboard. */

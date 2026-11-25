@@ -531,6 +531,17 @@ describe('"Shallow", played by the protocols', () => {
     expect(big.log.at(-1)).toMatchObject({ tone: 'neutral' });
   });
 
+  it('the assistant does not announce slow breathing to a team already bagging him', () => {
+    const lines = (bag: boolean) => {
+      const sim = start();
+      if (bag) sim.act('bvm');
+      advance(sim, 14);
+      return sim.voices.map((v) => v.line).join(' | ');
+    };
+    expect(lines(false)).toContain('not really breathing much');
+    expect(lines(true)).not.toContain('not really breathing much');
+  });
+
   it('an uncoached run is never told to bag him', () => {
     const lines = (coached: boolean) => {
       const sim = new Simulation(quiet, { coached });
@@ -592,9 +603,18 @@ describe('"Shallow", played by the protocols', () => {
     )!;
     const seconds = Number(/1 breath every (\d+) seconds/.exec(step.text)?.[1]);
     expect(60 / seconds).toBe(BAG_RATE);
+  });
+
+  it('a tap on the bag is logged as a tap: the log credits no rate the player never set', () => {
     const sim = start();
     sim.act('bvm');
-    expect(sim.log.at(-1)?.text).toBe(`BVM, 1 breath every ${seconds} s`);
+    expect(sim.log.at(-1)).toMatchObject({ text: 'BVM: chest rising', tone: 'good' });
+    idealUntilSpasm(sim);
+    idealSpasm(sim);
+    sim.act('bvm');
+    untilEnd(sim);
+    const said = [...sim.log.map((l) => l.text), ...sim.voices.map((v) => v.line)];
+    for (const line of said) expect(line).not.toMatch(/every (six|\d+)|breaths? (a|per) minute/i);
   });
 
   it('the sibling pages show the spasm and its 911 call in their own words, unscored', () => {
@@ -623,5 +643,114 @@ describe('"Shallow", played by the protocols', () => {
       return { t: sim.t, low: sim.lowestSpo2, log: sim.log.map((l) => `${l.t}:${l.text}`) };
     };
     expect(play()).toEqual(play());
+  });
+});
+
+describe('"Shallow": a step counts while it applied', () => {
+  /** Through the spasm with the hands and the drug, but no stop, no suction and no call. */
+  function bareSpasm(sim: Simulation): void {
+    idealUntilSpasm(sim);
+    sim.act('larson');
+    sim.act('cpap');
+    advance(sim, 4);
+    drawAndGive(sim, 'succinylcholine', 1);
+  }
+
+  it('stopping, suction and the 911 call once he is breathing again are too late', () => {
+    const sim = start();
+    bareSpasm(sim);
+    expect(until(sim, 'breathing')).toBe(true);
+    sim.act('stop');
+    sim.act('suction');
+    sim.act('call_911');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.endingKey).toBe('recovered_ems');
+    expect(row(sim, 'spasm_suction').parts).toEqual([
+      { quote: 'Stop the procedure', result: 'missed' },
+      { quote: 'Remove packs and gauze, suction the throat', result: 'missed' },
+    ]);
+    expect(row(sim, 'call_911').result).toBe('missed');
+    expect(row(sim, 'hypo_911').result).toBe('missed');
+    expect(row(sim, 'opioid_911').result).toBe('missed');
+    const debrief = gradeRun(quiet, sim);
+    expect(debrief.done).toBe(11);
+    expect(debrief.of).toBe(13);
+    expect(debrief.clean).toBe(false);
+  });
+
+  it('once the cords have let go, the throat and the procedure are late; the call is not', () => {
+    const sim = start();
+    bareSpasm(sim);
+    expect(until(sim, 'paralyzed')).toBe(true);
+    sim.act('stop');
+    sim.act('suction');
+    sim.act('call_911');
+    expect(untilEnd(sim)).toBe(true);
+    expect(row(sim, 'spasm_suction').result).toBe('missed');
+    expect(row(sim, 'call_911').result).toBe('done');
+  });
+
+  it('a throat cleared in the spasm still counts when it is suctioned again afterwards', () => {
+    const sim = start();
+    sim.act('suction');
+    idealUntilSpasm(sim);
+    idealSpasm(sim);
+    expect(until(sim, 'breathing')).toBe(true);
+    sim.act('suction');
+    expect(untilEnd(sim)).toBe(true);
+    expect(row(sim, 'spasm_suction').result).toBe('done');
+    expect(gradeRun(quiet, sim).clean).toBe(true);
+  });
+
+  it('a procedure stopped before the spasm is stopped for it', () => {
+    const sim = start();
+    sim.act('stop');
+    idealUntilSpasm(sim);
+    sim.act('suction');
+    sim.act('larson');
+    sim.act('cpap');
+    sim.act('call_911');
+    advance(sim, 4);
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(untilEnd(sim)).toBe(true);
+    expect(row(sim, 'spasm_suction').result).toBe('done');
+  });
+});
+
+describe('"Shallow": nothing is said of a mask nobody is holding', () => {
+  it('with nobody bagging, he wakes and shuts without a mask in the scene or an assistant squeezing a bag', () => {
+    const sim = start();
+    drawAndGive(sim, 'naloxone', 1);
+    expect(until(sim, 'waking')).toBe(true);
+    expect(sim.scene).not.toContain('mask');
+    expect(sim.scene).not.toContain('your hand');
+    advance(sim, 7);
+    sim.act('suction');
+    advance(sim, 11);
+    expect(sim.phase).toBe('spasm');
+    expect(sim.scene).toContain('A high, harsh crowing on the way in, then nothing.');
+    expect(sim.scene).not.toContain('mask');
+    expect(sim.voices.at(-1)?.line).not.toContain('get air in');
+  });
+
+  it('with the bag on, both lines are as they were', () => {
+    const sim = start();
+    sim.act('bvm');
+    drawAndGive(sim, 'naloxone', 1);
+    expect(until(sim, 'waking')).toBe(true);
+    expect(sim.scene).toContain('He coughs against the mask');
+    advance(sim, 7);
+    sim.act('suction');
+    expect(until(sim, 'spasm')).toBe(true);
+    expect(sim.scene).toContain('He coughs hard against the mask.');
+    expect(sim.voices.at(-1)?.line).toBe('I can’t get air in! It won’t go!');
+  });
+
+  it('the briefing has no pack, so suction in the spasm logs none', () => {
+    const sim = start();
+    idealUntilSpasm(sim);
+    sim.act('suction');
+    expect(sim.log.at(-1)).toMatchObject({ text: 'Suctioned', tone: 'good' });
+    expect(quiet.setup.join(' ')).not.toMatch(/pack|gauze|screen/i);
   });
 });

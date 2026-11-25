@@ -108,6 +108,16 @@ function flatPenalty(ctx: Ctx): number {
   return ctx.on('pos_flat_legs_up') ? 0.012 : 0;
 }
 
+/** He is wheezing in every phase up to the look that finds him better. */
+const WHEEZING = ['tight', 'eased', 'severe', 'opening'] as const;
+
+/** Done for the wheeze: before he was better, however early. Afterwards is too late to count. */
+function doneWhileWheezing(run: Ctx, action: string): boolean {
+  const done = run.at(action);
+  const better = run.entered('better');
+  return done !== null && (better === null || done < better);
+}
+
 const SEVERE_SCENE =
   'He starts to tell you something and gets two words out between breaths. The whistle has almost gone: his chest is hardly moving any air.';
 
@@ -402,10 +412,13 @@ export const tight: Scenario = {
   reactions: {
     stop: () => ({ log: 'Procedure stopped', voice: { who: 'DA', line: 'Instruments out.' } }),
 
-    suction: () => ({
-      scene: 'The throat screen comes out and you clear his mouth.',
-      log: 'Packs out, suctioned',
-    }),
+    suction: (ctx) =>
+      ctx.count('suction') > 1
+        ? { log: 'Suctioned' }
+        : {
+            scene: 'The throat screen comes out and you clear his mouth.',
+            log: 'Packs out, suctioned',
+          },
 
     o2: (_ctx, e) =>
       e.kind === 'action' && e.on
@@ -541,10 +554,15 @@ export const tight: Scenario = {
       ref: { protocol: 'bronchospasm', step: 'Stop the procedure. Sit upright' },
       tier: 'core',
       parts: [
-        { quote: 'Stop the procedure', check: (run) => run.at('stop') !== null },
-        // A position counts while he is left in it, not for having been tried.
-        { quote: 'Sit upright', check: (run) => run.on('pos_sit_up') },
-        { quote: 'remove packs', check: (run) => run.at('suction') !== null },
+        { quote: 'Stop the procedure', check: (run) => doneWhileWheezing(run, 'stop') },
+        {
+          // A position counts while he is left in it, not for having been tried,
+          // and only if he was put in it while he was still wheezing.
+          quote: 'Sit upright',
+          check: (run) =>
+            run.on('pos_sit_up') && WHEEZING.some((phase) => run.onDuring('pos_sit_up', phase)),
+        },
+        { quote: 'remove packs', check: (run) => doneWhileWheezing(run, 'suction') },
       ],
       when: (run) => run.at('stop'),
     },
@@ -581,8 +599,14 @@ export const tight: Scenario = {
       id: 'o2',
       ref: { protocol: 'bronchospasm', step: 'O₂ to SpO₂ 93-95%' },
       tier: 'core',
-      // A target, so it counts while the oxygen is still on.
-      check: (run) => run.on('o2'),
+      // A target with an upper bound, so never "still on at the end". His
+      // saturation is under it from the severe signs until the pen has worked:
+      // oxygen counts if it was on then, and a run without those signs never
+      // reaches the step.
+      check: (run) => {
+        if (run.entered('severe') === null) return null;
+        return run.onDuring('o2', 'severe') || run.onDuring('o2', 'opening');
+      },
       when: (run) => run.last('o2'),
     },
     {

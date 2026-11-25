@@ -73,6 +73,11 @@ function crownShifts(ctx: Ctx): boolean {
   );
 }
 
+/** Oxygen on while he was sick and still on at the end. Switched on with EMS at the door is too late to count. */
+function oxygenWhileSick(run: Ctx): boolean {
+  return run.on('o2') && (run.onDuring('o2', 'vomiting') || run.onDuring('o2', 'settled'));
+}
+
 function sedativeAfter(run: Ctx, t: number): boolean {
   return [...run.given('fentanyl'), ...run.given('midazolam')].some((d) => d.t >= t);
 }
@@ -186,13 +191,17 @@ export const crown: Scenario = {
         {
           when: crownShifts,
           to: 'visible',
-          beat: {
-            scene:
-              'On the last thrust something shifts. He drags in a thin, crowing breath. With his mouth open you can see the edge of the crown at the back of his throat.',
+          // The thrust is named only when thrusts were the last set done.
+          beat: (ctx) => ({
+            scene: `${
+              (ctx.last('abdominal_thrusts') ?? -1) > (ctx.last('back_blows') ?? -1)
+                ? 'On the last thrust something shifts. '
+                : ''
+            }He drags in a thin, crowing breath. With his mouth open you can see the edge of the crown at the back of his throat.`,
             voice: { who: 'DA', line: 'I can see it!' },
             log: 'Crown shifted: in view, some air moving',
             tone: 'good',
-          },
+          }),
         },
         {
           when: (ctx) => setsDone(ctx) >= 2 && !ctx.has('nothing_yet') && !ctx.has('pushed_back'),
@@ -650,8 +659,17 @@ export const crown: Scenario = {
       tier: 'core',
       parts: [
         {
+          // The try-in ended when the crown went down, and no step of the Choking
+          // page stops a procedure: by the time he vomits nothing is in progress,
+          // so an untapped Stop is not a miss in this drill. Tapped before his
+          // airway was clear, it is still shown as done.
           quote: 'Stop',
-          check: (run) => (run.entered('vomiting') === null ? null : run.at('stop') !== null),
+          check: (run) => {
+            if (run.entered('vomiting') === null) return null;
+            const stopped = run.at('stop');
+            const clear = run.entered('settled');
+            return stopped !== null && (clear === null || stopped < clear) ? true : null;
+          },
         },
         {
           quote: 'Turn to the side, head down',
@@ -676,7 +694,7 @@ export const crown: Scenario = {
       parts: [
         {
           quote: 'Turn off N₂O, 100% O₂',
-          check: (run) => (run.entered('vomiting') === null ? null : run.on('o2')),
+          check: (run) => (run.entered('vomiting') === null ? null : oxygenWhileSick(run)),
         },
         {
           // No credit for an omission: it counts once the oxygen part was done.
@@ -685,7 +703,7 @@ export const crown: Scenario = {
             const sick = run.entered('vomiting');
             if (sick === null) return null;
             if (sedativeAfter(run, sick)) return false;
-            return run.on('o2') ? true : null;
+            return oxygenWhileSick(run) ? true : null;
           },
         },
       ],

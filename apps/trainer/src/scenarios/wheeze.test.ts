@@ -471,3 +471,77 @@ describe('"Wheeze", played by the protocol', () => {
     expect(sim.phase).toBe('onset');
   });
 });
+
+describe('"Wheeze": a step counts while it applied', () => {
+  /** Both doses and the call on time, and nothing else until EMS is at the door. */
+  function bareToHandover(sim: Simulation): void {
+    advance(sim, 14);
+    sim.act('stop');
+    sim.useDevice('auviq_adult');
+    sim.act('call_911');
+    expect(until(sim, 'relapse')).toBe(true);
+    drawAndGive(sim, 'epinephrine', 0.3, { route: 'IM' });
+    expect(until(sim, 'handover')).toBe(true);
+  }
+
+  it('oxygen, a position and fluids started once EMS is at the door are too late', () => {
+    const sim = start();
+    bareToHandover(sim);
+    expect(sim.scene).toContain('his pressure has not come up');
+    sim.act('o2');
+    sim.act('pos_flat_legs_up');
+    sim.act('saline');
+    sim.answer('er');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.endingKey).toBe('er');
+    expect(row(sim, 'position').result).toBe('missed');
+    expect(row(sim, 'o2').result).toBe('missed');
+    expect(row(sim, 'fluids').result).toBe('missed');
+    const debrief = gradeRun(wheeze, sim);
+    expect(debrief.done).toBe(5);
+    expect(debrief.of).toBe(8);
+    expect(debrief.clean).toBe(false);
+  });
+
+  it('the same three started after the second dose, before EMS arrives, still count', () => {
+    const sim = start();
+    advance(sim, 14);
+    sim.useDevice('auviq_adult');
+    sim.act('call_911');
+    expect(until(sim, 'relapse')).toBe(true);
+    drawAndGive(sim, 'epinephrine', 0.3, { route: 'IM' });
+    advance(sim, 5);
+    expect(sim.phase).toBe('settling');
+    sim.act('o2');
+    sim.act('pos_flat_legs_up');
+    sim.act('saline');
+    expect(until(sim, 'handover')).toBe(true);
+    sim.answer('er');
+    expect(untilEnd(sim)).toBe(true);
+    expect(row(sim, 'position').result).toBe('done');
+    expect(row(sim, 'o2').result).toBe('done');
+    expect(row(sim, 'fluids').result).toBe('done');
+  });
+
+  it('"stuck in the eighties" is only said of a pressure in the eighties', () => {
+    const sim = start();
+    advance(sim, 14);
+    sim.useDevice('auviq_adult');
+    sim.act('call_911');
+    expect(until(sim, 'relapse')).toBe(true);
+    // Left to fall before the second dose: he settles from the sixties.
+    advance(sim, 150);
+    drawAndGive(sim, 'epinephrine', 0.3, { route: 'IM' });
+    expect(until(sim, 'settling', 5)).toBe(true);
+    expect(sim.run.vitals.sbp).toBeLessThan(65);
+    const said = (): boolean => sim.voices.some((v) => v.line.includes('stuck in the eighties'));
+    let saidAt: number | null = null;
+    for (let i = 0; i < 4 * 59 && sim.phase === 'settling'; i += 1) {
+      sim.tick(0.25);
+      if (saidAt === null && said()) saidAt = sim.run.vitals.sbp;
+    }
+    expect(saidAt).not.toBeNull();
+    expect(Math.round(saidAt!)).toBeGreaterThanOrEqual(80);
+    expect(Math.round(saidAt!)).toBeLessThan(90);
+  });
+});
