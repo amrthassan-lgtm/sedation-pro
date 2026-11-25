@@ -2,15 +2,17 @@ import {
   calloutAt,
   doseRangeOf,
   gaveProtocolDose,
+  numberInStep,
   overProtocolDose,
   phraseInStep,
 } from '@/engine/protocol';
-import type { Ctx, Drive, Look, Phase, Scenario } from '@/engine/types';
+import type { Beat, Ctx, Drive, Look, Phase, Prompt, Scenario } from '@/engine/types';
 
 import { reachedAt, toward, within } from './helpers';
 import {
   AIR_SEEN_GOING_IN,
   airwayOpened,
+  airwayOpenedSince,
   type AsFound,
   baggedThroughParalysis,
   baggedUntilBreathing,
@@ -172,6 +174,44 @@ function called911InSpasm(run: Ctx): boolean | null {
   return called !== null && (breathing === null || called < breathing);
 }
 
+/**
+ * How long a patient may still need the bag before someone else calls: the
+ * BVM page's "still needs the bag after 2 minutes: Call 911", read from the
+ * page so the front desk asks when the page says to.
+ */
+const STILL_ON_THE_BAG_SEC =
+  numberInStep('bvm', 'still needs the bag after', /still needs the bag after (\d+) minutes/) * 60;
+
+/**
+ * Asked of a team still bagging him with nobody called (owner's wording, Nov
+ * 2026). Without it a run that bags and never reverses or calls had no ending.
+ */
+const FRONT_DESK_ASKS: Prompt = {
+  id: 'front_desk_911',
+  voice: { who: 'Front desk', line: 'Do you want me to call 911?' },
+  options: [
+    { id: 'call', label: 'Call 911' },
+    { id: 'not_yet', label: 'Not yet' },
+  ],
+};
+
+/** When she last asked, or was last told "Not yet". The story's own marker, not on the cart. */
+const ASKED_TO_CALL = 'asked:front_desk_911';
+
+/** Since when air from the bag has been going in, or `null` while none is. */
+function airGoingInSince(ctx: Ctx): number | null {
+  const bag = ctx.last('bvm');
+  const open = airwayOpenedSince(ctx);
+  return bagMovesAir(ctx) && bag !== null && open !== null ? Math.max(bag, open) : null;
+}
+
+/** The front desk makes the call: said and logged the same whether it was tapped or answered. */
+const CALLED_911: Beat = {
+  voice: { who: 'Front desk', line: '911 is on the way. About eight minutes.' },
+  log: '911 called',
+  tone: 'good',
+};
+
 const GIVEN = 'Given: midazolam 4 mg and fentanyl 50 mcg. Last dose six minutes ago.';
 /** Red in the log here: both pages this drill opens on say to stop sedatives. */
 const SEDATIVE_GIVEN = sedativeGiven(GIVEN, 'bad');
@@ -292,6 +332,18 @@ export const quiet: Scenario = {
             log: 'Rousing after naloxone',
             tone: 'good',
           }),
+        },
+        {
+          // Still on the bag with nobody called: the front desk asks, and asks
+          // again the same wait after she last asked or was told "Not yet".
+          when: (ctx) => {
+            const since = airGoingInSince(ctx);
+            if (since === null || ctx.at('call_911') !== null) return false;
+            const asked = ctx.last(ASKED_TO_CALL) ?? -Infinity;
+            return ctx.t - Math.max(since, asked) >= STILL_ON_THE_BAG_SEC;
+          },
+          to: 'stay',
+          beat: { counts: [ASKED_TO_CALL], prompt: FRONT_DESK_ASKS },
         },
       ],
       nudges: [
@@ -578,11 +630,14 @@ export const quiet: Scenario = {
     call_911: (ctx) =>
       ctx.count('call_911') > 1
         ? { voice: { who: 'Front desk', line: 'They’re already on the way.' } }
-        : {
-            voice: { who: 'Front desk', line: '911 is on the way. About eight minutes.' },
-            log: '911 called',
-            tone: 'good',
-          },
+        : // Tapped while she is asking, the tap is the answer.
+          { ...CALLED_911, settles: FRONT_DESK_ASKS.id },
+
+    // "Call 911" is the call, exactly as the tap is. "Not yet" is only heard.
+    'answer:front_desk_911': (_ctx, e) =>
+      e.kind === 'answer' && e.optionId === 'call'
+        ? { ...CALLED_911, counts: ['call_911'] }
+        : { counts: [ASKED_TO_CALL] },
 
     'give:naloxone': (ctx, e) => {
       const dose = doseOf(e);

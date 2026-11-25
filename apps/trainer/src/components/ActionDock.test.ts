@@ -25,6 +25,33 @@ async function callOut(wrapper: ReturnType<typeof dock>['wrapper'], text: string
   return wrapper.findAll('.hits .pill');
 }
 
+describe('the six tiles (owner, Nov 2026)', () => {
+  it('stand in one fixed order: stop and call, then position, airway, breathing, circulation, drugs', () => {
+    const { wrapper } = dock();
+    expect(wrapper.findAll('.tile .tile-name').map((t) => t.text())).toEqual([
+      'Team',
+      'Position',
+      'Airway',
+      'Breathing',
+      'Circulation',
+      'Drug tray',
+    ]);
+  });
+
+  it('each of the first five opens its own drawer, and the last the tray', async () => {
+    const { wrapper } = dock();
+    for (const tile of wrapper.findAll('.tile')) await tile.trigger('click');
+    expect(wrapper.emitted('drawer')).toEqual([
+      ['team'],
+      ['position'],
+      ['airway'],
+      ['breathing'],
+      ['circulation'],
+    ]);
+    expect(wrapper.emitted('tray')).toHaveLength(1);
+  });
+});
+
 describe('calling out something already under way', () => {
   it('offers an act that is off as it is, and picks it', async () => {
     const { wrapper } = dock();
@@ -60,5 +87,16 @@ describe('calling out something already under way', () => {
     await wrapper.find('form').trigger('submit');
     expect(wrapper.emitted('pick')).toBeUndefined();
     expect((wrapper.find('#callout').element as HTMLInputElement).value).toBe('auvi');
+  });
+
+  it('"cough" still finds Encourage coughing, now that it lives in the Airway drawer, and picks it', async () => {
+    const { wrapper } = dock();
+    const [pill] = await callOut(wrapper, 'cough');
+    expect(pill?.text()).toBe('Encourage coughing');
+    await pill?.trigger('click');
+    expect(wrapper.emitted('pick')?.[0]?.[0]).toMatchObject({
+      kind: 'action',
+      id: 'encourage_cough',
+    });
   });
 });

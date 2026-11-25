@@ -647,6 +647,7 @@ export class Simulation {
     for (const flag of beat.flags ?? []) this.flagSet.add(flag);
     for (const action of beat.counts ?? []) this.note(action);
     for (const toggle of beat.off ?? []) this.toggles.delete(toggle);
+    if (beat.settles !== undefined && this.openPrompt?.id === beat.settles) this.openPrompt = null;
     if (beat.prompt) {
       this.openPrompt = beat.prompt;
       // A question is said out loud like any other line: it must be heard by

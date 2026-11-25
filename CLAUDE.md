@@ -269,6 +269,18 @@ the clinical app and must stay that way:
   tagline gives no sign away; `scenarios.test.ts` holds both. Run records
   are kept per scenario `id`, so a drill is renamed by its `title` alone:
   "Shallow" is still `quiet` and "Cough" is still `tight`.
+- **The cart reads in one order, and does not sprawl (owner, Nov 2026).** Six
+  tiles: Team, Position, Airway, Breathing, Circulation, Drug tray. That is
+  position, airway, breathing, circulation, drugs, with "stop and call" in
+  front, so the team learns one scan. It is the default scan, not a rule over
+  a page: anaphylaxis starts with epinephrine and no pulse with compressions,
+  and the debrief grades against the page. Each drawer is a grid of buttons
+  three across that fits one tablet screen with no scrolling
+  (`drawerSections` in `engine/catalog.ts`). A button is added only when a
+  drill needs it and a page names it. `kit` under a label is the practice's
+  own equipment, brand only, held to the inventory by a test; `section` is a
+  heading inside a drawer. In "Shallow" the front desk asks "Do you want me to
+  call 911?" after the BVM page's 2 minutes of bagging with no call.
 - **A step counts only while it applied (Nov 2026 review).** Oxygen put on
   with EMS at the door, or 911 called once he breathes again, reads "Not
   done". A rubric check that reads "on at the end" also asks "on while it

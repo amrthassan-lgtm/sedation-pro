@@ -923,6 +923,231 @@ describe('"Shallow": an ambulance that was called arrives', () => {
   });
 });
 
+describe('"Shallow": still on the bag, and nobody has called (owner, Nov 2026)', () => {
+  const QUESTION = {
+    id: 'front_desk_911',
+    voice: { who: 'Front desk', line: 'Do you want me to call 911?' },
+    options: [
+      { id: 'call', label: 'Call 911' },
+      { id: 'not_yet', label: 'Not yet' },
+    ],
+  };
+  const ON_THE_WAY = { who: 'Front desk', line: '911 is on the way. About eight minutes.' };
+
+  /** The wait, read here from the BVM page's own step and not from the drill. */
+  const STILL_ON_THE_BAG = findProtocol('bvm')!.steps.find((s) =>
+    s.text.includes('still needs the bag after'),
+  )!.text;
+  const WAIT =
+    Number(/still needs the bag after (\d+) minutes: Call 911/.exec(STILL_ON_THE_BAG)![1]) * 60;
+
+  /** Bagged through an opened airway from the first second, and never reversed. */
+  function bagged(options: ConstructorParameters<typeof Simulation>[1] = {}): Simulation {
+    const sim = new Simulation(quiet, options);
+    sim.act('jaw_thrust');
+    sim.act('bvm');
+    return sim;
+  }
+
+  const asked = (sim: Simulation): number =>
+    sim.voices.filter((v) => v.line === QUESTION.voice.line).length;
+
+  it('the front desk asks once the bag has moved air for as long as the BVM page says', () => {
+    expect(WAIT).toBe(120);
+    const sim = bagged();
+    advance(sim, WAIT - 1);
+    expect(sim.prompt).toBeNull();
+    advance(sim, 1);
+    expect(sim.prompt).toEqual(QUESTION);
+    // Said out loud as well, for a team with a drawer open.
+    expect(sim.voices.at(-1)).toEqual(QUESTION.voice);
+    expect(sim.phase).toBe('hypo');
+    expect(sim.ending).toBeNull();
+  });
+
+  it('"Call 911" is the call: the same reply, log, ambulance and debrief as the tap', () => {
+    const answered = bagged();
+    advance(answered, WAIT);
+    answered.answer('call');
+    const tapped = bagged();
+    advance(tapped, WAIT);
+    tapped.act('call_911');
+
+    for (const sim of [answered, tapped]) {
+      expect(sim.prompt).toBeNull();
+      expect(sim.run.at('call_911')).toBe(WAIT);
+      expect(sim.voices.at(-1)).toEqual(ON_THE_WAY);
+      expect(sim.log.at(-1)).toMatchObject({ t: WAIT, text: '911 called', tone: 'good' });
+      expect(untilEnd(sim, 900)).toBe(true);
+      expect(sim.t - WAIT).toBeCloseTo(480, 0);
+      expect(sim.endingKey).toBe('ems_bagged');
+      expect(sim.ending?.text).toBe('He leaves with EMS. He is still being bagged.');
+    }
+    expect(answered.log).toEqual(tapped.log);
+    expect(gradeRun(quiet, answered)).toEqual(gradeRun(quiet, tapped));
+  });
+
+  it('"Not yet" changes nothing, and she asks again every two minutes while it goes on', () => {
+    const sim = bagged();
+    advance(sim, WAIT);
+    const before = { log: sim.log.length, said: sim.voiceCount };
+    sim.answer('not_yet');
+    expect(sim.prompt).toBeNull();
+    expect(sim.log.length).toBe(before.log);
+    expect(sim.voiceCount).toBe(before.said);
+    expect(sim.run.at('call_911')).toBeNull();
+
+    advance(sim, WAIT - 1);
+    expect(sim.prompt).toBeNull();
+    advance(sim, 1);
+    expect(sim.prompt).toEqual(QUESTION);
+    sim.answer('not_yet');
+    advance(sim, WAIT);
+    expect(sim.prompt).toEqual(QUESTION);
+    expect(asked(sim)).toBe(3);
+    expect(sim.ending).toBeNull();
+    expect(sim.log.map((l) => l.text)).not.toContain('911 called');
+  });
+
+  it('a question nobody answers stays open, and is asked again two minutes on', () => {
+    const sim = bagged();
+    advance(sim, WAIT * 2 - 1);
+    expect(asked(sim)).toBe(1);
+    expect(sim.prompt).toEqual(QUESTION);
+    advance(sim, 1);
+    expect(asked(sim)).toBe(2);
+    expect(sim.prompt).toEqual(QUESTION);
+  });
+
+  it('answered "Call 911" the second time round, the ambulance is eight minutes from then', () => {
+    const sim = bagged();
+    advance(sim, WAIT);
+    sim.answer('not_yet');
+    advance(sim, WAIT);
+    sim.answer('call');
+    expect(sim.run.at('call_911')).toBe(WAIT * 2);
+    advance(sim, WAIT * 2);
+    // Called: she does not ask again.
+    expect(sim.prompt).toBeNull();
+    expect(asked(sim)).toBe(2);
+    expect(untilEnd(sim, 900)).toBe(true);
+    expect(sim.t - WAIT * 2).toBeCloseTo(480, 0);
+    expect(sim.endingKey).toBe('ems_bagged');
+  });
+
+  it('Call 911 tapped on the cart while she is asking is her answer: the question comes down', () => {
+    const sim = bagged();
+    advance(sim, WAIT);
+    expect(sim.prompt).toEqual(QUESTION);
+    sim.act('call_911');
+    expect(sim.prompt).toBeNull();
+    expect(sim.voices.at(-1)).toEqual(ON_THE_WAY);
+    expect(sim.log.filter((l) => l.text === '911 called')).toHaveLength(1);
+    advance(sim, WAIT * 2);
+    expect(sim.prompt).toBeNull();
+    expect(asked(sim)).toBe(1);
+  });
+
+  it('a team that has already called is not asked', () => {
+    const sim = bagged();
+    sim.act('call_911');
+    advance(sim, WAIT * 3);
+    expect(sim.prompt).toBeNull();
+    expect(asked(sim)).toBe(0);
+  });
+
+  it('a bag that moves no air is not "still needs the bag": nobody asks', () => {
+    const sim = new Simulation(quiet, { forgiving: true });
+    sim.act('bvm');
+    advance(sim, WAIT * 2);
+    expect(sim.monitor.bagged).toBe(false);
+    expect(sim.prompt).toBeNull();
+    expect(asked(sim)).toBe(0);
+  });
+
+  it('the two minutes are of air going in: a bag put down and picked up again starts them over', () => {
+    const sim = bagged();
+    advance(sim, WAIT - 20);
+    sim.act('bvm');
+    advance(sim, 5);
+    sim.act('bvm');
+    advance(sim, WAIT - 1);
+    expect(sim.prompt).toBeNull();
+    advance(sim, 1);
+    expect(sim.prompt).toEqual(QUESTION);
+  });
+
+  it('the same with the jaw let go and held again', () => {
+    const sim = bagged();
+    advance(sim, WAIT - 20);
+    sim.act('jaw_thrust');
+    advance(sim, 5);
+    sim.act('jaw_thrust');
+    advance(sim, WAIT - 1);
+    expect(sim.prompt).toBeNull();
+    advance(sim, 1);
+    expect(sim.prompt).toEqual(QUESTION);
+  });
+
+  it('she asks only while he is still hypoventilating: reversed in time, the team is never asked', () => {
+    const ideal = start();
+    idealUntilSpasm(ideal);
+    idealSpasm(ideal);
+    expect(untilEnd(ideal)).toBe(true);
+    expect(asked(ideal)).toBe(0);
+    expect(gradeRun(quiet, ideal).clean).toBe(true);
+
+    // Reversed late, without a call: bagged well past two minutes of the spasm and after, and not asked there.
+    const late = bagged();
+    advance(late, 60);
+    drawAndGive(late, 'naloxone', 1);
+    expect(until(late, 'spasm')).toBe(true);
+    drawAndGive(late, 'succinylcholine', 1);
+    expect(untilEnd(late)).toBe(true);
+    expect(late.endingKey).toBe('recovered');
+    expect(asked(late)).toBe(0);
+  });
+
+  it('with the bag in the player’s own hand, she asks when their squeezes have moved air that long', () => {
+    const sim = bagged({ pacedBag: true });
+    for (let t = 0; t < WAIT + 6 && !sim.prompt; t += 6) {
+      sim.squeeze(1);
+      advance(sim, 6);
+    }
+    expect(sim.prompt).toEqual(QUESTION);
+    expect(sim.t).toBe(WAIT);
+
+    // In the hand and never squeezed, it has moved no air at all.
+    const idle = bagged({ pacedBag: true, forgiving: true });
+    advance(idle, WAIT * 2);
+    expect(idle.prompt).toBeNull();
+  });
+
+  it('answered in the spasm, the call counts for the spasm as the tap would', () => {
+    const sim = start();
+    sim.act('o2');
+    sim.act('stimulate');
+    sim.act('jaw_thrust');
+    sim.act('bvm');
+    advance(sim, WAIT);
+    expect(sim.prompt).toEqual(QUESTION);
+    drawAndGive(sim, 'naloxone', 1);
+    expect(until(sim, 'spasm')).toBe(true);
+    expect(sim.prompt).toEqual(QUESTION);
+    sim.act('stop');
+    sim.act('suction');
+    sim.act('larson');
+    sim.act('cpap');
+    sim.answer('call');
+    advance(sim, 4);
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.endingKey).toBe('recovered_ems');
+    expect(row(sim, 'call_911').result).toBe('done');
+    expect(gradeRun(quiet, sim)).toMatchObject({ done: 13, of: 13, clean: true });
+  });
+});
+
 describe('"Shallow": the bag moves air only through an opened airway', () => {
   /** The BVM page's own step: the airway is opened before a breath. */
   const BVM_STEPS = findProtocol('bvm')!.steps.map((s) => s.text);
