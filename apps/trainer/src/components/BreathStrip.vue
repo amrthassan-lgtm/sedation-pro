@@ -7,9 +7,11 @@ import type { Breath } from '@/engine/types';
 import { fmtClock } from '@/time';
 
 /**
- * The breaths the player gave, as they gave them: one bar a squeeze, as wide
- * as it was held, against marks set the page's gap apart. Facts only. What
- * the rhythm should have been is the page's own line, printed above it.
+ * The breaths the player gave, as they gave them: one bar a squeeze, from
+ * where it began to where it was let go, against marks set the page's gap
+ * apart. A breath the engine found off the page's pace is an outline. Facts
+ * only. What the rhythm should have been is the page's own line, printed
+ * above it.
  */
 const props = defineProps<{
   breaths: ReadonlyArray<Breath>;
@@ -28,17 +30,26 @@ const PAGE_LINE =
   findProtocol('bvm')?.steps.find((s) => s.text.includes('just enough to see the chest rise'))
     ?.text ?? '';
 
-const from = computed(() => props.breaths[0]?.t ?? 0);
+/** A squeeze is recorded when the bag is let go: it began its own length before that. */
+const began = (b: Breath): number => Math.max(0, b.t - b.held);
+const from = computed(() => {
+  const first = props.breaths[0];
+  return first ? began(first) : 0;
+});
 const x = (seconds: number): number => PAD + ((W - 2 * PAD) * seconds) / WINDOW_SEC;
 
 const bars = computed(() =>
   props.breaths
-    .filter((b) => b.t - from.value <= WINDOW_SEC)
+    .filter((b) => began(b) - from.value <= WINDOW_SEC)
     .map((b) => ({
-      x: x(b.t - from.value),
+      x: x(began(b) - from.value),
       width: Math.max(3, x(Math.min(b.held, WINDOW_SEC)) - PAD),
+      off: b.onPace === false,
     })),
 );
+
+/** A run saved before breaths were judged says nothing about their pace, so neither does the strip. */
+const judged = computed(() => props.breaths.some((b) => typeof b.onPace === 'boolean'));
 
 const marks = computed(() => {
   const out: number[] = [];
@@ -96,6 +107,7 @@ const summary = computed(() => {
         v-for="(bar, i) in bars"
         :key="`b${i}`"
         class="bar"
+        :class="{ 'is-off': bar.off }"
         :x="bar.x"
         :y="BAR_TOP"
         :width="bar.width"
@@ -109,7 +121,9 @@ const summary = computed(() => {
     </svg>
     <p class="strip-note">
       Dotted lines are {{ BREATH.everySec }} seconds apart. Each bar is one squeeze, as wide as it
-      was held.<template v-if="handed.length > 0"> Shaded: the assistant had the bag.</template>
+      was held<template v-if="judged"
+        >: solid when it was on pace, outlined when it was not</template
+      >.<template v-if="handed.length > 0"> Shaded: the assistant had the bag.</template>
     </p>
     <a class="strip-go" href="../quick-reference/bvm">Go to BVM ›</a>
   </figure>
@@ -150,6 +164,16 @@ svg {
 }
 .bar {
   fill: var(--color-text-primary);
+}
+/*
+ * Off pace is a quieter bar, not a red one: red is the room's, for an
+ * emergency. Hollow on the card's own colour, so it is not taken for the
+ * shading that marks the assistant's turn.
+ */
+.bar.is-off {
+  fill: var(--color-card-bg);
+  stroke: var(--color-text-secondary);
+  stroke-width: 1.5;
 }
 .handed {
   fill: var(--color-surface-overlay);

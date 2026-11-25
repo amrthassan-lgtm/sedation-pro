@@ -134,6 +134,20 @@ describe('the engine', () => {
     expect(sim.run.entered('b')).toBeCloseTo(304.25, 5);
   });
 
+  it('the minutes a time cut skips are not a gap between two of the player’s breaths', () => {
+    const sim = new Simulation(scenario(), { pacedBag: true });
+    sim.act('bvm');
+    sim.squeeze(1);
+    sim.tick(4);
+    expect(sim.sinceBreath).toBe(5);
+    sim.act('call_911');
+    sim.tick(0.25);
+    expect(sim.cuts).toHaveLength(1);
+    expect(sim.sinceBreath).toBeNull();
+    sim.squeeze(1);
+    expect(sim.breaths.at(-1)).toMatchObject({ gap: null, onPace: true });
+  });
+
   it('a prompt stays open until answered, and the answer reaches the scenario', () => {
     const sim = new Simulation(scenario());
     sim.act('call_911');

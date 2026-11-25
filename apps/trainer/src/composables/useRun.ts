@@ -71,7 +71,8 @@ export function useRun(scenario: Scenario) {
   const holding = (): boolean =>
     cutCard.value !== null || (settings.takeYourTime && sheetOpen.value);
 
-  function frame(): void {
+  /** Move the sim on to this instant. */
+  function advance(): void {
     const now = performance.now();
     const dt = Math.min(MAX_STEP_SEC, (now - lastFrame) / 1000);
     lastFrame = now;
@@ -80,8 +81,32 @@ export function useRun(scenario: Scenario) {
       sim.tick(dt);
       touch();
     }
+  }
+
+  function frame(): void {
+    advance();
     sound();
     if (sim.ending) finish();
+  }
+
+  /**
+   * A squeeze is stamped at the moment the bag is let go, not at the last
+   * quarter second: the gap between two breaths is measured from it, and a
+   * quarter second either way is enough to misstate it.
+   */
+  function squeeze(heldSec: number): boolean {
+    if (timer !== null) advance();
+    return sim.squeeze(heldSec);
+  }
+
+  /**
+   * Seconds the present is ahead of the sim's last step, for a timer drawn
+   * every frame: without it the bag's ring would come due up to a quarter
+   * second late. Nothing while the clock is held or the run is over.
+   */
+  function ahead(): number {
+    if (timer === null || holding() || sim.ending) return 0;
+    return Math.min(MAX_STEP_SEC, Math.max(0, (performance.now() - lastFrame) / 1000));
   }
 
   function sound(): void {
@@ -222,9 +247,13 @@ export function useRun(scenario: Scenario) {
 
     bagHeldBy: view(() => sim.bagHeldBy),
     sinceBreath: view(() => sim.sinceBreath),
+    lastBreath: view(() => sim.lastBreath),
+    paceRun: view(() => sim.paceRun),
+    handOverEarned: view(() => sim.handOverEarned),
     belly: view(() => sim.belly),
     breathGoesIn: view(() => sim.breathGoesIn),
-    squeeze: (heldSec: number) => play(() => sim.squeeze(heldSec)),
+    squeeze: (heldSec: number) => play(() => squeeze(heldSec)),
+    ahead,
     handBag: (to: BagHolder) => play(() => sim.handBag(to)),
 
     isOn: (id: string): boolean => (void rev.value, sim.isOn(id)),
