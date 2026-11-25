@@ -17,6 +17,8 @@ import type {
   Capno,
   Ctx,
   CutRecord,
+  BagHolder,
+  Breath,
   DoseEvent,
   Drive,
   Ending,
@@ -35,9 +37,41 @@ import type {
   Vitals,
   Voice,
 } from './types';
+import { numberInStep, phraseInStep } from './protocol';
 
-/** Breaths a minute when someone is bagging: one every six seconds. */
-export const BAG_RATE = 10;
+/**
+ * The breath as the BVM page writes it: one every so many seconds, each over
+ * so long. Read from the page, so the bag and its pacer keep no number of
+ * their own and follow a reworded page.
+ */
+export const BREATH = {
+  everySec: numberInStep(
+    'bvm',
+    'just enough to see the chest rise',
+    /1 breath every (\d+) seconds/,
+  ),
+  overSec: numberInStep('bvm', 'just enough to see the chest rise', /each over (\d+) second/),
+} as const;
+
+/** Breaths a minute when someone is bagging as the page writes it. */
+export const BAG_RATE = 60 / BREATH.everySec;
+
+/** The sign the BVM page names for air going to the stomach, in its own words. */
+const BELLY_RISING = phraseInStep('bvm', 'Belly rising', 'Belly rising');
+
+/*
+ * Pacing for a bag the player squeezes, each hung on the page's own numbers.
+ * A squeeze goes on moving air for a breath and a half: a bag nobody has
+ * squeezed lately is not ventilating him. Squeezes closer together than half
+ * the page's gap, or held for more than twice its breath, are the ones that
+ * fill the stomach; a few in a row and the belly is seen to rise.
+ */
+const BREATH_CARRIES_SEC = BREATH.everySec * 1.5;
+const TOO_SOON_SEC = BREATH.everySec / 2;
+const TOO_LONG_SEC = BREATH.overSec * 2;
+const BELLY_AFTER = 4;
+/** The monitor's breath rate is counted over this many of the latest squeezes. */
+const RATE_OVER_BREATHS = 4;
 
 /** The cuff takes this long to inflate and read. */
 const CUFF_SECONDS = 20;
@@ -86,6 +120,12 @@ export class Simulation {
   readonly coached: boolean;
   /** "Take your time": the patient cannot be lost, so no arrest ending is ever taken. */
   readonly forgiving: boolean;
+  /**
+   * The player squeezes the bag themselves until they hand it over. Off, the
+   * assistant has the bag from the moment it is picked up and bags as the
+   * page writes, which is all a story test needs.
+   */
+  readonly pacedBag: boolean;
 
   private time = 0;
   private phaseId: string;
@@ -95,6 +135,15 @@ export class Simulation {
   private rhythmNow: Rhythm = 'sinus';
   private lookNow: Look;
   private airwayOpen = true;
+
+  private bagHolder: BagHolder;
+  private readonly breathLog: Breath[] = [];
+  private readonly assistantSpans: Array<{ from: number; to: number | null }> = [];
+  /** The story's line about the bag waits for the first breath to go in. */
+  private bagLinePending = false;
+  private hardBreaths = 0;
+  private bellyUp = false;
+  private nextAssistantBreathAt = 0;
 
   private readonly toggles = new Set<string>();
   private readonly actions = new Map<string, ActionRecord>();
@@ -133,10 +182,15 @@ export class Simulation {
   private readonly cutLog: CutRecord[] = [];
   private readonly drawnInto = new Set<string>();
 
-  constructor(scenario: Scenario, options: { coached?: boolean; forgiving?: boolean } = {}) {
+  constructor(
+    scenario: Scenario,
+    options: { coached?: boolean; forgiving?: boolean; pacedBag?: boolean } = {},
+  ) {
     this.scenario = scenario;
     this.coached = options.coached ?? false;
     this.forgiving = options.forgiving ?? false;
+    this.pacedBag = options.pacedBag ?? false;
+    this.bagHolder = this.pacedBag ? 'player' : 'da';
     const init = scenario.initial;
     if (scenario.phases[init.phase] === undefined) {
       throw new Error(`Scenario "${scenario.id}" starts in unknown phase "${init.phase}"`);
@@ -171,7 +225,8 @@ export class Simulation {
       held = new Set();
       this.heldIn.set(this.phaseId, held);
     }
-    for (const id of this.toggles) held.add(id);
+    // A bag in the hand that nobody is squeezing was not "held" for the story's purposes.
+    for (const id of this.toggles) if (id !== 'bvm' || this.bagging()) held.add(id);
   }
 
   // ---------------------------------------------------------------- read
@@ -237,6 +292,125 @@ export class Simulation {
     return this.toggles.has(toggle);
   }
 
+  /** Who is squeezing the bag while it is on. */
+  get bagHeldBy(): BagHolder {
+    return this.bagHolder;
+  }
+
+  /** Every squeeze the player gave, oldest first. */
+  get breaths(): ReadonlyArray<Breath> {
+    return this.breathLog;
+  }
+
+  /** The stretches the assistant had the bag, closed at the present for one still running. */
+  get assistantBagging(): ReadonlyArray<{ from: number; to: number }> {
+    return this.assistantSpans.map((s) => ({ from: s.from, to: s.to ?? this.time }));
+  }
+
+  /** Seconds since the player's last squeeze, or null before the first of this stretch. */
+  get sinceBreath(): number | null {
+    const last = this.breathLog.at(-1);
+    const since = this.actions.get('bvm')?.last;
+    return last && since !== undefined && last.t >= since ? this.time - last.t : null;
+  }
+
+  /**
+   * A breath from the bag would go in as things stand: the story has his
+   * airway open. Asked of the story now, not of the last tick, so the screen
+   * can show a squeeze that raises nothing.
+   */
+  get breathGoesIn(): boolean {
+    return this.currentPhase().drive(this.live).airway === 'open';
+  }
+
+  /** The belly is seen to rise: too many breaths too close together or held too long. */
+  get belly(): boolean {
+    return this.bellyUp && this.toggles.has('bvm');
+  }
+
+  /**
+   * The bag is on and air is being pushed: the assistant has it, or the
+   * player squeezed it a moment ago. This, not the bag being in a hand, is
+   * what a story means by "bagging".
+   */
+  private bagging(): boolean {
+    if (!this.toggles.has('bvm')) return false;
+    if (this.bagHolder === 'da') return true;
+    const last = this.breathLog.at(-1);
+    return last !== undefined && this.time - last.t <= BREATH_CARRIES_SEC;
+  }
+
+  /** Breaths a minute as the latest squeezes make it; the page's rate for the assistant. */
+  private bagRate(): number {
+    if (this.bagHolder === 'da') return BAG_RATE;
+    const recent = this.breathLog.slice(-RATE_OVER_BREATHS);
+    const first = recent[0];
+    const last = recent.at(-1);
+    if (!first || !last || recent.length < 2 || last.t === first.t) return 0;
+    return Math.round((60 * (recent.length - 1)) / (last.t - first.t));
+  }
+
+  private strain(hard: boolean): void {
+    this.hardBreaths = clamp(this.hardBreaths + (hard ? 1 : -1), 0, BELLY_AFTER + 2);
+    if (!this.bellyUp && this.hardBreaths >= BELLY_AFTER) {
+      this.bellyUp = true;
+      this.timeline.push({ t: this.time, text: BELLY_RISING, tone: 'bad' });
+      this.beats += 1;
+    } else if (this.bellyUp && this.hardBreaths === 0) {
+      this.bellyUp = false;
+    }
+  }
+
+  /** The story's line about the bag, held back until air is going in. */
+  private bagLine(): void {
+    if (!this.bagLinePending) return;
+    this.bagLinePending = false;
+    this.react('bvm', { kind: 'action', id: 'bvm', on: true });
+  }
+
+  /** One squeeze of the bag by the player, held for `heldSec`. */
+  squeeze(heldSec: number): boolean {
+    if (this.finished || !this.toggles.has('bvm') || this.bagHolder !== 'player') return false;
+    const before = this.breathLog.at(-1);
+    const held = clamp(heldSec, 0.1, 10);
+    this.breathLog.push({ t: this.time, held });
+    this.strain(
+      held > TOO_LONG_SEC || (before !== undefined && this.time - before.t < TOO_SOON_SEC),
+    );
+    this.bagLine();
+    this.holdToggles();
+    this.beats += 1;
+    return true;
+  }
+
+  /** Hand the bag to the assistant, or take it back. */
+  handBag(to: BagHolder): void {
+    if (this.finished || !this.toggles.has('bvm') || this.bagHolder === to) return;
+    this.bagHolder = to;
+    this.timeline.push({
+      t: this.time,
+      text: to === 'da' ? 'DA takes the bag' : 'Bag taken back',
+      tone: 'neutral',
+    });
+    const saidBefore = this.voiceTotal;
+    this.bagLine();
+    if (to === 'da') {
+      this.assistantSpans.push({ from: this.time, to: null });
+      this.nextAssistantBreathAt = this.time + BREATH.everySec;
+      // The story's own line about the bag, if this is the first air to go in, is hers already.
+      if (this.voiceTotal === saidBefore) this.say({ who: 'DA', line: 'I have the bag.' });
+    } else {
+      this.closeAssistantSpan();
+    }
+    this.holdToggles();
+    this.beats += 1;
+  }
+
+  private closeAssistantSpan(): void {
+    const open = this.assistantSpans.at(-1);
+    if (open && open.to === null) open.to = this.time;
+  }
+
   /** How many of a counted device are left; `null` when it is not counted. */
   remaining(deviceId: string): number | null {
     const device = findDevice(deviceId);
@@ -245,7 +419,7 @@ export class Simulation {
   }
 
   get monitor(): MonitorView {
-    const bagged = this.toggles.has('bvm') && this.airwayOpen;
+    const bagged = this.bagging() && this.airwayOpen;
     const own = Math.round(this.body.rr);
     const alarms = this.alarms();
     return {
@@ -253,7 +427,7 @@ export class Simulation {
       spo2: Math.round(this.body.spo2),
       etco2: this.body.etco2 === null ? null : Math.round(this.body.etco2),
       // The bag sets the rate only for a patient breathing slower than it.
-      rr: bagged ? Math.max(BAG_RATE, own) : own,
+      rr: bagged ? Math.max(this.bagRate(), own) : own,
       bagged,
       capno: this.capnoNow,
       rhythm: this.rhythmNow,
@@ -286,7 +460,7 @@ export class Simulation {
       get vitals() {
         return sim.body;
       },
-      on: (toggle) => sim.toggles.has(toggle),
+      on: (toggle) => (toggle === 'bvm' ? sim.bagging() : sim.toggles.has(toggle)),
       at: (action) => sim.actions.get(action)?.first ?? null,
       last: (action) => sim.actions.get(action)?.last ?? null,
       count: (action) => sim.actions.get(action)?.count ?? 0,
@@ -333,6 +507,13 @@ export class Simulation {
     const drive = phase.drive(this.live);
     this.applyDrive(drive, dt);
     this.runCuff();
+    // The assistant's breaths are the page's: each one lets a risen belly settle.
+    if (this.toggles.has('bvm') && this.bagHolder === 'da') {
+      while (this.time >= this.nextAssistantBreathAt) {
+        this.strain(false);
+        this.nextAssistantBreathAt += BREATH.everySec;
+      }
+    }
     this.holdToggles();
 
     for (const nudge of phase.nudges ?? []) {
@@ -440,6 +621,13 @@ export class Simulation {
     this.holdToggles();
   }
 
+  private say(voice: Voice): void {
+    this.voiceAt = this.time;
+    this.voiceTotal += 1;
+    this.voiceLog.push(voice);
+    if (this.voiceLog.length > 40) this.voiceLog = this.voiceLog.slice(-40);
+  }
+
   private play(beat: Beat, fromPlayer = false): void {
     this.beats += 1;
     // The clock jumps first: what the beat says and logs belongs to the moment the story resumes.
@@ -452,19 +640,19 @@ export class Simulation {
         this.passing = null;
       }
     }
-    if (beat.voice) {
-      this.voiceAt = this.time;
-      this.voiceTotal += 1;
-      this.voiceLog.push(beat.voice);
-      if (this.voiceLog.length > 40) this.voiceLog = this.voiceLog.slice(-40);
-    }
+    if (beat.voice) this.say(beat.voice);
     if (beat.log !== undefined) {
       this.timeline.push({ t: this.time, text: beat.log, tone: beat.tone ?? 'neutral' });
     }
     for (const flag of beat.flags ?? []) this.flagSet.add(flag);
     for (const action of beat.counts ?? []) this.note(action);
     for (const toggle of beat.off ?? []) this.toggles.delete(toggle);
-    if (beat.prompt) this.openPrompt = beat.prompt;
+    if (beat.prompt) {
+      this.openPrompt = beat.prompt;
+      // A question is said out loud like any other line: it must be heard by
+      // a team with a drawer open, not only seen on the screen behind it.
+      this.say(beat.prompt.voice);
+    }
     if (beat.bump) {
       const b = beat.bump;
       if (b.spo2 !== undefined) this.body.spo2 = clamp(this.body.spo2 + b.spo2, 0, SPO2_MAX);
@@ -525,7 +713,20 @@ export class Simulation {
       } else {
         this.toggles.delete(id);
       }
-      const spoke = this.react(id, { kind: 'action', id, on: turningOn });
+      // A bag the player has to squeeze says nothing until a breath goes in.
+      const silent = id === 'bvm' && turningOn && this.bagHolder === 'player';
+      if (id === 'bvm') {
+        this.bagLinePending = silent;
+        if (this.bagHolder === 'da') {
+          if (turningOn) {
+            this.assistantSpans.push({ from: this.time, to: null });
+            this.nextAssistantBreathAt = this.time + BREATH.everySec;
+          } else {
+            this.closeAssistantSpan();
+          }
+        }
+      }
+      const spoke = silent ? false : this.react(id, { kind: 'action', id, on: turningOn });
       // After the reaction: a toggle the story switched straight back off was never held.
       this.holdToggles();
       if (!spoke) {

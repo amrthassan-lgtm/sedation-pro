@@ -278,6 +278,30 @@ the clinical app and must stay that way:
 - **The room is never left behind the debrief.** Opening the room starts a
   run, so the debrief replaces it in the history; Back must not start one. A
   call-out never undoes: an act that is on opens its drawer instead.
+- **The bag is the player's to squeeze (owner approved the pacer, Nov 2026).**
+  In the room the engine runs with `pacedBag`: a tap on BVM puts the bag in
+  the player's hand, each press of `BagPad.vue` is one breath, and "bagging"
+  to a story (`ctx.on('bvm')`) means air went in within the last breath and a
+  half, or the assistant has the bag ("DA takes the bag"). A scored run shows
+  no ring and no line; a practice run shows both. The gap and the length are
+  read from the BVM page's own sentence (`BREATH` in `engine/engine.ts`), and
+  the debrief draws the squeezes as facts (`BreathStrip.vue`), never as
+  advice. A story test leaves `pacedBag` off, which is the assistant on the
+  bag from the start. No sound: the pacer keeps the alarms-only rule.
+- **A bag moves air only through a way in.** In "Shallow" a jaw thrust held
+  or an NPA in; in "Stridor" the pack out as well (`bagMovesAir`,
+  `bagNeedsWayIn` in `scenarios/shared.ts`). Without one the assistant says
+  the BVM page's own "Chest not rising", he goes on as if nobody were
+  bagging, and the BVM step is not credited.
+- **An ambulance that was called arrives.** Eight minutes after the call, in
+  whatever phase the story is in (`emsArrives` in `scenarios/shared.ts`), and
+  the run ends in a handover whose one sentence is true of the state he is
+  in. A sedative given mid-emergency deepens him in every drill
+  (`sedatable`), not only in "Shallow".
+- **An add-on drug is graded three ways.** Left out reads "Not done · add-on"
+  and costs nothing; given as written reads "Done"; given any other way reads
+  "Given, not as written" and withholds "Clean run" (`wrong` in
+  `engine/grade.ts`).
 - `pnpm dev:trainer` runs it locally on port 5174.
 
 ## Branching and commits

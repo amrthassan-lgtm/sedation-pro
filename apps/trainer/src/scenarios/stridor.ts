@@ -1,21 +1,34 @@
 import { overProtocolDose } from '@/engine/protocol';
-import type { Ctx, Drive, Look, Reaction, Scenario } from '@/engine/types';
+import type { Ctx, Drive, Look, Phase, Reaction, Scenario } from '@/engine/types';
 
 import { toward } from './helpers';
 import {
+  AIR_SEEN_GOING_IN,
+  airwayOpenedSince,
+  type AsFound,
   baggedThroughParalysis,
   baggedUntilBreathing,
+  bagMovesAir,
+  bagNeedsWayIn,
   breathingWell,
+  chestLine,
   doseLine,
   doseOf,
+  emsArrives,
+  endingsAsFound,
   epinephrineOverdose,
+  FOUND,
   hypoxicHeartRate,
   MASK_HELD,
   PARALYSIS_CUT,
+  paralysisSkip,
   pendingParalysis,
+  sedatable,
   SUCCINYLCHOLINE,
   succinylcholineAsWritten,
   succinylcholineSoFar,
+  takenAsFound,
+  type WayIn,
 } from './shared';
 
 /**
@@ -30,6 +43,9 @@ import {
  * succinylcholine itself, pushed while he is still moving air. Every rate
  * and delay here is pacing; what is correct comes from the protocol text the
  * rubric points at.
+ *
+ * The bag is held to the BVM page: it moves air only with the pack out and
+ * the airway opened (`wayIn`), which is what the paralysed patient needs.
  */
 
 /** The quiet seconds before he starts to crow. */
@@ -46,8 +62,32 @@ const SETTLED_FOR = 12;
 /** A passing scene from the player's own hands is left this long before the story's standing one. */
 const READ_FOR = 5;
 
-const OVERDOSE = epinephrineOverdose('normal', (ctx) =>
-  ctx.phase === 'silent' ? 'shut' : ctx.phase === 'paralyzed' ? 'paralysed' : null,
+/**
+ * The BVM page's "Everything out of the mouth" comes before its "Open the
+ * airway": here a breath from the bag needs the pack out as well.
+ */
+const wayIn: WayIn = (ctx) => {
+  const opened = airwayOpenedSince(ctx);
+  const packOut = ctx.at('suction');
+  return opened === null || packOut === null ? null : Math.max(opened, packOut);
+};
+
+function ventilated(ctx: Ctx): boolean {
+  return bagMovesAir(ctx, wayIn);
+}
+
+/** The bag is what moves his chest only while he is paralysed, so the assistant speaks of it there. */
+const BAG_BREATHES_FOR_HIM = ['paralyzed'] as const;
+
+/** Every phase with the BVM page's rule for the bag, and the sedative's effect, laid over its drive. */
+function bagAndSedative(phases: Readonly<Record<string, Phase>>): Record<string, Phase> {
+  return sedatable(bagNeedsWayIn(phases, BAG_BREATHES_FOR_HIM, wayIn));
+}
+
+const OVERDOSE = epinephrineOverdose(
+  'normal',
+  (ctx) => (ctx.phase === 'silent' ? 'shut' : ctx.phase === 'paralyzed' ? 'paralysed' : null),
+  ventilated,
 );
 
 const EASING = `${MASK_HELD} Each crow is softer than the last.`;
@@ -87,7 +127,7 @@ function spasmBreaks(ctx: Ctx): boolean {
 }
 
 function crowing(ctx: Ctx): Drive {
-  const fall = 0.1 * (ctx.on('o2') ? 0.6 : 1) * (ctx.on('bvm') ? 0.7 : 1);
+  const fall = 0.1 * (ctx.on('o2') ? 0.6 : 1) * (ventilated(ctx) ? 0.7 : 1);
   const dusky = ctx.vitals.spo2 < 88;
   return {
     // The mask with oxygen turns the saturation round; either alone only slows the fall.
@@ -138,6 +178,24 @@ function doneForSpasm(run: Ctx, action: string): boolean | null {
   const ended = spasmEnded(run);
   return done !== null && (ended === null || done < ended);
 }
+
+/** How EMS finds him if they are at the door before the story is over. */
+const TAKEN: ReadonlyArray<AsFound> = [
+  { key: 'ems_crowing', seen: 'He is still crowing.', when: (ctx) => ctx.phase === 'crowing' },
+  { key: 'ems_no_air', seen: FOUND.noAir, when: (ctx) => ctx.phase === 'silent' },
+  {
+    key: 'ems_bagged',
+    seen: FOUND.bagged,
+    when: (ctx) => ctx.phase === 'paralyzed' && ctx.on('bvm'),
+  },
+  {
+    key: 'ems_paralysed',
+    seen: FOUND.paralysed,
+    when: (ctx) => ctx.phase === 'paralyzed' && !ctx.on('bvm'),
+  },
+  { key: 'ems_quiet', seen: 'He is breathing quietly.', when: (ctx) => ctx.phase === 'settling' },
+  { key: 'ems_awake', seen: FOUND.awake, when: (ctx) => ctx.phase === 'breathing' },
+];
 
 const sedativeGiven: Reaction = (_ctx, e) => {
   const dose = doseOf(e);
@@ -200,10 +258,12 @@ export const stridor: Scenario = {
       beat: (ctx) => {
         const flags = pendingParalysis(ctx)?.flags ?? [];
         if (ctx.phase === 'silent') {
-          // Only someone holding a bag or a mask can feel air go in.
-          const masked = ctx.on('bvm') || ctx.on('cpap');
+          // Only someone holding a bag or a mask can feel air go in, and only
+          // past a clear mouth and an opened airway.
+          const masked = (ctx.on('bvm') || ctx.on('cpap')) && wayIn(ctx) !== null;
           return {
             flags,
+            ...(masked ? { counts: AIR_SEEN_GOING_IN } : {}),
             scene:
               'A fine flicker runs under the skin of his chest and shoulders, and the heaving stops. The cords have let go. He is not breathing at all now.',
             voice: { who: 'DA', line: masked ? 'It’s going in!' : 'He’s gone limp!' },
@@ -230,9 +290,10 @@ export const stridor: Scenario = {
         };
       },
     },
+    ...emsArrives(TAKEN.map(takenAsFound), (ctx) => paralysisSkip(ctx, wayIn)),
   ],
 
-  phases: {
+  phases: bagAndSedative({
     closing: {
       drive: () => ({
         spo2Rate: 0,
@@ -358,11 +419,12 @@ export const stridor: Scenario = {
       },
       // The way out is succinylcholine, handled for every phase in `always`.
       transitions: [],
+      // The two coached hints come in the page's order: the succinylcholine, then the call.
       nudges: [
         {
           after: 8,
-          when: (ctx) => ctx.at('call_911') === null,
-          voice: { who: 'Front desk', line: 'Do you need me to call anyone?' },
+          when: (ctx) => ctx.given('succinylcholine').length === 0,
+          voice: { who: 'DA', line: 'The succinylcholine is in the fridge. Do you want it?' },
           coachedOnly: true,
         },
         {
@@ -372,8 +434,8 @@ export const stridor: Scenario = {
         },
         {
           after: 18,
-          when: (ctx) => ctx.given('succinylcholine').length === 0,
-          voice: { who: 'DA', line: 'The succinylcholine is in the fridge. Do you want it?' },
+          when: (ctx) => ctx.at('call_911') === null,
+          voice: { who: 'Front desk', line: 'Do you need me to call anyone?' },
           coachedOnly: true,
         },
         {
@@ -386,7 +448,7 @@ export const stridor: Scenario = {
 
     paralyzed: {
       drive: (ctx) => {
-        const bagging = ctx.on('bvm');
+        const bagging = ventilated(ctx);
         const dusky = ctx.vitals.spo2 < 85;
         return {
           spo2Rate: bagging ? 0.7 : -0.75,
@@ -406,7 +468,7 @@ export const stridor: Scenario = {
       },
       transitions: [
         {
-          when: baggedThroughParalysis,
+          when: (ctx) => baggedThroughParalysis(ctx, wayIn),
           to: 'breathing',
           // A dose pushed while he was paralysed went with this paralysis.
           beat: (ctx) => ({
@@ -457,7 +519,7 @@ export const stridor: Scenario = {
 
     breathing: {
       drive: (ctx) => ({
-        spo2Rate: ctx.on('o2') || ctx.on('bvm') ? 0.6 : 0.25,
+        spo2Rate: ctx.on('o2') || ventilated(ctx) ? 0.6 : 0.25,
         hr: toward(88, 1),
         sbp: toward(124, 0.5),
         dbp: toward(76, 0.4),
@@ -477,7 +539,7 @@ export const stridor: Scenario = {
     },
 
     [OVERDOSE.key]: OVERDOSE.phase,
-  },
+  }),
 
   reactions: {
     stop: () => ({ log: 'Procedure stopped', voice: { who: 'DA', line: 'Instruments out.' } }),
@@ -530,11 +592,10 @@ export const stridor: Scenario = {
             }
           : { log: 'BVM stopped' };
       }
+      const open = wayIn(ctx) !== null;
       if (ctx.phase === 'crowing') {
-        return {
-          scene: 'You squeeze the bag in time with him. A little goes in past the crow.',
-          log: 'BVM',
-        };
+        // What is seen, and no rhythm of the story's own: the BVM page writes the only one.
+        return open ? { scene: 'A little goes in past the crow.', log: 'BVM' } : chestLine(false);
       }
       if (ctx.phase === 'silent') {
         return {
@@ -542,13 +603,7 @@ export const stridor: Scenario = {
           log: 'BVM: no air moving',
         };
       }
-      if (ctx.phase === 'paralyzed') {
-        return {
-          voice: { who: 'DA', line: 'Bagging. His chest is rising.' },
-          log: 'BVM: chest rising',
-          tone: 'good',
-        };
-      }
+      if (ctx.phase === 'paralyzed') return chestLine(open);
       return undefined;
     },
 
@@ -639,6 +694,7 @@ export const stridor: Scenario = {
       text: 'His saturation fell too far for too long, and his pulse is gone. The run stops here.',
     },
     [OVERDOSE.key]: OVERDOSE.ending,
+    ...endingsAsFound(TAKEN),
   },
 
   rubric: [
@@ -703,7 +759,7 @@ export const stridor: Scenario = {
         },
         {
           quote: 'ventilate with the BVM until breathing on their own',
-          check: baggedUntilBreathing,
+          check: (run) => baggedUntilBreathing(run, wayIn),
         },
       ],
       when: (run) => run.given('succinylcholine')[0]?.t ?? null,

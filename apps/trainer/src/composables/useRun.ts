@@ -5,7 +5,7 @@ import { hush, say } from '@/audio/voice';
 import { Simulation } from '@/engine/engine';
 import { gradeRun } from '@/engine/grade';
 import type { SyringeSize } from '@/engine/syringe';
-import type { CutRecord, Scenario, Voice } from '@/engine/types';
+import type { BagHolder, CutRecord, Scenario, Voice } from '@/engine/types';
 import { addRecord, recordsFor, setLastRun, settings } from '@/session';
 
 /** The sim advances four times a second; the monitor animates on its own frame clock. */
@@ -37,6 +37,8 @@ export function useRun(scenario: Scenario) {
   const sim = new Simulation(scenario, {
     coached: settings.coached,
     forgiving: settings.takeYourTime,
+    // In the room the bag is the player's to squeeze until they hand it over.
+    pacedBag: true,
   });
 
   /** Bumped after anything changes, so computed views re-read the sim. */
@@ -116,6 +118,8 @@ export function useRun(scenario: Scenario) {
       history: sim.history,
       cuts: sim.cuts,
       log: sim.log,
+      breaths: sim.breaths,
+      assistantBagging: sim.assistantBagging,
       previous,
       practice,
     });
@@ -215,6 +219,13 @@ export function useRun(scenario: Scenario) {
     look: view(() => sim.look),
     ending: view(() => sim.ending),
     alarmPaused: computed(() => wall.value < alarmPausedUntil.value),
+
+    bagHeldBy: view(() => sim.bagHeldBy),
+    sinceBreath: view(() => sim.sinceBreath),
+    belly: view(() => sim.belly),
+    breathGoesIn: view(() => sim.breathGoesIn),
+    squeeze: (heldSec: number) => play(() => sim.squeeze(heldSec)),
+    handBag: (to: BagHolder) => play(() => sim.handBag(to)),
 
     isOn: (id: string): boolean => (void rev.value, sim.isOn(id)),
     done: (id: string): boolean => (void rev.value, sim.run.at(id) !== null),

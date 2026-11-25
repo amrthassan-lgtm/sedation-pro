@@ -1,14 +1,18 @@
 import { parseConcentrationMcgPerMl } from '@/engine/dose';
 import { calloutAt, doseRangeOf, gaveProtocolDose, phraseInStep } from '@/engine/protocol';
 import type {
+  Beat,
   Capno,
   Ctx,
   DoseEvent,
+  Drive,
   Ending,
   Phase,
   PlayerEvent,
+  Reaction,
   Target,
   TimeCut,
+  Tone,
   Transition,
 } from '@/engine/types';
 
@@ -19,6 +23,9 @@ import { reachedAt, toward } from './helpers';
  * every room, and a drug acts on the patient, not on the reason it was
  * given: stock epinephrine in a vein is the same mistake in any emergency.
  * The thresholds are read from the protocols; the rates are pacing.
+ *
+ * The ambulance is here for the same reason: once it is called it arrives on
+ * the same clock in every room, whatever state the story is in.
  */
 
 const EPI_PEN = calloutAt('anaphylaxis', 'Auvi-Q 0.3 first');
@@ -45,6 +52,151 @@ export const MASK_HELD = `${phraseInStep('laryngospasm', 'Tight mask seal', 'Tig
   'Tight mask seal',
   'steady gentle pressure',
 )} on the bag.`;
+
+/**
+ * Since when a breath from the bag could go in, or `null` while it cannot.
+ * The time lets a story ask how long air has been going in, not only whether.
+ */
+export type WayIn = (ctx: Ctx) => number | null;
+
+/** What the cart has for the BVM page's "Open the airway": Jaw thrust held, or the NPA in. */
+const AIRWAY_OPENERS = ['jaw_thrust', 'npa'] as const;
+
+/**
+ * The BVM page opens the airway before it gives a breath: "head tilt and chin
+ * lift, or jaw thrust. Snoring, or still blocked: NPA". The way in for a drill
+ * with nothing in his mouth.
+ */
+export const airwayOpenedSince: WayIn = (ctx) => {
+  const held = AIRWAY_OPENERS.filter((id) => ctx.on(id)).map((id) => ctx.last(id) ?? ctx.t);
+  return held.length > 0 ? Math.min(...held) : null;
+};
+
+export function airwayOpened(ctx: Ctx): boolean {
+  return airwayOpenedSince(ctx) !== null;
+}
+
+/**
+ * Air from the bag is going in: someone is squeezing it and it has a way in.
+ * A bag squeezed without one does nothing for him, and he goes on as if
+ * nobody were bagging.
+ */
+export function bagMovesAir(ctx: Ctx, wayIn: WayIn = airwayOpenedSince): boolean {
+  return ctx.on('bvm') && wayIn(ctx) !== null;
+}
+
+/** The sign of a breath that did not go in, in the BVM page's own words. */
+const CHEST_NOT_RISING = phraseInStep(
+  'bvm',
+  'Chest not rising or bag hard to squeeze',
+  'Chest not rising',
+);
+
+/*
+ * What the assistant last said of the chest is kept as two things the story
+ * counts as done, so `ctx.last` can say which came last. Neither is on the cart.
+ */
+const SAID_RISING = 'said:chest_rising';
+const SAID_NOT_RISING = 'said:chest_not_rising';
+
+/** For a beat that has itself just said air is going in: the chest is not spoken of again. */
+export const AIR_SEEN_GOING_IN: ReadonlyArray<string> = [SAID_RISING];
+
+/** What the assistant says of the chest under the bag. It names the sign and nothing to do about it. */
+export function chestLine(rising: boolean): Beat {
+  return rising
+    ? {
+        voice: { who: 'DA', line: 'Bagging. His chest is rising.' },
+        log: 'BVM: chest rising',
+        tone: 'good',
+        counts: [SAID_RISING],
+      }
+    : {
+        voice: { who: 'DA', line: `${CHEST_NOT_RISING}.` },
+        log: `BVM: ${CHEST_NOT_RISING.toLowerCase()}`,
+        tone: 'bad',
+        counts: [SAID_NOT_RISING],
+      };
+}
+
+/** A line the story has just said is left this long before the chest is spoken of. Pacing. */
+const HEARD_FOR = 4;
+/** Clock noise: the app's ticks are not round numbers. */
+const SAME_MOMENT = 1e-6;
+
+/**
+ * What whoever has the bag now was last told of the chest, and whether that
+ * was in this stretch of the story. A chest that is rising is said once for
+ * as long as the bag stays in use; one that is not rising is said again when
+ * the story moves on, because it is still what is wrong.
+ */
+function chestSaid(ctx: Ctx): { readonly rising: boolean | null; readonly here: boolean } {
+  const bagOn = ctx.last('bvm') ?? Infinity;
+  const phaseStart = ctx.t - ctx.phaseT;
+  const since = (action: string, from: number): number => {
+    const at = ctx.last(action);
+    return at !== null && at >= from - SAME_MOMENT ? at : -Infinity;
+  };
+  const up = since(SAID_RISING, bagOn);
+  const down = since(SAID_NOT_RISING, Math.max(bagOn, phaseStart));
+  return {
+    rising: up === down ? null : up > down,
+    here: Math.max(up, down) >= phaseStart - SAME_MOMENT,
+  };
+}
+
+const ventilatedIn = (phase: string): string => `ventilated:${phase}`;
+
+/** Did air from the bag go in at any moment of that phase? Kept by `bagNeedsWayIn`. */
+export function ventilatedDuring(run: Ctx, phase: string): boolean {
+  return run.has(ventilatedIn(phase));
+}
+
+/**
+ * A drill's phases with the bag held to the BVM page. In every phase the
+ * monitor shows "bagged" only while a breath has a way in. In the phases
+ * named in `breathesForHim`, where the bag is what moves his chest, the
+ * assistant says when the chest stops or starts rising under a bag already
+ * going, and the run remembers that air went in, for the grader.
+ */
+export function bagNeedsWayIn(
+  phases: Readonly<Record<string, Phase>>,
+  breathesForHim: ReadonlyArray<string>,
+  wayIn: WayIn = airwayOpenedSince,
+): Record<string, Phase> {
+  const watch: ReadonlyArray<Transition> = [
+    {
+      when: (ctx) => {
+        if (!ctx.on('bvm')) return false;
+        const said = chestSaid(ctx);
+        return said.rising !== (wayIn(ctx) !== null) && (said.here || ctx.phaseT >= HEARD_FOR);
+      },
+      to: 'stay',
+      beat: (ctx) => chestLine(wayIn(ctx) !== null),
+    },
+    {
+      when: (ctx) => bagMovesAir(ctx, wayIn) && !ventilatedDuring(ctx, ctx.phase),
+      to: 'stay',
+      beat: (ctx) => ({ flags: [ventilatedIn(ctx.phase)] }),
+    },
+  ];
+  return Object.fromEntries(
+    Object.entries(phases).map(([id, phase]) => [
+      id,
+      {
+        ...phase,
+        drive: (ctx: Ctx): Drive => {
+          const drive = phase.drive(ctx);
+          return wayIn(ctx) === null ? { ...drive, airway: 'closed' } : drive;
+        },
+        // After the phase's own: speaking of the chest never holds the story up.
+        transitions: breathesForHim.includes(id)
+          ? [...phase.transitions, ...watch]
+          : phase.transitions,
+      },
+    ]),
+  );
+}
 
 /** The protocol's own warning, quoted so a debrief can mark it on the step it sits in. */
 export const NEVER_STOCK_EPI_IV = 'NEVER 1 mg/ml IV in a patient with a pulse';
@@ -74,11 +226,13 @@ export type Apnoea = 'shut' | 'paralysed';
 /**
  * `capno` is the trace the patient already had: the drug does not change his
  * airway. A scenario where he may not be breathing at all says so through
- * `apnoea`, and the drug does not start him breathing either.
+ * `apnoea`, and the drug does not start him breathing either. `ventilated` is
+ * that scenario's own answer to whether a bag is breathing for him.
  */
 export function epinephrineOverdose(
   capno: Capno,
   apnoea: (ctx: Ctx) => Apnoea | null = () => null,
+  ventilated: (ctx: Ctx) => boolean = (ctx) => ctx.on('bvm'),
 ): Consequence {
   return {
     key: 'overdose',
@@ -103,7 +257,7 @@ export function epinephrineOverdose(
       drive: (ctx) => {
         const shut = ctx.has('overdose_shut');
         const paralysed = ctx.has('overdose_paralysed');
-        const bagged = paralysed && ctx.on('bvm');
+        const bagged = paralysed && ventilated(ctx);
         const breathing = !shut && !paralysed;
         return {
           spo2Rate: breathing ? -0.05 : bagged ? 0.3 : -0.5,
@@ -234,30 +388,43 @@ export function hypoxicHeartRate(ctx: Ctx, otherwise: number): Target {
 const BAGGING_BEFORE_CUT = 15;
 
 /** The team is breathing for him and it is working: nothing left to do but keep going. */
-export function baggedThroughParalysis(ctx: Ctx): boolean {
+export function baggedThroughParalysis(ctx: Ctx, wayIn: WayIn = airwayOpenedSince): boolean {
   const bagging = ctx.last('bvm');
+  const open = wayIn(ctx);
   return (
-    ctx.on('bvm') &&
+    bagMovesAir(ctx, wayIn) &&
     bagging !== null &&
-    // From this paralysis, not an earlier one in the run.
-    ctx.t - Math.max(bagging, ctx.t - ctx.phaseT) >= BAGGING_BEFORE_CUT &&
+    open !== null &&
+    // Air going in, in this paralysis and not an earlier one in the run.
+    ctx.t - Math.max(bagging, open, ctx.t - ctx.phaseT) >= BAGGING_BEFORE_CUT &&
     ctx.vitals.spo2 >= 92
   );
+}
+
+/** How far the story is about to jump over a paralysis the team is bagging him through. */
+export function paralysisSkip(ctx: Ctx, wayIn: WayIn = airwayOpenedSince): number {
+  return ctx.phase === 'paralyzed' && baggedThroughParalysis(ctx, wayIn)
+    ? PARALYSIS_CUT.seconds
+    : 0;
 }
 
 /**
  * "ventilate with the BVM until breathing on their own", for the two drills
  * with a paralysis of their own (phases `paralyzed` and `breathing`). `null`
  * in a run with no paralysis, or one cut short by the epinephrine consequence
- * while the bag was still on.
+ * while the bag was still moving air. A bag that never moved air in the
+ * paralysis did not ventilate him, however long it was squeezed.
  */
-export function baggedUntilBreathing(run: Ctx): boolean | null {
+export function baggedUntilBreathing(run: Ctx, wayIn: WayIn = airwayOpenedSince): boolean | null {
   if (run.entered('paralyzed') === null) return null;
-  if (!run.onDuring('bvm', 'paralyzed')) return false;
+  if (!ventilatedDuring(run, 'paralyzed')) return false;
   // The run ended inside a paralysis: he never breathed on his own again.
-  if (run.phase === 'paralyzed') return false;
+  // With EMS taking over a bag still in use, the step was cut short, not missed.
+  if (run.phase === 'paralyzed') {
+    return run.has(EMS_ON_SCENE) && bagMovesAir(run, wayIn) ? null : false;
+  }
   if (run.entered('breathing') !== null) return true;
-  return run.phase === 'overdose' && run.on('bvm') ? null : false;
+  return run.phase === 'overdose' && bagMovesAir(run, wayIn) ? null : false;
 }
 
 /** Breathing well for long enough to close the story, with no dose in him still on its way to working. */
@@ -273,6 +440,160 @@ export const PARALYSIS_CUT: TimeCut = {
   seconds: 4 * 60,
   title: 'Bagging until he breathes on his own',
 };
+
+/** The front desk's estimate when the call is made: "About eight minutes." */
+export const EMS_ARRIVES_AFTER = 8 * 60;
+
+/** Set by the beat that brings EMS into the room. */
+export const EMS_ON_SCENE = 'ems_on_scene';
+
+export const EMS_AT_THE_DOOR = 'EMS is at the door with a stretcher.';
+
+/** When the ambulance that was called reaches the door. `null` while nobody has called. */
+export function emsDueAt(ctx: Ctx): number | null {
+  const called = ctx.at('call_911');
+  return called === null ? null : called + EMS_ARRIVES_AFTER;
+}
+
+/** One state of the story, and what EMS walking in on it leads to. */
+export interface EmsFinds {
+  when(ctx: Ctx): boolean;
+  /** A phase id, or `end:<ending key>`. */
+  readonly to: string;
+  /** What is seen at the door, and anything EMS asks. The line, the log and the card are added. */
+  beat(ctx: Ctx): Beat;
+}
+
+/**
+ * An ambulance that was called arrives when the front desk said it would,
+ * whatever the story is doing by then. `skips` is how far the story is about
+ * to jump from here (a protocol wait, a paralysis, the quiet once he is
+ * stable): a jump that would carry past the arrival stops at the door
+ * instead, under the arrival's own card. Goes in `always`, after anything
+ * that ends the run in harm.
+ */
+export function emsArrives(
+  finds: ReadonlyArray<EmsFinds>,
+  skips: (ctx: Ctx) => number = () => 0,
+): Transition[] {
+  return finds.map((found) => ({
+    when: (ctx) => {
+      const due = emsDueAt(ctx);
+      return due !== null && found.when(ctx) && ctx.t + skips(ctx) >= due;
+    },
+    to: found.to,
+    beat: (ctx) => {
+      const wait = (emsDueAt(ctx) ?? ctx.t) - ctx.t;
+      const seen = found.beat(ctx);
+      return {
+        voice: { who: 'EMS', line: 'What have we got?' },
+        log: 'EMS on scene',
+        ...seen,
+        flags: [...(seen.flags ?? []), EMS_ON_SCENE],
+        // In real time they simply walk in: a card is only for a wait the story skipped.
+        ...(wait > 0 ? { cut: { seconds: wait, title: 'EMS arrives' } } : {}),
+      };
+    },
+  }));
+}
+
+/** A state EMS takes him from as he is: the ending's key, and what is seen, as one sentence. */
+export interface AsFound {
+  readonly key: string;
+  readonly seen: string;
+  when(ctx: Ctx): boolean;
+}
+
+/**
+ * EMS takes over a patient the team has not finished with. Nothing is asked
+ * at the door, and the run ends as he is: the scene and the ending say the
+ * same sentence, and it states only what is seen.
+ */
+export function takenAsFound(state: AsFound): EmsFinds {
+  return {
+    when: state.when,
+    to: `end:${state.key}`,
+    beat: () => ({ scene: `${EMS_AT_THE_DOOR} ${state.seen}` }),
+  };
+}
+
+export function endingsAsFound(states: ReadonlyArray<AsFound>): Record<string, Ending> {
+  return Object.fromEntries(
+    states.map((state) => [
+      state.key,
+      {
+        outcome: 'handover',
+        title: 'Handed over to EMS',
+        text: `He leaves with EMS. ${state.seen}`,
+      },
+    ]),
+  );
+}
+
+/** What EMS can find in either drill with a spasm and a paralysis of its own. */
+export const FOUND = {
+  bagged: 'He is still being bagged.',
+  noAir: 'His chest is heaving and no air is moving.',
+  paralysed: 'He is paralysed and not breathing.',
+  awake: 'He is awake and breathing.',
+} as const;
+
+/** More of what sedated him, given after the scene opens. */
+export function moreSedative(ctx: Ctx): boolean {
+  return ctx.given('fentanyl').length + ctx.given('midazolam').length > 0;
+}
+
+/** Pacing, as "Shallow" first had it: a falling saturation falls this much faster. */
+const DEEPER = 1.6;
+
+/**
+ * What more sedative does to him in any room: he gets deeper, so his own
+ * breathing slows and his saturation does worse than it would have. It
+ * changes nothing while he is not breathing for himself at all, and the
+ * saturation of a patient being bagged is the bag's.
+ */
+export function deepened(ctx: Ctx, drive: Drive): Drive {
+  if (!moreSedative(ctx) || drive.rr === 0) return drive;
+  const bagged = ctx.on('bvm') && drive.airway === 'open';
+  const { spo2Rate } = drive;
+  return {
+    ...drive,
+    rr: Math.round(drive.rr / 2),
+    spo2Rate: bagged ? spo2Rate : spo2Rate < 0 ? spo2Rate * DEEPER : spo2Rate / DEEPER,
+  };
+}
+
+/** A drill's phases, each with the sedative's effect laid over its own drive. */
+export function sedatable(phases: Readonly<Record<string, Phase>>): Record<string, Phase> {
+  return Object.fromEntries(
+    Object.entries(phases).map(([id, phase]) => [
+      id,
+      { ...phase, drive: (ctx: Ctx) => deepened(ctx, phase.drive(ctx)) },
+    ]),
+  );
+}
+
+/**
+ * The assistant's remark when a sedative goes in. `briefed` is the briefing's
+ * own "Given:" line: she says "more" only of a drug he has had, there or
+ * earlier in the run.
+ */
+export function sedativeGiven(briefed: string, tone: Tone = 'neutral'): Reaction {
+  return (ctx, e) => {
+    const dose = doseOf(e);
+    if (!dose) return undefined;
+    const name = dose.drugName.toLowerCase();
+    const more = briefed.toLowerCase().includes(name) || ctx.given(dose.drugKey).length > 1;
+    return {
+      voice: {
+        who: 'DA',
+        line: more ? `That’s more ${name} going in, Doc.` : `${dose.drugName}’s in.`,
+      },
+      log: doseLine(dose),
+      tone,
+    };
+  };
+}
 
 /** "Naloxone 1.0 ml IV", with a note when the syringe carried no label. */
 export function doseLine(dose: DoseEvent): string {

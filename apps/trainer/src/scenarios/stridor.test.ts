@@ -42,6 +42,13 @@ function lateIdeal(sim: Simulation): void {
   expect(untilEnd(sim)).toBe(true);
 }
 
+/** What the BVM page asks before a breath: everything out of the mouth and the airway opened. */
+function bagHim(sim: Simulation): void {
+  if (sim.run.at('suction') === null) sim.act('suction');
+  if (!sim.isOn('jaw_thrust')) sim.act('jaw_thrust');
+  sim.act('bvm');
+}
+
 function row(sim: Simulation, id: string) {
   const found = gradeRun(stridor, sim).rows.find((r) => r.id === id);
   if (!found) throw new Error(`No rubric row "${id}"`);
@@ -268,10 +275,11 @@ describe('"Stridor": breaking it without a drug', () => {
     late.act('call_911');
     drawAndGive(late, 'succinylcholine', 1);
     until(late, 'paralyzed');
+    // The pack has to come out for the bag to work, but the spasm is already over.
+    late.act('suction');
     late.act('bvm');
     expect(until(late, 'breathing')).toBe(true);
     late.act('stop');
-    late.act('suction');
     untilEnd(late);
     expect(row(late, 'clear').result).toBe('missed');
     expect(gradeRun(stridor, late)).toMatchObject({ of: 6, done: 5, clean: false });
@@ -309,7 +317,7 @@ describe('"Stridor": breaking it without a drug', () => {
     const sim = start();
     toCrowing(sim);
     advance(sim, 2);
-    sim.act('bvm');
+    bagHim(sim);
     expect(sim.scene).toContain('A little goes in past the crow');
     advance(sim, 2);
     expect(sim.monitor).toMatchObject({ bagged: true, rr: 28 });
@@ -328,7 +336,7 @@ describe('"Stridor": succinylcholine', () => {
     expect(sim.voices.at(-1)?.line).toBe('It’s in. He was still moving some air, Doc.');
     expect(until(sim, 'paralyzed')).toBe(true);
     expect(sim.log.at(-1)).toMatchObject({ text: 'Paralysed by succinylcholine', tone: 'neutral' });
-    sim.act('bvm');
+    bagHim(sim);
     expect(untilEnd(sim)).toBe(true);
     expect(sim.endingKey).toBe('recovered');
     expect(part(sim, 'sux', 'No relief and SpO₂ falling')).toBe('missed');
@@ -399,7 +407,7 @@ describe('"Stridor": succinylcholine', () => {
     toSilent(sim);
     drawAndGive(sim, 'succinylcholine', 1);
     expect(until(sim, 'paralyzed')).toBe(true);
-    sim.act('bvm');
+    bagHim(sim);
     expect(sim.log.at(-1)).toMatchObject({ text: 'BVM: chest rising', tone: 'good' });
     advance(sim, 3);
     sim.act('bvm');
@@ -425,7 +433,7 @@ describe('"Stridor": succinylcholine', () => {
     sim.act('call_911');
     drawAndGive(sim, 'succinylcholine', 1, { label: false });
     until(sim, 'paralyzed');
-    sim.act('bvm');
+    bagHim(sim);
     untilEnd(sim);
     expect(row(sim, 'sux_label').result).toBe('missed');
     expect(row(sim, 'sux').result).toBe('done');
@@ -477,7 +485,7 @@ describe('"Stridor": succinylcholine', () => {
     toSilent(sim);
     drawAndGive(sim, 'succinylcholine', 1);
     until(sim, 'paralyzed');
-    sim.act('bvm');
+    bagHim(sim);
     expect(until(sim, 'breathing')).toBe(true);
     drawAndGive(sim, 'succinylcholine', 1);
     expect(until(sim, 'paralyzed', 30)).toBe(true);
@@ -513,7 +521,7 @@ describe('"Stridor": one drug, one patient', () => {
     toSilent(sim);
     drawAndGive(sim, 'succinylcholine', 1);
     expect(until(sim, 'paralyzed')).toBe(true);
-    sim.act('bvm');
+    bagHim(sim);
     advance(sim, 3);
     drawAndGive(sim, 'succinylcholine', 1);
     expect(untilEnd(sim)).toBe(true);
@@ -560,7 +568,7 @@ describe('"Stridor": one drug, one patient', () => {
     toSilent(sim);
     drawAndGive(sim, 'succinylcholine', 1);
     until(sim, 'paralyzed');
-    sim.act('bvm');
+    bagHim(sim);
     expect(until(sim, 'breathing')).toBe(true);
     sim.act('bvm');
     drawAndGive(sim, 'succinylcholine', 1);
@@ -584,7 +592,7 @@ describe('"Stridor": one drug, one patient', () => {
     toSilent(bagged);
     drawAndGive(bagged, 'succinylcholine', 1);
     until(bagged, 'paralyzed');
-    bagged.act('bvm');
+    bagHim(bagged);
     advance(bagged, 4);
     drawAndGive(bagged, 'epinephrine', 0.3);
     advance(bagged, 6);
@@ -619,6 +627,8 @@ describe('"Stridor": what the screen says is true when it says it', () => {
 
     const masked = start();
     toSilent(masked);
+    masked.act('suction');
+    masked.act('jaw_thrust');
     masked.act('cpap');
     drawAndGive(masked, 'succinylcholine', 1);
     until(masked, 'paralyzed');
@@ -818,5 +828,238 @@ describe('"Stridor": what the page does not ask for', () => {
       return { t: sim.t, low: sim.lowestSpo2, log: sim.log.map((l) => `${l.t}:${l.text}`) };
     };
     expect(play()).toEqual(play());
+  });
+});
+
+describe('"Stridor": an ambulance that was called arrives', () => {
+  it('in take-your-time mode, a silent patient is handed over when they arrive, not left waiting', () => {
+    const sim = new Simulation(stridor, { forgiving: true });
+    toSilent(sim);
+    sim.act('call_911');
+    expect(untilEnd(sim, 600)).toBe(true);
+    expect(sim.t - sim.run.at('call_911')!).toBeCloseTo(480, 0);
+    expect(sim.endingKey).toBe('ems_no_air');
+    expect(sim.ending).toEqual({
+      outcome: 'handover',
+      title: 'Handed over to EMS',
+      text: 'He leaves with EMS. His chest is heaving and no air is moving.',
+    });
+    expect(sim.log.at(-1)).toMatchObject({ text: 'EMS on scene', tone: 'neutral' });
+    expect(row(sim, 'call_911').result).toBe('done');
+    expect(row(sim, 'sux').result).toBe('missed');
+    expect(gradeRun(stridor, sim).clean).toBe(false);
+  });
+
+  it('due inside the paralysis, they arrive under their own card and take over the bag', () => {
+    const sim = new Simulation(stridor, { forgiving: true });
+    toSilent(sim);
+    sim.act('call_911');
+    advance(sim, 250);
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(until(sim, 'paralyzed')).toBe(true);
+    bagHim(sim);
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.phase).toBe('paralyzed');
+    expect(sim.t - sim.run.at('call_911')!).toBeCloseTo(480, 0);
+    expect(sim.cuts.map((c) => c.title)).toEqual(['EMS arrives']);
+    expect(sim.endingKey).toBe('ems_bagged');
+    expect(sim.ending?.text).toBe('He leaves with EMS. He is still being bagged.');
+    // The team was still bagging when the run stopped: that is not "Not done".
+    expect(part(sim, 'sux', 'ventilate with the BVM')).toBe('na');
+  });
+
+  it('the prompt run is untouched: the spasm breaks long before they are due', () => {
+    const sim = start();
+    toCrowing(sim);
+    firstThree(sim);
+    sim.act('call_911');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.endingKey).toBe('broke_ems');
+    expect(sim.log.map((l) => l.text)).not.toContain('EMS on scene');
+  });
+});
+
+describe('"Stridor": the hints follow the page', () => {
+  it('a coached run is offered the succinylcholine before the call, as the Laryngospasm page lists them', () => {
+    const steps = findProtocol('laryngospasm')!.steps.map((s) => s.text);
+    expect(steps.findIndex((text) => text.includes('Succinylcholine IV'))).toBeLessThan(
+      steps.indexOf('Call 911'),
+    );
+    const sim = start({ coached: true });
+    untilEnd(sim);
+    const said = sim.voices.map((v) => v.line);
+    const drug = said.indexOf('The succinylcholine is in the fridge. Do you want it?');
+    const call = said.indexOf('Do you need me to call anyone?');
+    expect(drug).toBeGreaterThanOrEqual(0);
+    expect(call).toBeGreaterThan(drug);
+  });
+});
+
+describe('"Stridor": a sedative acts on him here too', () => {
+  it('more sedative slows his breathing and costs him saturation while he is moving air', () => {
+    const plain = start();
+    const sim = start();
+    toCrowing(plain);
+    toCrowing(sim);
+    drawAndGive(sim, 'fentanyl', 2);
+    drawAndGive(sim, 'midazolam', 1);
+    advance(plain, 15);
+    advance(sim, 15);
+    expect(sim.phase).toBe('crowing');
+    expect(sim.monitor.rr).toBeLessThan(plain.monitor.rr);
+    expect(sim.run.vitals.spo2).toBeLessThan(plain.run.vitals.spo2);
+  });
+});
+
+describe('"Stridor": the bag moves air only with the pack out and the airway opened', () => {
+  function paralysed(sim: Simulation, before: (sim: Simulation) => void = () => undefined): void {
+    toSilent(sim);
+    before(sim);
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(until(sim, 'paralyzed')).toBe(true);
+  }
+
+  it('the BVM page empties the mouth before it opens the airway', () => {
+    const steps = findProtocol('bvm')!.steps.map((s) => s.text);
+    const mouth = steps.findIndex((text) => text.startsWith('Everything out of the mouth'));
+    const open = steps.findIndex((text) => text.startsWith('Open the airway'));
+    expect(mouth).toBeGreaterThanOrEqual(0);
+    expect(open).toBeGreaterThan(mouth);
+    expect(stridor.setup.join(' ')).toContain('throat pack');
+  });
+
+  it('paralysed with the pack still in, the bag does nothing for him, and the pack coming out turns it', () => {
+    const sim = start();
+    paralysed(sim, (s) => s.act('jaw_thrust'));
+    const bare = start();
+    paralysed(bare, (s) => s.act('jaw_thrust'));
+
+    sim.act('bvm');
+    expect(sim.voices.at(-1)).toEqual({ who: 'DA', line: 'Chest not rising.' });
+    expect(sim.log.at(-1)).toMatchObject({ text: 'BVM: chest not rising', tone: 'bad' });
+    advance(sim, 10);
+    advance(bare, 10);
+    expect(sim.run.vitals.spo2).toBeCloseTo(bare.run.vitals.spo2, 5);
+    expect(sim.monitor).toMatchObject({ bagged: false, rr: 0, etco2: null });
+    expect(sim.voices.map((v) => v.line)).not.toContain('Bagging. His chest is rising.');
+
+    sim.act('suction');
+    advance(sim, 1);
+    expect(sim.voices.at(-1)).toEqual({ who: 'DA', line: 'Bagging. His chest is rising.' });
+    expect(sim.log.slice(-2)).toMatchObject([
+      { text: 'Packs out, suctioned' },
+      { text: 'BVM: chest rising', tone: 'good' },
+    ]);
+    expect(sim.monitor).toMatchObject({ bagged: true, rr: 10 });
+    const opened = sim.t;
+    expect(until(sim, 'breathing')).toBe(true);
+    expect(sim.cuts[0]!.at - opened).toBeGreaterThanOrEqual(14);
+  });
+
+  it('with the pack out but nothing opening his airway, the same', () => {
+    const sim = start();
+    paralysed(sim, (s) => s.act('suction'));
+    sim.act('bvm');
+    expect(sim.log.at(-1)).toMatchObject({ text: 'BVM: chest not rising', tone: 'bad' });
+    advance(sim, 6);
+    expect(sim.monitor.bagged).toBe(false);
+    expect(sim.phase).toBe('paralyzed');
+    sim.act('npa');
+    advance(sim, 1);
+    expect(sim.log.at(-1)).toMatchObject({ text: 'BVM: chest rising', tone: 'good' });
+    expect(sim.monitor.bagged).toBe(true);
+  });
+
+  it('left on a pack and an unopened airway, the bag does not save him, and the step reads "Not done"', () => {
+    const sim = start();
+    paralysed(sim);
+    sim.act('bvm');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.endingKey).toBe('arrest');
+    expect(sim.cuts).toEqual([]);
+    expect(sim.run.onDuring('bvm', 'paralyzed')).toBe(true);
+    expect(part(sim, 'sux', 'ventilate with the BVM')).toBe('missed');
+  });
+
+  it('EMS taking over a bag that never moved air is not "cut short"', () => {
+    const sim = new Simulation(stridor, { forgiving: true });
+    toSilent(sim);
+    sim.act('call_911');
+    advance(sim, 250);
+    drawAndGive(sim, 'succinylcholine', 1);
+    expect(until(sim, 'paralyzed')).toBe(true);
+    sim.act('bvm');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.endingKey).toBe('ems_bagged');
+    expect(sim.cuts).toEqual([]);
+    expect(part(sim, 'sux', 'ventilate with the BVM')).toBe('missed');
+  });
+
+  it('"It’s going in!" is not said over a mask held on a pack or an unopened airway', () => {
+    const packed = start();
+    paralysed(packed, (s) => {
+      s.act('jaw_thrust');
+      s.act('cpap');
+    });
+    expect(packed.voices.at(-1)?.line).toBe('He’s gone limp!');
+
+    const shut = start();
+    paralysed(shut, (s) => {
+      s.act('suction');
+      s.act('bvm');
+    });
+    expect(shut.voices.at(-1)?.line).toBe('He’s gone limp!');
+    advance(shut, 5);
+    expect(shut.voices.at(-1)).toEqual({ who: 'DA', line: 'Chest not rising.' });
+
+    const open = start();
+    paralysed(open, (s) => {
+      s.act('suction');
+      s.act('jaw_thrust');
+      s.act('bvm');
+    });
+    expect(open.voices.at(-1)?.line).toBe('It’s going in!');
+    advance(open, 5);
+    expect(open.voices.at(-1)?.line).toBe('It’s going in!');
+    expect(open.monitor.bagged).toBe(true);
+  });
+
+  it('the bag while he crows teaches no rhythm, and only reaches him past a clear mouth and an opened airway', () => {
+    const open = start();
+    toCrowing(open);
+    open.act('suction');
+    open.act('jaw_thrust');
+    advance(open, 2);
+    open.act('bvm');
+    expect(open.scene).toBe('A little goes in past the crow.');
+    expect(open.log.at(-1)).toMatchObject({ text: 'BVM', tone: 'neutral' });
+
+    const packed = start();
+    const untouched = start();
+    toCrowing(packed);
+    toCrowing(untouched);
+    advance(packed, 2);
+    advance(untouched, 2);
+    packed.act('bvm');
+    expect(packed.scene).not.toContain('goes in');
+    expect(packed.voices.at(-1)).toEqual({ who: 'DA', line: 'Chest not rising.' });
+    expect(packed.log.at(-1)).toMatchObject({ text: 'BVM: chest not rising', tone: 'bad' });
+    advance(packed, 20);
+    advance(untouched, 20);
+    expect(packed.run.vitals.spo2).toBeCloseTo(untouched.run.vitals.spo2, 5);
+    expect(packed.monitor.bagged).toBe(false);
+
+    for (const sim of [open, packed]) {
+      const said = [sim.scene, ...sim.log.map((l) => l.text), ...sim.voices.map((v) => v.line)];
+      for (const line of said) expect(line).not.toMatch(/in time with|rhythm/i);
+    }
+  });
+
+  it('the ideal late run never hears of a chest that is not rising', () => {
+    const sim = start();
+    lateIdeal(sim);
+    expect(sim.log.map((l) => l.text)).toContain('BVM: chest rising');
+    expect(sim.log.map((l) => l.text)).not.toContain('BVM: chest not rising');
+    expect(gradeRun(stridor, sim).clean).toBe(true);
   });
 });

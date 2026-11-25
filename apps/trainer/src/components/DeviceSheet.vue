@@ -75,9 +75,14 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
 
 <template>
   <BottomSheet :title="device?.label ?? 'Device'" @close="emit('close')">
-    <template #vitals
-      ><VitalsStrip :monitor="run.monitor.value" :said="run.caption.value"
-    /></template>
+    <template #vitals>
+      <VitalsStrip
+        :monitor="run.monitor.value"
+        :said="run.caption.value"
+        :prompt="run.prompt.value"
+        @answer="run.answer"
+      />
+    </template>
     <template v-if="device && isPen">
       <p class="hint">{{ device.detail }}</p>
       <p v-if="instruction" class="pen-says">

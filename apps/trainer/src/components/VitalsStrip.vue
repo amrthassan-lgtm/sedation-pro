@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import type { MonitorView, Voice } from '@/engine/types';
+import type { MonitorView, Prompt, Voice } from '@/engine/types';
 
 /**
- * What a sheet would otherwise hide: the monitor's numbers and the last
- * thing anyone said. The patient keeps changing while a drawer is open.
+ * What a sheet would otherwise hide: the monitor's numbers, the last thing
+ * anyone said, and a question someone is waiting on. The patient keeps
+ * changing while a drawer is open, and a question asked behind it would
+ * otherwise go unseen and unanswered.
  */
-defineProps<{ monitor: MonitorView; said: Voice | null }>();
+defineProps<{ monitor: MonitorView; said: Voice | null; prompt?: Prompt | null }>();
+const emit = defineEmits<{ (e: 'answer', optionId: string): void }>();
 </script>
 
 <template>
@@ -20,7 +23,23 @@ defineProps<{ monitor: MonitorView; said: Voice | null }>();
       BP {{ monitor.nibp ? `${monitor.nibp.sbp}/${monitor.nibp.dbp}` : '--/--' }}
     </span>
   </div>
-  <p v-if="said" class="said">
+  <div v-if="prompt" class="ask" role="group" aria-label="Decision">
+    <p class="said">
+      <span class="eyebrow">{{ prompt.voice.who }}</span> {{ prompt.voice.line }}
+    </p>
+    <div class="ask-options">
+      <button
+        v-for="o in prompt.options"
+        :key="o.id"
+        type="button"
+        class="btn"
+        @click="emit('answer', o.id)"
+      >
+        {{ o.label }}
+      </button>
+    </div>
+  </div>
+  <p v-else-if="said" class="said">
     <span class="eyebrow">{{ said.who }}</span> {{ said.line }}
   </p>
 </template>
@@ -47,6 +66,16 @@ defineProps<{ monitor: MonitorView; said: Voice | null }>();
 }
 .is-low {
   color: var(--mon-alarm);
+}
+.ask-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.ask-options .btn {
+  flex: 1 1 auto;
+  font-family: var(--font-system);
 }
 .said {
   margin: var(--sp-1) 0 0;

@@ -42,7 +42,8 @@ export function resolveRef(ref: ProtocolRef): ResolvedRef | null {
     : null;
 }
 
-export type RowResult = 'done' | 'partial' | 'missed' | 'na';
+/** `wrong`: an add-on drug that was given, but not as the page writes it. */
+export type RowResult = 'done' | 'partial' | 'missed' | 'wrong' | 'na';
 
 export interface DebriefPart {
   readonly quote: string;
@@ -77,7 +78,10 @@ export interface Debrief {
   readonly doses: ReadonlyArray<DoseEvent>;
   /** Doses of drugs these protocols never mention. Listed as a fact, without a verdict. */
   readonly outside: ReadonlyArray<DoseEvent>;
-  /** Every core step done, nobody harmed, and nothing given that the protocols do not mention. */
+  /**
+   * Every core step done, nobody harmed, nothing given that the protocols do
+   * not mention, and no add-on given other than as its page writes it.
+   */
   readonly clean: boolean;
   /** Up to three core steps missed or only partly done, in rubric order: what to drill next. */
   readonly takeaways: ReadonlyArray<DebriefRow>;
@@ -107,7 +111,19 @@ function verdictOf(value: boolean | null): 'done' | 'missed' | 'na' {
   return value === null ? 'na' : value ? 'done' : 'missed';
 }
 
-function gradeItem(item: RubricItem, run: Ctx): DebriefRow {
+/** Was any dose of the drug this step calls for given at all, by any route and in any amount? */
+function stepDrugGiven(resolved: ResolvedRef, doses: ReadonlyArray<DoseEvent>): boolean {
+  if (resolved.kind !== 'step') return false;
+  const callout = findProtocol(resolved.protocolId)?.steps[resolved.stepIndex]?.drug?.name;
+  if (!callout) return false;
+  return doses.some(
+    (d) =>
+      (findVial(d.drugKey)?.callouts.includes(callout) ?? false) ||
+      callout.toLowerCase().includes(d.drugName.toLowerCase()),
+  );
+}
+
+function gradeItem(item: RubricItem, run: Ctx, doses: ReadonlyArray<DoseEvent>): DebriefRow {
   const resolved = resolveRef(item.ref);
   if (!resolved) {
     throw new Error(`Rubric item "${item.id}" points at protocol text that no longer exists`);
@@ -128,6 +144,11 @@ function gradeItem(item: RubricItem, run: Ctx): DebriefRow {
             : 'partial';
   } else {
     result = verdictOf(item.check(run));
+    // An add-on left out and an add-on overdosed must not read the same: the
+    // first is nothing, the second is a drug in the patient the page did not write.
+    if (item.tier === 'extra' && result === 'missed' && stepDrugGiven(resolved, doses)) {
+      result = 'wrong';
+    }
   }
   return {
     id: item.id,
@@ -143,7 +164,7 @@ export function gradeRun(scenario: Scenario, sim: Simulation): Debrief {
   const ending = sim.ending;
   const endingKey = sim.endingKey;
   if (!ending || endingKey === null) throw new Error('The run has not ended');
-  const rows = scenario.rubric.map((item) => gradeItem(item, sim.run));
+  const rows = scenario.rubric.map((item) => gradeItem(item, sim.run, sim.doses));
   const core = rows.filter((r) => r.tier === 'core' && r.result !== 'na');
   const done = core.filter((r) => r.result === 'done').length;
   const outside = outsideProtocols(scenario, sim.doses);
@@ -162,6 +183,7 @@ export function gradeRun(scenario: Scenario, sim: Simulation): Debrief {
       core.length > 0 &&
       done === core.length &&
       outside.length === 0 &&
+      rows.every((r) => r.result !== 'wrong') &&
       ending.outcome !== 'arrest' &&
       ending.outcome !== 'harm',
     takeaways: core.filter((r) => r.result === 'missed' || r.result === 'partial').slice(0, 3),

@@ -6,6 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router';
 import { findProtocol } from '@sedation-pro/clinical';
 
 import { Simulation } from '@/engine/engine';
+import type { Sample } from '@/engine/types';
 import { gradeRun, type Debrief } from '@/engine/grade';
 import { pageShortName } from '@/engine/protocol';
 import { SCENARIOS } from '@/scenarios';
@@ -22,11 +23,15 @@ function untreated(): { sim: Simulation; debrief: Debrief } {
   return { sim, debrief: gradeRun(quiet, sim) };
 }
 
-function show(change: Partial<Debrief> = {}, previous: RunRecord | null = null) {
+function show(
+  change: Partial<Debrief> = {},
+  previous: RunRecord | null = null,
+  history?: ReadonlyArray<Sample>,
+) {
   const { sim, debrief } = untreated();
   setLastRun({
     debrief: { ...debrief, ...change },
-    history: sim.history,
+    history: history ?? sim.history,
     cuts: sim.cuts,
     log: sim.log,
     previous,
@@ -116,5 +121,36 @@ describe('the debrief links into the clinical app', () => {
         }
       }
     }
+  });
+});
+
+describe('an add-on given, but not as the page writes it', () => {
+  it('says so in the row, in red, and is not greyed like one left out', () => {
+    const { debrief } = untreated();
+    const rows = debrief.rows.map((r, i) =>
+      i === 0 ? { ...r, tier: 'extra' as const, result: 'wrong' as const } : r,
+    );
+    const row = show({ rows }).find('.row.step.is-wrong');
+    expect(row.exists()).toBe(true);
+    expect(row.find('.step-state').text()).toContain('Given, not as written');
+    expect(row.find('.step-state').text()).toContain('add-on');
+  });
+});
+
+describe('the pressure in a debrief', () => {
+  const at = (t: number, sbp: number): Sample => ({ t, spo2: 96, hr: 90, sbp });
+
+  it('is drawn, with its lowest value, in a run where it fell', () => {
+    const page = show({}, null, [at(0, 124), at(60, 96), at(120, 62)]);
+    expect(page.text()).toContain('Lowest systolic');
+    expect(page.find('svg.pressure').exists()).toBe(true);
+    expect(page.find('svg.pressure .low').text()).toBe('62');
+    expect(page.text()).toContain('whether or not the cuff was cycled');
+  });
+
+  it('is left out of a run where it never came into it', () => {
+    const page = show({}, null, [at(0, 120), at(60, 118), at(120, 112)]);
+    expect(page.text()).not.toContain('Lowest systolic');
+    expect(page.find('svg.pressure').exists()).toBe(false);
   });
 });

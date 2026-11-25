@@ -1,8 +1,19 @@
-import { calloutAt, gaveProtocolDose } from '@/engine/protocol';
+import { calloutAt, gaveProtocolDose, phraseInStep } from '@/engine/protocol';
 import type { Ctx, Scenario } from '@/engine/types';
 
 import { toward } from './helpers';
-import { doseLine, doseOf, epinephrineOverdose, wrongParalytic } from './shared';
+import {
+  type AsFound,
+  doseLine,
+  doseOf,
+  EMS_AT_THE_DOOR,
+  emsArrives,
+  endingsAsFound,
+  epinephrineOverdose,
+  sedatable,
+  takenAsFound,
+  wrongParalytic,
+} from './shared';
 
 /**
  * "Crown": a crown slips at the try-in and goes over the back of the tongue
@@ -27,8 +38,19 @@ const SETS_TO_SHIFT_AGAIN = 2;
 /** Two rounds take this long however fast the buttons are tapped. */
 const ROUNDS_TAKE = 20;
 const ONE_ROUND_TAKES = 6;
-/** The front desk's estimate when the call is made. */
-const EMS_ARRIVES_AFTER = 8 * 60;
+/** Breathing easily, and this long with nothing left to do but wait for an ambulance that is coming. */
+const WAITS_FOR_EMS_AFTER = 20;
+
+/**
+ * The two manoeuvres as the Choking step names them. The step says nothing
+ * of how either is done, so the story says nothing of it either.
+ */
+const BACK_BLOWS = phraseInStep('choking', 'Severe (cannot speak or cough)', '5 back blows');
+const ABDOMINAL_THRUSTS = phraseInStep(
+  'choking',
+  'Severe (cannot speak or cough)',
+  '5 abdominal thrusts',
+);
 
 const HANDS_ON = ['back_blows', 'abdominal_thrusts', 'magill', 'finger_sweep'] as const;
 
@@ -82,6 +104,25 @@ function sedativeAfter(run: Ctx, t: number): boolean {
   return [...run.given('fentanyl'), ...run.given('midazolam')].some((d) => d.t >= t);
 }
 
+/**
+ * How EMS finds him if they are at the door before his airway is clear, or in
+ * the moment between the crown coming out and what follows. He is taken as
+ * he is, with no question about where he goes.
+ */
+const TAKEN: ReadonlyArray<AsFound> = [
+  {
+    key: 'ems_not_clear',
+    seen: 'His airway is still not clear.',
+    when: (ctx) =>
+      ctx.phase === 'obstructed' || ctx.phase === 'visible' || ctx.phase === 'vomiting',
+  },
+  {
+    key: 'ems_crown_out',
+    seen: 'The crown is out, and he is coughing and breathing.',
+    when: (ctx) => ctx.phase === 'clear',
+  },
+];
+
 export const crown: Scenario = {
   id: 'crown',
   title: 'Crown',
@@ -114,9 +155,34 @@ export const crown: Scenario = {
       to: 'end:arrest',
       beat: { log: 'Pulse lost', tone: 'bad' },
     },
+    ...emsArrives(
+      [
+        ...TAKEN.map(takenAsFound),
+        {
+          when: (ctx) => ctx.phase === 'settled',
+          to: 'handover',
+          beat: () => ({
+            scene: `${EMS_AT_THE_DOOR} He is awake, pink and breathing easily, and he says he feels fine now.`,
+            tone: 'good',
+            prompt: {
+              id: 'disposition',
+              voice: { who: 'EMS', line: 'He looks fine to me. Where is he going?' },
+              options: [
+                { id: 'er', label: 'To the ER with you' },
+                { id: 'observe', label: 'We will watch him here' },
+                { id: 'home', label: 'Home with his escort' },
+                { id: 'finish', label: 'We will finish the crown' },
+              ],
+            },
+          }),
+        },
+      ],
+      // Settled, with an ambulance on its way: the story skips to its arrival.
+      (ctx) => (ctx.phase === 'settled' && ctx.phaseT >= WAITS_FOR_EMS_AFTER ? Infinity : 0),
+    ),
   ],
 
-  phases: {
+  phases: sedatable({
     coughing: {
       drive: () => ({
         spo2Rate: -0.01,
@@ -348,32 +414,8 @@ export const crown: Scenario = {
         airway: 'open',
         look: { color: 'pink', eyes: 'open', note: 'breathing easily' },
       }),
+      // An ambulance that was called is handled for every phase in `always`.
       transitions: [
-        {
-          when: (ctx) => ctx.at('call_911') !== null && ctx.phaseT >= 20,
-          to: 'handover',
-          beat: (ctx) => ({
-            scene:
-              'EMS is at the door with a stretcher. He is awake, pink and breathing easily, and he says he feels fine now.',
-            voice: { who: 'EMS', line: 'What have we got?' },
-            log: 'EMS on scene',
-            tone: 'good',
-            cut: {
-              seconds: Math.max(30, EMS_ARRIVES_AFTER - (ctx.t - (ctx.at('call_911') ?? ctx.t))),
-              title: 'EMS arrives',
-            },
-            prompt: {
-              id: 'disposition',
-              voice: { who: 'EMS', line: 'He looks fine to me. Where is he going?' },
-              options: [
-                { id: 'er', label: 'To the ER with you' },
-                { id: 'observe', label: 'We will watch him here' },
-                { id: 'home', label: 'Home with his escort' },
-                { id: 'finish', label: 'We will finish the crown' },
-              ],
-            },
-          }),
-        },
         {
           when: (ctx) =>
             ctx.at('call_911') === null && ctx.phaseT >= 30 && !ctx.has('asked_late_911'),
@@ -414,7 +456,7 @@ export const crown: Scenario = {
 
     [OVERDOSE.key]: OVERDOSE.phase,
     [PARALYSED.key]: PARALYSED.phase,
-  },
+  }),
 
   reactions: {
     stop: () => ({ log: 'Procedure stopped', voice: { who: 'DA', line: 'Instruments out.' } }),
@@ -434,24 +476,20 @@ export const crown: Scenario = {
     back_blows: (ctx) => ({
       scene:
         ctx.phase === 'coughing'
-          ? 'You lean him forward and strike between his shoulder blades. He was coughing well on his own.'
-          : ctx.phase === 'obstructed'
-            ? 'Leaning him forward: five hard blows between the shoulder blades.'
-            : ctx.phase === 'visible'
-              ? 'Five more blows. The crown does not move.'
-              : 'Five blows between the shoulder blades.',
+          ? `${BACK_BLOWS}. He was coughing well on his own.`
+          : ctx.phase === 'visible'
+            ? 'Five more blows. The crown does not move.'
+            : `${BACK_BLOWS}.`,
       log: 'Back blows',
     }),
 
     abdominal_thrusts: (ctx) => ({
       scene:
         ctx.phase === 'coughing'
-          ? 'Arms round him from behind, five thrusts. He was coughing well on his own.'
-          : ctx.phase === 'obstructed'
-            ? 'Arms round him from behind: five thrusts, in and up.'
-            : ctx.phase === 'visible'
-              ? 'Five more thrusts. The crown does not move.'
-              : 'Five thrusts, in and up.',
+          ? `${ABDOMINAL_THRUSTS}. He was coughing well on his own.`
+          : ctx.phase === 'visible'
+            ? 'Five more thrusts. The crown does not move.'
+            : `${ABDOMINAL_THRUSTS}.`,
       log: 'Abdominal thrusts',
     }),
 
@@ -551,6 +589,7 @@ export const crown: Scenario = {
       title: 'Breathing easily, and nobody is coming',
       text: 'He is breathing easily. No ambulance was called, and nobody has looked at his chest.',
     },
+    ...endingsAsFound(TAKEN),
     [OVERDOSE.key]: OVERDOSE.ending,
     [PARALYSED.key]: PARALYSED.ending,
     arrest: {

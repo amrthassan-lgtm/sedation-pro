@@ -114,16 +114,21 @@ function putDown(): void {
 
 const readBack = computed(() => {
   if (!pending.value) return '';
-  const where = pending.value === 'IM' ? 'into the thigh' : 'into the IV';
+  const where = pending.value === 'IM' ? 'into the muscle' : 'into the IV';
   return `${shownName.value}, ${volume.value.toFixed(1)} ml, ${where}?`;
 });
 </script>
 
 <template>
   <BottomSheet :title="title" size="tall" @close="putDown">
-    <template #vitals
-      ><VitalsStrip :monitor="run.monitor.value" :said="run.caption.value"
-    /></template>
+    <template #vitals>
+      <VitalsStrip
+        :monitor="run.monitor.value"
+        :said="run.caption.value"
+        :prompt="run.prompt.value"
+        @answer="run.answer"
+      />
+    </template>
     <p class="eyebrow">Syringe</p>
     <div class="sizes">
       <button
@@ -206,7 +211,7 @@ const readBack = computed(() => {
           :disabled="volume <= 0"
           @click="pending = 'IM'"
         >
-          IM, outer thigh
+          IM
         </button>
         <button
           type="button"

@@ -6,16 +6,25 @@ import {
   gaveProtocolDose,
   minutesInStep,
   overProtocolDose,
+  phraseInStep,
 } from '@/engine/protocol';
-import type { Ctx, DoseEvent, Drive, Look, Scenario } from '@/engine/types';
+import type { Ctx, DoseEvent, Drive, Look, Reaction, Scenario } from '@/engine/types';
 
 import { reachedAt, toward } from './helpers';
 import {
+  type AsFound,
   doseLine,
   doseOf,
+  EMS_AT_THE_DOOR,
+  emsArrives,
+  endingsAsFound,
   epinephrineIntoVein,
   epinephrineOverdose,
+  moreSedative,
   NEVER_STOCK_EPI_IV,
+  sedatable,
+  sedativeGiven,
+  takenAsFound,
   wrongParalytic,
 } from './shared';
 
@@ -50,8 +59,7 @@ const INHALER = findDevice('albuterol');
 if (!INHALER) throw new Error('The cart no longer has the albuterol inhaler');
 const MCG_PER_PUFF = INHALER.mcg;
 const NEVER = NEVER_STOCK_EPI_IV;
-/** The front desk's estimate when the call is made. */
-const EMS_ARRIVES_AFTER = 8 * 60;
+const GIVEN = 'Given: midazolam 3 mg and fentanyl 25 mcg. He is drowsy and answers when spoken to.';
 /** How long the story waits on a pressure that will not come up before it moves on. */
 const STUCK_LONG_ENOUGH = 60;
 /** The pressure at which he is steady enough to hand over. */
@@ -104,6 +112,45 @@ function steady(ctx: Ctx): boolean {
   return ctx.vitals.sbp >= STEADY_SBP;
 }
 
+/** The first dose has had the wait the story gives it before the look at five minutes. */
+function firstDoseWaitOver(ctx: Ctx): boolean {
+  return ctx.phaseT >= 45 || (ctx.phaseT >= 15 && firstRoundDone(ctx));
+}
+
+/** What is left of the protocol's five minutes after the first dose. */
+function secondDoseWaitLeft(ctx: Ctx): number {
+  return Math.max(0, SECOND_DOSE_AFTER - (ctx.t - (firstImAt(ctx) ?? ctx.t)));
+}
+
+/** After the second dose: steady, or stuck long enough that the story stops waiting on him. */
+function waitedOnHim(ctx: Ctx, steadyFor: number): boolean {
+  return (ctx.phaseT >= steadyFor && steady(ctx)) || ctx.phaseT >= STUCK_LONG_ENOUGH;
+}
+
+/** How far the story is about to jump from here, so an ambulance due inside the jump arrives first. */
+function skips(ctx: Ctx): number {
+  if (ctx.phase === 'responding' && firstDoseWaitOver(ctx)) return secondDoseWaitLeft(ctx);
+  if (ctx.phase === 'settling' && waitedOnHim(ctx, 20)) return Infinity;
+  return 0;
+}
+
+/**
+ * How EMS finds him if they are at the door before the second dose has
+ * settled him: the wheeze and the hives are there from the first minute until
+ * then. He is taken as he is, with no question about where he goes.
+ */
+const TAKEN: ReadonlyArray<AsFound> = [
+  {
+    key: 'ems_reacting',
+    seen: `He is still ${phraseInStep(
+      'anaphylaxis',
+      'Albuterol (if wheezing)',
+      'wheezing',
+    )}, and the hives have not faded.`,
+    when: (ctx) => ctx.phase === 'onset' || ctx.phase === 'responding' || ctx.phase === 'relapse',
+  },
+];
+
 /** He is the team's to treat in every phase up to EMS at the door. */
 const BEFORE_EMS = ['onset', 'responding', 'relapse', 'settling'] as const;
 
@@ -145,6 +192,21 @@ function afterEpinephrine(run: Ctx, doses: ReadonlyArray<DoseEvent>): boolean {
   return first !== undefined && doses.every((d) => d.t >= first.t);
 }
 
+/** Said of his breathing only while it is true: more sedative slows it. */
+const reversalGiven: Reaction = (ctx, e) => {
+  const dose = doseOf(e);
+  if (!dose) return undefined;
+  return {
+    voice: {
+      who: 'DA',
+      line: moreSedative(ctx)
+        ? `${dose.drugName}’s in.`
+        : `${dose.drugName}’s in. He’s breathing fast, though, not slow.`,
+    },
+    log: doseLine(dose),
+  };
+};
+
 export const wheeze: Scenario = {
   id: 'wheeze',
   title: 'Wheeze',
@@ -155,7 +217,7 @@ export const wheeze: Scenario = {
   setup: [
     'Extraction of #3 and #14. You are halfway through #14.',
     'IV: 22 G, right dorsal hand, D5W running.',
-    'Given: midazolam 3 mg and fentanyl 25 mcg. He is drowsy and answers when spoken to.',
+    GIVEN,
     'Three minutes ago he gagged and said he felt sick. You pushed ondansetron 4 mg IV, slowly.',
     'N₂O/O₂ by nasal hood. Edan monitor with capnography.',
   ],
@@ -178,9 +240,41 @@ export const wheeze: Scenario = {
       to: 'end:arrest',
       beat: { log: 'Pressure lost: no pulse', tone: 'bad' },
     },
+    ...emsArrives(
+      [
+        ...TAKEN.map(takenAsFound),
+        {
+          // Whether or not he is steady: they arrive on their own clock.
+          when: (ctx) => ctx.phase === 'settling',
+          to: 'handover',
+          beat: (ctx) => ({
+            scene: steady(ctx)
+              ? `${EMS_AT_THE_DOOR} He is awake, pink and breathing easily, and he says he feels fine now.`
+              : `${EMS_AT_THE_DOOR} He is awake and breathing more easily, but he is pale and his pressure has not come up.`,
+            tone: 'good',
+            prompt: {
+              id: 'disposition',
+              voice: {
+                who: 'EMS',
+                line: steady(ctx)
+                  ? 'He looks a lot better. Where is he going?'
+                  : 'Where is he going?',
+              },
+              options: [
+                { id: 'er', label: 'To the ER with you' },
+                { id: 'observe', label: 'We will watch him here' },
+                { id: 'home', label: 'Home with his escort' },
+                { id: 'finish', label: 'We will finish the procedure' },
+              ],
+            },
+          }),
+        },
+      ],
+      skips,
+    ),
   ],
 
-  phases: {
+  phases: sedatable({
     onset: {
       drive: (ctx) => reacting(ctx, false),
       transitions: [
@@ -236,7 +330,7 @@ export const wheeze: Scenario = {
         {
           // The wait for the second dose is skipped, never shortened: the
           // story resumes exactly five minutes after the first one went in.
-          when: (ctx) => ctx.phaseT >= 45 || (ctx.phaseT >= 15 && firstRoundDone(ctx)),
+          when: firstDoseWaitOver,
           to: 'relapse',
           beat: (ctx) => ({
             scene:
@@ -252,7 +346,7 @@ export const wheeze: Scenario = {
             log: 'Five minutes on: worse again',
             tone: 'bad',
             cut: {
-              seconds: Math.max(0, SECOND_DOSE_AFTER - (ctx.t - (firstImAt(ctx) ?? ctx.t))),
+              seconds: secondDoseWaitLeft(ctx),
               title: 'Five minutes after the first dose',
               vitals: {
                 hr: 132,
@@ -320,45 +414,12 @@ export const wheeze: Scenario = {
           look: BETTER,
         };
       },
+      // An ambulance that was called is handled for every phase in `always`.
       transitions: [
-        {
-          // An ambulance that was called arrives on its own clock, whether or not he is steady.
-          when: (ctx) =>
-            ctx.at('call_911') !== null &&
-            ((ctx.phaseT >= 20 && steady(ctx)) || ctx.phaseT >= STUCK_LONG_ENOUGH),
-          to: 'handover',
-          beat: (ctx) => ({
-            scene: steady(ctx)
-              ? 'EMS is at the door with a stretcher. He is awake, pink and breathing easily, and he says he feels fine now.'
-              : 'EMS is at the door with a stretcher. He is awake and breathing more easily, but he is pale and his pressure has not come up.',
-            voice: { who: 'EMS', line: 'What have we got?' },
-            log: 'EMS on scene',
-            tone: 'good',
-            cut: {
-              seconds: Math.max(30, EMS_ARRIVES_AFTER - (ctx.t - (ctx.at('call_911') ?? ctx.t))),
-              title: 'EMS arrives',
-            },
-            prompt: {
-              id: 'disposition',
-              voice: {
-                who: 'EMS',
-                line: steady(ctx)
-                  ? 'He looks a lot better. Where is he going?'
-                  : 'Where is he going?',
-              },
-              options: [
-                { id: 'er', label: 'To the ER with you' },
-                { id: 'observe', label: 'We will watch him here' },
-                { id: 'home', label: 'Home with his escort' },
-                { id: 'finish', label: 'We will finish the procedure' },
-              ],
-            },
-          }),
-        },
         {
           when: (ctx) =>
             ctx.at('call_911') === null &&
-            ((ctx.phaseT >= 30 && steady(ctx)) || ctx.phaseT >= STUCK_LONG_ENOUGH) &&
+            waitedOnHim(ctx, 30) &&
             ctx.answer('late_911') === null &&
             !ctx.has('asked_late_911'),
           to: 'stay',
@@ -417,7 +478,7 @@ export const wheeze: Scenario = {
 
     [OVERDOSE.key]: OVERDOSE.phase,
     [PARALYSED.key]: PARALYSED.phase,
-  },
+  }),
 
   reactions: {
     stop: () => ({ log: 'Procedure stopped', voice: { who: 'DA', line: 'Instruments out.' } }),
@@ -518,23 +579,10 @@ export const wheeze: Scenario = {
       return { voice: { who: 'DA', line: 'In the thigh. I have the time.' }, log: doseLine(dose) };
     },
 
-    'give:naloxone': (_ctx, e) => {
-      const dose = doseOf(e);
-      if (!dose) return undefined;
-      return {
-        voice: { who: 'DA', line: 'Naloxone’s in. He’s breathing fast, though, not slow.' },
-        log: doseLine(dose),
-      };
-    },
-
-    'give:flumazenil': (_ctx, e) => {
-      const dose = doseOf(e);
-      if (!dose) return undefined;
-      return {
-        voice: { who: 'DA', line: 'Flumazenil’s in. He’s breathing fast, though, not slow.' },
-        log: doseLine(dose),
-      };
-    },
+    'give:fentanyl': sedativeGiven(GIVEN),
+    'give:midazolam': sedativeGiven(GIVEN),
+    'give:naloxone': reversalGiven,
+    'give:flumazenil': reversalGiven,
 
     'answer:late_911': (_ctx, e) =>
       e.kind === 'answer' && e.optionId === 'call'
@@ -567,6 +615,7 @@ export const wheeze: Scenario = {
       title: 'Better, and nobody is coming',
       text: 'He is better for now. No ambulance was called, and this reaction can come back.',
     },
+    ...endingsAsFound(TAKEN),
     [OVERDOSE.key]: OVERDOSE.ending,
     [PARALYSED.key]: PARALYSED.ending,
     arrest: {

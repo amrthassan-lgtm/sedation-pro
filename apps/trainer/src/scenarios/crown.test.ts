@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { findProtocol } from '@sedation-pro/clinical';
+
 import { Simulation } from '@/engine/engine';
 import { gradeRun } from '@/engine/grade';
 
@@ -466,5 +468,157 @@ describe('"Crown": only what the pages ask for', () => {
     expect(until(blows, 'visible')).toBe(true);
     expect(blows.scene).not.toContain('thrust');
     expect(blows.scene).toContain('He drags in a thin, crowing breath.');
+  });
+});
+
+describe('"Crown": an ambulance that was called arrives', () => {
+  it('on his side with oxygen and never suctioned: EMS arrives eight minutes after the call and takes him as he is', () => {
+    const sim = start();
+    toVomiting(sim);
+    sim.act('pos_side');
+    sim.act('o2');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.t - sim.run.at('call_911')!).toBeCloseTo(480, 0);
+    expect(sim.endingKey).toBe('ems_not_clear');
+    expect(sim.ending).toEqual({
+      outcome: 'handover',
+      title: 'Handed over to EMS',
+      text: 'He leaves with EMS. His airway is still not clear.',
+    });
+    expect(sim.scene).toBe('EMS is at the door with a stretcher. His airway is still not clear.');
+    expect(sim.voices.at(-1)).toEqual({ who: 'EMS', line: 'What have we got?' });
+    expect(sim.log.at(-1)).toMatchObject({ text: 'EMS on scene', tone: 'neutral' });
+    // He is taken as he is: nobody is asked where he goes.
+    expect(sim.prompt).toBeNull();
+    expect(part(sim, 'side_suction', 'Turn to the side, head down')).toBe('done');
+    expect(part(sim, 'side_suction', 'suction mouth and throat immediately')).toBe('missed');
+    expect(row(sim, 'er').result).toBe('na');
+    expect(gradeRun(crown, sim).clean).toBe(false);
+  });
+
+  it('in view and never taken out: the same handover, and the forceps read "Not done"', () => {
+    const sim = start();
+    toVisible(sim);
+    sim.act('o2');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.t - sim.run.at('call_911')!).toBeCloseTo(480, 0);
+    expect(sim.endingKey).toBe('ems_not_clear');
+    expect(part(sim, 'object_visible', 'remove with Magill forceps')).toBe('missed');
+    expect(gradeRun(crown, sim).clean).toBe(false);
+  });
+
+  it('the crown just out when they walk in: he is taken coughing and breathing', () => {
+    const sim = start();
+    toVisible(sim);
+    sim.act('o2');
+    const due = sim.run.at('call_911')! + 480;
+    advance(sim, due - 6 - sim.t);
+    sim.act('magill');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.t).toBeCloseTo(due, 0);
+    expect(sim.endingKey).toBe('ems_crown_out');
+    expect(sim.ending?.text).toBe(
+      'He leaves with EMS. The crown is out, and he is coughing and breathing.',
+    );
+    expect(sim.run.entered('vomiting')).toBeNull();
+    expect(row(sim, 'side_suction').result).toBe('na');
+    expect(sim.cuts).toEqual([]);
+  });
+
+  it('due while his airway is clear and before the story skips ahead, they walk in on time and ask', () => {
+    const sim = start();
+    toVisible(sim);
+    sim.act('o2');
+    const due = sim.run.at('call_911')! + 480;
+    advance(sim, due - 30 - sim.t);
+    sim.act('magill');
+    expect(until(sim, 'vomiting')).toBe(true);
+    sim.act('pos_side');
+    sim.act('suction');
+    advance(sim, 1);
+    expect(sim.phase).toBe('settled');
+    expect(until(sim, 'handover')).toBe(true);
+    expect(sim.t).toBeCloseTo(due, 0);
+    expect(sim.cuts).toEqual([]);
+    expect(sim.prompt?.id).toBe('disposition');
+  });
+});
+
+describe('"Crown": the story borrows the Choking step’s words and adds no technique', () => {
+  const HOW_TO = /lean|shoulder blades|arms round|from behind|in and up|hard blows|strike/i;
+
+  it('blows and thrusts are named as the step names them, in every phase', () => {
+    const silent = start();
+    toSilent(silent);
+    silent.act('back_blows');
+    expect(silent.scene).toBe('5 back blows.');
+    silent.act('abdominal_thrusts');
+    expect(silent.scene).toBe('5 abdominal thrusts.');
+
+    const coughing = start();
+    advance(coughing, 6);
+    coughing.act('back_blows');
+    expect(coughing.scene).toBe('5 back blows. He was coughing well on his own.');
+    coughing.act('abdominal_thrusts');
+    expect(coughing.scene).toBe('5 abdominal thrusts. He was coughing well on his own.');
+
+    const inView = start();
+    toVisible(inView);
+    inView.act('back_blows');
+    expect(inView.scene).toBe('Five more blows. The crown does not move.');
+    inView.act('abdominal_thrusts');
+    expect(inView.scene).toBe('Five more thrusts. The crown does not move.');
+
+    const out = start();
+    toVomiting(out);
+    out.act('back_blows');
+    expect(out.scene).toBe('5 back blows.');
+    out.act('abdominal_thrusts');
+    expect(out.scene).toBe('5 abdominal thrusts.');
+
+    for (const sim of [silent, coughing, inView, out]) expect(sim.scene).not.toMatch(HOW_TO);
+  });
+
+  it('the words are the Choking step’s, which says nothing of how', () => {
+    const step = findProtocol('choking')!.steps.find((s) => s.text.includes('Severe'))!;
+    expect(step.text).toContain('5 back blows, then 5 abdominal thrusts');
+    expect(step.text).not.toMatch(HOW_TO);
+  });
+});
+
+describe('"Crown": a sedative acts on him here too', () => {
+  it('more sedative slows his breathing and costs him saturation', () => {
+    const plain = start();
+    const sim = start();
+    advance(plain, 6);
+    advance(sim, 6);
+    drawAndGive(sim, 'fentanyl', 2);
+    drawAndGive(sim, 'midazolam', 1);
+    advance(plain, 15);
+    advance(sim, 15);
+    expect(plain.phase).toBe('coughing');
+    expect(sim.phase).toBe('coughing');
+    expect(sim.monitor.rr).toBeLessThan(plain.monitor.rr);
+    expect(sim.run.vitals.spo2).toBeLessThan(plain.run.vitals.spo2);
+  });
+
+  it('it changes nothing while no air is moving at all', () => {
+    const plain = start();
+    const sim = start();
+    toSilent(plain);
+    toSilent(sim);
+    drawAndGive(sim, 'midazolam', 1);
+    advance(plain, 20);
+    advance(sim, 20);
+    expect(sim.monitor.rr).toBe(0);
+    expect(sim.run.vitals.spo2).toBeCloseTo(plain.run.vitals.spo2, 5);
+  });
+
+  it('the debrief lists it as outside the protocols', () => {
+    const sim = start();
+    advance(sim, 6);
+    drawAndGive(sim, 'fentanyl', 1);
+    expect(untilEnd(sim)).toBe(true);
+    expect(gradeRun(crown, sim).outside.map((d) => d.drugKey)).toEqual(['fentanyl']);
   });
 });

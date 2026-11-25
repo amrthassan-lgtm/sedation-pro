@@ -79,13 +79,31 @@ describe('"Cough", played by the protocol', () => {
     expect(sim.voices.at(-1)).toEqual({ who: 'Patient', line: 'My chest… feels tight.' });
   });
 
-  it('the inhaler is given its time in a cut, and the look five minutes on is exact', () => {
+  it('the inhaler is given its time in one cut, never a shortened wait', () => {
     const sim = start();
     firstRound(sim);
     const inhaler = sim.run.at('albuterol')!;
     expect(until(sim, 'severe')).toBe(true);
-    expect(sim.cuts.map((c) => c.title)).toEqual(['Five minutes after the inhaler']);
+    expect(sim.cuts.map((c) => c.title)).toEqual(['After the first albuterol round']);
+    // Pacing, not a protocol time: the story looks again this long after the round.
     expect(sim.run.entered('severe')! - inhaler).toBeCloseTo(300, 0);
+  });
+
+  it('no Bronchospasm step puts a time on looking again after the inhaler, so the card and the log state none', () => {
+    const steps = findProtocol('bronchospasm')!.steps.map((s) => s.text);
+    // The only time the page gives the inhaler is its repeat.
+    expect(steps.filter((text) => /albuterol/i.test(text) && /\d+ ?min/.test(text))).toEqual([
+      'Albuterol inhaler (spacer if available), repeat every 20 min',
+    ]);
+    expect(steps.some((text) => text.includes('after the first albuterol round'))).toBe(true);
+    const sim = start();
+    firstRound(sim);
+    expect(until(sim, 'severe')).toBe(true);
+    const card = sim.cuts[0]!.title;
+    const logged = sim.log.at(-1)!.text;
+    expect(card).toBe('After the first albuterol round');
+    expect(logged).toBe('After the first albuterol round: worse, chest quiet');
+    for (const said of [card, logged]) expect(said).not.toMatch(/\d|minute|five/i);
   });
 
   it('the look after the pen lands on the five minutes the protocol step states', () => {
@@ -510,5 +528,133 @@ describe('"Cough": a step counts while it applied', () => {
     sim.act('suction');
     expect(sim.scene).not.toContain('The throat screen comes out');
     expect(sim.log.at(-1)?.text).toBe('Suctioned');
+  });
+});
+
+describe('"Cough": an ambulance that was called arrives', () => {
+  it('called early in an otherwise ideal run, EMS still arrives eight minutes after the call', () => {
+    const sim = start();
+    firstRound(sim);
+    sim.act('call_911');
+    expect(until(sim, 'severe')).toBe(true);
+    advance(sim, 1);
+    sim.useDevice('auviq_adult');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.t - sim.run.at('call_911')!).toBeCloseTo(480, 0);
+    // The wait after the pen would have run past their arrival: it stops at the door instead.
+    expect(sim.cuts.map((c) => c.title)).toEqual([
+      'After the first albuterol round',
+      'EMS arrives',
+    ]);
+    expect(sim.run.entered('better')).toBeNull();
+    expect(sim.endingKey).toBe('ems_wheezing');
+    expect(sim.ending).toEqual({
+      outcome: 'handover',
+      title: 'Handed over to EMS',
+      text: 'He leaves with EMS. He is still wheezing.',
+    });
+    expect(sim.scene).toBe('EMS is at the door with a stretcher. He is still wheezing.');
+    expect(sim.voices.at(-1)).toEqual({ who: 'EMS', line: 'What have we got?' });
+    expect(sim.log.at(-1)).toMatchObject({ text: 'EMS on scene' });
+    expect(gradeRun(tight, sim)).toMatchObject({ done: 5, of: 5, clean: true });
+  });
+
+  it('everything but epinephrine: EMS takes over a man who cannot speak in sentences, and the pen reads "Not done"', () => {
+    const sim = start();
+    firstRound(sim);
+    sim.act('call_911');
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.t - sim.run.at('call_911')!).toBeCloseTo(480, 0);
+    expect(sim.endingKey).toBe('ems_severe');
+    expect(sim.ending).toEqual({
+      outcome: 'handover',
+      title: 'Handed over to EMS',
+      text: 'He leaves with EMS. He cannot speak in sentences.',
+    });
+    expect(sim.cuts.map((c) => c.title)).toEqual(['After the first albuterol round']);
+    expect(row(sim, 'pen_when_severe').result).toBe('missed');
+    expect(gradeRun(tight, sim)).toMatchObject({ done: 4, of: 5, clean: false });
+  });
+
+  it('what EMS finds in a severe attack is the Bronchospasm step’s own sign', () => {
+    const step = findProtocol('bronchospasm')!.steps.find((s) =>
+      s.text.includes('Auvi-Q 0.3 first'),
+    )!;
+    expect(step.text).toContain('cannot speak in sentences');
+  });
+
+  it('due just after the look that finds him better, they walk in on time with no card of their own', () => {
+    const sim = start();
+    sim.act('call_911');
+    advance(sim, 170);
+    expect(sim.phase).toBe('severe');
+    sim.useDevice('auviq_adult');
+    expect(until(sim, 'better')).toBe(true);
+    expect(sim.t).toBeCloseTo(470, 0);
+    expect(untilEnd(sim)).toBe(true);
+    expect(sim.t - sim.run.at('call_911')!).toBeCloseTo(480, 0);
+    expect(sim.endingKey).toBe('handover');
+    expect(sim.cuts.map((c) => c.title)).toEqual(['Five minutes after the first dose']);
+  });
+});
+
+describe('"Cough": the story borrows the page’s words and adds no technique', () => {
+  it('the inhaler is taken through the step’s own spacer, with no word on how to breathe it in', () => {
+    const step = findProtocol('bronchospasm')!.steps.find((s) =>
+      s.text.includes('Albuterol inhaler'),
+    )!;
+    expect(step.text).toContain('spacer');
+    const sim = start();
+    advance(sim, 12);
+    sim.useDevice('albuterol', 4);
+    expect(sim.scene).toBe('He breathes each puff in through the spacer.');
+    advance(sim, 1);
+    expect(sim.phase).toBe('eased');
+    expect(sim.scene).toBe('The whistle loosens a little.');
+  });
+});
+
+describe('"Cough": a sedative acts on him here too', () => {
+  it('more sedative slows his breathing and costs him saturation', () => {
+    const plain = start();
+    const sim = start();
+    advance(plain, 12);
+    advance(sim, 12);
+    drawAndGive(sim, 'fentanyl', 2);
+    drawAndGive(sim, 'midazolam', 1);
+    advance(plain, 40);
+    advance(sim, 40);
+    expect(plain.phase).toBe('tight');
+    expect(sim.phase).toBe('tight');
+    expect(sim.monitor.rr).toBeLessThan(plain.monitor.rr);
+    expect(sim.run.vitals.spo2).toBeLessThan(plain.run.vitals.spo2);
+  });
+
+  it('the assistant says so, and says "more" only of a drug he has had', () => {
+    expect(tight.setup.join(' ')).toMatch(/Given: midazolam/);
+    expect(tight.setup.join(' ')).not.toMatch(/fentanyl/i);
+    const sim = start();
+    advance(sim, 12);
+    drawAndGive(sim, 'midazolam', 0.2, { size: 1 });
+    expect(sim.voices.at(-1)).toEqual({ who: 'DA', line: 'That’s more midazolam going in, Doc.' });
+    expect(sim.log.at(-1)).toMatchObject({ text: 'Midazolam 0.2 ml IV' });
+    drawAndGive(sim, 'fentanyl', 1);
+    expect(sim.voices.at(-1)).toEqual({ who: 'DA', line: 'Fentanyl’s in.' });
+    drawAndGive(sim, 'fentanyl', 1);
+    expect(sim.voices.at(-1)).toEqual({ who: 'DA', line: 'That’s more fentanyl going in, Doc.' });
+  });
+
+  it('the debrief lists it as outside the protocol and withholds the clean run', () => {
+    const sim = start();
+    firstRound(sim);
+    drawAndGive(sim, 'fentanyl', 1);
+    expect(until(sim, 'severe')).toBe(true);
+    advance(sim, 1);
+    sim.useDevice('auviq_adult');
+    sim.act('call_911');
+    expect(untilEnd(sim)).toBe(true);
+    const debrief = gradeRun(tight, sim);
+    expect(debrief.outside.map((d) => d.drugKey)).toEqual(['fentanyl']);
+    expect(debrief).toMatchObject({ done: 5, of: 5, clean: false });
   });
 });
