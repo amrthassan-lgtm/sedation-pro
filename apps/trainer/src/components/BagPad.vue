@@ -2,7 +2,15 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { findProtocol } from '@sedation-pro/clinical';
 
-import { BREATH, BREATH_WORDS, gapOnPace, HAND_OVER_AFTER, holdOnPace } from '@/engine/engine';
+import {
+  BREATH,
+  BREATH_WORDS,
+  CPR,
+  CPR_WORDS,
+  gapOnPace,
+  HAND_OVER_AFTER,
+  holdOnPace,
+} from '@/engine/engine';
 import type { Run } from '@/composables/useRun';
 
 /**
@@ -14,6 +22,11 @@ import type { Run } from '@/composables/useRun';
  * pad judges nothing itself and advises nothing: what is on pace is the
  * engine's, and the assistant takes the bag only once the engine says the
  * hand-over is earned. A practice run prints the page's whole line as well.
+ *
+ * With the assistant on the chest the bag stays in the player's hand, so
+ * there is no hand-over to offer. Until a tube is in, the ring keeps her time
+ * and not the bag's: it counts her compressions to the arrest page's thirty,
+ * then stands white with the breaths her pause is waiting for.
  */
 const props = defineProps<{ run: Run; coached: boolean }>();
 const emit = defineEmits<{ (e: 'squeezing', down: boolean): void }>();
@@ -48,6 +61,34 @@ let raf = 0;
 const mine = computed(() => props.run.bagHeldBy.value === 'player');
 const earned = computed(() => props.run.handOverEarned.value);
 
+/** Where the assistant's hands are, while CPR is on. */
+const chest = computed(() => props.run.compressions.value);
+/** He has no pulse wave on the monitor: an arrest, in which the bag stays with the player. */
+const pulseless = computed(() => props.run.monitor.value.perfusion === 0);
+/**
+ * No pulse, and nobody on his chest: before CPR has started, or with her
+ * hands off for the AED. The bag is in the hand and is not the way forward,
+ * so the pad keeps no time and asks for nothing.
+ */
+const standing = computed(() => pulseless.value && !chest.value);
+/** The arrest page's cycle is running: her compressions, then the player's breaths. */
+const cycle = computed(() => chest.value?.mode === 'cycle');
+/** Compressions she has counted in this set, at the page's rate, as of this frame. */
+const compressed = computed(() => {
+  void frames.value;
+  const now = chest.value;
+  if (!now || !now.compressing) return CPR.compressions;
+  const counted = Math.floor(((now.elapsed + props.run.ahead()) * CPR.perMin) / 60);
+  return Math.min(CPR.compressions, counted);
+});
+/** Her hands are off for the breaths: the run says so, or the last of the set has just been counted. */
+const paused = computed(
+  () => cycle.value && (chest.value?.compressing === false || compressed.value >= CPR.compressions),
+);
+const breathsWanted = computed(
+  () => CPR.breaths - (chest.value?.compressing === false ? chest.value.breaths : 0),
+);
+
 const heldNow = (): number => (performance.now() - since) / 1000;
 
 /** Seconds the bag has been held squeezed, while it is; then where it was let go. */
@@ -62,32 +103,90 @@ const waited = computed(() => {
   const sinceBreath = props.run.sinceBreath.value;
   return sinceBreath === null ? null : sinceBreath + props.run.ahead();
 });
-/** How far round the ring is: full before the first breath and once the gap has passed. */
-const due = computed(() =>
-  waited.value === null ? 1 : Math.min(1, waited.value / BREATH.everySec),
-);
-const count = computed(() => (waited.value === null ? '' : String(Math.floor(waited.value))));
+/**
+ * How far round the ring is. On the bag's own time: full before the first
+ * breath and once the gap has passed. On hers: as far as she has counted.
+ */
+const due = computed(() => {
+  if (standing.value) return 0;
+  if (cycle.value) return paused.value ? 1 : compressed.value / CPR.compressions;
+  return waited.value === null ? 1 : Math.min(1, waited.value / BREATH.everySec);
+});
+/** The ring stands white: a breath is due, or her pause is waiting for one. */
+const isDue = computed(() => (cycle.value ? paused.value : !standing.value && due.value >= 1));
+const count = computed(() => {
+  if (standing.value) return '';
+  if (cycle.value) return String(paused.value ? breathsWanted.value : compressed.value);
+  return waited.value === null ? '' : String(Math.floor(waited.value));
+});
+/** The bag is in the hand but a breath is not the next thing: she is compressing, or nobody is. */
+const resting = computed(() => standing.value || (cycle.value && !paused.value));
+/** Her pause has just begun and has had no breath yet: the bag is wanted this instant. */
+const called = computed(() => paused.value && breathsWanted.value === CPR.breaths);
 const sweep = computed(() => Math.min(1, held.value / SWEEP_SEC));
 
 /** The latest breath, and which of the page's two numbers it missed. Nothing while the next is being squeezed. */
 const last = computed(() => (down.value ? null : props.run.lastBreath.value));
+/** One of the cycle's breaths is not held to the bag's six seconds: a pause's two come one after the other. */
+const cycleBreath = computed(() => last.value?.cycle !== undefined);
 const missed = computed(() => {
   const breath = last.value;
   return {
-    gap: breath !== null && !gapOnPace(breath.gap),
+    gap: breath !== null && !cycleBreath.value && !gapOnPace(breath.gap),
     hold: breath !== null && !holdOnPace(breath.held),
   };
 });
+
+/**
+ * The pause she has just come back from without its breaths: how many it
+ * got. Null once a breath has been squeezed since, or once this set is no
+ * longer the one that followed it.
+ */
+const shortPause = computed(() => {
+  const now = chest.value;
+  if (down.value || !cycle.value || !now?.compressing) return null;
+  const pause = props.run.pauses.value.at(-1);
+  if (!pause || pause.ended === null || pause.breaths >= CPR.breaths) return null;
+  const setBegan = props.run.t.value - now.elapsed;
+  if (Math.abs(setBegan - pause.ended) >= 0.01) return null;
+  const breath = last.value;
+  return breath === null || breath.t <= pause.ended ? pause.breaths : null;
+});
+/** The line under the pad states something that was off the page, so it is set in the stronger type. */
+const offPage = computed(
+  () =>
+    !standing.value &&
+    (missed.value.gap ||
+      missed.value.hold ||
+      shortPause.value !== null ||
+      (cycle.value && last.value?.cycle === 'compressions')),
+);
 
 /** Whole seconds, as the ring counted them; under one second, to the tenth. */
 function gapSeconds(gap: number): string {
   return gap < 1 ? gap.toFixed(1) : String(Math.floor(gap));
 }
 
+const capital = (line: string): string => line.charAt(0).toUpperCase() + line.slice(1);
+
 /** What the breath was. A fact and nothing more: the page's words beside it say the rest. */
 const fact = computed(() => {
+  // With nobody on his chest the bag's six seconds are not the page he is on.
+  if (standing.value) return '';
+  if (shortPause.value !== null) {
+    return shortPause.value === 0
+      ? 'No breaths in the pause'
+      : `${shortPause.value} of ${CPR.breaths} breaths in the pause`;
+  }
   const breath = last.value;
   if (!breath) return '';
+  if (breath.cycle === 'compressions') return cycle.value ? 'Breath during compressions' : '';
+  if (breath.cycle === 'pause') {
+    if (!cycle.value) return '';
+    const nth = Math.min(CPR.breaths, props.run.pauses.value.at(-1)?.breaths ?? 1);
+    const held = missed.value.hold ? `, held ${breath.held.toFixed(1)} s` : '';
+    return `Breath ${nth} of ${CPR.breaths}${held}`;
+  }
   if (breath.onPace) {
     return breath.towardHandOver === null
       ? 'On pace'
@@ -98,17 +197,35 @@ const fact = computed(() => {
     parts.push(`${gapSeconds(breath.gap)} s since the last breath`);
   }
   if (missed.value.hold) parts.push(`held ${breath.held.toFixed(1)} s`);
-  const line = parts.join(', ');
-  return line.charAt(0).toUpperCase() + line.slice(1);
+  return capital(parts.join(', '));
 });
 
-/** The page's words for what was missed; in a practice run, its whole line whatever the breath. */
-const pageWords = computed(() => {
-  if (props.coached) return PAGE_LINE;
+const BVM_PAGE = 'BVM page';
+const ARREST_PAGE = 'Cardiac arrest page';
+
+/**
+ * The page's words for what was missed, under the name of the page that
+ * says them; in a practice run, its line whatever the breath. In the cycle
+ * that line is the arrest page's, and a breath's length is still the BVM
+ * page's.
+ */
+const pageWords = computed<{ page: string; words: string } | null>(() => {
+  if (standing.value) return null;
+  if (cycle.value) {
+    if (props.coached) return { page: ARREST_PAGE, words: CPR_WORDS.until };
+    if (shortPause.value !== null || last.value?.cycle === 'compressions') {
+      return { page: ARREST_PAGE, words: CPR_WORDS.ratio };
+    }
+    return missed.value.hold && cycleBreath.value
+      ? { page: BVM_PAGE, words: BREATH_WORDS.over }
+      : null;
+  }
+  if (props.coached) return { page: BVM_PAGE, words: PAGE_LINE };
+  if (cycleBreath.value) return null;
   const { gap, hold } = missed.value;
-  if (gap && hold) return BREATH_WORDS.both;
-  if (gap) return BREATH_WORDS.every;
-  return hold ? BREATH_WORDS.over : '';
+  if (gap && hold) return { page: BVM_PAGE, words: BREATH_WORDS.both };
+  if (gap) return { page: BVM_PAGE, words: BREATH_WORDS.every };
+  return hold ? { page: BVM_PAGE, words: BREATH_WORDS.over } : null;
 });
 
 function frame(): void {
@@ -150,7 +267,7 @@ onBeforeUnmount(() => {
   <section class="bag" aria-label="The bag">
     <template v-if="mine">
       <div class="bag-row">
-        <div class="ring" :class="{ 'is-due': due >= 1, 'is-held': down }" aria-hidden="true">
+        <div class="ring" :class="{ 'is-due': isDue, 'is-held': down }" aria-hidden="true">
           <svg viewBox="0 0 72 72">
             <circle class="ring-track" cx="36" cy="36" r="30" />
             <circle
@@ -168,7 +285,7 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="squeeze"
-          :class="{ 'is-down': down }"
+          :class="{ 'is-down': down, 'is-resting': resting, 'is-called': called }"
           @pointerdown.prevent="press"
           @pointerup="release"
           @pointerleave="release"
@@ -184,7 +301,14 @@ onBeforeUnmount(() => {
           <span class="mark" :style="{ left: `${MARK * 100}%` }" aria-hidden="true" />
           <span class="squeeze-label">Squeeze the bag</span>
         </button>
-        <button type="button" class="pill hand" :disabled="!earned" @click="run.handBag('da')">
+        <!-- Her hands are on the chest, or about to be: there is nobody to hand the bag to. -->
+        <button
+          v-if="!chest && !pulseless"
+          type="button"
+          class="pill hand"
+          :disabled="!earned"
+          @click="run.handBag('da')"
+        >
           <span>DA takes the bag</span>
           <span v-if="!earned" class="hand-why">
             On pace {{ run.paceRun.value }} of {{ HAND_OVER_AFTER }}
@@ -192,9 +316,9 @@ onBeforeUnmount(() => {
         </button>
       </div>
       <div class="hint" :class="{ 'is-coached': coached }">
-        <p class="fact" :class="{ 'is-off': missed.gap || missed.hold }">{{ fact }}</p>
+        <p class="fact" :class="{ 'is-off': offPage }">{{ fact }}</p>
         <p v-if="pageWords" class="page-line">
-          <span class="eyebrow">BVM page</span> {{ pageWords }}
+          <span class="eyebrow">{{ pageWords.page }}</span> {{ pageWords.words }}
         </p>
       </div>
     </template>
@@ -295,6 +419,24 @@ onBeforeUnmount(() => {
   transition:
     transform var(--dur-150) var(--ease-standard),
     background var(--dur-400) var(--ease-standard) 600ms;
+}
+/*
+ * While she is compressing, or nobody is, the bag is at rest in the hand:
+ * still his to squeeze, but not the way forward. It is the white button again
+ * the moment her pause wants its breaths.
+ */
+.squeeze.is-resting:not(.is-down) {
+  background: var(--color-surface-overlay);
+  color: var(--color-text-primary);
+  transition:
+    transform var(--dur-150) var(--ease-standard),
+    background var(--dur-250) var(--ease-standard);
+}
+/* Called for, it is white at once: her pause does not wait for a fade meant for a breath just let go. */
+.squeeze.is-called:not(.is-down) {
+  transition:
+    transform var(--dur-150) var(--ease-standard),
+    background var(--dur-150) var(--ease-standard);
 }
 .squeeze.is-down {
   transform: scale(0.97);

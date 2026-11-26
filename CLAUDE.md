@@ -263,8 +263,9 @@ the clinical app and must stay that way:
   run" (`outsideProtocols` in `engine/grade.ts`).
 - **A drill is titled with a sign, but not the classic one (owner, Nov
   2026).** The second sign on the page hints at the emergency without
-  handing it over: "Stridor", "Cough", "Shallow", and "Wheeze" for the
-  anaphylaxis drill. "Crown" is the exception, named for what was dropped.
+  handing it over: "Stridor", "Cough", "Shallow", "Shockable", and "Wheeze"
+  for the anaphylaxis drill. "Crown" is the exception, named for what was
+  dropped.
   The title is never the emergency's name or the page's first sign, and the
   tagline gives no sign away; `scenarios.test.ts` holds both. Run records
   are kept per scenario `id`, so a drill is renamed by its `title` alone:
@@ -328,6 +329,22 @@ the clinical app and must stay that way:
   and costs nothing; given as written reads "Done"; given any other way reads
   "Given, not as written" and withholds "Clean run" (`wrong` in
   `engine/grade.ts`).
+- **"Shockable" is the one room with no pulse (owner approved the plan and
+  the mock-up, Nov 2026).** CPR is one button: the assistant compresses and
+  the player runs the code from the bag, which is his for the whole arrest.
+  Until an LMA or King is in, the pad's ring counts her compressions to the
+  page's thirty and stands white for the two breaths of her pause (`CPR`,
+  `compressions`, `pauses` in `engine/engine.ts`, read from the arrest page's
+  own line). The AED is one button and says three lines (`AED_SAYS`): when it
+  analyses her hands come off by themselves, and after a shock nobody is on
+  the chest until the player says so. A round is played for half a minute and
+  the rest of its two minutes is a `cut`. The 1 mg ampule into the vein is the
+  page's dose only while he has no pulse, and the same mistake as in every
+  other room once he has one (`hadPulse` in `epinephrineOverdose`). With no
+  pulse the monitor draws a flat pulse wave and no SpO₂ (`Drive.pulse`), and
+  the debrief draws no saturation there. In the five other rooms the same
+  buttons meet a patient who has a pulse (`WITH_A_PULSE` in
+  `scenarios/shared.ts`).
 - `pnpm dev:trainer` runs it locally on port 5174.
 
 ## Branching and commits

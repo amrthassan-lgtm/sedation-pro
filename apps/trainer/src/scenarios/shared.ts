@@ -1,3 +1,4 @@
+import { TUBES } from '@/engine/catalog';
 import { parseConcentrationMcgPerMl } from '@/engine/dose';
 import { calloutAt, doseRangeOf, gaveProtocolDose, phraseInStep } from '@/engine/protocol';
 import type {
@@ -9,6 +10,7 @@ import type {
   Ending,
   Phase,
   PlayerEvent,
+  Prompt,
   Reaction,
   Target,
   TimeCut,
@@ -59,8 +61,11 @@ export const MASK_HELD = `${phraseInStep('laryngospasm', 'Tight mask seal', 'Tig
  */
 export type WayIn = (ctx: Ctx) => number | null;
 
-/** What the cart has for the BVM page's "Open the airway": Jaw thrust held, or the NPA in. */
-const AIRWAY_OPENERS = ['jaw_thrust', 'npa'] as const;
+/**
+ * What the cart has for the BVM page's "Open the airway": Jaw thrust held or
+ * the NPA in, and further down the same page, an LMA or a King in.
+ */
+const AIRWAY_OPENERS = ['jaw_thrust', 'npa', ...TUBES] as const;
 
 /**
  * The BVM page opens the airway before it gives a breath: "head tilt and chin
@@ -163,7 +168,14 @@ export function bagNeedsWayIn(
   phases: Readonly<Record<string, Phase>>,
   breathesForHim: ReadonlyArray<string>,
   wayIn: WayIn = airwayOpenedSince,
+  takesTube: (ctx: Ctx) => boolean = paralysedNow,
 ): Record<string, Phase> {
+  // A tube that went in while he could take one comes out once he no longer can.
+  const tubeOut: Transition = {
+    when: (ctx) => TUBES.some((id) => ctx.on(id)) && !takesTube(ctx),
+    to: 'stay',
+    beat: (ctx) => ({ off: TUBES, log: `${ctx.on('lma') ? 'LMA' : 'King'} out` }),
+  };
   const watch: ReadonlyArray<Transition> = [
     {
       when: (ctx) => {
@@ -191,8 +203,8 @@ export function bagNeedsWayIn(
         },
         // After the phase's own: speaking of the chest never holds the story up.
         transitions: breathesForHim.includes(id)
-          ? [...phase.transitions, ...watch]
-          : phase.transitions,
+          ? [...phase.transitions, tubeOut, ...watch]
+          : [...phase.transitions, tubeOut],
       },
     ]),
   );
@@ -201,13 +213,21 @@ export function bagNeedsWayIn(
 /** The protocol's own warning, quoted so a debrief can mark it on the step it sits in. */
 export const NEVER_STOCK_EPI_IV = 'NEVER 1 mg/ml IV in a patient with a pulse';
 
-/** Stock-strength epinephrine, or a whole thigh dose, pushed into the vein. */
-export function epinephrineIntoVein(ctx: Ctx): DoseEvent | undefined {
+/**
+ * Stock-strength epinephrine, or a whole thigh dose, pushed into the vein.
+ * `hadPulse` leaves out a push the arrest page writes: the warning is the
+ * page's own "in a patient with a pulse".
+ */
+export function epinephrineIntoVein(
+  ctx: Ctx,
+  hadPulse: (dose: DoseEvent) => boolean = () => true,
+): DoseEvent | undefined {
   return ctx
     .given('epinephrine')
     .find(
       (d) =>
         d.route === 'IV' &&
+        hadPulse(d) &&
         (d.mcgPerMl >= STOCK_EPI_MCG_PER_ML * 0.99 || d.mcg >= EPI_IM_DOSE_MCG * 0.99),
     );
 }
@@ -220,24 +240,27 @@ export interface Consequence {
   readonly ending: Ending;
 }
 
-/** How he was not breathing when a drug went in: the cords shut, or paralysed. */
-export type Apnoea = 'shut' | 'paralysed';
+/** How he was not breathing when a drug went in: the cords shut, paralysed, or not yet awake after an arrest. */
+export type Apnoea = 'shut' | 'paralysed' | 'unresponsive';
 
 /**
  * `capno` is the trace the patient already had: the drug does not change his
  * airway. A scenario where he may not be breathing at all says so through
  * `apnoea`, and the drug does not start him breathing either. `ventilated` is
- * that scenario's own answer to whether a bag is breathing for him.
+ * that scenario's own answer to whether a bag is breathing for him. `hadPulse`
+ * is for the one room where he may have none: a push the arrest page writes
+ * is not this mistake.
  */
 export function epinephrineOverdose(
   capno: Capno,
   apnoea: (ctx: Ctx) => Apnoea | null = () => null,
   ventilated: (ctx: Ctx) => boolean = (ctx) => ctx.on('bvm'),
+  hadPulse: (dose: DoseEvent) => boolean = () => true,
 ): Consequence {
   return {
     key: 'overdose',
     transition: {
-      when: (ctx) => epinephrineIntoVein(ctx) !== undefined && ctx.phase !== 'overdose',
+      when: (ctx) => epinephrineIntoVein(ctx, hadPulse) !== undefined && ctx.phase !== 'overdose',
       to: 'overdose',
       beat: (ctx) => {
         const state = apnoea(ctx);
@@ -257,8 +280,9 @@ export function epinephrineOverdose(
       drive: (ctx) => {
         const shut = ctx.has('overdose_shut');
         const paralysed = ctx.has('overdose_paralysed');
-        const bagged = paralysed && ventilated(ctx);
-        const breathing = !shut && !paralysed;
+        const limp = paralysed || ctx.has('overdose_unresponsive');
+        const bagged = limp && ventilated(ctx);
+        const breathing = !shut && !limp;
         return {
           spo2Rate: breathing ? -0.05 : bagged ? 0.3 : -0.5,
           hr: toward(178, 12),
@@ -274,7 +298,11 @@ export function epinephrineOverdose(
             : {
                 color: 'grey',
                 eyes: shut ? 'open' : 'closed',
-                note: shut ? 'chest heaving, no sound' : 'paralysed, not breathing',
+                note: shut
+                  ? 'chest heaving, no sound'
+                  : paralysed
+                    ? 'paralysed, not breathing'
+                    : 'unresponsive, not breathing',
               },
         };
       },
@@ -594,6 +622,128 @@ export function sedativeGiven(briefed: string, tone: Tone = 'neutral'): Reaction
     };
   };
 }
+
+/**
+ * Asked by the front desk of a team that has gone on without calling (owner's
+ * wording, Nov 2026). Without it a run that never calls had no ending.
+ */
+export const FRONT_DESK_ASKS: Prompt = {
+  id: 'front_desk_911',
+  voice: { who: 'Front desk', line: 'Do you want me to call 911?' },
+  options: [
+    { id: 'call', label: 'Call 911' },
+    { id: 'not_yet', label: 'Not yet' },
+  ],
+};
+
+/** When she last asked, or was last told "Not yet". The story's own marker, not on the cart. */
+const ASKED_TO_CALL = 'asked:front_desk_911';
+
+/** The front desk makes the call: said and logged the same whether it was tapped or answered. */
+export const CALLED_911: Beat = {
+  voice: { who: 'Front desk', line: '911 is on the way. About eight minutes.' },
+  log: '911 called',
+  tone: 'good',
+};
+
+/**
+ * She asks once what she is watching has gone on for `afterSec` with nobody
+ * called, and asks again the same wait after she last asked or was told "Not
+ * yet". `since` is when it began, or `null` while it is not going on.
+ */
+export function frontDeskAsks(since: (ctx: Ctx) => number | null, afterSec: number): Transition {
+  return {
+    when: (ctx) => {
+      const from = since(ctx);
+      if (from === null || ctx.at('call_911') !== null) return false;
+      const asked = ctx.last(ASKED_TO_CALL) ?? -Infinity;
+      return ctx.t - Math.max(from, asked) >= afterSec;
+    },
+    to: 'stay',
+    beat: { counts: [ASKED_TO_CALL], prompt: FRONT_DESK_ASKS },
+  };
+}
+
+/** The call, by the tap on the cart or by her own two buttons. Goes in a drill's `reactions`. */
+export const FRONT_DESK_REACTIONS: Readonly<Record<string, Reaction>> = {
+  call_911: (ctx) =>
+    ctx.count('call_911') > 1
+      ? { voice: { who: 'Front desk', line: 'They’re already on the way.' } }
+      : // Tapped while she is asking, the tap is the answer.
+        { ...CALLED_911, settles: FRONT_DESK_ASKS.id },
+
+  // "Call 911" is the call, exactly as the tap is. "Not yet" is only heard.
+  'answer:front_desk_911': (_ctx, e) =>
+    e.kind === 'answer' && e.optionId === 'call'
+      ? { ...CALLED_911, counts: ['call_911'] }
+      : { counts: [ASKED_TO_CALL] },
+};
+
+/** Everything the AED says, in any room: three lines and no more. */
+export const AED_SAYS = {
+  analysing: 'Analyzing. Stand clear.',
+  shock: 'Shock advised.',
+  noShock: 'No shock advised.',
+} as const;
+
+/**
+ * He is paralysed: by a drill's own succinylcholine (phase `paralyzed`), or by
+ * the wrong one (`wrongParalytic`'s phase), or he was when the epinephrine
+ * consequence took the story over.
+ */
+export function paralysedNow(ctx: Ctx): boolean {
+  return (
+    ctx.phase === 'paralyzed' ||
+    ctx.phase === 'paralysed' ||
+    (ctx.phase === 'overdose' && ctx.has('overdose_paralysed'))
+  );
+}
+
+/** A tube in a patient who can take one goes in; in one who still has his reflexes it comes straight out. */
+export function tube(id: (typeof TUBES)[number], takesIt: (ctx: Ctx) => boolean): Reaction {
+  const name = id === 'lma' ? 'LMA' : 'King';
+  return (ctx, e) => {
+    if (e.kind !== 'action') return undefined;
+    if (!e.on) return { log: `${name} out` };
+    return takesIt(ctx)
+      ? { scene: `The ${name} is in.`, log: `${name} in` }
+      : {
+          scene: `He gags on the ${name} and it comes straight out.`,
+          log: `${name}: gagged, taken out`,
+          off: [id],
+        };
+  };
+}
+
+/**
+ * What the five acts of an arrest meet in a patient who has a pulse, the same
+ * in every room: the cart is the same everywhere, so every room has to answer
+ * them. Each line says what is seen or found and nothing about what to do.
+ * Goes in a drill's `reactions`.
+ */
+export const WITH_A_PULSE: Readonly<Record<string, Reaction>> = {
+  pulse_check: () => ({ scene: 'You feel a pulse at his neck.', log: 'Pulse check: pulse felt' }),
+
+  cpr: (_ctx, e) =>
+    e.kind === 'action' && e.on
+      ? {
+          voice: { who: 'DA', line: 'He has a pulse.' },
+          log: 'CPR stopped: he has a pulse',
+          off: ['cpr'],
+        }
+      : undefined,
+
+  aed: (ctx, e) => {
+    if (e.kind !== 'action') return undefined;
+    if (!e.on) return { log: 'AED off' };
+    // The consequence's own wide, fast rhythm is not one to speak for.
+    if (ctx.phase === 'overdose') return { log: 'AED pads on' };
+    return { voice: { who: 'AED', line: AED_SAYS.noShock }, log: 'AED: no shock advised' };
+  },
+
+  lma: tube('lma', paralysedNow),
+  king: tube('king', paralysedNow),
+};
 
 /** "Naloxone 1.0 ml IV", with a note when the syringe carried no label. */
 export function doseLine(dose: DoseEvent): string {

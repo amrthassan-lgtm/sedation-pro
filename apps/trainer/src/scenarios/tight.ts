@@ -25,6 +25,7 @@ import {
   sedatable,
   sedativeGiven,
   takenAsFound,
+  WITH_A_PULSE,
   wrongParalytic,
 } from './shared';
 
@@ -473,6 +474,8 @@ export const tight: Scenario = {
   }),
 
   reactions: {
+    ...WITH_A_PULSE,
+
     stop: () => ({ log: 'Procedure stopped', voice: { who: 'DA', line: 'Instruments out.' } }),
 
     suction: (ctx) =>

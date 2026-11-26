@@ -1,4 +1,4 @@
-import { findAction, findDevice, findVial } from './catalog';
+import { findAction, findDevice, findVial, TUBES } from './catalog';
 import {
   concentrationMcgPerMl,
   drawDrug,
@@ -19,6 +19,8 @@ import type {
   CutRecord,
   BagHolder,
   Breath,
+  Compressions,
+  CyclePause,
   DoseEvent,
   Drive,
   Ending,
@@ -85,6 +87,8 @@ const TOO_LONG_SEC = BREATH.overSec * 2;
 const BELLY_AFTER = 4;
 /** The monitor's breath rate is counted over this many of the latest squeezes. */
 const RATE_OVER_BREATHS = 4;
+/** As many squeezes as a minute can hold are kept for the rate and for "bagging". */
+const RECENT_SQUEEZES = 60;
 
 /*
  * How near the page's numbers a squeeze has to land to be the page's breath.
@@ -95,6 +99,52 @@ const PACE_GAP = { from: BREATH.everySec * 0.75, to: BREATH.everySec * 1.25 } as
 const PACE_HOLD = { from: BREATH.overSec * 0.5, to: BREATH.overSec * 1.5 } as const;
 /** This many breaths in a row on pace, and the assistant will take the bag. */
 export const HAND_OVER_AFTER = 3;
+
+const CPR_STEP = 'CPR on the CPR board';
+
+/**
+ * CPR as the arrest pages write it, read from the page so the assistant on
+ * the chest keeps no number of her own: so many compressions a minute (the
+ * middle of the page's range), and so many of them to so many breaths until
+ * a tube is in.
+ */
+export const CPR = (() => {
+  const from = numberInStep('vfib_vtach', CPR_STEP, /(\d+)-\d+\/min/);
+  const to = numberInStep('vfib_vtach', CPR_STEP, /\d+-(\d+)\/min/);
+  return {
+    perMin: (from + to) / 2,
+    compressions: numberInStep('vfib_vtach', CPR_STEP, /(\d+):\d+ until/),
+    breaths: numberInStep('vfib_vtach', CPR_STEP, /\d+:(\d+) until/),
+  } as const;
+})();
+
+const RATIO_WORDS = `${CPR.compressions}:${CPR.breaths}`;
+
+/** The page's words for that cycle, to print beside a pause that missed it. */
+export const CPR_WORDS = {
+  ratio: phraseInStep('vfib_vtach', CPR_STEP, RATIO_WORDS),
+  until: phraseInStep('vfib_vtach', CPR_STEP, `${RATIO_WORDS} until an LMA/King/ET tube is placed`),
+} as const;
+
+/** The cart's compressions: one toggle, the assistant's hands on the chest. */
+const COMPRESSIONS = 'cpr';
+
+/** One set of compressions takes this long at the page's rate. */
+const SET_SEC = (CPR.compressions * 60) / CPR.perMin;
+/**
+ * In a pause she waits for each breath as long as the BVM page puts between
+ * two. None in that time, and she is back on the chest. Pacing.
+ */
+const PAUSE_WAIT_SEC = BREATH.everySec;
+/** A bag the story squeezes gives the pause its breaths in this long: each one in and out again. */
+const PAUSE_GIVEN_SEC = CPR.breaths * BREATH.overSec * 2;
+/**
+ * In the page's cycle the breaths come a set of compressions apart, so one
+ * goes on counting as bagging for a round and a half of it.
+ */
+const CYCLE_CARRIES_SEC = (SET_SEC + PAUSE_WAIT_SEC) * 1.5;
+/** Breaths a minute when the cycle is given as the page writes it. */
+const CYCLE_RATE = Math.round((60 * CPR.breaths) / (SET_SEC + PAUSE_GIVEN_SEC));
 
 /**
  * The gap from the breath before was the page's, near enough. The first
@@ -174,6 +224,7 @@ export class Simulation {
   private readonly body: Vitals;
   private capnoNow: Capno;
   private rhythmNow: Rhythm = 'sinus';
+  private pulseNow = true;
   private lookNow: Look;
   private airwayOpen = true;
 
@@ -187,10 +238,29 @@ export class Simulation {
   private nextAssistantBreathAt = 0;
   /** Where in the log the player's present stretch of squeezes begins. */
   private inHandFrom = 0;
+  /**
+   * When the latest squeezes were let go, by a clock that a time cut does not
+   * move: bagging the story skipped over was still bagging when it resumes.
+   */
+  private squeezedAt: number[] = [];
   private onPaceInARow = 0;
   private handOverWon = false;
 
+  /** Where the assistant's hands are while CPR is on: on the chest for a set, or off it for the breaths. */
+  private chest: { compressing: boolean; since: number } | null = null;
+  private readonly pauseLog: Array<{
+    t: number;
+    ended: number | null;
+    breaths: number;
+    wentIn: number;
+  }> = [];
+  /** What she is waiting from in a pause: its start, or the breath before. */
+  private pauseWaitFrom = 0;
+
   private readonly toggles = new Set<string>();
+  /** When each toggle was on, so a story can ask for how long. */
+  private readonly spans = new Map<string, Array<{ from: number; to: number | null }>>();
+  private benchTouched: number | null = null;
   private readonly actions = new Map<string, ActionRecord>();
   private readonly doseLog: DoseEvent[] = [];
   private readonly flagSet = new Set<string>();
@@ -250,7 +320,7 @@ export class Simulation {
       this.voiceAt = 0;
       this.voiceTotal = 1;
     }
-    for (const id of init.on ?? []) this.toggles.add(id);
+    for (const id of init.on ?? []) this.switchOn(id);
     const cuffAge = Math.max(0, init.nibpAgeSec ?? 0);
     this.nibp = {
       sbp: Math.round(init.vitals.sbp),
@@ -261,6 +331,8 @@ export class Simulation {
     this.lowest = init.vitals.spo2;
     this.phaseEntered.set(init.phase, 0);
     this.holdToggles();
+    // Known before the first tick: a scene may open on a patient who has no pulse.
+    this.pulseNow = this.currentPhase().drive(this.live).pulse !== false;
   }
 
   /** Remember which toggles were on in this phase, so the grader can ask afterwards. */
@@ -401,12 +473,18 @@ export class Simulation {
   private bagging(): boolean {
     if (!this.toggles.has('bvm')) return false;
     if (this.bagHolder === 'da') return true;
-    const last = this.breathLog.at(-1);
-    return last !== undefined && this.time - last.t <= BREATH_CARRIES_SEC;
+    const last = this.squeezedAt.at(-1);
+    const carries = this.cycling() ? CYCLE_CARRIES_SEC : BREATH_CARRIES_SEC;
+    return last !== undefined && this.time - last <= carries;
   }
 
   /** Breaths a minute as the latest squeezes make it; the page's rate for the assistant. */
   private bagRate(): number {
+    if (this.cycling()) {
+      // A pause's two come a second apart and the next pair a whole set later: counted over the minute.
+      if (this.bagHolder === 'da') return CYCLE_RATE;
+      return this.squeezedAt.filter((t) => this.time - t <= 60).length;
+    }
     if (this.bagHolder === 'da') return BAG_RATE;
     const recent = this.breathLog.slice(-RATE_OVER_BREATHS);
     const first = recent[0];
@@ -451,11 +529,24 @@ export class Simulation {
     const since = this.sinceBreath;
     // This squeeze began `held` ago: the gap is start to start.
     const gap = since === null ? null : toMillis(Math.max(0, since - held));
-    const onPace = gapOnPace(gap) && holdOnPace(held);
-    this.onPaceInARow = onPace ? this.onPaceInARow + 1 : 0;
-    const towardHandOver = onPace && !this.handOverWon ? this.onPaceInARow : null;
+    const cycle = this.cycling() ? this.takeCycleBreath(held) : null;
+    // In the page's cycle a breath is on pace when it is one of a pause's and held as the page writes.
+    const onPace =
+      cycle === null ? gapOnPace(gap) && holdOnPace(held) : cycle === 'pause' && holdOnPace(held);
+    // In an arrest the bag stays with the player: there is no hand-over to count toward.
+    const counts = this.chest === null && this.pulseNow;
+    this.onPaceInARow = onPace && counts ? this.onPaceInARow + 1 : 0;
+    const towardHandOver = onPace && counts && !this.handOverWon ? this.onPaceInARow : null;
     if (this.onPaceInARow >= HAND_OVER_AFTER) this.handOverWon = true;
-    this.breathLog.push({ t: this.time, held, gap, onPace, towardHandOver });
+    this.breathLog.push({
+      t: this.time,
+      held,
+      gap,
+      onPace,
+      towardHandOver,
+      ...(cycle === null ? {} : { cycle }),
+    });
+    this.squeezedAt = [...this.squeezedAt.slice(-RECENT_SQUEEZES + 1), this.time];
     this.strain(
       held > TOO_LONG_SEC || (before !== undefined && this.time - before.t < TOO_SOON_SEC),
     );
@@ -472,31 +563,172 @@ export class Simulation {
   handBag(to: BagHolder): boolean {
     if (this.finished || !this.toggles.has('bvm') || this.bagHolder === to) return false;
     if (to === 'da' && !this.handOverEarned) return false;
-    this.bagHolder = to;
-    this.timeline.push({
-      t: this.time,
-      text: to === 'da' ? 'DA takes the bag' : 'Bag taken back',
-      tone: 'neutral',
-    });
+    // Her hands are on the chest, or about to be: with no pulse, the bag is the player's.
+    if (to === 'da' && (this.chest !== null || !this.pulseNow)) return false;
+    if (to === 'player') {
+      this.bagBackInHand();
+      return true;
+    }
+    this.bagHolder = 'da';
+    this.timeline.push({ t: this.time, text: 'DA takes the bag', tone: 'neutral' });
     const saidBefore = this.voiceTotal;
     this.bagLine();
-    if (to === 'da') {
-      this.assistantSpans.push({ from: this.time, to: null });
-      this.nextAssistantBreathAt = this.time + BREATH.everySec;
-      // The story's own line about the bag, if this is the first air to go in, is hers already.
-      if (this.voiceTotal === saidBefore) this.say({ who: 'DA', line: 'I have the bag.' });
-    } else {
-      this.closeAssistantSpan();
-      this.newStretch();
-    }
+    this.assistantSpans.push({ from: this.time, to: null });
+    this.nextAssistantBreathAt = this.time + BREATH.everySec;
+    // The story's own line about the bag, if this is the first air to go in, is hers already.
+    if (this.voiceTotal === saidBefore) this.say({ who: 'DA', line: 'I have the bag.' });
     this.holdToggles();
     this.beats += 1;
     return true;
   }
 
+  /** The bag comes back to the player from the assistant, who was squeezing it. */
+  private bagBackInHand(): void {
+    this.bagHolder = 'player';
+    this.timeline.push({ t: this.time, text: 'Bag taken back', tone: 'neutral' });
+    this.bagLine();
+    this.closeAssistantSpan();
+    this.newStretch();
+    this.holdToggles();
+    this.beats += 1;
+  }
+
   private closeAssistantSpan(): void {
     const open = this.assistantSpans.at(-1);
     if (open && open.to === null) open.to = this.time;
+  }
+
+  // ---------------------------------------------------------------- compressions
+
+  /** A tube is in: from then on the page's compressions are continuous. */
+  private tubeIn(): boolean {
+    return TUBES.some((id) => this.toggles.has(id));
+  }
+
+  /**
+   * The page's cycle applies: she is on the chest, a bag is in a hand to give
+   * the breaths, and no tube is in. With no bag she has nothing to pause for.
+   */
+  private cycling(): boolean {
+    return this.chest !== null && this.toggles.has('bvm') && !this.tubeIn();
+  }
+
+  /** Where the assistant's hands are, for the pad that counts with her; `null` while CPR is off. */
+  get compressions(): Compressions | null {
+    const chest = this.chest;
+    if (!chest) return null;
+    return {
+      mode: this.cycling() ? 'cycle' : 'continuous',
+      compressing: chest.compressing,
+      elapsed: toMillis(this.time - chest.since),
+      breaths: chest.compressing ? 0 : (this.pauseLog.at(-1)?.breaths ?? 0),
+    };
+  }
+
+  /** Every pause for breaths so far, oldest first. */
+  get pauses(): ReadonlyArray<CyclePause> {
+    return this.pauseLog;
+  }
+
+  private backOnTheChest(at: number): void {
+    const open = this.pauseLog.at(-1);
+    if (open && open.ended === null) open.ended = at;
+    this.chest = { compressing: true, since: at };
+  }
+
+  /** The set is counted out and her hands come off, or the pause has had its breaths or its wait. */
+  private runCompressions(): void {
+    const chest = this.chest;
+    if (!chest) return;
+    if (!this.cycling()) {
+      if (!chest.compressing) this.backOnTheChest(this.time);
+      return;
+    }
+    if (chest.compressing) {
+      const due = chest.since + SET_SEC;
+      if (this.time < due) return;
+      this.chest = { compressing: false, since: due };
+      this.pauseLog.push({ t: due, ended: null, breaths: 0, wentIn: 0 });
+      this.pauseWaitFrom = due;
+      return;
+    }
+    const pause = this.pauseLog.at(-1);
+    // A bag the story squeezes gives the page's breaths: both, each over its second.
+    if (this.bagHolder === 'da' && pause && this.time - pause.t >= PAUSE_GIVEN_SEC) {
+      pause.breaths = CPR.breaths;
+      pause.wentIn = this.breathGoesIn ? CPR.breaths : 0;
+      this.backOnTheChest(this.time);
+      return;
+    }
+    if (this.time - this.pauseWaitFrom >= PAUSE_WAIT_SEC) this.backOnTheChest(this.time);
+  }
+
+  /**
+   * Which part of the cycle a squeeze let go now belongs to. One begun or let
+   * go inside a pause that still wanted a breath is that pause's, even when
+   * she had gone back on the chest a moment before it was let go.
+   */
+  private takeCycleBreath(held: number): 'pause' | 'compressions' {
+    const began = this.time - held;
+    const pause = this.pauseLog.at(-1);
+    if (
+      !pause ||
+      pause.breaths >= CPR.breaths ||
+      this.time < pause.t ||
+      began > (pause.ended ?? this.time)
+    ) {
+      return 'compressions';
+    }
+    pause.breaths += 1;
+    if (this.breathGoesIn) pause.wentIn += 1;
+    this.pauseWaitFrom = this.time;
+    if (pause.ended === null && pause.breaths >= CPR.breaths) this.backOnTheChest(this.time);
+    return 'pause';
+  }
+
+  // ---------------------------------------------------------------- toggles
+
+  private switchOn(id: string): void {
+    if (this.toggles.has(id)) return;
+    this.toggles.add(id);
+    const spans = this.spans.get(id) ?? [];
+    spans.push({ from: this.time, to: null });
+    this.spans.set(id, spans);
+    if (id !== COMPRESSIONS) return;
+    this.chest = { compressing: true, since: this.time };
+    // Her hands are on the chest now: a bag she had is the player's again.
+    if (this.pacedBag && this.bagHolder === 'da') {
+      if (this.toggles.has('bvm')) this.bagBackInHand();
+      else this.bagHolder = 'player';
+    }
+  }
+
+  private switchOff(id: string): void {
+    if (!this.toggles.delete(id)) return;
+    const open = this.spans.get(id)?.at(-1);
+    if (open && open.to === null) open.to = this.time;
+    if (id !== COMPRESSIONS) return;
+    const pause = this.pauseLog.at(-1);
+    if (pause && pause.ended === null) pause.ended = this.time;
+    this.chest = null;
+  }
+
+  /** Seconds a toggle has been on in all, from `since` to now. */
+  private onFor(toggle: string, since: number): number {
+    let total = 0;
+    for (const span of this.spans.get(toggle) ?? []) {
+      total += Math.max(0, (span.to ?? this.time) - Math.max(span.from, since));
+    }
+    return total;
+  }
+
+  private lastOff(toggle: string): number | null {
+    const spans = this.spans.get(toggle) ?? [];
+    for (let i = spans.length - 1; i >= 0; i -= 1) {
+      const to = spans[i]?.to ?? null;
+      if (to !== null) return to;
+    }
+    return null;
   }
 
   /** How many of a counted device are left; `null` when it is not counted. */
@@ -514,14 +746,16 @@ export class Simulation {
       hr: Math.round(this.body.hr),
       spo2: Math.round(this.body.spo2),
       etco2: this.body.etco2 === null ? null : Math.round(this.body.etco2),
-      // The bag sets the rate only for a patient breathing slower than it.
-      rr: bagged ? Math.max(this.bagRate(), own) : own,
+      // The bag sets the rate only for a patient breathing slower than it, and only
+      // while there is a CO₂ trace to count it from: with no pulse and nobody on the
+      // chest, air goes in and none comes back to the monitor.
+      rr: bagged && this.body.etco2 !== null ? Math.max(this.bagRate(), own) : own,
       bagged,
       capno: this.capnoNow,
       rhythm: this.rhythmNow,
       nibp: this.nibp,
       cuffCycling: this.cuffDoneAt !== null,
-      perfusion: clamp((this.body.sbp - 40) / 70, 0.15, 1),
+      perfusion: this.pulseNow ? clamp((this.body.sbp - 40) / 70, 0.15, 1) : 0,
       alarms,
       alarmLevel:
         alarms.length === 0
@@ -557,6 +791,12 @@ export class Simulation {
       answer: (promptId) => sim.answers.get(promptId) ?? null,
       entered: (phase) => sim.phaseEntered.get(phase) ?? null,
       onDuring: (toggle, phase) => sim.heldIn.get(phase)?.has(toggle) ?? false,
+      onFor: (toggle, since = 0) => sim.onFor(toggle, since),
+      lastOff: (toggle) => sim.lastOff(toggle),
+      pauses: () => sim.pauseLog,
+      get benchAt() {
+        return sim.benchTouched;
+      },
     };
     return live;
   })();
@@ -568,8 +808,8 @@ export class Simulation {
 
   private alarms(): ReadonlyArray<AlarmId> {
     const out: AlarmId[] = [];
-    // The number on the screen is what breaches the limit, as on a real monitor.
-    if (Math.round(this.body.spo2) < SPO2_ALARM_BELOW) out.push('spo2_low');
+    // The number on the screen is what breaches the limit, as on a real monitor: with no pulse there is none.
+    if (this.pulseNow && Math.round(this.body.spo2) < SPO2_ALARM_BELOW) out.push('spo2_low');
     if (this.noWaveformSince !== null && this.time - this.noWaveformSince >= APNEA_SECONDS) {
       out.push('apnea');
     }
@@ -591,6 +831,7 @@ export class Simulation {
 
   private step(dt: number): void {
     this.time += dt;
+    this.runCompressions();
     const phase = this.currentPhase();
     const drive = phase.drive(this.live);
     this.applyDrive(drive, dt);
@@ -644,10 +885,18 @@ export class Simulation {
     }
     this.capnoNow = drive.etco2 === null ? 'flat' : drive.capno;
     this.rhythmNow = drive.rhythm ?? 'sinus';
+    const hadPulse = this.pulseNow;
+    this.pulseNow = drive.pulse !== false;
     if (drive.look) this.lookNow = drive.look;
-    this.lowest = Math.min(this.lowest, this.body.spo2);
+    // With no pulse the oximeter reads nothing: there is no number to be the lowest.
+    if (this.pulseNow) this.lowest = Math.min(this.lowest, this.body.spo2);
     // A new low is always recorded, so the recorder and the debrief agree on the lowest value.
-    if (this.time >= this.nextSampleAt || Math.round(this.body.spo2) < this.lowestSampled) {
+    // So is the moment the pulse goes or comes back, so the gap in the trace starts and ends on it.
+    if (
+      this.time >= this.nextSampleAt ||
+      hadPulse !== this.pulseNow ||
+      (this.pulseNow && Math.round(this.body.spo2) < this.lowestSampled)
+    ) {
       this.sample();
     }
   }
@@ -659,9 +908,16 @@ export class Simulation {
       spo2,
       hr: Math.round(this.body.hr),
       sbp: Math.round(this.body.sbp),
+      ...(this.pulseNow ? {} : { pulseless: true as const }),
     });
-    this.lowestSampled = Math.min(this.lowestSampled, spo2);
+    if (this.pulseNow) this.lowestSampled = Math.min(this.lowestSampled, spo2);
     this.nextSampleAt = this.time + SAMPLE_EVERY;
+  }
+
+  /** What the cuff finds: a pressure, or nothing to read on an arm with no pulse. */
+  private cuffReading(): NibpReading | null {
+    if (!this.pulseNow) return null;
+    return { sbp: Math.round(this.body.sbp), dbp: Math.round(this.body.dbp), at: this.time };
   }
 
   private runCuff(): void {
@@ -669,7 +925,7 @@ export class Simulation {
       this.cuffDoneAt = this.time + CUFF_SECONDS;
     }
     if (this.cuffDoneAt !== null && this.time >= this.cuffDoneAt) {
-      this.nibp = { sbp: Math.round(this.body.sbp), dbp: Math.round(this.body.dbp), at: this.time };
+      this.nibp = this.cuffReading();
       this.cuffDoneAt = null;
       this.nextAutoCuff = this.time + CUFF_INTERVAL;
     }
@@ -734,7 +990,7 @@ export class Simulation {
     }
     for (const flag of beat.flags ?? []) this.flagSet.add(flag);
     for (const action of beat.counts ?? []) this.note(action);
-    for (const toggle of beat.off ?? []) this.toggles.delete(toggle);
+    for (const toggle of beat.off ?? []) this.switchOff(toggle);
     if (beat.settles !== undefined && this.openPrompt?.id === beat.settles) this.openPrompt = null;
     if (beat.prompt) {
       this.openPrompt = beat.prompt;
@@ -755,16 +1011,25 @@ export class Simulation {
   private jump(cut: TimeCut): void {
     const seconds = Math.max(0, cut.seconds);
     this.cutLog.push({ at: this.time, seconds, title: cut.title });
+    const from = this.time;
     this.time += seconds;
     if (cut.vitals) Object.assign(this.body, cut.vitals);
-    this.nibp = { sbp: Math.round(this.body.sbp), dbp: Math.round(this.body.dbp), at: this.time };
+    this.nibp = this.cuffReading();
     this.cuffDoneAt = null;
     this.nextAutoCuff = this.time + CUFF_INTERVAL;
     // The minutes skipped were not a gap between two of the player's breaths.
     this.newStretch();
+    // Nor minutes with nobody squeezing: what was skipped went on as it was going.
+    this.squeezedAt = this.squeezedAt.map((t) => t + seconds);
+    // Nor part of a set she was counting: the story resumes with her hands on the chest.
+    if (this.chest) {
+      const pause = this.pauseLog.at(-1);
+      if (pause && pause.ended === null) pause.ended = from;
+      this.chest = { compressing: true, since: this.time };
+    }
     // No waveform before the cut and none after: the apnea alarm is still on when the story resumes.
     this.noWaveformSince = this.body.etco2 === null ? (this.noWaveformSince ?? this.time) : null;
-    this.lowest = Math.min(this.lowest, this.body.spo2);
+    if (this.pulseNow) this.lowest = Math.min(this.lowest, this.body.spo2);
     this.sample();
   }
 
@@ -798,11 +1063,15 @@ export class Simulation {
     if (action.kind === 'toggle') {
       const turningOn = !this.toggles.has(id);
       if (turningOn) {
-        for (const other of action.excludes ?? []) this.toggles.delete(other);
-        this.toggles.add(id);
+        for (const other of action.excludes ?? []) this.switchOff(other);
+        this.switchOn(id);
         this.note(id);
       } else {
-        this.toggles.delete(id);
+        this.switchOff(id);
+      }
+      // With the assistant on the chest, a bag picked up is in the player's hand.
+      if (id === 'bvm' && turningOn && this.pacedBag && this.chest !== null) {
+        this.bagHolder = 'player';
       }
       // A bag the player has to squeeze says nothing until a breath goes in.
       const silent = id === 'bvm' && turningOn && this.bagHolder === 'player';
@@ -908,12 +1177,14 @@ export class Simulation {
     this.syringeSeq += 1;
     const id = `syringe-${this.syringeSeq}`;
     this.syringes = [...this.syringes, emptySyringe(id, sizeMl)];
+    this.benchTouched = this.time;
     return id;
   }
 
   private edit(id: string, change: (s: Syringe) => Syringe): void {
     if (this.finished) return;
     this.syringes = this.syringes.map((s) => (s.id === id ? change(s) : s));
+    this.benchTouched = this.time;
   }
 
   syringe(id: string): Syringe | undefined {

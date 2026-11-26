@@ -61,6 +61,11 @@ export const GROUP_LABELS: Readonly<Record<ActionGroup, string>> = {
 };
 
 const POSITIONS = ['pos_flat_legs_up', 'pos_sit_up', 'pos_side'] as const;
+/**
+ * The cart's two tubes. One at a time: putting one in takes the other out.
+ * With either in, a bag has a way in and compressions no longer pause for it.
+ */
+export const TUBES = ['lma', 'king'] as const;
 
 /** The Airway drawer's headings (owner, Nov 2026). */
 const OPEN_THE_AIRWAY = 'Open the airway';
@@ -162,7 +167,8 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
   },
   {
     // The oral airway is not on this cart: the page gives it only to a patient
-    // with no cough or gag, and no drill has one for it yet.
+    // with no cough or gag, and the one drill that has one is graded against
+    // the arrest page, which names the LMA and the King.
     id: 'npa',
     group: 'airway',
     section: AIRWAY_DEVICES,
@@ -173,6 +179,37 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
     from: [
       { protocol: 'hypoventilation', step: 'suction, NPA' },
       { protocol: 'hypoventilation', step: 'reposition, NPA' },
+    ],
+  },
+  {
+    id: 'lma',
+    group: 'airway',
+    section: AIRWAY_DEVICES,
+    kind: 'toggle',
+    label: 'LMA',
+    kit: 'LarySeal',
+    aliases: ['laryngeal mask', 'laryseal', 'supraglottic'],
+    excludes: TUBES.filter((t) => t !== 'lma'),
+    from: [
+      { protocol: 'bvm', step: 'Still not rising: LMA or King' },
+      { protocol: 'vfib_vtach', step: 'until an LMA/King/ET tube is placed' },
+      { protocol: 'laryngospasm', step: 'Cannot ventilate: LMA or King' },
+      { protocol: 'hypoventilation', step: 'then LMA or King' },
+    ],
+  },
+  {
+    id: 'king',
+    group: 'airway',
+    section: AIRWAY_DEVICES,
+    kind: 'toggle',
+    label: 'King',
+    kit: 'King LTS-D',
+    aliases: ['king lt', 'king tube', 'laryngeal tube'],
+    excludes: TUBES.filter((t) => t !== 'king'),
+    from: [
+      { protocol: 'bvm', step: 'Still not rising: LMA or King' },
+      { protocol: 'vfib_vtach', step: 'until an LMA/King/ET tube is placed' },
+      { protocol: 'lma', step: 'Fails: King or cricothyrotomy' },
     ],
   },
   {
@@ -270,12 +307,48 @@ export const CART_ACTIONS: ReadonlyArray<CartAction> = [
     ],
   },
   {
+    id: 'pulse_check',
+    group: 'circulation',
+    kind: 'instant',
+    label: 'Check the pulse',
+    aliases: ['pulse', 'carotid', 'feel for a pulse'],
+    from: [{ protocol: 'bvm', step: 'Check the pulse every 2 minutes' }],
+  },
+  {
+    // One button: the assistant compresses, and the player runs the code from the bag.
+    id: 'cpr',
+    group: 'circulation',
+    kind: 'toggle',
+    label: 'CPR',
+    kit: 'CPR board',
+    aliases: ['compressions', 'chest compressions', 'start cpr', 'board'],
+    from: [
+      { protocol: 'vfib_vtach', step: 'CPR on the CPR board' },
+      { protocol: 'pea_asystole', step: 'CPR on the CPR board' },
+      { protocol: 'bvm', step: 'No pulse: start CPR' },
+    ],
+  },
+  {
+    // On means the pads are on. What it says and advises is the story's.
+    id: 'aed',
+    group: 'circulation',
+    kind: 'toggle',
+    label: 'AED',
+    kit: 'Defibtech',
+    aliases: ['defibrillator', 'defib', 'pads', 'shock'],
+    from: [
+      { protocol: 'vfib_vtach', step: 'Call for help, AED and 911' },
+      { protocol: 'vfib_vtach', step: 'AED: shock when advised' },
+      { protocol: 'pea_asystole', step: 'AED on: follow its prompts' },
+    ],
+  },
+  {
     id: 'saline',
     group: 'circulation',
     kind: 'instant',
     label: 'Saline bolus',
     kit: 'NS bag',
-    aliases: ['fluids', 'bolus', 'normal saline', 'ns', 'fluid'],
+    aliases: ['fluids', 'bolus', 'normal saline', 'ns', 'fluid', 'flush'],
     from: [{ protocol: 'anaphylaxis', step: '500 ml saline bolus, wide open' }],
   },
 ];

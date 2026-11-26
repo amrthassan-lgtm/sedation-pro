@@ -4,8 +4,16 @@ import { ref } from 'vue';
 import { findProtocol } from '@sedation-pro/clinical';
 
 import type { Run } from '@/composables/useRun';
-import { BREATH, BREATH_WORDS, gapOnPace, HAND_OVER_AFTER, holdOnPace } from '@/engine/engine';
-import type { BagHolder, Breath } from '@/engine/types';
+import {
+  BREATH,
+  BREATH_WORDS,
+  CPR,
+  CPR_WORDS,
+  gapOnPace,
+  HAND_OVER_AFTER,
+  holdOnPace,
+} from '@/engine/engine';
+import type { BagHolder, Breath, Compressions, CyclePause } from '@/engine/types';
 
 import BagPad from './BagPad.vue';
 
@@ -25,6 +33,13 @@ function pad(
     coached?: boolean;
     /** Seconds the screen is ahead of the run's last step. */
     ahead?: () => number;
+    /** Where the assistant's hands are, with CPR on. */
+    chest?: Compressions | null;
+    pauses?: CyclePause[];
+    /** The run's clock. */
+    t?: number;
+    /** No pulse wave on the monitor. */
+    pulseless?: boolean;
   } = {},
 ) {
   const squeeze = vi.fn();
@@ -36,6 +51,10 @@ function pad(
     paceRun: ref(options.inARow ?? 0),
     handOverEarned: ref(options.earned ?? false),
     ahead: options.ahead ?? (() => 0),
+    compressions: ref(options.chest ?? null),
+    pauses: ref(options.pauses ?? []),
+    t: ref(options.t ?? 0),
+    monitor: ref({ perfusion: options.pulseless ? 0 : 1 }),
     squeeze,
     handBag,
   } as unknown as Run;
@@ -322,5 +341,281 @@ describe('handing the bag over', () => {
     expect(hers.wrapper.text()).toContain('has the bag');
     await hers.wrapper.find('.hand').trigger('click');
     expect(hers.handBag).toHaveBeenCalledWith('player');
+  });
+});
+
+describe('with the assistant on the chest (owner, Nov 2026)', () => {
+  /** Seconds into a set at which she has counted `n` compressions, at the page's rate. */
+  const counted = (n: number): number => (n * 60) / CPR.perMin + 0.01;
+  const compressing = (elapsed: number): Compressions => ({
+    mode: 'cycle',
+    compressing: true,
+    elapsed,
+    breaths: 0,
+  });
+  const pausing = (breaths: number): Compressions => ({
+    mode: 'cycle',
+    compressing: false,
+    elapsed: 0.5,
+    breaths,
+  });
+  /** A squeeze of the cycle, as the engine would record it. */
+  const cycleBreath = (cycle: 'pause' | 'compressions', held = BREATH.overSec): Breath => ({
+    t: 30,
+    held,
+    gap: 2,
+    onPace: cycle === 'pause' && holdOnPace(held),
+    towardHandOver: null,
+    cycle,
+  });
+
+  it('there is no hand-over to offer: the bag is the player’s for as long as CPR is on', () => {
+    for (const chest of [compressing(3), pausing(0), { ...compressing(3), mode: 'continuous' }]) {
+      const { wrapper } = pad({ chest: chest as Compressions, earned: true });
+      expect(wrapper.find('.hand').exists()).toBe(false);
+      expect(wrapper.find('.squeeze').exists()).toBe(true);
+      expect(wrapper.text()).not.toContain('DA takes the bag');
+    }
+  });
+
+  it('the ring keeps her time: it counts her compressions to the page’s thirty, at the page’s rate', () => {
+    expect(CPR).toMatchObject({ compressions: 30, breaths: 2, perMin: 110 });
+    const start = pad({ chest: compressing(0) });
+    expect(start.wrapper.find('.ring-n').text()).toBe('0');
+    expect(start.wrapper.find('.ring').classes()).not.toContain('is-due');
+
+    const mid = pad({ chest: compressing(counted(12)) });
+    expect(mid.wrapper.find('.ring-n').text()).toBe('12');
+    expect(mid.wrapper.find('.ring').classes()).not.toContain('is-due');
+    // The arc is as far round as she has counted.
+    const dash = Number(mid.wrapper.find('.ring-fill').attributes('stroke-dasharray'));
+    const offset = Number(mid.wrapper.find('.ring-fill').attributes('stroke-dashoffset'));
+    expect(1 - offset / dash).toBeCloseTo(12 / 30, 5);
+
+    const nearly = pad({ chest: compressing(counted(29)) });
+    expect(nearly.wrapper.find('.ring-n').text()).toBe('29');
+  });
+
+  it('is carried on between two steps of the run by the screen’s own clock, as the bag’s ring is', async () => {
+    let ahead = 0;
+    const { wrapper } = pad({ chest: compressing(counted(12)), ahead: () => ahead });
+    expect(wrapper.find('.ring-n').text()).toBe('12');
+    ahead = 60 / CPR.perMin;
+    clock.draw(16);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.ring-n').text()).toBe('13');
+  });
+
+  it('at thirty it stands white with the breaths her pause is waiting for: two, then one', () => {
+    const waiting = pad({ chest: pausing(0) });
+    expect(waiting.wrapper.find('.ring').classes()).toContain('is-due');
+    expect(waiting.wrapper.find('.ring-n').text()).toBe('2');
+
+    const one = pad({ chest: pausing(1) });
+    expect(one.wrapper.find('.ring').classes()).toContain('is-due');
+    expect(one.wrapper.find('.ring-n').text()).toBe('1');
+
+    // The thirtieth is counted on the screen a moment before the run's next step says so.
+    const counting = pad({ chest: compressing(counted(30)) });
+    expect(counting.wrapper.find('.ring').classes()).toContain('is-due');
+    expect(counting.wrapper.find('.ring-n').text()).toBe('2');
+  });
+
+  it('the bag is at rest while she compresses, and the white button the moment her pause wants a breath', () => {
+    const resting = pad({ chest: compressing(counted(12)) });
+    expect(resting.wrapper.find('.squeeze').classes()).toContain('is-resting');
+    // Still a button, and still his to squeeze.
+    expect(resting.wrapper.find('.squeeze').attributes('disabled')).toBeUndefined();
+
+    for (const chest of [pausing(0), pausing(1), compressing(counted(30))]) {
+      expect(pad({ chest }).wrapper.find('.squeeze').classes()).not.toContain('is-resting');
+    }
+    // Wanted this instant when her pause begins, so it does not fade in; not once a breath is in.
+    expect(
+      pad({ chest: pausing(0) })
+        .wrapper.find('.squeeze')
+        .classes(),
+    ).toContain('is-called');
+    expect(
+      pad({ chest: compressing(counted(30)) })
+        .wrapper.find('.squeeze')
+        .classes(),
+    ).toContain('is-called');
+    expect(
+      pad({ chest: pausing(1) })
+        .wrapper.find('.squeeze')
+        .classes(),
+    ).not.toContain('is-called');
+    expect(resting.wrapper.find('.squeeze').classes()).not.toContain('is-called');
+    // On the bag's own time it is never at rest: a breath is always the next thing.
+    expect(pad({ since: 2 }).wrapper.find('.squeeze').classes()).not.toContain('is-resting');
+    const tube: Compressions = { mode: 'continuous', compressing: true, elapsed: 9, breaths: 0 };
+    expect(pad({ chest: tube, since: 2 }).wrapper.find('.squeeze').classes()).not.toContain(
+      'is-resting',
+    );
+  });
+
+  it('pressed in a pause it goes on showing the pause, not the seconds of the squeeze', async () => {
+    const { wrapper, squeeze } = pad({ chest: pausing(0) });
+    clock.at(1_000);
+    await wrapper.find('.squeeze').trigger('pointerdown');
+    clock.draw(1_900);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.ring-n').text()).toBe('2');
+    expect(wrapper.find('.ring').classes()).toContain('is-due');
+    clock.at(2_000);
+    await wrapper.find('.squeeze').trigger('pointerup');
+    expect(squeeze).toHaveBeenCalledTimes(1);
+    expect(squeeze.mock.calls[0]?.[0]).toBeCloseTo(1);
+  });
+
+  it('a breath in the pause: which of the two it was, and nothing about a gap', () => {
+    const first = pad({
+      chest: pausing(1),
+      last: cycleBreath('pause'),
+      pauses: [{ t: 16, ended: null, breaths: 1, wentIn: 1 }],
+    });
+    expect(first.wrapper.find('.fact').text()).toBe('Breath 1 of 2');
+    expect(first.wrapper.find('.fact').classes()).not.toContain('is-off');
+    expect(first.wrapper.find('.page-line').exists()).toBe(false);
+
+    const second = pad({
+      chest: compressing(0.5),
+      last: cycleBreath('pause'),
+      pauses: [{ t: 16, ended: 30, breaths: 2, wentIn: 2 }],
+      t: 30.5,
+    });
+    expect(second.wrapper.find('.fact').text()).toBe('Breath 2 of 2');
+    expect(second.wrapper.find('.page-line').exists()).toBe(false);
+  });
+
+  it('a pause’s breath off the page’s length: how long it was held, beside the BVM page’s own length', () => {
+    const { wrapper } = pad({
+      chest: pausing(1),
+      last: cycleBreath('pause', 0.3),
+      pauses: [{ t: 16, ended: null, breaths: 1, wentIn: 1 }],
+    });
+    expect(wrapper.find('.fact').text()).toBe('Breath 1 of 2, held 0.3 s');
+    expect(wrapper.find('.fact').classes()).toContain('is-off');
+    expect(wrapper.find('.page-line').text()).toBe(`BVM page ${BREATH_WORDS.over}`);
+  });
+
+  it('a pause that went by short: how many breaths it got, beside the arrest page’s own 30:2', () => {
+    const none = pad({
+      chest: compressing(2),
+      pauses: [{ t: 16, ended: 22, breaths: 0, wentIn: 0 }],
+      t: 24,
+    });
+    expect(none.wrapper.find('.fact').text()).toBe('No breaths in the pause');
+    expect(none.wrapper.find('.fact').classes()).toContain('is-off');
+    expect(none.wrapper.find('.page-line').text()).toBe(`Cardiac arrest page ${CPR_WORDS.ratio}`);
+    expect(CPR_WORDS.ratio).toBe('30:2');
+
+    const one = pad({
+      chest: compressing(2),
+      last: { ...cycleBreath('pause'), t: 18 },
+      pauses: [{ t: 16, ended: 24, breaths: 1, wentIn: 1 }],
+      t: 26,
+    });
+    expect(one.wrapper.find('.fact').text()).toBe('1 of 2 breaths in the pause');
+    expect(one.wrapper.find('.page-line').text()).toBe(`Cardiac arrest page ${CPR_WORDS.ratio}`);
+  });
+
+  it('says nothing of a pause once the set that followed it is over, or of one that had both', () => {
+    // A time cut, or CPR stopped and started: this set did not follow that pause.
+    const stale = pad({
+      chest: compressing(2),
+      pauses: [{ t: 16, ended: 22, breaths: 0, wentIn: 0 }],
+      t: 150,
+    });
+    expect(stale.wrapper.find('.fact').text()).toBe('');
+    expect(stale.wrapper.find('.page-line').exists()).toBe(false);
+
+    const full = pad({
+      chest: compressing(2),
+      pauses: [{ t: 16, ended: 20, breaths: 2, wentIn: 2 }],
+      t: 22,
+    });
+    expect(full.wrapper.find('.fact').text()).toBe('');
+  });
+
+  it('a breath squeezed while she is compressing: that fact, beside the page’s 30:2', () => {
+    const { wrapper } = pad({ chest: compressing(5), last: cycleBreath('compressions') });
+    expect(wrapper.find('.fact').text()).toBe('Breath during compressions');
+    expect(wrapper.find('.fact').classes()).toContain('is-off');
+    expect(wrapper.find('.page-line').text()).toBe(`Cardiac arrest page ${CPR_WORDS.ratio}`);
+  });
+
+  it('states facts beside the pages’ words and gives no advice of its own', () => {
+    const texts = [
+      pad({ chest: compressing(5), last: cycleBreath('compressions') }),
+      pad({
+        chest: compressing(2),
+        pauses: [{ t: 16, ended: 22, breaths: 0, wentIn: 0 }],
+        t: 24,
+      }),
+      pad({
+        chest: pausing(1),
+        last: cycleBreath('pause', 3),
+        pauses: [{ t: 16, ended: null, breaths: 1, wentIn: 1 }],
+      }),
+    ].map((p) => p.wrapper.find('.hint').text());
+    for (const text of texts) {
+      expect(text).not.toMatch(/should|too |slow|fast|quick|try|aim|wait|early|late|long|short/i);
+    }
+  });
+
+  it('a practice run prints the arrest page’s own clause for the cycle, whatever the breath', () => {
+    const idle = pad({ chest: compressing(4), coached: true });
+    expect(idle.wrapper.find('.page-line').text()).toBe(`Cardiac arrest page ${CPR_WORDS.until}`);
+    expect(CPR_WORDS.until).toBe('30:2 until an LMA/King/ET tube is placed');
+    const scored = pad({ chest: compressing(4) });
+    expect(scored.wrapper.find('.page-line').exists()).toBe(false);
+  });
+
+  it('with no pulse and nobody on his chest the bag is at rest, and the pad asks for nothing', () => {
+    // Before CPR has started, or with her hands off for the AED: a breath is not the next thing.
+    for (const since of [null, 2, 9]) {
+      const { wrapper } = pad({ pulseless: true, since, last: breath(3.4, 0.3), earned: true });
+      expect(wrapper.find('.ring').classes()).not.toContain('is-due');
+      expect(wrapper.find('.ring-n').text()).toBe('');
+      expect(wrapper.find('.squeeze').classes()).toContain('is-resting');
+      expect(wrapper.find('.hand').exists()).toBe(false);
+      expect(wrapper.find('.fact').text()).toBe('');
+      expect(wrapper.find('.fact').classes()).not.toContain('is-off');
+      expect(wrapper.find('.page-line').exists()).toBe(false);
+    }
+    // A practice run prints no page's line there either: neither page's breath is what is wanting.
+    expect(pad({ pulseless: true, coached: true }).wrapper.find('.page-line').exists()).toBe(false);
+  });
+
+  it('it is still the player’s to squeeze there, and a squeeze is still a breath', async () => {
+    const { wrapper, squeeze } = pad({ pulseless: true });
+    expect(wrapper.find('.squeeze').attributes('disabled')).toBeUndefined();
+    clock.at(1_000);
+    await wrapper.find('.squeeze').trigger('pointerdown');
+    clock.at(2_000);
+    await wrapper.find('.squeeze').trigger('pointerup');
+    expect(squeeze).toHaveBeenCalledTimes(1);
+  });
+
+  it('with a pulse and no CPR it is the bag as it is in every other room', () => {
+    const { wrapper } = pad({ since: BREATH.everySec + 1, inARow: 1 });
+    expect(wrapper.find('.ring').classes()).toContain('is-due');
+    expect(wrapper.find('.squeeze').classes()).not.toContain('is-resting');
+    expect(wrapper.find('.hand').exists()).toBe(true);
+  });
+
+  it('with a tube in it is the bag’s own six-second ring again, still with no hand-over', () => {
+    const chest: Compressions = { mode: 'continuous', compressing: true, elapsed: 40, breaths: 0 };
+    const { wrapper } = pad({ chest, since: 4.6, last: breath(3.4, BREATH.overSec) });
+    expect(wrapper.find('.ring-n').text()).toBe('4');
+    expect(wrapper.find('.fact').text()).toBe('3 s since the last breath');
+    expect(wrapper.find('.page-line').text()).toBe(`BVM page ${BREATH_WORDS.every}`);
+    expect(wrapper.find('.hand').exists()).toBe(false);
+    // A breath of the cycle before the tube went in is not held to the bag's six seconds.
+    const carried = pad({ chest, since: 2, last: cycleBreath('pause') });
+    expect(carried.wrapper.find('.fact').text()).toBe('');
+    expect(carried.wrapper.find('.page-line').exists()).toBe(false);
   });
 });

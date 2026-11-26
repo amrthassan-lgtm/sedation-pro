@@ -252,6 +252,9 @@ export function useRun(scenario: Scenario) {
     handOverEarned: view(() => sim.handOverEarned),
     belly: view(() => sim.belly),
     breathGoesIn: view(() => sim.breathGoesIn),
+    /** Where the assistant's hands are while CPR is on, and the pauses she has taken for breaths. */
+    compressions: view(() => sim.compressions),
+    pauses: view(() => [...sim.pauses]),
     squeeze: (heldSec: number) => play(() => squeeze(heldSec)),
     ahead,
     handBag: (to: BagHolder) => play(() => sim.handBag(to)),

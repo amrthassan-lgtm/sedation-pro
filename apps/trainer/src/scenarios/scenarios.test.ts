@@ -26,6 +26,12 @@ const LEFT_OUT: Readonly<Record<string, ReadonlyArray<readonly [string, string, 
     ['emesis_aspiration', 'Signs of aspiration', 'he breathes easily once his airway is clear'],
     ['emesis_aspiration', 'Laryngospasm or bronchospasm after vomiting', 'neither follows here'],
   ],
+  shockable: [
+    ['vfib_vtach', 'AED says no shock', 'the rhythm stays shockable until the pulse is back'],
+    ['vfib_vtach', 'IV access without stopping compressions', 'the IV is already in'],
+    ['vfib_vtach', 'If amiodarone unavailable', 'amiodarone is on the cart'],
+    ['vfib_vtach', "Other H's and T's", 'not an act the cart offers'],
+  ],
   quiet: [
     ['hypoventilation', 'No pulse: start CPR', 'the run stops at the arrest'],
     ['oversedation_opioid', 'No pulse: start CPR', 'the run stops at the arrest'],
@@ -276,6 +282,53 @@ describe('every scenario', () => {
   );
 
   it.each(SCENARIOS.map((s) => [s.id, s] as const))(
+    '%s: in the room, with the bag the player’s to squeeze, no order of taps and squeezes breaks it either',
+    (_id, scenario) => {
+      const actions = CART_ACTIONS.map((a) => a.id);
+      const vials = CART_VIALS.map((v) => v.key);
+      for (let seed = 1; seed <= 60; seed += 1) {
+        let state = seed * 2_246_822_519;
+        const next = (n: number): number => {
+          state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+          return state % n;
+        };
+        const pick = <T>(list: ReadonlyArray<T>): T => list[next(list.length)]!;
+        const sim = new Simulation(scenario, { pacedBag: true, forgiving: seed % 4 === 0 });
+        for (let step = 0; step < 200 && !sim.ending; step += 1) {
+          const roll = next(12);
+          if (sim.prompt && roll < 3) sim.answer(pick(sim.prompt.options).id);
+          else if (roll < 5) sim.act(pick(actions));
+          // The acts of a code, and the bag, more often than chance would tap them.
+          else if (roll === 5) sim.act(pick(['cpr', 'aed', 'bvm', 'jaw_thrust', 'lma', 'king']));
+          else if (roll < 9) sim.squeeze((1 + next(30)) / 10);
+          else if (roll === 9) sim.handBag(next(2) === 0 ? 'da' : 'player');
+          else if (roll === 10) {
+            const id = sim.pickUpSyringe(pick([1, 3, 10] as const));
+            sim.drawFromVial(id, pick(vials), (1 + next(30)) / 10);
+            sim.give(id, (1 + next(30)) / 10, next(2) === 0 ? 'IV' : 'IM');
+          }
+          sim.tick((1 + next(24)) / 4);
+          const chest = sim.compressions;
+          expect(Number.isFinite(sim.monitor.spo2) && Number.isFinite(sim.monitor.rr)).toBe(true);
+          // Her hands are somewhere exactly while CPR is on, and the bag is then the player's.
+          expect(chest !== null, `seed ${seed}`).toBe(sim.isOn('cpr'));
+          if (chest !== null) expect(sim.bagHeldBy, `seed ${seed}`).toBe('player');
+          for (const pause of sim.pauses) {
+            expect(pause.breaths, `seed ${seed}`).toBeLessThanOrEqual(2);
+            expect(pause.wentIn, `seed ${seed}`).toBeLessThanOrEqual(pause.breaths);
+            if (pause.ended !== null) expect(pause.ended).toBeGreaterThanOrEqual(pause.t);
+          }
+        }
+        if (sim.ending) {
+          const debrief = gradeRun(scenario, sim);
+          expect(debrief.of, `seed ${seed}`).toBeGreaterThanOrEqual(debrief.done);
+          for (const fact of debrief.facts) expect(fact.value, fact.label).not.toMatch(/NaN|-/);
+        }
+      }
+    },
+  );
+
+  it.each(SCENARIOS.map((s) => [s.id, s] as const))(
     '%s: an ambulance that was called ends the run eight minutes after the call, even when nothing else can',
     (_id, scenario) => {
       // Take-your-time mode: he cannot be lost, so only the ambulance can end a run left alone.
@@ -340,13 +393,23 @@ describe('every scenario', () => {
       const sim = new Simulation(scenario);
       drawAndGive(sim, 'fentanyl', 2);
       drawAndGive(sim, 'midazolam', 1);
+      // Compared twenty seconds in, or at his last breath of his own if he stops before then:
+      // a sedative changes nothing in a patient who is not breathing for himself at all.
+      let breathing = { phase: ['', ''], rr: [0, 0], spo2: [0, 0] };
       for (let i = 0; i < 80; i += 1) {
         plain.tick(0.25);
         sim.tick(0.25);
+        if (plain.monitor.rr === 0) continue;
+        breathing = {
+          phase: [sim.phase, plain.phase],
+          rr: [sim.monitor.rr, plain.monitor.rr],
+          spo2: [sim.run.vitals.spo2, plain.run.vitals.spo2],
+        };
       }
-      expect(sim.phase).toBe(plain.phase);
-      expect(sim.monitor.rr).toBeLessThan(plain.monitor.rr);
-      expect(sim.run.vitals.spo2).toBeLessThan(plain.run.vitals.spo2);
+      expect(breathing.phase[0]).toBe(breathing.phase[1]);
+      expect(breathing.rr[1]).toBeGreaterThan(0);
+      expect(breathing.rr[0]).toBeLessThan(breathing.rr[1]!);
+      expect(breathing.spo2[0]).toBeLessThan(breathing.spo2[1]!);
     },
   );
 

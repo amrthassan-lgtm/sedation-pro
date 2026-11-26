@@ -11,7 +11,8 @@ import { gradeRun, type Debrief } from '@/engine/grade';
 import { pageShortName } from '@/engine/protocol';
 import { SCENARIOS } from '@/scenarios';
 import { quiet } from '@/scenarios/quiet';
-import { untilEnd } from '@/scenarios/testing';
+import { shockable } from '@/scenarios/shockable';
+import { until, untilEnd } from '@/scenarios/testing';
 import { setLastRun, type RunRecord } from '@/session';
 
 import DebriefView from './DebriefView.vue';
@@ -152,5 +153,109 @@ describe('the pressure in a debrief', () => {
     const page = show({}, null, [at(0, 120), at(60, 118), at(120, 112)]);
     expect(page.text()).not.toContain('Lowest systolic');
     expect(page.find('svg.pressure').exists()).toBe(false);
+  });
+});
+
+describe('the facts of a run that had CPR (owner, Nov 2026)', () => {
+  /** "Shockable" with CPR, the bag and the AED, every shock given and nothing else, to the ambulance. */
+  function coded(): Simulation {
+    const sim = new Simulation(shockable);
+    until(sim, 'arrest');
+    for (let i = 0; i < 4 * 8; i += 1) sim.tick(0.25);
+    for (const id of ['call_911', 'cpr', 'jaw_thrust', 'bvm', 'aed']) sim.act(id);
+    for (let i = 0; i < 4 * 900 && !sim.ending; i += 1) {
+      if (sim.prompt?.id === 'shock') {
+        sim.answer('shock');
+        sim.act('cpr');
+      }
+      sim.tick(0.25);
+    }
+    return sim;
+  }
+
+  function showRun(sim: Simulation, change: (debrief: Debrief) => Debrief = (d) => d) {
+    setLastRun({
+      debrief: change(gradeRun(sim.scenario, sim)),
+      history: sim.history,
+      cuts: sim.cuts,
+      log: sim.log,
+      previous: null,
+      practice: false,
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: { template: '<div />' } }],
+    });
+    return mount(DebriefView, { global: { plugins: [router] } });
+  }
+
+  it('are stated in a row of their own, under the numbers and above the chart', () => {
+    const page = showRun(coded());
+    const facts = page
+      .findAll('.facts .fact')
+      .map((f) => [f.find('dt').text(), f.find('dd').text()]);
+    expect(facts.map(([label]) => label)).toEqual([
+      'CPR started',
+      'First shock',
+      'Nobody on his chest, in all',
+      'Pauses with both breaths',
+    ]);
+    expect(facts[0]?.[1]).toBe('0:14');
+    expect(facts[1]?.[1]).toBe('0:23');
+    for (const [, value] of facts) expect(value).toMatch(/^(\d+:\d\d|\d+ of \d+)$/);
+    const html = page.html();
+    expect(html.indexOf('class="stats"')).toBeLessThan(html.indexOf('class="facts"'));
+    expect(html.indexOf('class="facts"')).toBeLessThan(html.indexOf('class="recorder"'));
+  });
+
+  it('are facts and nothing else: no verdict, no advice', () => {
+    const text = showRun(coded()).find('.facts').text();
+    expect(text).not.toMatch(/should|too |late|slow|fast|good|poor|well|only|try/i);
+  });
+
+  it('the chart beside them draws no saturation for the time he had no pulse', () => {
+    const page = showRun(coded());
+    expect(page.find('.recorder .unread').exists()).toBe(true);
+    expect(page.find('.recorder .legend').text()).toContain('No pulse: no reading');
+    // The lowest saturation printed is the lowest that was read: before he lost his pulse.
+    // And the number says so, so that it is not read as how he was through the arrest.
+    const tile = page.find('.stat');
+    expect(tile.find('.stat-val').text()).toBe('97%');
+    expect(tile.find('.stat-sub').text()).toBe('No pulse: no reading');
+    expect(show().find('.stat').text()).not.toContain('No pulse');
+  });
+
+  it('with a run before it, the tile says both: what the last run read, and that some of this one went unread', () => {
+    const sim = coded();
+    setLastRun({
+      debrief: gradeRun(sim.scenario, sim),
+      history: sim.history,
+      cuts: sim.cuts,
+      log: sim.log,
+      previous: { at: 0, done: 3, of: 7, lowestSpo2: 91, seconds: 500, outcome: 'handover' },
+      practice: false,
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: { template: '<div />' } }],
+    });
+    const page = mount(DebriefView, { global: { plugins: [router] } });
+    expect(page.find('.stat .stat-sub').text()).toBe('Last run 91% · No pulse: no reading');
+  });
+
+  it('a run with no CPR has no such row, and neither has any other drill', () => {
+    const untouched = new Simulation(shockable);
+    untilEnd(untouched);
+    expect(showRun(untouched).find('.facts').exists()).toBe(false);
+    expect(show().find('.facts').exists()).toBe(false);
+  });
+
+  it('a run saved before there were facts still opens', () => {
+    const page = showRun(coded(), (debrief) => {
+      const { facts: _facts, ...old } = debrief;
+      return old as Debrief;
+    });
+    expect(page.find('.hero-title').text()).toBe('Handed over to EMS');
+    expect(page.find('.facts').exists()).toBe(false);
   });
 });
