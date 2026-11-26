@@ -29,6 +29,7 @@ import {
   succinylcholineSoFar,
   takenAsFound,
   type WayIn,
+  WITH_A_PULSE,
 } from './shared';
 
 /**
@@ -542,6 +543,8 @@ export const stridor: Scenario = {
   }),
 
   reactions: {
+    ...WITH_A_PULSE,
+
     stop: () => ({ log: 'Procedure stopped', voice: { who: 'DA', line: 'Instruments out.' } }),
 
     o2: (_ctx, e) =>

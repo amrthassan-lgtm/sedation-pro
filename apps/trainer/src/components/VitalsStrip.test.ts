@@ -55,4 +55,42 @@ describe('a question asked while a drawer is open', () => {
     expect(strip.text()).toContain('Pen’s in.');
     expect(strip.find('.ask').exists()).toBe(false);
   });
+
+  it('a question with two answers has no main one', () => {
+    const strip = mount(VitalsStrip, { props: { monitor, said: null, prompt: question } });
+    expect(strip.findAll('.ask-options .btn--key')).toHaveLength(0);
+  });
+
+  it('the AED’s one answer is the white button, in the drawer as in the room', async () => {
+    const shock: Prompt = {
+      id: 'shock',
+      voice: { who: 'AED', line: 'Shock advised.' },
+      options: [{ id: 'shock', label: 'Shock' }],
+    };
+    const strip = mount(VitalsStrip, {
+      props: { monitor, said: { who: 'DA', line: 'Back on his chest.' }, prompt: shock },
+    });
+    expect(strip.find('.ask').text()).toContain('AED');
+    expect(strip.find('.ask').text()).toContain('Shock advised.');
+    const options = strip.findAll('.ask-options .btn');
+    expect(options.map((b) => b.text())).toEqual(['Shock']);
+    expect(options[0]?.classes()).toContain('btn--key');
+    await options[0]?.trigger('click');
+    expect(strip.emitted('answer')?.[0]).toEqual(['shock']);
+  });
+});
+
+describe('a patient with no pulse, in the strip', () => {
+  it('has no saturation to show: the oximeter has no pulse wave to read it from', () => {
+    const arrest: MonitorView = { ...monitor, hr: 188, spo2: 84, perfusion: 0, rhythm: 'vtach' };
+    const strip = mount(VitalsStrip, { props: { monitor: arrest, said: null } });
+    expect(strip.find('.v--spo2').text()).toBe('SpO₂ --');
+    expect(strip.text()).not.toContain('84');
+    expect(strip.find('.v--hr').text()).toBe('HR 188');
+  });
+
+  it('shows it as before for one who has', () => {
+    const strip = mount(VitalsStrip, { props: { monitor, said: null } });
+    expect(strip.find('.v--spo2').text()).toBe('SpO₂ 97');
+  });
 });

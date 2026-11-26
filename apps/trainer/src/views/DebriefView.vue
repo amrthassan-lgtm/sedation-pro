@@ -93,10 +93,20 @@ const lastSpo2 = computed(() => {
   return prev ? `Last run ${prev.lowestSpo2}%` : '';
 });
 
+/** He had no pulse for some of the run: the oximeter read nothing then, and the lowest is of what it did read. */
+const unread = computed(() => run?.history.some((s) => s.pulseless === true) ?? false);
+/** Under the lowest saturation: the run before, and that some of this one went unread. */
+const spo2Notes = computed(() =>
+  [lastSpo2.value, unread.value ? 'No pulse: no reading' : ''].filter(Boolean).join(' · '),
+);
+
 /** Shown beside the saturation only in a run where the pressure fell. */
 const lowestPressure = computed(() =>
   run && pressureFell(run.history) ? (pressureRange(run.history)?.low ?? null) : null,
 );
+
+/** The scenario's own facts about the run. A run saved before there were any has none. */
+const facts = computed(() => debrief?.facts ?? []);
 
 const TAKEAWAY_HEADING = ['', 'One thing', 'Two things', 'Three things'] as const;
 const takeawayHeading = computed(
@@ -131,7 +141,7 @@ function again(): void {
         <div class="stat">
           <span class="eyebrow">Lowest SpO₂</span>
           <span class="stat-val mono">{{ debrief.lowestSpo2 }}%</span>
-          <span class="stat-sub">{{ lastSpo2 }}</span>
+          <span class="stat-sub">{{ spo2Notes }}</span>
         </div>
         <div v-if="lowestPressure !== null" class="stat">
           <span class="eyebrow">Lowest systolic</span>
@@ -149,6 +159,13 @@ function again(): void {
           <span class="stat-sub">{{ debrief.clean ? 'Clean run' : '' }}</span>
         </div>
       </div>
+      <!-- Stated, never graded: when things were done and for how long. -->
+      <dl v-if="facts.length > 0" class="facts">
+        <div v-for="fact in facts" :key="fact.label" class="fact">
+          <dt class="eyebrow">{{ fact.label }}</dt>
+          <dd class="fact-val mono">{{ fact.value }}</dd>
+        </div>
+      </dl>
       <FlightRecorder :history="run.history" :cuts="run.cuts" :log="run.log" />
       <BreathStrip :breaths="run.breaths ?? []" :assistant-bagging="run.assistantBagging ?? []" />
     </section>
@@ -300,6 +317,44 @@ function again(): void {
   font-size: var(--type-footnote);
   color: var(--color-text-tertiary);
   min-height: 1.3em;
+}
+/* One card, its cells parted by hairlines on the card's own surface. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 0 var(--sp-2);
+  border-radius: var(--r-lg);
+  background: var(--color-card-bg);
+  overflow: hidden;
+}
+/* A label on two lines must not drop its value below its neighbours': the values share a baseline. */
+.fact {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--sp-3) var(--sp-4);
+}
+.fact + .fact {
+  border-left: 1px solid var(--color-border);
+}
+.fact-val {
+  margin: 0;
+  font-size: var(--type-title);
+  font-weight: var(--weight-bold);
+  line-height: 1.2;
+}
+@media (max-width: 640px) {
+  .facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fact:nth-child(odd) {
+    border-left: 0;
+  }
+  .fact:nth-child(n + 3) {
+    border-top: 1px solid var(--color-border);
+  }
 }
 .step {
   align-items: flex-start;

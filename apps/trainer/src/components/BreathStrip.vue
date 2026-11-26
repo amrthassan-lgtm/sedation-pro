@@ -29,6 +29,10 @@ const BAR_H = 24;
 const PAGE_LINE =
   findProtocol('bvm')?.steps.find((s) => s.text.includes('just enough to see the chest rise'))
     ?.text ?? '';
+/** The arrest page's line for the breaths of CPR, printed above a strip that has any. */
+const CPR_LINE =
+  findProtocol('vfib_vtach')?.steps.find((s) => s.text.startsWith('CPR on the CPR board'))?.text ??
+  '';
 
 /** A squeeze is recorded when the bag is let go: it began its own length before that. */
 const began = (b: Breath): number => Math.max(0, b.t - b.held);
@@ -50,6 +54,8 @@ const bars = computed(() =>
 
 /** A run saved before breaths were judged says nothing about their pace, so neither does the strip. */
 const judged = computed(() => props.breaths.some((b) => typeof b.onPace === 'boolean'));
+/** Some of these were given during CPR, where the pace is the arrest page's and not the bag's alone. */
+const duringCpr = computed(() => props.breaths.some((b) => b.cycle !== undefined));
 
 const marks = computed(() => {
   const out: number[] = [];
@@ -83,6 +89,9 @@ const summary = computed(() => {
       <span class="strip-sum">{{ summary }}</span>
     </figcaption>
     <p v-if="PAGE_LINE" class="strip-page"><span class="eyebrow">BVM page</span> {{ PAGE_LINE }}</p>
+    <p v-if="duringCpr && CPR_LINE" class="strip-page strip-page--cpr">
+      <span class="eyebrow">Cardiac arrest page</span> {{ CPR_LINE }}
+    </p>
     <svg :viewBox="`0 0 ${W} ${H}`" role="img" :aria-label="`Breaths given: ${summary}`">
       <rect
         v-for="(span, i) in handed"
@@ -123,7 +132,10 @@ const summary = computed(() => {
       Dotted lines are {{ BREATH.everySec }} seconds apart. Each bar is one squeeze, as wide as it
       was held<template v-if="judged"
         >: solid when it was on pace, outlined when it was not</template
-      >.<template v-if="handed.length > 0"> Shaded: the assistant had the bag.</template>
+      >.<template v-if="duringCpr">
+        During CPR a breath is on pace when it is one of a pause’s and held for the page’s
+        second.</template
+      ><template v-if="handed.length > 0"> Shaded: the assistant had the bag.</template>
     </p>
     <a class="strip-go" href="../quick-reference/bvm">Go to BVM ›</a>
   </figure>
@@ -150,6 +162,9 @@ const summary = computed(() => {
   margin: var(--sp-1) 0 var(--sp-2);
   font-size: var(--type-footnote);
   color: var(--color-text-secondary);
+}
+.strip-page--cpr {
+  margin-top: calc(-1 * var(--sp-1));
 }
 svg {
   display: block;

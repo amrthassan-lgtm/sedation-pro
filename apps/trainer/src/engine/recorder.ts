@@ -13,12 +13,21 @@ export interface PressureRange {
   readonly high: number;
 }
 
-/** The lowest and highest systolic pressure of a run, or null for a run with no samples. */
+/** The samples taken while he had a pulse: with none there is no saturation and no pressure to draw. */
+export function readings(history: ReadonlyArray<Sample>): ReadonlyArray<Sample> {
+  return history.filter((s) => s.pulseless !== true);
+}
+
+/**
+ * The lowest and highest systolic pressure of a run, or null for a run with
+ * no samples. A stretch with no pulse has no pressure to be the lowest.
+ */
 export function pressureRange(history: ReadonlyArray<Sample>): PressureRange | null {
-  if (history.length === 0) return null;
+  const read = readings(history);
+  if (read.length === 0) return null;
   let low = Infinity;
   let high = -Infinity;
-  for (const s of history) {
+  for (const s of read) {
     low = Math.min(low, s.sbp);
     high = Math.max(high, s.sbp);
   }
@@ -27,6 +36,6 @@ export function pressureRange(history: ReadonlyArray<Sample>): PressureRange | n
 
 export function pressureFell(history: ReadonlyArray<Sample>): boolean {
   const range = pressureRange(history);
-  const opened = history[0]?.sbp;
+  const opened = readings(history)[0]?.sbp;
   return range !== null && opened !== undefined && opened - range.low >= WORTH_DRAWING_MMHG;
 }

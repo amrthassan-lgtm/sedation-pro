@@ -1,7 +1,7 @@
 import { findProtocol } from '@sedation-pro/clinical';
 
 import { findVial } from './catalog';
-import type { Ctx, DoseEvent, Ending, ProtocolRef, RubricItem, Scenario } from './types';
+import type { Ctx, DoseEvent, Ending, Fact, ProtocolRef, RubricItem, Scenario } from './types';
 import type { Simulation } from './engine';
 
 /**
@@ -85,6 +85,8 @@ export interface Debrief {
   readonly clean: boolean;
   /** Up to three core steps missed or only partly done, in rubric order: what to drill next. */
   readonly takeaways: ReadonlyArray<DebriefRow>;
+  /** The scenario's own facts about the run, stated and not graded. Empty for most runs. */
+  readonly facts: ReadonlyArray<Fact>;
 }
 
 /**
@@ -187,5 +189,6 @@ export function gradeRun(scenario: Scenario, sim: Simulation): Debrief {
       ending.outcome !== 'arrest' &&
       ending.outcome !== 'harm',
     takeaways: core.filter((r) => r.result === 'missed' || r.result === 'partial').slice(0, 3),
+    facts: scenario.facts?.(sim.run) ?? [],
   };
 }

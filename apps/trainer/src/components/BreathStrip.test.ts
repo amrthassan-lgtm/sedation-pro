@@ -102,4 +102,42 @@ describe('the breaths a debrief draws', () => {
     expect(drawn.findAll('.handed')).toHaveLength(1);
     expect(drawn.text()).toContain('the assistant had the bag');
   });
+
+  it('breaths given during CPR are drawn under the arrest page’s own line as well', () => {
+    const cprLine = findProtocol('vfib_vtach')!.steps.find((s) =>
+      s.text.startsWith('CPR on the CPR board'),
+    )!.text;
+    // Two pauses, two breaths in each; then one squeezed while she was compressing.
+    const pair = (from: number): Breath[] =>
+      [0, 2].map((after) => ({
+        t: from + after,
+        held: BREATH.overSec,
+        gap: after === 0 ? null : 2,
+        onPace: true,
+        towardHandOver: null,
+        cycle: 'pause' as const,
+      }));
+    const stray: Breath = {
+      t: 50,
+      held: BREATH.overSec,
+      gap: 8,
+      onPace: false,
+      towardHandOver: null,
+      cycle: 'compressions',
+    };
+    const drawn = strip([...pair(20), ...pair(40), stray]);
+    expect(drawn.findAll('.bar')).toHaveLength(5);
+    expect(drawn.findAll('.bar.is-off')).toHaveLength(1);
+    expect(drawn.find('.strip-page--cpr').text()).toBe(`Cardiac arrest page ${cprLine}`);
+    expect(drawn.find('.strip-note').text()).toContain(
+      'During CPR a breath is on pace when it is one of a pause’s and held for the page’s second.',
+    );
+    expect(drawn.text()).not.toMatch(/should|too fast|too slow|try/i);
+  });
+
+  it('a run with no CPR prints the BVM page’s line alone', () => {
+    const drawn = strip(every(BREATH.everySec, 4));
+    expect(drawn.find('.strip-page--cpr').exists()).toBe(false);
+    expect(drawn.find('.strip-note').text()).not.toContain('During CPR');
+  });
 });

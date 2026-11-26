@@ -60,11 +60,20 @@ export interface Drive {
    */
   readonly airway: 'open' | 'closed';
   readonly rhythm?: Rhythm;
+  /**
+   * `false` while his heart moves no blood. The monitor then draws a flat
+   * pulse wave, reads no saturation and finds no pressure with the cuff.
+   * Left out, he has a pulse.
+   */
+  readonly pulse?: boolean;
   readonly look?: Look;
 }
 
-/** 'Pen': the adult Auvi-Q, which speaks its own steps once out of its case. */
-export type Speaker = 'DA' | 'Front desk' | 'Patient' | 'You' | 'EMS' | 'Pen';
+/**
+ * 'Pen': the adult Auvi-Q, which speaks its own steps once out of its case.
+ * 'AED': the defibrillator, which says what it is doing and what it advises.
+ */
+export type Speaker = 'DA' | 'Front desk' | 'Patient' | 'You' | 'EMS' | 'Pen' | 'AED';
 
 export interface Voice {
   readonly who: Speaker;
@@ -164,6 +173,18 @@ export interface Ctx {
   entered(phase: string): number | null;
   /** Was this toggle on at any moment while the run was in that phase? */
   onDuring(toggle: string, phase: string): boolean;
+  /**
+   * Seconds this toggle has been on in all, counted from `since` (scenario
+   * seconds; the start of the run when left out). Time a cut skipped with the
+   * toggle on is time it was on.
+   */
+  onFor(toggle: string, since?: number): number;
+  /** When this toggle last went off, by a tap or by the story; `null` if it never has. */
+  lastOff(toggle: string): number | null;
+  /** Every pause for breaths the compressions have taken so far, oldest first. */
+  pauses(): ReadonlyArray<CyclePause>;
+  /** When a syringe was last handled at the bench (picked up, drawn into, labeled), or `null`. */
+  readonly benchAt: number | null;
 }
 
 export interface Transition {
@@ -250,6 +271,12 @@ export type RubricItem = RubricBase &
     | { readonly parts: ReadonlyArray<RubricPart>; readonly check?: undefined }
   );
 
+/** One plain fact about a run for the debrief: a label and what it was. Never a verdict. */
+export interface Fact {
+  readonly label: string;
+  readonly value: string;
+}
+
 export interface Scenario {
   readonly id: string;
   /**
@@ -293,6 +320,11 @@ export interface Scenario {
   readonly reactions?: Readonly<Record<string, Reaction>>;
   readonly endings: Readonly<Record<string, Ending>>;
   readonly rubric: ReadonlyArray<RubricItem>;
+  /**
+   * Facts the debrief prints in a row of their own, for a run that has any:
+   * when something was done and for how long. Nothing here is graded.
+   */
+  facts?(run: Ctx): ReadonlyArray<Fact>;
 }
 
 export interface LogEntry {
@@ -311,6 +343,11 @@ export interface Sample {
   readonly spo2: number;
   readonly hr: number;
   readonly sbp: number;
+  /**
+   * Set where he had no pulse: the oximeter read nothing, so the debrief
+   * draws no saturation there. The number kept beside it was never on screen.
+   */
+  readonly pulseless?: true;
 }
 
 /** A time cut that happened, for the card on screen and the break in the recorder. */
@@ -348,6 +385,38 @@ export interface Breath {
    * 3. Null when it counted toward nothing: off pace, or already earned.
    */
   readonly towardHandOver: number | null;
+  /**
+   * Set for a squeeze given while CPR was the page's 30:2: in a pause for
+   * breaths, or while the assistant was compressing.
+   */
+  readonly cycle?: 'pause' | 'compressions';
+}
+
+/** One pause of the page's 30:2: the assistant's hands off the chest for the breaths. */
+export interface CyclePause {
+  /** Scenario seconds when it began. */
+  readonly t: number;
+  /** When she went back on the chest; `null` while it is still open. */
+  readonly ended: number | null;
+  /** Squeezes of the bag the pause got. */
+  readonly breaths: number;
+  /** How many of them went in: the airway was open. */
+  readonly wentIn: number;
+}
+
+/** Where the assistant's hands are while CPR is on, for the pad that counts with her. */
+export interface Compressions {
+  /**
+   * `cycle`: the page's 30:2, pausing for the breaths of a bag that is in a
+   * hand. `continuous`: a tube is in, or nobody has the bag, and she does not stop.
+   */
+  readonly mode: 'cycle' | 'continuous';
+  /** Her hands are on the chest; false in the pause for breaths. */
+  readonly compressing: boolean;
+  /** Seconds since this set of compressions, or this pause, began. */
+  readonly elapsed: number;
+  /** Squeezes the open pause has had so far; 0 while she is compressing. */
+  readonly breaths: number;
 }
 
 /** What the monitor shows. Derived by the engine; screens only draw it. */
@@ -363,7 +432,11 @@ export interface MonitorView {
   readonly nibp: NibpReading | null;
   /** True while the cuff is inflating for a reading. */
   readonly cuffCycling: boolean;
-  /** 0..1 pleth amplitude: a weak trace when the pressure is low. */
+  /**
+   * 0..1 pleth amplitude: a weak trace when the pressure is low, and none at
+   * all (0) when he has no pulse. With no pulse wave the oximeter has nothing
+   * to read, so the screens show no saturation either.
+   */
   readonly perfusion: number;
   readonly alarms: ReadonlyArray<AlarmId>;
   /** How urgent the worst active alarm is: `limit` a breached limit, `urgent` no breath or a deep desaturation. */

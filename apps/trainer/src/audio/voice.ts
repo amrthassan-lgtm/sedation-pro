@@ -6,7 +6,14 @@ import type { Voice } from '@/engine/types';
  */
 
 /** Scene text and the player's own lines are read, not heard. */
-const SPOKEN = new Set<Voice['who']>(['DA', 'Front desk', 'EMS', 'Patient', 'Pen']);
+const SPOKEN = new Set<Voice['who']>(['DA', 'Front desk', 'EMS', 'Patient', 'Pen', 'AED']);
+/** The two things on the cart that talk: slower and more evenly than a person, as the real ones do. */
+const DEVICES = new Set<Voice['who']>(['Pen', 'AED']);
+
+/** Whether a line is said aloud at all. Captions carry every line either way. */
+export function isSpoken(who: Voice['who']): boolean {
+  return SPOKEN.has(who);
+}
 
 function synth(): SpeechSynthesis | null {
   return typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -41,11 +48,10 @@ export function say(voice: Voice): void {
   try {
     s.cancel();
     const utterance = new SpeechSynthesisUtterance(spokenForm(voice.line));
-    // The pen speaks slower and evenly, as the real one does.
-    utterance.rate = voice.who === 'Pen' ? 0.95 : 1.08;
+    const device = DEVICES.has(voice.who);
+    utterance.rate = device ? 0.95 : 1.08;
     // A second pitch so the front desk and EMS do not sound like the assistant.
-    utterance.pitch =
-      voice.who === 'DA' ? 1.1 : voice.who === 'Patient' ? 0.8 : voice.who === 'Pen' ? 1 : 0.9;
+    utterance.pitch = voice.who === 'DA' ? 1.1 : voice.who === 'Patient' ? 0.8 : device ? 1 : 0.9;
     s.speak(utterance);
   } catch {
     // No usable voice: the caption already says it.

@@ -25,6 +25,7 @@ import {
   sedatable,
   sedativeGiven,
   takenAsFound,
+  WITH_A_PULSE,
   wrongParalytic,
 } from './shared';
 
@@ -481,6 +482,8 @@ export const wheeze: Scenario = {
   }),
 
   reactions: {
+    ...WITH_A_PULSE,
+
     stop: () => ({ log: 'Procedure stopped', voice: { who: 'DA', line: 'Instruments out.' } }),
 
     o2: (_ctx, e) =>

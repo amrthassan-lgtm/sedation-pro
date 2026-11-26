@@ -32,9 +32,13 @@ const alarmText = computed(() => {
   return '';
 });
 
+/** With no pulse wave the oximeter has nothing to read: the trace is flat and there is no number. */
+const pulse = computed(() => props.monitor.perfusion > 0);
+
 /** The shape of each trace in words: the capnogram and the rhythm are otherwise only pixels. */
 const traceLabel = computed(() => ({
   ecg: props.monitor.rhythm === 'vtach' ? 'ECG: wide and fast' : 'ECG: regular',
+  pleth: pulse.value ? 'Pleth waveform' : 'Pleth waveform: flat',
   co2:
     props.monitor.capno === 'flat'
       ? 'CO₂ waveform: flat'
@@ -242,11 +246,11 @@ watch(
 
       <div class="wave">
         <span class="tag mono spo2">PLETH</span>
-        <canvas ref="pleth" role="img" aria-label="Pleth waveform"></canvas>
+        <canvas ref="pleth" role="img" :aria-label="traceLabel.pleth"></canvas>
       </div>
       <div class="num spo2" :class="{ 'is-low': monitor.alarms.includes('spo2_low') }">
         <span class="lab mono">SpO₂</span>
-        <span class="val mono">{{ monitor.spo2 }}</span>
+        <span class="val mono">{{ pulse ? monitor.spo2 : '--' }}</span>
       </div>
 
       <div class="wave">
@@ -258,7 +262,7 @@ watch(
         <span class="val mono">{{ monitor.etco2 ?? '--' }}</span>
         <span class="rr mono">
           <span class="lab">RR</span> {{ monitor.rr }}
-          <span v-if="monitor.bagged" class="rr-note">bagged</span>
+          <span v-if="monitor.bagged && monitor.etco2 !== null" class="rr-note">bagged</span>
         </span>
       </div>
     </div>

@@ -132,7 +132,7 @@ describe('the cart is laid out one way, in every room (owner, Nov 2026)', () => 
     ]);
     expect(drawer('airway')).toEqual([
       ['Open the airway', ['Jaw thrust', 'Suction', 'Pressure at the laryngospasm notch']],
-      ['Airway devices', ['NPA']],
+      ['Airway devices', ['NPA', 'LMA', 'King']],
       [
         'Something in the throat',
         ['Encourage coughing', 'Back blows', 'Abdominal thrusts', 'Magill forceps', 'Finger sweep'],
@@ -141,7 +141,48 @@ describe('the cart is laid out one way, in every room (owner, Nov 2026)', () => 
     expect(drawer('breathing')).toEqual([
       [null, ['N₂O off, 100% O₂', 'BVM', 'Tight mask seal', 'Stimulate']],
     ]);
-    expect(drawer('circulation')).toEqual([[null, ['Saline bolus']]]);
+    expect(drawer('circulation')).toEqual([
+      [null, ['Check the pulse', 'CPR', 'AED', 'Saline bolus']],
+    ]);
+  });
+
+  it('the cardiac arrest drill added five buttons and no more (owner, Nov 2026)', () => {
+    expect(CART_ACTIONS).toHaveLength(24);
+    const added = ['pulse_check', 'cpr', 'aed', 'lma', 'king'].map(
+      (id) => CART_ACTIONS.find((a) => a.id === id)!,
+    );
+    expect(added.map((a) => [a.label, a.kind, a.kit])).toEqual([
+      ['Check the pulse', 'instant', undefined],
+      ['CPR', 'toggle', 'CPR board'],
+      ['AED', 'toggle', 'Defibtech'],
+      ['LMA', 'toggle', 'LarySeal'],
+      ['King', 'toggle', 'King LTS-D'],
+    ]);
+    // Each is named in the arrest page's own words, or the BVM page's for the pulse.
+    const arrest = EMERGENCY_PROTOCOLS.find((p) => p.id === 'vfib_vtach')!.steps.map((s) => s.text);
+    for (const label of ['CPR', 'AED', 'LMA', 'King']) {
+      expect(
+        arrest.some((text) => text.includes(label)),
+        label,
+      ).toBe(true);
+    }
+    const bvm = EMERGENCY_PROTOCOLS.find((p) => p.id === 'bvm')!.steps.map((s) => s.text);
+    expect(bvm.some((text) => text.startsWith('Check the pulse'))).toBe(true);
+    // Nothing the page does not have a button for was slipped in beside them.
+    const labels = CART_ACTIONS.map((a) => a.label.toLowerCase());
+    for (const absent of ['oral airway', 'cricothyrotomy', 'head tilt', 'et tube']) {
+      expect(
+        labels.some((label) => label.includes(absent)),
+        absent,
+      ).toBe(false);
+    }
+  });
+
+  it('one tube at a time: an LMA put in takes a King out, and the other way round', () => {
+    const lma = CART_ACTIONS.find((a) => a.id === 'lma')!;
+    const king = CART_ACTIONS.find((a) => a.id === 'king')!;
+    expect(lma.excludes).toEqual(['king']);
+    expect(king.excludes).toEqual(['lma']);
   });
 
   it('Encourage coughing is in the Airway drawer, with the rest of what is done for a throat', () => {
@@ -173,9 +214,13 @@ describe('the cart is laid out one way, in every room (owner, Nov 2026)', () => 
     expect(kits).toEqual({
       suction: 'Yankauer',
       npa: 'NasoSafe',
+      lma: 'LarySeal',
+      king: 'King LTS-D',
       o2: 'Porter flowmeter',
       bvm: 'Ambu bag',
       cpap: 'Ambu bag and mask',
+      cpr: 'CPR board',
+      aed: 'Defibtech',
       saline: 'NS bag',
     });
   });
@@ -194,7 +239,17 @@ describe('the cart is laid out one way, in every room (owner, Nov 2026)', () => 
       brands.add(brand);
       expect(inventory, `${action.id}: ${brand}`).toMatch(new RegExp(`\\b${brand}\\b`));
     }
-    expect([...brands].sort()).toEqual(['Ambu', 'NS', 'NasoSafe', 'Porter', 'Yankauer']);
+    expect([...brands].sort()).toEqual([
+      'Ambu',
+      'CPR',
+      'Defibtech',
+      'King',
+      'LarySeal',
+      'NS',
+      'NasoSafe',
+      'Porter',
+      'Yankauer',
+    ]);
   });
 });
 
@@ -207,6 +262,19 @@ describe('the call-out box', () => {
     expect(ids('nitrous off')[0]).toBe('o2');
     expect(ids('911')[0]).toBe('call_911');
     expect(ids('legs up')).toContain('pos_flat_legs_up');
+  });
+
+  it('finds the acts of an arrest by what the team says', () => {
+    expect(ids('cpr')[0]).toBe('cpr');
+    expect(ids('compressions')[0]).toBe('cpr');
+    expect(ids('aed')[0]).toBe('aed');
+    expect(ids('defib')[0]).toBe('aed');
+    expect(ids('pads')[0]).toBe('aed');
+    expect(ids('pulse')[0]).toBe('pulse_check');
+    expect(ids('lma')[0]).toBe('lma');
+    expect(ids('king')[0]).toBe('king');
+    // The flush the arrest page writes after a push is the saline on the cart.
+    expect(ids('flush')).toEqual(['saline']);
   });
 
   it('finds a drug by generic or brand name', () => {

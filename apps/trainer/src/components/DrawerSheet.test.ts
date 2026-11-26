@@ -62,7 +62,12 @@ describe('a drawer of the cart (owner, Nov 2026)', () => {
       'Tight mask seal',
       'Stimulate',
     ]);
-    expect(titles(drawer('circulation').wrapper)).toEqual(['Saline bolus']);
+    expect(titles(drawer('circulation').wrapper)).toEqual([
+      'Check the pulse',
+      'CPR',
+      'AED',
+      'Saline bolus',
+    ]);
   });
 
   it('the Airway drawer is in three parts, each under its heading, with coughing among the last', () => {
@@ -77,7 +82,7 @@ describe('a drawer of the cart (owner, Nov 2026)', () => {
       .map((grid) => grid.findAll('.row-title').map((t) => t.text()));
     expect(parts).toEqual([
       ['Jaw thrust', 'Suction', 'Pressure at the laryngospasm notch'],
-      ['NPA'],
+      ['NPA', 'LMA', 'King'],
       ['Encourage coughing', 'Back blows', 'Abdominal thrusts', 'Magill forceps', 'Finger sweep'],
     ]);
   });
@@ -101,7 +106,27 @@ describe('a drawer of the cart (owner, Nov 2026)', () => {
     const airway = drawer('airway');
     expect(airway.button('Suction').find('.row-sub').text()).toBe('Yankauer');
     expect(airway.button('NPA').find('.row-sub').text()).toBe('NasoSafe');
-    expect(drawer('circulation').button('Saline bolus').find('.row-sub').text()).toBe('NS bag');
+    expect(airway.button('LMA').find('.row-sub').text()).toBe('LarySeal');
+    expect(airway.button('King').find('.row-sub').text()).toBe('King LTS-D');
+
+    const circulation = drawer('circulation');
+    expect(circulation.button('Check the pulse').find('.row-sub').exists()).toBe(false);
+    expect(circulation.button('CPR').find('.row-sub').text()).toBe('CPR board');
+    expect(circulation.button('AED').find('.row-sub').text()).toBe('Defibtech');
+    expect(circulation.button('Saline bolus').find('.row-sub').text()).toBe('NS bag');
+  });
+
+  it('CPR and the AED are one button each, on or off, and the pulse check is done or not', () => {
+    const { button, wrapper } = drawer('circulation', {
+      on: ['cpr', 'aed'],
+      done: ['pulse_check'],
+    });
+    expect(button('CPR').find('.state').text()).toBe('On');
+    expect(button('CPR').attributes('aria-pressed')).toBe('true');
+    expect(button('AED').find('.state').text()).toBe('On');
+    expect(button('Check the pulse').find('.state').text()).toBe('Done');
+    expect(button('Check the pulse').attributes('aria-pressed')).toBeUndefined();
+    expect(wrapper.findAll('button.act')).toHaveLength(4);
   });
 
   it('a tap still acts, on the act that was tapped', async () => {

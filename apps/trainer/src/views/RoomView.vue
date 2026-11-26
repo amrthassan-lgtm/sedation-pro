@@ -73,6 +73,10 @@ const NOW_LABELS: Readonly<Record<string, string>> = {
   jaw_thrust: 'Jaw thrust',
   larson: 'Notch pressure',
   npa: 'NPA in',
+  lma: 'LMA in',
+  king: 'King in',
+  cpr: 'CPR',
+  aed: 'AED on',
   pos_flat_legs_up: 'Flat, legs up',
   pos_sit_up: 'Sitting up',
   pos_side: 'On the side',
@@ -84,6 +88,7 @@ const NOW_LABELS: Readonly<Record<string, string>> = {
 /** Done in a moment and over: nothing to show as still going on. */
 const MOMENTARY: ReadonlySet<string> = new Set([
   'stimulate',
+  'pulse_check',
   'suction',
   'encourage_cough',
   'back_blows',
@@ -194,11 +199,13 @@ const vFocus = { mounted: (el: HTMLElement) => el.focus() };
           {{ run.prompt.value.voice.line }}
         </p>
         <div class="prompt-options">
+          <!-- One answer is the one way forward: the white button. -->
           <button
             v-for="o in run.prompt.value.options"
             :key="o.id"
             type="button"
             class="btn"
+            :class="{ 'btn--key': run.prompt.value.options.length === 1 }"
             @click="run.answer(o.id)"
           >
             {{ o.label }}
